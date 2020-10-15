@@ -19,11 +19,11 @@
     "read-excel-file": "^4.0.5"
   },
   "scripts": {
-    "dev": "react-app-rewired start",
-    "start": "serve -s build -l $PORT",
-    "post-install": "react-app-rewired build",
-    "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "dev": "npx react-app-rewired start",
+    "start": "npx serve -s build -l $PORT",
+    "post-install": "npx react-app-rewired build",
+    "test": "npx react-app-rewired test",
+    "eject": "npx react-scripts eject"
   },
   "eslintConfig": {
     "extends": "react-app"
