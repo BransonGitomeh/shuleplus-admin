@@ -48,175 +48,181 @@ var Data = (function () {
   // when the data store gets innitialized, fetch all data and store in cache
   const init = () => {
     query(`{
-      complaints{
-        id
-        time
-        content
-        parent{
-          id,
-          name
-        }
-      }
-      students {
-        id
-        names
-        gender
-        registration
-        class{
-          name,
-          teacher{
-            name
-          }
-        }
-        route {
-          id,
-          name
-        }
-        parent {
-          id,
-          national_id,
-          name
-        }
-        parent2 {
-          id,
-          national_id,
-          name
-        }
-      }
-      buses {
-        id,
-        plate
-        make
-        size
-        driver{
-          username
-        }
-      }
-      drivers {
-        id
-        username
-        email
-        phone
-        license_expiry
-        licence_number
-        home
-      }
-      parents {
-        id
-        national_id
-        name
-        gender
-        email
-        phone
-        students {
-          names
-          gender
-          route {
-            name
-          }
-        }
-      }
-      teachers{
-        id
-        national_id
-        name
-        gender
-        phone
-        email
-        classes{
-          name
-        }
-      }
-      classes {
-        id
-        name
-        students {
-          names
-          gender
-          route {
-            name
-          }
-        }
-        teacher{
-          id,
-          name
-        }
-      }
-      routes {
-        id
-        name
-        description
-        path {
-          lat
-          lng
-        }
-      }
-      schedules {
-        id
-        time
-        end_time
-        name
-        days
-        route {
-          id,
-          name
-        },
-        bus{
-          id
-          make
-        }
-      },
-      trips {
-        id
-        driver{
-          id
-          username
-        }
-        schedule {
-          name
+      schools{
+        complaints{
           id
           time
-          end_time,
-          route{
+          content
+          parent{
             id,
             name
-            students{
-              id
+          }
+        }
+        students {
+          id
+          names
+          gender
+          registration
+          class{
+            name,
+            teacher{
+              name
+            }
+          }
+          route {
+            id,
+            name
+          }
+          parent {
+            id,
+            national_id,
+            name
+          }
+          parent2 {
+            id,
+            national_id,
+            name
+          }
+        }
+        buses {
+          id,
+          plate
+          make
+          size
+          driver{
+            username
+          }
+        }
+        drivers {
+          id
+          username
+          email
+          phone
+          license_expiry
+          licence_number
+          home
+        }
+        parents {
+          id
+          national_id
+          name
+          gender
+          email
+          phone
+          students {
+            names
+            gender
+            route {
+              name
             }
           }
         }
-        startedAt,
-        isCancelled
-        completedAt
-        bus{
-          id,
-          make,
-          plate
-        }
-        driver{
-          id,
-          username
-        }
-        locReports{
+        teachers{
           id
-          time
-          loc{
+          national_id
+          name
+          gender
+          phone
+          email
+          classes{
+            name
+          }
+        }
+        classes {
+          id
+          name
+          students {
+            names
+            gender
+            route {
+              name
+            }
+          }
+          teacher{
+            id,
+            name
+          }
+        }
+        routes {
+          id
+          name
+          description
+          path {
             lat
             lng
           }
         }
-        events{
-          time,
-          type,
-          student{
+        schedules {
+          id
+          time
+          end_time
+          name
+          days
+          route {
             id,
-            names
+            name
+          },
+          bus{
+            id
+            make
+          }
+        },
+        trips {
+          id
+          driver{
+            id
+            username
+          }
+          schedule {
+            name
+            id
+            time
+            end_time,
+            route{
+              id,
+              name
+              students{
+                id
+              }
+            }
+          }
+          startedAt,
+          isCancelled
+          completedAt
+          bus{
+            id,
+            make,
+            plate
+          }
+          driver{
+            id,
+            username
+          }
+          locReports{
+            id
+            time
+            loc{
+              lat
+              lng
+            }
+          }
+          events{
+            time,
+            type,
+            student{
+              id,
+              names
+            }
           }
         }
-      }
-    }`).then(response => {
+    }
+  }`).then(response => {
       // let { students } = response
-      students = response.students.map(student => {
+      let { schools } = response
+
+      let school = schools[0]
+
+      students = school.students.map(student => {
 
         if (student.parent) {
           student.parent_name = student.parent.name;
@@ -239,25 +245,26 @@ var Data = (function () {
 
       subs.students({ students });
 
-      buses = response.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
+      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
       subs.buses({ buses });
 
-      parents = response.parents;
+      parents = school.parents;
       subs.parents({ parents });
 
-      teachers = response.teachers
+      teachers = school.teachers
       subs.teachers({ teachers });
 
-      classes = response.classes.map(Iclass => ({ ...Iclass, student_num : Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
+      console.log({school})
+      classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
       subs.classes({ classes });
 
-      routes = response.routes;
+      routes = school.routes;
       subs.routes({ routes });
 
-      drivers = response.drivers;
+      drivers = school.drivers;
       subs.drivers({ drivers });
 
-      schedules = response.schedules.map(schedule => {
+      schedules = school.schedules.map(schedule => {
         if (schedule.bus)
           schedule.bus_make = schedule.bus?.make
 
@@ -268,10 +275,10 @@ var Data = (function () {
       });
       subs.schedules({ schedules });
 
-      trips = response.trips;
+      trips = school.trips;
       subs.trips({ trips });
 
-      complaints = response.complaints;
+      complaints = school.complaints;
       subs.complaints({ complaints });
     });
   }
@@ -312,7 +319,7 @@ var Data = (function () {
     students: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { students : { create : { id }}} = await mutate(
+          const { students: { create: { id } } } = await mutate(
             `
           mutation ($Istudent: Istudent!) {
             students {
