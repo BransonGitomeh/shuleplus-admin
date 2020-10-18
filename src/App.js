@@ -17,8 +17,10 @@ import trip from "./pages/trip"
 import communications from "./pages/communications"
 
 import login from "./pages/auth/login";
-// import recover from "./pages/auth/recover";
-// import register from "./pages/auth/register";
+import website from "./pages/website";
+
+import recover from "./pages/auth/recover";
+import register from "./pages/auth/register";
 
 const PrivateRoute = ({ component: Component, ...rest }) => (
   <Route {...rest} render={(props) => (
@@ -31,7 +33,14 @@ const PrivateRoute = ({ component: Component, ...rest }) => (
 function App() {
   return (
     <HashRouter>
-      <Route exact path="/" component={login} />
+
+      {/* overal stuff */}
+      <Route exact path="/" component={website} />
+      <Route exact path="/register" component={register} />
+      <Route exact path="/recover" component={recover} />
+      <Route exact path="/auth" component={login} />
+
+     {/* main admin stuff */} 
       <PrivateRoute exact path="/home" component={home} />
       <PrivateRoute path="/students" component={students} />
       <PrivateRoute path="/student/:id" component={student} />
@@ -47,9 +56,16 @@ function App() {
       <PrivateRoute path="/reports/bus/:id" component={students} />
       <PrivateRoute path="/trips/:filter" component={trips} />
       <PrivateRoute path="/trip/:id" component={trip} />
-      {/* <Route exact path="/login" component={login} />
-        <Route exact path="/recover" component={recover} />
-        <Route exact path="/register" component={register} /> */}
+
+      {/* super admin routes */}
+
+
+
+      {/* teacher routes */}
+      
+
+
+      {/* 3rd party admin routes */}
     </HashRouter>
   );
 }

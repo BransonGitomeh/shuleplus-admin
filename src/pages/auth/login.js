@@ -47,7 +47,8 @@ class Login extends React.Component {
                         pathname: '/trips/all'
                     })
                 } catch (err) {
-                    if (!err.response.data)
+                    console.log({ err })
+                    if (!err.response && !err.response.data)
                         _this.setState({ error: err.message })
 
                     _this.setState({ error: err.response.data.message })
@@ -86,13 +87,11 @@ class Login extends React.Component {
                                             </div>
                                             {/*begin::Action*/}
                                             <div className="kt-login-v2__actions">
-                                                <a href="#" className="kt-link kt-link--brand">
-                                                    Forgot Password ?
-                                                </a>
+                                                <Link to="/recover" className="kt-link kt-link--brand">
+                                                    <span className="kt-menu__link-text">Forgot Password ?</span>
+                                                </Link>
                                                 <button type="submit" className="btn btn-brand btn-elevate btn-pill" >Sign In</button>
                                             </div>
-
-
 
                                             {/*end::Action*/}
                                         </form>
