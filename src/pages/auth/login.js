@@ -14,8 +14,18 @@ class Login extends React.Component {
         error: undefined
     }
     async FacebookLoginButton() {
-        console.log(`${process.env.API}/auth/facebook`)
-        fetch(`${process.env.API}/auth/facebook`);
+         /*global FB*/
+        FB.login(function (response) {
+            if (response.authResponse) {
+                alert('Welcome!  Fetching your information.... ');
+                /*global FB*/
+                FB.api('/me', function (response) {
+                    alert('Good to see you, ' + response.name + '.');
+                });
+            } else {
+                alert('User cancelled login or did not fully authorize.');
+            }
+        });
     }
     MicrosoftLoginButton() {
         alert("MicrosoftLoginButton")
@@ -33,7 +43,7 @@ class Login extends React.Component {
                 appId: process.env.FACEBOOK_API_KEY,
                 cookie: true,
                 xfbml: true,
-                version: 'Graph API v3.1'
+                // version: 'Graph API v3.1'
             });
 
             FB.AppEvents.logPageView();
