@@ -7,6 +7,7 @@ const KTOffcanvas = window.KTOffcanvas
 
 class Navbar extends React.Component {
   componentDidMount() {
+    console.log(localStorage.getItem("user"))
     // window.KTLayout.init();
     app.init()
 
@@ -273,10 +274,10 @@ class Navbar extends React.Component {
               </div>
               <div className="kt-user-card-v3__detalis">
                 <a href="#" className="kt-user-card-v3__name">
-                  Gathoni
+                  {JSON.parse(localStorage.getItem("user")).admin.user}
               </a>
                 <div className="kt-user-card-v3__desc">
-                  Project Manager
+                  {/* Project Manager */}
               </div>
                 <div className="kt-user-card-v3__info">
                   <a href="#" className="kt-user-card-v3__item">

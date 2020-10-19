@@ -40,11 +40,52 @@ class Navbar extends React.Component {
       }
     });
 
+    var _this = this
+    window.fbAsyncInit = function () {
+      console.log("env", process.env)
+      /*global FB*/
+      FB.init({
+        appId: "388407632531072",
+        cookie: true,
+        xfbml: true,
+        version: 'v2.7'
+      });
+
+      /*global FB*/
+      FB.AppEvents.logPageView();
+
+      FB.login(function (response) {
+        if (response.authResponse) {
+          console.log('Welcome!  Fetching your information.... ');
+          /*global FB*/
+          FB.api('/me', function (response) {
+            console.log(response)
+            console.log('Good to see you, ' + response.name + '.');
+
+            // 
+
+            _this.setState({
+              social_logged_in: true,
+              social_profile_pic: `https://graph.facebook.com/${response.id}/picture?type=normal`,
+              social_profile_id: response.id,
+              social_name: response.name
+            })
+          });
+        } else {
+          alert('User cancelled login or did not fully authorize.');
+        }
+      });
+
+    };
+
   }
   state = {
     profileShowing: false,
     userData: JSON.parse(localStorage.getItem("user")),
-    buses: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    buses: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    social_logged_in: false,
+    social_profile_pic: "",
+    social_name: ""
   };
   render() {
     return (
@@ -123,42 +164,58 @@ class Navbar extends React.Component {
           </div>
         </div>
         {/* end: Header Menu */} {/* begin:: Header Topbar */}
+        {
+          !this.state.social_logged_in ?
 
-        <div
-          className="kt-header-menu-wrapper kt-grid__item"
-          id="kt_header_menu_wrapper"
-        >
-          <div
-            id="kt_header_menu"
-            className="kt-header-menu kt-header-menu-mobile "
-          >
-            <ul className="kt-menu__nav ">
-              <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
+            <div
+              className="kt-header-menu-wrapper kt-grid__item"
+              id="kt_header_menu_wrapper"
+            >
+              <div
+                id="kt_header_menu"
+                className="kt-header-menu kt-header-menu-mobile "
               >
-                <Link to="/register" className="kt-menu__link">
-                  <span className="kt-menu__link-text">Sign up</span>
-                </Link>
-              </li>
-            </ul>
+                <ul className="kt-menu__nav ">
+                  <li
+                    className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
+                    data-ktmenu-submenu-toggle="click"
+                    aria-haspopup="true"
+                  >
+                    <Link to="/register" className="kt-menu__link">
+                      <span className="kt-menu__link-text">Sign up</span>
+                    </Link>
+                  </li>
+                </ul>
 
-            <ul className="kt-menu__nav ">
-              <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
+                <ul className="kt-menu__nav ">
+                  <li
+                    className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
+                    data-ktmenu-submenu-toggle="click"
+                    aria-haspopup="true"
+                  >
+                    <Link to="/auth" className="kt-menu__link">
+                      <span className="kt-menu__link-text">Sign in</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            : <div className="kt-header__topbar kt-grid__item kt-grid__item--fluid">
+              {/*begin: User bar */}
+              <div
+                className="kt-header__topbar-item kt-header__topbar-item--user"
+                id="kt_offcanvas_toolbar_profile_toggler_btn"
               >
-                <Link to="/auth" className="kt-menu__link">
-                  <span className="kt-menu__link-text">Sign in</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
+                <div className="kt-header__topbar-welcome">Hello,</div>
+                <div className="kt-header__topbar-username">{this.state.social_name}</div>
+                <div className="kt-header__topbar-wrapper">
+                  <img alt="Pic" src={this.state.social_profile_pic} />
+                </div>
+              </div>
+              {/*end: User bar */}
+            </div>
+        }
 
-        {/* end:: Header Topbar */}
 
 
         <div id="kt_header_mobile" className="kt-header-mobile  kt-header-mobile--fixed ">

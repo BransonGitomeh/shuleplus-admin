@@ -11,33 +11,42 @@ class Login extends React.Component {
     state = {
         user: "",
         password: "",
+        social_logged_in: false,
         error: undefined
     }
-    async FacebookLoginButton() {
+    async FacebookLogin() {
+        var _this = this
         /*global FB*/
         FB.login(function (response) {
             if (response.authResponse) {
                 console.log('Welcome!  Fetching your information.... ');
                 /*global FB*/
                 FB.api('/me', function (response) {
+                    console.log(response)
                     console.log('Good to see you, ' + response.name + '.');
+
+                    _this.setState({
+                        social_logged_in: true,
+                        social_profile_pic: ""
+                    })
                 });
             } else {
                 alert('User cancelled login or did not fully authorize.');
             }
         });
     }
-    MicrosoftLoginButton() {
+    MicrosoftLogin() {
         alert("MicrosoftLoginButton")
     }
-    GoogleLoginButton() {
+    GoogleLogin() {
 
         alert("GoogleLoginButton")
     }
-    TwitterLoginButton() {
+    TwitterLogin() {
         alert("TwitterLoginButton")
     }
     componentDidMount() {
+        var _this = this
         window.fbAsyncInit = function () {
             console.log("env", process.env)
             /*global FB*/
@@ -45,16 +54,34 @@ class Login extends React.Component {
                 appId: "388407632531072",
                 cookie: true,
                 xfbml: true,
-                version: 'v3.1'
+                version: 'v2.7'
             });
 
             /*global FB*/
             FB.AppEvents.logPageView();
 
+            FB.login(function (response) {
+                if (response.authResponse) {
+                    console.log('Welcome!  Fetching your information.... ');
+                    /*global FB*/
+                    FB.api('/me', function (response) {
+                        console.log(response)
+                        console.log('Good to see you, ' + response.name + '.');
+
+                        _this.setState({
+                            social_logged_in: true,
+                            social_profile_pic: ""
+                        })
+                    });
+                } else {
+                    alert('User cancelled login or did not fully authorize.');
+                }
+            });
+
         };
 
 
-        const _this = this;
+        
         this.validator = window.$("#login").validate({
             errorClass: "invalid-feedback",
             errorElement: "div",
@@ -114,9 +141,9 @@ class Login extends React.Component {
                                     <div className="row h-100 justify-content-center align-items-center">
                                         <form className="col-12">
                                             <div className="form-group">
-                                                <FacebookLoginButton onClick={() => this.FacebookLoginButton()} />
+                                                <FacebookLoginButton onClick={() => this.FacebookLogin()} />
                                             </div>
-                                            <div className="form-group">
+                                            {/* <div className="form-group">
                                                 <MicrosoftLoginButton onClick={() => this.MicrosoftLoginButton()} />
                                             </div>
 
@@ -126,7 +153,7 @@ class Login extends React.Component {
 
                                             <div className="form-group">
                                                 <TwitterLoginButton onClick={() => this.TwitterLoginButton()} />
-                                            </div>
+                                            </div> */}
                                         </form>
                                     </div>
                                 </div>;
