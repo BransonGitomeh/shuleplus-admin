@@ -14,7 +14,7 @@ class Login extends React.Component {
         error: undefined
     }
     async FacebookLoginButton() {
-         /*global FB*/
+        /*global FB*/
         FB.login(function (response) {
             if (response.authResponse) {
                 alert('Welcome!  Fetching your information.... ');
@@ -37,18 +37,19 @@ class Login extends React.Component {
         alert("MicrosoftLo`ginButton")
     }
     componentDidMount() {
-        window.fbAsyncInit = function () {
-            /*global FB*/
-            FB.init({
-                appId: process.env.FACEBOOK_API_KEY,
-                cookie: true,
-                xfbml: true,
-                version: 'v3.1'
-            });
+        // window.fbAsyncInit = function () {
+        console.log("env", process.env)
+        /*global FB*/
+        FB.init({
+            appId: process.env.FACEBOOK_API_KEY,
+            cookie: true,
+            xfbml: true,
+            version: 'v3.1'
+        });
 
-            FB.AppEvents.logPageView();
+        FB.AppEvents.logPageView();
 
-        };
+        // };
 
 
         const _this = this;
