@@ -15,17 +15,17 @@ class Login extends React.Component {
     }
     async FacebookLoginButton() {
         /*global FB*/
-        // FB.login(function (response) {
-        //     if (response.authResponse) {
-        //         alert('Welcome!  Fetching your information.... ');
-        //         /*global FB*/
-        //         FB.api('/me', function (response) {
-        //             alert('Good to see you, ' + response.name + '.');
-        //         });
-        //     } else {
-        //         alert('User cancelled login or did not fully authorize.');
-        //     }
-        // });
+        FB.login(function (response) {
+            if (response.authResponse) {
+                console.log('Welcome!  Fetching your information.... ');
+                /*global FB*/
+                FB.api('/me', function (response) {
+                    console.log('Good to see you, ' + response.name + '.');
+                });
+            } else {
+                alert('User cancelled login or did not fully authorize.');
+            }
+        });
     }
     MicrosoftLoginButton() {
         alert("MicrosoftLoginButton")
@@ -37,63 +37,63 @@ class Login extends React.Component {
         alert("MicrosoftLo`ginButton")
     }
     componentDidMount() {
-        // window.fbAsyncInit = function () {
-        console.log("env", process.env)
-        /*global FB*/
-        // FB.init({
-        //     appId: process.env.FACEBOOK_API_KEY,
-        //     cookie: true,
-        //     xfbml: true,
-        //     version: 'v3.1'
+        window.fbAsyncInit = function () {
+            console.log("env", process.env)
+            /*global FB*/
+            FB.init({
+                appId: "388407632531072",
+                cookie: true,
+                xfbml: true,
+                version: 'v3.1'
+            });
+
+            /*global FB*/
+            FB.AppEvents.logPageView();
+
+        };
+
+
+        // const _this = this;
+        // this.validator = $("#login").validate({
+        //     errorClass: "invalid-feedback",
+        //     errorElement: "div",
+
+        //     highlight: function (element) {
+        //         $(element).addClass("is-invalid");
+        //     },
+
+        //     unhighlight: function (element) {
+        //         $(element).removeClass("is-invalid");
+        //     },
+
+        //     async submitHandler(form, event) {
+        //         event.preventDefault();
+        //         try {
+        //             const { user, password } = _this.state
+        //             const res = await axios.post(`${API}/auth/login`, {
+        //                 user,
+        //                 password,
+        //             })
+
+        //             const { data: { token, data } } = res
+
+        //             localStorage.setItem("authorization", token)
+        //             localStorage.setItem("user", JSON.stringify(data))
+
+        //             Data.init()
+
+        //             return _this.props.history.push({
+        //                 pathname: '/trips/all'
+        //             })
+        //         } catch (err) {
+        //             console.log({ err })
+        //             if (!err.response && !err.response.data)
+        //                 _this.setState({ error: err.message })
+
+        //             _this.setState({ error: err.response.data.message })
+        //         }
+        //     }
         // });
-
-        /*global FB*/
-        // FB.AppEvents.logPageView();
-
-        // };
-
-
-        const _this = this;
-    //     this.validator = $("#login").validate({
-    //         errorClass: "invalid-feedback",
-    //         errorElement: "div",
-
-    //         highlight: function (element) {
-    //             $(element).addClass("is-invalid");
-    //         },
-
-    //         unhighlight: function (element) {
-    //             $(element).removeClass("is-invalid");
-    //         },
-
-    //         async submitHandler(form, event) {
-    //             event.preventDefault();
-    //             try {
-    //                 const { user, password } = _this.state
-    //                 const res = await axios.post(`${API}/auth/login`, {
-    //                     user,
-    //                     password,
-    //                 })
-
-    //                 const { data: { token, data } } = res
-
-    //                 localStorage.setItem("authorization", token)
-    //                 localStorage.setItem("user", JSON.stringify(data))
-
-    //                 Data.init()
-
-    //                 return _this.props.history.push({
-    //                     pathname: '/trips/all'
-    //                 })
-    //             } catch (err) {
-    //                 console.log({ err })
-    //                 if (!err.response && !err.response.data)
-    //                     _this.setState({ error: err.message })
-
-    //                 _this.setState({ error: err.response.data.message })
-    //             }
-    //         }
-    //     });
     }
     render() {
         return (
@@ -129,10 +129,10 @@ class Login extends React.Component {
                                 </div>; */}
                                 <div className="container h-100" style={{ "marginTop": "20vh" }}>
                                     <div className="row h-100 justify-content-center align-items-center">
-                                        <form id="login" className="col-12">
+                                        <form className="col-12">
                                             <div className="form-group">
-                                                {/* <FacebookLoginButton onClick={() => this.FacebookLoginButton()} /> */}
-                                                <div
+                                                <FacebookLoginButton onClick={() => this.FacebookLoginButton()} />
+                                                {/* <div
                                                     className="fb-login-button"
                                                     data-size="large"
                                                     data-button-type="continue_with"
@@ -140,7 +140,7 @@ class Login extends React.Component {
                                                     data-auto-logout-link="false"
                                                     data-use-continue-as="false"
                                                     data-width
-                                                />;
+                                                />; */}
 
                                             </div>
                                             <div className="form-group">
