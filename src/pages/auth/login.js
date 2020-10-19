@@ -43,7 +43,7 @@ class Login extends React.Component {
                 appId: process.env.FACEBOOK_API_KEY,
                 cookie: true,
                 xfbml: true,
-                // version: 'Graph API v3.1'
+                version: 'v3.1'
             });
 
             FB.AppEvents.logPageView();
