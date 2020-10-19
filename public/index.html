@@ -1,142 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <base href="../" />
-    <!--end::Base Path -->
-    <meta charset="utf-8" />
 
-    <meta name="description" content="Latest updates and statistic charts" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <!-- <link rel="manifest" href="%PUBLIC_URL%/manifest.json" / -->
+<head>
+  <base href="../" />
+  <!--end::Base Path -->
+  <meta charset="utf-8" />
 
-    <!--begin::Fonts -->
-    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.16/webfont.js"></script>
-    <script src="%PUBLIC_URL%//vendors/global/css/bootstrap-social-gh-pages/bootstrap-social.css"></script>
-    <script src="%PUBLIC_URL%/pace.js"></script>
-    <script>
-      WebFont.load({
-        google: {
-          families: [
-            "Poppins:300,400,500,600,700",
-            "Raleway:300,400,500,600,700"
-          ]
+  <meta name="description" content="Latest updates and statistic charts" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- <link rel="manifest" href="%PUBLIC_URL%/manifest.json" / -->
+
+  <!--begin::Fonts -->
+  <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.16/webfont.js"></script>
+  <script src="%PUBLIC_URL%/vendors/global/css/bootstrap-social-gh-pages/bootstrap-social.css"></script>
+  <script src="%PUBLIC_URL%/pace.js"></script>
+  <script>
+    WebFont.load({
+      google: {
+        families: [
+          "Poppins:300,400,500,600,700",
+          "Raleway:300,400,500,600,700"
+        ]
+      },
+      active: function () {
+        sessionStorage.fonts = true;
+      }
+    });
+  </script>
+  <!--end::Fonts -->
+
+  <!--begin::Page Vendors Styles(used by this page) -->
+  <link href="%PUBLIC_URL%/assets/vendors/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet"
+    type="text/css" />
+  <!--end::Page Vendors Styles -->
+  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+    type="text/css">
+
+  <!--begin::Global Theme Styles(used by all pages) -->
+  <link href="%PUBLIC_URL%/assets/vendors/global/vendors.bundle.css" rel="stylesheet" type="text/css" />
+  <link href="%PUBLIC_URL%/assets/css/demo5/style.bundle.css" rel="stylesheet" type="text/css" />
+  <!--end::Global Theme Styles -->
+
+  <!--begin::Layout Skins(used by all pages) -->
+
+  <link href="%PUBLIC_URL%/assets/css/demo5/skins/header/navy.css" rel="stylesheet" type="text/css" />
+  <!--end::Layout Skins -->
+
+  <link rel="shortcut icon" href="%PUBLIC_URL%/assets/media/logos/favicon.ico" />
+  <title>SmartKids Admin</title>
+</head>
+
+<!-- begin::Body -->
+
+<body
+  class="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default">
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root" class="kt-grid kt-grid--hor kt-grid--root"></div>
+
+  <!-- begin::Global Config(global config for global JS sciprts) -->
+  <script>
+    var KTAppOptions = {
+      colors: {
+        state: {
+          brand: "#1cac81",
+          metal: "#c4c5d6",
+          light: "#ffffff",
+          accent: "#00c5dc",
+          primary: "#5867dd",
+          success: "#34bfa3",
+          info: "#36a3f7",
+          warning: "#ffb822",
+          danger: "#fd3995",
+          focus: "#9816f4"
         },
-        active: function() {
-          sessionStorage.fonts = true;
+        base: {
+          label: ["#b9bdc1", "#aeb2b7", "#414b4c", "#343d3e"],
+          shape: ["#eef4f3", "#e0e9e6", "#80c3af", "#41675c"]
         }
-      });
-    </script>
-    <!--end::Fonts -->
+      }
+    };
+  </script>
 
-    <!--begin::Page Vendors Styles(used by this page) -->
-    <link
-      href="%PUBLIC_URL%/assets/vendors/custom/fullcalendar/fullcalendar.bundle.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <!--end::Page Vendors Styles -->
-    <link 
-    href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" 
-    rel="stylesheet"
-    type="text/css"
-    >
+  <script src="%PUBLIC_URL%/assets/vendors/global/vendors.bundle.js" type="text/javascript"></script>
+  <script src="%PUBLIC_URL%/assets/js/demo5/scripts.bundle.js" type="text/javascript"></script>
+  <!--end::Global Theme Bundle -->
 
-    <!--begin::Global Theme Styles(used by all pages) -->
-    <link
-      href="%PUBLIC_URL%/assets/vendors/global/vendors.bundle.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <link
-      href="%PUBLIC_URL%/assets/css/demo5/style.bundle.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <!--end::Global Theme Styles -->
+  <!--begin::Page Vendors(used by this page) -->
+  <script src="%PUBLIC_URL%/assets/vendors/custom/fullcalendar/fullcalendar.bundle.js" type="text/javascript"></script>
+  <!--end::Page Vendors -->
 
-    <!--begin::Layout Skins(used by all pages) -->
+  <!--begin::Page Scripts(used by this page) -->
+  <script src="%PUBLIC_URL%/assets/js/demo1/pages/dashboard.js" type="text/javascript"></script>
+  <!--end::Page Scripts -->
 
-    <link
-      href="%PUBLIC_URL%/assets/css/demo5/skins/header/navy.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <!--end::Layout Skins -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.1/dist/jquery.validate.min.js"></script>
 
-    <link
-      rel="shortcut icon"
-      href="%PUBLIC_URL%/assets/media/logos/favicon.ico"
-    />
-    <title>SmartKids Admin</title>
-  </head>
+  <script src="%PUBLIC_URL%/assets/js/demo1/pages/components/extended/toastr.js" type="text/javascript"></script>
 
-  <!-- begin::Body -->
-  <body
-    class="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default"
-  >
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root" class="kt-grid kt-grid--hor kt-grid--root"></div>
 
-    <!-- begin::Global Config(global config for global JS sciprts) -->
-    <script>
-      var KTAppOptions = {
-        colors: {
-          state: {
-            brand: "#1cac81",
-            metal: "#c4c5d6",
-            light: "#ffffff",
-            accent: "#00c5dc",
-            primary: "#5867dd",
-            success: "#34bfa3",
-            info: "#36a3f7",
-            warning: "#ffb822",
-            danger: "#fd3995",
-            focus: "#9816f4"
-          },
-          base: {
-            label: ["#b9bdc1", "#aeb2b7", "#414b4c", "#343d3e"],
-            shape: ["#eef4f3", "#e0e9e6", "#80c3af", "#41675c"]
-          }
-        }
-      };
-    </script>
 
-    <script
-      src="%PUBLIC_URL%/assets/vendors/global/vendors.bundle.js"
-      type="text/javascript"
-    ></script>
-    <script
-      src="%PUBLIC_URL%/assets/js/demo5/scripts.bundle.js"
-      type="text/javascript"
-    ></script>
-    <!--end::Global Theme Bundle -->
+  <script>
+    
 
-    <!--begin::Page Vendors(used by this page) -->
-    <script
-      src="%PUBLIC_URL%/assets/vendors/custom/fullcalendar/fullcalendar.bundle.js"
-      type="text/javascript"
-    ></script>
-    <!--end::Page Vendors -->
+    (function (d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) { return; }
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  </script>
 
-    <!--begin::Page Scripts(used by this page) -->
-    <script
-      src="%PUBLIC_URL%/assets/js/demo1/pages/dashboard.js"
-      type="text/javascript"
-    ></script>
-    <!--end::Page Scripts -->
+  <script>
+    window.env = {
+      API="localhost:4000"
+    }
+  </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.1/dist/jquery.validate.min.js"></script>
+  <script src="/keen/themes/keen/theme/demo5/dist/assets/js/pages/components/forms/widgets/bootstrap-timepicker.js"
+    type="text/javascript"></script>
+</body>
+<!-- end::Body -->
 
-    <script
-      src="%PUBLIC_URL%/assets/js/demo1/pages/components/extended/toastr.js"
-      type="text/javascript"
-    ></script>
-
-    <script src="/keen/themes/keen/theme/demo5/dist/assets/js/pages/components/forms/widgets/bootstrap-timepicker.js" type="text/javascript"></script>
-  </body>
-  <!-- end::Body -->
 </html>

@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import axios from "axios"
 import { API } from "../../utils/requests"
 import Data from "../../utils/data"
-
-const $ = window.$;
+import { FacebookLoginButton, MicrosoftLoginButton, GoogleLoginButton, TwitterLoginButton } from "react-social-login-buttons";
+import $ from 'jquery'
 
 class Login extends React.Component {
     state = {
@@ -13,7 +13,34 @@ class Login extends React.Component {
         password: "",
         error: undefined
     }
+    async FacebookLoginButton() {
+        console.log(`${process.env.API}/auth/facebook`)
+        fetch(`${process.env.API}/auth/facebook`);
+    }
+    MicrosoftLoginButton() {
+        alert("MicrosoftLoginButton")
+    }
+    GoogleLoginButton() {
+        alert("MicrosoftLoginButton")
+    }
+    TwitterLoginButton() {
+        alert("MicrosoftLo`ginButton")
+    }
     componentDidMount() {
+        window.fbAsyncInit = function () {
+            /*global FB*/
+            FB.init({
+                appId: process.env.FACEBOOK_API_KEY,
+                cookie: true,
+                xfbml: true,
+                version: 'Graph API v3.1'
+            });
+
+            FB.AppEvents.logPageView();
+
+        };
+
+
         const _this = this;
         this.validator = $("#login").validate({
             errorClass: "invalid-feedback",
@@ -59,14 +86,73 @@ class Login extends React.Component {
     render() {
         return (
             <div>
+
                 {/* begin:: Page */}
                 <div className="kt-grid kt-grid--ver kt-grid--root">
                     <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
                         {/*begin::Item*/}
                         <div className="kt-grid__item  kt-grid  kt-grid--ver  kt-grid__item--fluid">
                             {/*begin::Body*/}
+                            <div className="kt-login-v2__body" style={{
+                                display: "flex"
+                            }}>
+
+
+                                {/* <div id="container">
+
+                                    <div className="box" id="bluebox">
+                                        <FacebookLoginButton onClick={() => alert("Hello")} />
+                                    </div>
+                                    <div className="box" id="redbox">
+                                        <MicrosoftLoginButton onClick={() => alert("Hello")} />
+                                    </div>
+                                    <div className="box" id="redbox">
+                                        <GoogleLoginButton onClick={() => alert("Hello")} />
+                                    </div>
+
+                                    <div className="box" id="redbox">
+                                        <TwitterLoginButton onClick={() => alert("Hello")} />
+                                    </div>
+
+                                </div>; */}
+                                <div className="container h-100" style={{ "marginTop": "20vh" }}>
+                                    <div className="row h-100 justify-content-center align-items-center">
+                                        <form className="col-12">
+                                            <div className="form-group">
+                                                <FacebookLoginButton onClick={() => this.FacebookLoginButton()} />
+                                            </div>
+                                            <div className="form-group">
+                                                <MicrosoftLoginButton onClick={() => this.MicrosoftLoginButton()} />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <GoogleLoginButton onClick={() => this.GoogleLoginButton()} />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <TwitterLoginButton onClick={() => this.TwitterLoginButton()} />
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>;
+
+
+
+                                {/*  */}
+                            </div>
+
+                            {/*end::Wrapper*/}
+                            {/* </div> */}
+                            {/*begin::Body*/}
+                        </div>
+                        {/*end::Item*/}
+
+                    </div>
+                    <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
+                        {/*begin::Item*/}
+                        <div className="kt-grid__item  kt-grid  kt-grid--ver  kt-grid__item--fluid">
+                            {/*begin::Body*/}
                             <div className="kt-login-v2__body">
-                                {/*begin::Wrapper*/}
                                 <div className="kt-login-v2__wrapper">
                                     <div className="kt-login-v2__container" style={{ "marginTop": "20vh" }}>
                                         <div className="kt-login-v2__title">
@@ -100,13 +186,16 @@ class Login extends React.Component {
                                         {/*end::Options*/}
                                     </div>
                                 </div>
-                                {/*end::Wrapper*/}
                             </div>
+
+                            {/*end::Wrapper*/}
+                            {/* </div> */}
                             {/*begin::Body*/}
                         </div>
                         {/*end::Item*/}
 
-                    </div>	</div>
+                    </div>
+                </div>
                 {/* end:: Page */}
                 {/* begin:: Aside */}
                 <div className="kt-aside  kt-aside--fixed " id="kt_aside">

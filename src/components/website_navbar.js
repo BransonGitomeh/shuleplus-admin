@@ -43,6 +43,7 @@ class Navbar extends React.Component {
   }
   state = {
     profileShowing: false,
+    userData: JSON.parse(localStorage.getItem("user")),
     buses: [1, 2, 3, 4, 5, 6, 7, 8, 9]
   };
   render() {
@@ -135,7 +136,7 @@ class Navbar extends React.Component {
               <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"  
+                aria-haspopup="true"
               >
                 <Link to="/register" className="kt-menu__link">
                   <span className="kt-menu__link-text">Sign up</span>
@@ -147,7 +148,7 @@ class Navbar extends React.Component {
               <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"  
+                aria-haspopup="true"
               >
                 <Link to="/auth" className="kt-menu__link">
                   <span className="kt-menu__link-text">Sign in</span>
@@ -194,11 +195,11 @@ class Navbar extends React.Component {
               </div>
               <div className="kt-user-card-v3__detalis">
                 <a href="#" className="kt-user-card-v3__name">
-                  Gathoni
-              </a>
+                  {/* {this.state.userData[Object.keys(this.state.userData)[0]].user} */}
+                </a>
                 <div className="kt-user-card-v3__desc">
-                  Project Manager
-              </div>
+                  {/* {Object.keys(this.state.userData)[0]} */}
+                </div>
                 <div className="kt-user-card-v3__info">
                   <a href="#" className="kt-user-card-v3__item">
                     <i className="flaticon-email-black-circular-button kt-font-brand" />
@@ -209,6 +210,8 @@ class Navbar extends React.Component {
                     <span className="kt-user-card-v3__tag">@gathoni</span>
                   </a>
                 </div>
+
+                <button type="button" className="btn btn-brand btn-elevate btn-pill" >Sign out</button>
               </div>
             </div>
             <div className="ps__rail-x" style={{ left: '0px', bottom: '0px' }}><div className="ps__thumb-x" tabIndex={0} style={{ left: '0px', width: '0px' }} /></div><div className="ps__rail-y" style={{ top: '0px', height: '500px', right: '0px' }}><div className="ps__thumb-y" tabIndex={0} style={{ top: '0px', height: '300px' }} /></div></div>
