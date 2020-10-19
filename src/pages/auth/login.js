@@ -5,7 +5,7 @@ import axios from "axios"
 import { API } from "../../utils/requests"
 import Data from "../../utils/data"
 import { FacebookLoginButton, MicrosoftLoginButton, GoogleLoginButton, TwitterLoginButton } from "react-social-login-buttons";
-import $ from 'jquery'
+// import $ from 'jquery'
 
 class Login extends React.Component {
     state = {
@@ -31,10 +31,11 @@ class Login extends React.Component {
         alert("MicrosoftLoginButton")
     }
     GoogleLoginButton() {
-        alert("MicrosoftLoginButton")
+
+        alert("GoogleLoginButton")
     }
     TwitterLoginButton() {
-        alert("MicrosoftLo`ginButton")
+        alert("TwitterLoginButton")
     }
     componentDidMount() {
         window.fbAsyncInit = function () {
@@ -53,47 +54,47 @@ class Login extends React.Component {
         };
 
 
-        // const _this = this;
-        // this.validator = $("#login").validate({
-        //     errorClass: "invalid-feedback",
-        //     errorElement: "div",
+        const _this = this;
+        this.validator = window.$("#login").validate({
+            errorClass: "invalid-feedback",
+            errorElement: "div",
 
-        //     highlight: function (element) {
-        //         $(element).addClass("is-invalid");
-        //     },
+            highlight: function (element) {
+                window.$(element).addClass("is-invalid");
+            },
 
-        //     unhighlight: function (element) {
-        //         $(element).removeClass("is-invalid");
-        //     },
+            unhighlight: function (element) {
+                window.$(element).removeClass("is-invalid");
+            },
 
-        //     async submitHandler(form, event) {
-        //         event.preventDefault();
-        //         try {
-        //             const { user, password } = _this.state
-        //             const res = await axios.post(`${API}/auth/login`, {
-        //                 user,
-        //                 password,
-        //             })
+            async submitHandler(form, event) {
+                event.preventDefault();
+                try {
+                    const { user, password } = _this.state
+                    const res = await axios.post(`${API}/auth/login`, {
+                        user,
+                        password,
+                    })
 
-        //             const { data: { token, data } } = res
+                    const { data: { token, data } } = res
 
-        //             localStorage.setItem("authorization", token)
-        //             localStorage.setItem("user", JSON.stringify(data))
+                    localStorage.setItem("authorization", token)
+                    localStorage.setItem("user", JSON.stringify(data))
 
-        //             Data.init()
+                    Data.init()
 
-        //             return _this.props.history.push({
-        //                 pathname: '/trips/all'
-        //             })
-        //         } catch (err) {
-        //             console.log({ err })
-        //             if (!err.response && !err.response.data)
-        //                 _this.setState({ error: err.message })
+                    return _this.props.history.push({
+                        pathname: '/trips/all'
+                    })
+                } catch (err) {
+                    console.log({ err })
+                    if (!err.response && !err.response.data)
+                        _this.setState({ error: err.message })
 
-        //             _this.setState({ error: err.response.data.message })
-        //         }
-        //     }
-        // });
+                    _this.setState({ error: err.response.data.message })
+                }
+            }
+        });
     }
     render() {
         return (
@@ -109,39 +110,11 @@ class Login extends React.Component {
                                 display: "flex"
                             }}>
 
-
-                                {/* <div id="container">
-
-                                    <div className="box" id="bluebox">
-                                        <FacebookLoginButton onClick={() => alert("Hello")} />
-                                    </div>
-                                    <div className="box" id="redbox">
-                                        <MicrosoftLoginButton onClick={() => alert("Hello")} />
-                                    </div>
-                                    <div className="box" id="redbox">
-                                        <GoogleLoginButton onClick={() => alert("Hello")} />
-                                    </div>
-
-                                    <div className="box" id="redbox">
-                                        <TwitterLoginButton onClick={() => alert("Hello")} />
-                                    </div>
-
-                                </div>; */}
                                 <div className="container h-100" style={{ "marginTop": "20vh" }}>
                                     <div className="row h-100 justify-content-center align-items-center">
                                         <form className="col-12">
                                             <div className="form-group">
                                                 <FacebookLoginButton onClick={() => this.FacebookLoginButton()} />
-                                                {/* <div
-                                                    className="fb-login-button"
-                                                    data-size="large"
-                                                    data-button-type="continue_with"
-                                                    data-layout="default"
-                                                    data-auto-logout-link="false"
-                                                    data-use-continue-as="false"
-                                                    data-width
-                                                />; */}
-
                                             </div>
                                             <div className="form-group">
                                                 <MicrosoftLoginButton onClick={() => this.MicrosoftLoginButton()} />

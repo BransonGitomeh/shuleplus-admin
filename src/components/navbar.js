@@ -287,10 +287,22 @@ class Navbar extends React.Component {
                     <i className="flaticon-twitter-logo-button kt-font-success" />
                     <span className="kt-user-card-v3__tag">@gathoni</span>
                   </a>
+                  <a href="#" className="kt-user-card-v3__item">
+
+                    <span className="kt-user-card-v3__tag"><button
+                      className="btn btn-outline-brand"
+                      type="button"
+                      onClick={() => localStorage.clear()}
+                    >
+                      Log Out
+          </button>
+                    </span>
+                  </a>
                 </div>
               </div>
             </div>
             <div className="ps__rail-x" style={{ left: '0px', bottom: '0px' }}><div className="ps__thumb-x" tabIndex={0} style={{ left: '0px', width: '0px' }} /></div><div className="ps__rail-y" style={{ top: '0px', height: '500px', right: '0px' }}><div className="ps__thumb-y" tabIndex={0} style={{ top: '0px', height: '300px' }} /></div></div>
+
         </div>
       </div>
     );

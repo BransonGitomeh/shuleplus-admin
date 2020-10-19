@@ -217,6 +217,7 @@ var Data = (function () {
         }
     }
   }`).then(response => {
+      console.log(response)
       // let { students } = response
       let { schools } = response
 
@@ -254,7 +255,7 @@ var Data = (function () {
       teachers = school.teachers
       subs.teachers({ teachers });
 
-      console.log({school})
+      console.log({ school })
       classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
       subs.classes({ classes });
 
@@ -283,7 +284,9 @@ var Data = (function () {
     });
   }
 
-  init()
+  if (localStorage.getItem('authorization'))
+    init()
+
 
   function createInstance() {
     // eslint-disable-next-line no-new-object

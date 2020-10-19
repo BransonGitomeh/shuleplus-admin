@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, HashRouter, Redirect } from "react-router-dom";
+import { Route, HashRouter, useHistory, Redirect } from "react-router-dom";
 
 import home from "./pages/home";
 import students from "./pages/students";
@@ -30,17 +30,33 @@ const PrivateRoute = ({ component: Component, ...rest }) => (
   )} />
 )
 
-function App() {
-  return (
-    <HashRouter>
+function CheckAuth() {
+  let history = useHistory();
+  if (localStorage.getItem("authorization")) {
+    history.push('/home');
+  } else {
+    history.push('/')
+  }
 
+  return (<></>)
+}
+
+class App extends React.Component {
+  componentDidMount() {
+
+  }
+
+  render() {
+
+    return (<HashRouter>
+      <CheckAuth />
       {/* overal stuff */}
       <Route exact path="/" component={website} />
       <Route exact path="/register" component={register} />
       <Route exact path="/recover" component={recover} />
       <Route exact path="/auth" component={login} />
 
-     {/* main admin stuff */} 
+      {/* main admin stuff */}
       <PrivateRoute exact path="/home" component={home} />
       <PrivateRoute path="/students" component={students} />
       <PrivateRoute path="/student/:id" component={student} />
@@ -62,12 +78,13 @@ function App() {
 
 
       {/* teacher routes */}
-      
+
 
 
       {/* 3rd party admin routes */}
-    </HashRouter>
-  );
+    </HashRouter>)
+
+  }
 }
 
 export default App;
