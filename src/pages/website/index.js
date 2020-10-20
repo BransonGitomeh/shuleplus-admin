@@ -8,6 +8,8 @@ import Data from "../../utils/data"
 import Navbar from "../../components/website_navbar";
 import Subheader from "../../components/subheader";
 
+import Page from "./center_page"
+
 const $ = window.$;
 
 class Login extends React.Component {
@@ -76,6 +78,7 @@ class Login extends React.Component {
                     >
                         <div className="kt-container  kt-grid__item kt-grid__item--fluid">
                             {/* <List id={this.props.match.params.id} /> */}
+                            <Page/>
                         </div>
                     </div>
                 </div>

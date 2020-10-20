@@ -27,7 +27,9 @@ class Login extends React.Component {
 
                     _this.setState({
                         social_logged_in: true,
-                        social_profile_pic: ""
+                        social_profile_pic: `https://graph.facebook.com/${response.id}/picture?type=normal`,
+                        social_profile_id: response.id,
+                        social_name: response.name
                     })
                 });
             } else {
@@ -60,28 +62,10 @@ class Login extends React.Component {
             /*global FB*/
             FB.AppEvents.logPageView();
 
-            FB.login(function (response) {
-                if (response.authResponse) {
-                    console.log('Welcome!  Fetching your information.... ');
-                    /*global FB*/
-                    FB.api('/me', function (response) {
-                        console.log(response)
-                        console.log('Good to see you, ' + response.name + '.');
-
-                        _this.setState({
-                            social_logged_in: true,
-                            social_profile_pic: ""
-                        })
-                    });
-                } else {
-                    alert('User cancelled login or did not fully authorize.');
-                }
-            });
-
         };
 
 
-        
+
         this.validator = window.$("#login").validate({
             errorClass: "invalid-feedback",
             errorElement: "div",
