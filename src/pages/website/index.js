@@ -69,18 +69,7 @@ class Login extends React.Component {
                     id="kt_wrapper"
                 >
                     <Navbar />
-                    {/* <Subheader links={["Students", "Details"]} /> */}
-
-                    <div
-                        className="kt-content  kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor"
-                        style={{ height: "100vh" }}
-                        id="kt_content"
-                    >
-                        <div className="kt-container  kt-grid__item kt-grid__item--fluid">
-                            {/* <List id={this.props.match.params.id} /> */}
-                            <Page/>
-                        </div>
-                    </div>
+                    <Page/>
                 </div>
             </div>
         );

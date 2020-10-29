@@ -1,5 +1,6 @@
 import "./carousel.css"
 import React from "react";
+import { Link } from "react-router-dom";
 
 function Page() {
     return (<div>
@@ -20,21 +21,19 @@ function Page() {
                 />
                 <div className="container">
                   <div className="carousel-caption text-left">
-                    <h1>Example headline.</h1>
+                    <h1>Welcome to ShulePlus.</h1>
                     <p>
-                      Cras justo odio, dapibus ac facilisis in, egestas eget quam.
-                      Donec id elit non mi porta gravida at eget metus. Nullam id
-                      dolor id nibh ultricies vehicula ut id elit.
+                      The <b>automated</b> communications solution for your schools.
                     </p>
                     <p>
-                      <a className="btn btn-lg btn-primary" href="#" role="button">
-                        Sign up today
-                      </a>
+                      <Link className="btn btn-lg btn-primary" to="/register" role="button">
+                        Register your school today
+                      </Link>
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="carousel-item">
+              {/* <div className="carousel-item">
                 <img
                   className="second-slide"
                   src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
@@ -42,11 +41,9 @@ function Page() {
                 />
                 <div className="container">
                   <div className="carousel-caption">
-                    <h1>Another example headline.</h1>
+                    <h1>Connect to your parents directly.</h1>
                     <p>
-                      Cras justo odio, dapibus ac facilisis in, egestas eget quam.
-                      Donec id elit non mi porta gravida at eget metus. Nullam id
-                      dolor id nibh ultricies vehicula ut id elit.
+                      Parents get realtime information of where their children are.
                     </p>
                     <p>
                       <a className="btn btn-lg btn-primary" href="#" role="button">
@@ -55,8 +52,8 @@ function Page() {
                     </p>
                   </div>
                 </div>
-              </div>
-              <div className="carousel-item">
+              </div> */}
+              {/* <div className="carousel-item">
                 <img
                   className="third-slide"
                   src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
@@ -77,7 +74,7 @@ function Page() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
             <a
               className="carousel-control-prev"
