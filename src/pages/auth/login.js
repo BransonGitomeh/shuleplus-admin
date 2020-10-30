@@ -4,15 +4,36 @@ import { Link } from "react-router-dom";
 import axios from "axios"
 import { API } from "../../utils/requests"
 import Data from "../../utils/data"
+
 import { FacebookLoginButton, MicrosoftLoginButton, GoogleLoginButton, TwitterLoginButton } from "react-social-login-buttons";
 // import $ from 'jquery'
+const toastr = window.toastr;
+
+toastr.options = {
+    closeButton: true,
+    debug: false,
+    newestOnTop: false,
+    progressBar: false,
+    positionClass: "toast-bottom-right",
+    preventDuplicates: false,
+    onclick: null,
+    showDuration: "300",
+    hideDuration: "1000",
+    timeOut: "5000",
+    extendedTimeOut: "1000",
+    showEasing: "swing",
+    hideEasing: "linear",
+    showMethod: "fadeIn",
+    hideMethod: "fadeOut"
+};
 
 class Login extends React.Component {
     state = {
-        user: "0711657108",
+        user: "",
         password: "",
         phone_number: false,
-        error: undefined
+        otp: false,
+        error: ""
     }
     async FacebookLogin() {
         var _this = this
@@ -37,8 +58,37 @@ class Login extends React.Component {
             }
         });
     }
-    sendLoginCode(){
+    async sendLoginCode() {
         // fetch
+        const { user, password } = this.state
+        try {
+            const res = await axios.post(`${API}/auth/login`, {
+                user
+            })
+
+            toastr.success("Sweet", "OPT code has been sent,please check your phone");
+            this.setState({ otp: true })
+        } catch (err) {
+            console.log(err)
+            toastr.warning("Something wrong happened", "Sending your OTP failed");
+            this.setState({ otp: false })
+        }
+    }
+    async validateOtpCode() {
+        const { user, password } = this.state
+        try {
+            const res = await axios.post(`${API}/verify/sms`, {
+                user,
+                password
+            })
+
+            toastr.success("Sweet", "Verification successfull");
+            this.setState({ otp: true })
+        } catch (err) {
+            console.log(err)
+            toastr.warning("Something wrong happened", "OTP verification failed");
+            this.setState({ otp: false })
+        }
     }
     MicrosoftLogin() {
         alert("MicrosoftLoginButton")
@@ -64,10 +114,7 @@ class Login extends React.Component {
 
             /*global FB*/
             FB.AppEvents.logPageView();
-
         };
-
-
 
         this.validator = window.$("#login").validate({
             errorClass: "invalid-feedback",
@@ -113,7 +160,6 @@ class Login extends React.Component {
     render() {
         return (
             <div>
-
                 {/* begin:: Page */}
                 <div className="kt-grid kt-grid--ver kt-grid--root">
                     {/* <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
@@ -166,11 +212,11 @@ class Login extends React.Component {
                                                             </div>
                                                         </div>
                                                         <div className="col-4">
-                                                            <button type="button" onClick={()=>this.sendLoginCode()} className="btn btn-brand btn-elevate btn-pill" >Send Code</button>
+                                                            <button type="button" onClick={() => this.sendLoginCode()} className="btn btn-brand btn-elevate btn-pill" >Send Code</button>
                                                         </div>
                                                     </div>)
                                                     : (<div className="form-group">
-                                                        <input onChange={(e) => {
+                                                        <input value={this.state.user} onChange={(e) => {
                                                             const _this = this
                                                             this.setState({ user: e.target.value })
 
@@ -192,14 +238,23 @@ class Login extends React.Component {
                                                     </div>)
                                             }
                                             <div className="form-group">
-                                                <input onChange={(e) => this.setState({ password: e.target.value })} className="form-control" type="password" placeholder="Password" name="password" autoComplete="off" required={true} />
+                                                {
+                                                    !this.state.otp
+                                                        ? <input onChange={(e) => this.setState({ password: e.target.value })} className="form-control" type="password" placeholder="Password" name="password" autoComplete="off" required={true} />
+                                                        : <input onChange={(e) => this.setState({ password: e.target.value })} className="form-control" type="text" placeholder="Enter OTP Code here ie XXXXX" name="password" autoComplete="off" required={true} />
+                                                }
                                             </div>
                                             {/*begin::Action*/}
                                             <div className="kt-login-v2__actions">
                                                 <Link to="/recover" className="kt-link kt-link--brand">
                                                     <span className="kt-menu__link-text">Forgot Password ?</span>
                                                 </Link>
-                                                <button type="submit" className="btn btn-brand btn-elevate btn-pill btn-sm" >Sign In</button>
+                                                {
+                                                    !this.state.otp
+                                                        ? <button type="submit" className="btn btn-brand btn-elevate btn-pill btn-sm" >Sign In</button>
+                                                        : <button type="button" onClick={() => this.validateOtpCode()} className="btn btn-brand btn-elevate btn-pill btn-sm" >Confirm Code</button>
+                                                }
+
                                             </div>
 
                                             {/*end::Action*/}
