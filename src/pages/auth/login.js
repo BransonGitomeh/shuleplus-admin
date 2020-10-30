@@ -81,8 +81,22 @@ class Login extends React.Component {
                 password
             })
 
-            toastr.success("Sweet", "Verification successfull");
+            toastr.success("Verification successfull", "Sweet");
             this.setState({ otp: true })
+
+            setTimeout(function () {
+                const { data: { token, data } } = res
+
+                localStorage.setItem("authorization", token)
+                localStorage.setItem("user", JSON.stringify(data))
+
+                Data.init()
+
+                return _this.props.history.push({
+                    pathname: '/trips/all'
+                })
+            }, 2000)
+
         } catch (err) {
             console.log(err)
             toastr.warning("OTP verification failed", err.message);
