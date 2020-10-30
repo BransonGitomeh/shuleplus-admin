@@ -69,15 +69,14 @@ class Login extends React.Component {
             toastr.success("Sweet", "OPT code has been sent,please check your phone");
             this.setState({ otp: true })
         } catch (err) {
-            console.log(err)
-            toastr.warning("Something wrong happened", "Sending your OTP failed");
+            toastr.warning("Sending your OTP failed", err.message);
             this.setState({ otp: false })
         }
     }
     async validateOtpCode() {
         const { user, password } = this.state
         try {
-            const res = await axios.post(`${API}/verify/sms`, {
+            const res = await axios.post(`${API}/auth/verify/sms`, {
                 user,
                 password
             })
@@ -86,7 +85,7 @@ class Login extends React.Component {
             this.setState({ otp: true })
         } catch (err) {
             console.log(err)
-            toastr.warning("Something wrong happened", "OTP verification failed");
+            toastr.warning("OTP verification failed", err.message);
             this.setState({ otp: false })
         }
     }
