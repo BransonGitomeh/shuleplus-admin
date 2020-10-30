@@ -74,6 +74,7 @@ class Login extends React.Component {
         }
     }
     async validateOtpCode() {
+        const _this = this
         const { user, password } = this.state
         try {
             const res = await axios.post(`${API}/auth/verify/sms`, {
