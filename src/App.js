@@ -30,26 +30,10 @@ const PrivateRoute = ({ component: Component, ...rest }) => (
   )} />
 )
 
-function CheckAuth() {
-  let history = useHistory();
-  if (localStorage.getItem("authorization")) {
-    history.push('/home');
-  } else {
-    history.push('/')
-  }
-
-  return (<></>)
-}
-
 class App extends React.Component {
-  componentDidMount() {
-
-  }
-
   render() {
 
     return (<HashRouter>
-      <CheckAuth />
       {/* overal stuff */}
       <Route exact path="/" component={website} />
       <Route exact path="/register" component={register} />

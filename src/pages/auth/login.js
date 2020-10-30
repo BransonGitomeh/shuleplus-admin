@@ -9,9 +9,9 @@ import { FacebookLoginButton, MicrosoftLoginButton, GoogleLoginButton, TwitterLo
 
 class Login extends React.Component {
     state = {
-        user: "",
+        user: "0711657108",
         password: "",
-        social_logged_in: false,
+        phone_number: false,
         error: undefined
     }
     async FacebookLogin() {
@@ -36,6 +36,9 @@ class Login extends React.Component {
                 alert('User cancelled login or did not fully authorize.');
             }
         });
+    }
+    sendLoginCode(){
+        // fetch
     }
     MicrosoftLogin() {
         alert("MicrosoftLoginButton")
@@ -113,10 +116,9 @@ class Login extends React.Component {
 
                 {/* begin:: Page */}
                 <div className="kt-grid kt-grid--ver kt-grid--root">
-                    <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
-                        {/*begin::Item*/}
+                    {/* <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
+                   
                         <div className="kt-grid__item  kt-grid  kt-grid--ver  kt-grid__item--fluid">
-                            {/*begin::Body*/}
                             <div className="kt-login-v2__body" style={{
                                 display: "flex"
                             }}>
@@ -127,33 +129,14 @@ class Login extends React.Component {
                                             <div className="form-group">
                                                 <FacebookLoginButton onClick={() => this.FacebookLogin()} />
                                             </div>
-                                            {/* <div className="form-group">
-                                                <MicrosoftLoginButton onClick={() => this.MicrosoftLoginButton()} />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <GoogleLoginButton onClick={() => this.GoogleLoginButton()} />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <TwitterLoginButton onClick={() => this.TwitterLoginButton()} />
-                                            </div> */}
+                                           
                                         </form>
                                     </div>
-                                </div>;
-
-
-
-                                {/*  */}
+                                </div>
                             </div>
-
-                            {/*end::Wrapper*/}
-                            {/* </div> */}
-                            {/*begin::Body*/}
                         </div>
-                        {/*end::Item*/}
 
-                    </div>
+                    </div> */}
                     <div className="kt-grid__item   kt-grid__item--fluid kt-grid  kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
                         {/*begin::Item*/}
                         <div className="kt-grid__item  kt-grid  kt-grid--ver  kt-grid__item--fluid">
@@ -161,8 +144,10 @@ class Login extends React.Component {
                             <div className="kt-login-v2__body">
                                 <div className="kt-login-v2__wrapper">
                                     <div className="kt-login-v2__container" style={{ "marginTop": "20vh" }}>
+                                        <img className="text-center row mx-auto justify-content-center align-items-center flex-column" src="designs/bus_logo.png" style={{ "marginTop": "5vh" }} width="30%"></img>
+
                                         <div className="kt-login-v2__title">
-                                            <h3>Sign to Account</h3>
+                                            <h3>Sign to your account</h3>
                                         </div>
 
                                         {/*begin::Form*/}
@@ -171,9 +156,41 @@ class Login extends React.Component {
                                                 <div className="alert-text">{this.state.error}</div>
                                             </div> : null}
 
-                                            <div className="form-group">
-                                                <input onChange={(e) => this.setState({ user: e.target.value })} className="form-control" type="text" placeholder="Username" name="username" autoComplete="off" required={true} />
-                                            </div>
+
+                                            {
+                                                this.state.phone_number
+                                                    ? (<div className="row">
+                                                        <div className="col-8">
+                                                            <div className="form-group">
+                                                                <input value={this.state.user} onChange={(e) => this.setState({ user: e.target.value })} className="form-control" type="text" placeholder="Username or Phone Number" name="username" autoComplete="off" required={true} />
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-4">
+                                                            <button type="button" onClick={()=>this.sendLoginCode()} className="btn btn-brand btn-elevate btn-pill" >Send Code</button>
+                                                        </div>
+                                                    </div>)
+                                                    : (<div className="form-group">
+                                                        <input onChange={(e) => {
+                                                            const _this = this
+                                                            this.setState({ user: e.target.value })
+
+                                                            let re = new RegExp('^0(7(?:(?:[129][0-9])|(?:0[0-8])|(4[0-1]))[0-9]{6})$');
+
+                                                            function testInfo(phoneInput) {
+                                                                var OK = re.exec(phoneInput.value);
+                                                                if (!OK) {
+                                                                    // console.warn(phoneInput.value + ' isn\'t a phone number with area code!');
+                                                                } else {
+                                                                    // console.log('Thanks, your phone number is ' + OK[0]);
+                                                                    _this.setState({ phone_number: true })
+                                                                }
+                                                            }
+
+                                                            testInfo(e.target)
+
+                                                        }} className="form-control" type="text" placeholder="Username or Phone Number" name="username" autoComplete="off" required={true} />
+                                                    </div>)
+                                            }
                                             <div className="form-group">
                                                 <input onChange={(e) => this.setState({ password: e.target.value })} className="form-control" type="password" placeholder="Password" name="password" autoComplete="off" required={true} />
                                             </div>
@@ -182,7 +199,7 @@ class Login extends React.Component {
                                                 <Link to="/recover" className="kt-link kt-link--brand">
                                                     <span className="kt-menu__link-text">Forgot Password ?</span>
                                                 </Link>
-                                                <button type="submit" className="btn btn-brand btn-elevate btn-pill" >Sign In</button>
+                                                <button type="submit" className="btn btn-brand btn-elevate btn-pill btn-sm" >Sign In</button>
                                             </div>
 
                                             {/*end::Action*/}
