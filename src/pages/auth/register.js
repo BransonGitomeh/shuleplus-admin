@@ -7,12 +7,12 @@ import Data from "../../utils/data"
 
 const $ = window.$;
 
-class Login extends React.Component {
+class Register extends React.Component {
     state = {
         name: "",
         phone: "",
         email: "",
-        address:""
+        address: ""
     }
     componentDidMount() {
         const _this = this;
@@ -31,10 +31,9 @@ class Login extends React.Component {
             async submitHandler(form, event) {
                 event.preventDefault();
                 try {
-                    const { user, password } = _this.state
-                    const res = await axios.post(`${API}/auth/login`, {
-                        user,
-                        password,
+                    const { name, phone, email, address } = _this.state
+                    const res = await axios.post(`${API}/auth/register`, {
+                        name, phone, email, address
                     })
 
                     const { data: { token, data } } = res
@@ -81,7 +80,9 @@ class Login extends React.Component {
                                             {this.state.error ? <div className="alert alert-danger">
                                                 <div className="alert-text">{this.state.error}</div>
                                             </div> : null}
-
+                                            <div className="form-group">
+                                                <input onChange={(e) => this.setState({ name: e.target.value })} className="form-control" type="text" placeholder="Your name" name="name" autoComplete="off" required={true} />
+                                            </div>
                                             <div className="form-group">
                                                 <input onChange={(e) => this.setState({ name: e.target.value })} className="form-control" type="text" placeholder="Official school name" name="username" autoComplete="off" required={true} />
                                             </div>
@@ -145,4 +146,4 @@ class Login extends React.Component {
     }
 }
 
-export default Login;
+export default Register;
