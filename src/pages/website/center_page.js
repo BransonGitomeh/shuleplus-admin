@@ -1,6 +1,7 @@
 import "./carousel.css"
 import React from "react";
 import { Link } from "react-router-dom";
+import connected_commute from "./images/connected_commute.svg"
 
 function Page() {
     return (<div>
@@ -33,7 +34,7 @@ function Page() {
                   </div>
                 </div>
               </div>
-              {/* <div className="carousel-item">
+              <div className="carousel-item">
                 <img
                   className="second-slide"
                   src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
@@ -52,8 +53,8 @@ function Page() {
                     </p>
                   </div>
                 </div>
-              </div> */}
-              {/* <div className="carousel-item">
+              </div>
+              <div className="carousel-item">
                 <img
                   className="third-slide"
                   src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
@@ -74,7 +75,7 @@ function Page() {
                     </p>
                   </div>
                 </div>
-              </div> */}
+              </div>
             </div>
             <a
               className="carousel-control-prev"
@@ -109,12 +110,9 @@ function Page() {
                   width={140}
                   height={140}
                 />
-                <h2>Heading</h2>
+                <hr/>
+                <h2></h2>
                 <p>
-                  Donec sed odio dui. Etiam porta sem malesuada magna mollis euismod.
-                  Nullam id dolor id nibh ultricies vehicula ut id elit. Morbi leo
-                  risus, porta ac consectetur ac, vestibulum at eros. Praesent commodo
-                  cursus magna.
                 </p>
                 <p>
                   <a className="btn btn-secondary" href="#" role="button">
@@ -168,26 +166,23 @@ function Page() {
               </div>
               {/* /.col-lg-4 */}
             </div>
+            
             {/* /.row */}
             {/* START THE FEATURETTES */}
-            <hr className="featurette-divider" />
             <div className="row featurette">
               <div className="col-md-7">
                 <h2 className="featurette-heading">
-                  First featurette heading.{" "}
-                  <span className="text-muted">It'll blow your mind.</span>
+                  Connected{" "}
+                  <span className="text-muted">Commute.</span>
                 </h2>
                 <p className="lead">
-                  Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id
-                  ligula porta felis euismod semper. Praesent commodo cursus magna,
-                  vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus
-                  commodo.
+                  Real-time mobility management platform to create more intelligent and safer connected commute for your children.
                 </p>
               </div>
               <div className="col-md-5">
                 <img
                   className="featurette-image img-fluid mx-auto"
-                  data-src="holder.js/500x500/auto"
+                  src={connected_commute}
                   alt="Generic placeholder image"
                 />
               </div>
@@ -196,14 +191,11 @@ function Page() {
             <div className="row featurette">
               <div className="col-md-7 order-md-2">
                 <h2 className="featurette-heading">
-                  Oh yeah, it's that good.{" "}
-                  <span className="text-muted">See for yourself.</span>
+                  Best Bus Fleet.{" "}
+                  <span className="text-muted">Management System.</span>
                 </h2>
                 <p className="lead">
-                  Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id
-                  ligula porta felis euismod semper. Praesent commodo cursus magna,
-                  vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus
-                  commodo.
+                  Real-time bus fleet management platform which unifies cost, efficiency, productivity and safety by leveraging location technology and innovation.
                 </p>
               </div>
               <div className="col-md-5 order-md-1">
@@ -214,28 +206,6 @@ function Page() {
                 />
               </div>
             </div>
-            <hr className="featurette-divider" />
-            <div className="row featurette">
-              <div className="col-md-7">
-                <h2 className="featurette-heading">
-                  And lastly, this one. <span className="text-muted">Checkmate.</span>
-                </h2>
-                <p className="lead">
-                  Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id
-                  ligula porta felis euismod semper. Praesent commodo cursus magna,
-                  vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus
-                  commodo.
-                </p>
-              </div>
-              <div className="col-md-5">
-                <img
-                  className="featurette-image img-fluid mx-auto"
-                  data-src="holder.js/500x500/auto"
-                  alt="Generic placeholder image"
-                />
-              </div>
-            </div>
-            <hr className="featurette-divider" />
             {/* /END THE FEATURETTES */}
           </div>
           {/* /.container */}
