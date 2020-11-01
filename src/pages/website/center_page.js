@@ -2,6 +2,7 @@ import "./carousel.css"
 import React from "react";
 import { Link } from "react-router-dom";
 import connected_commute from "./images/connected_commute.svg"
+import connected_fleet from "./images/connected_fleet.svg"
 
 function Page() {
     return (<div>
@@ -201,7 +202,7 @@ function Page() {
               <div className="col-md-5 order-md-1">
                 <img
                   className="featurette-image img-fluid mx-auto"
-                  data-src="holder.js/500x500/auto"
+                  src={connected_fleet}
                   alt="Generic placeholder image"
                 />
               </div>
