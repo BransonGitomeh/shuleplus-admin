@@ -11,6 +11,8 @@ const tripsData = [];
 const schedulesData = [];
 const classesData = [];
 const teachersData = [];
+const schoolsData = [];
+let schoolID = undefined;
 
 var Data = (function () {
   var instance;
@@ -26,9 +28,11 @@ var Data = (function () {
   var complaints = complaintsData;
   var classes = classesData;
   var teachers = teachersData;
+  var schools = schoolsData;
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
+  emitize(subs, "schools");
   emitize(subs, "students");
   emitize(subs, "parents");
   emitize(subs, "drivers");
@@ -49,6 +53,8 @@ var Data = (function () {
   const init = () => {
     query(`{
       schools{
+        id,
+        name,
         complaints{
           id
           time
@@ -222,6 +228,7 @@ var Data = (function () {
       let { schools } = response
 
       let school = schools[0]
+      schoolID = school.id
 
       students = school.students.map(student => {
 
@@ -245,6 +252,7 @@ var Data = (function () {
       });
 
       subs.students({ students });
+      subs.schools({ schools });
 
       buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
       subs.buses({ buses });
@@ -332,7 +340,7 @@ var Data = (function () {
             }
           }`,
             {
-              Istudent: data
+              Istudent: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -367,6 +375,7 @@ var Data = (function () {
           } `,
             {
               student: Object.assign({}, data, {
+                school: schoolID,
                 parent_name: undefined,
                 parent2_name: undefined,
                 class: data.class.id,
@@ -430,7 +439,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iparent: data
+              Iparent: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -507,7 +516,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iteacher: data
+              Iteacher: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -584,7 +593,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iclass: data
+              Iclass: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -663,7 +672,7 @@ var Data = (function () {
               }
             }`,
             {
-              Idriver: data
+              Idriver: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -742,7 +751,7 @@ var Data = (function () {
             }
           }`,
             {
-              bus
+              bus: Object.assign(bus, { school: schoolID })
             }
           );
 
@@ -885,7 +894,7 @@ var Data = (function () {
               }
             }`,
             {
-              Iroute: data
+              Iroute: Object.assign(data, { school: schoolID })
             }
           );
 
@@ -974,7 +983,7 @@ var Data = (function () {
           }            
         `,
             {
-              schedule
+              schedule: Object.assign({}, schedule, { school: schoolID })
             }
           );
 

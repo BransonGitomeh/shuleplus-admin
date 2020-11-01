@@ -56,7 +56,7 @@ class Modal extends React.Component {
     const classes = await Data.classes.list()
     this.setState({ classes })
 
-    
+
     Data.parents.subscribe(({ parents }) => this.setState({ parents, filteredParents: parents }))
     Data.classes.subscribe(({ classes }) => this.setState({ classes }))
 
@@ -150,7 +150,7 @@ class Modal extends React.Component {
                   <div className="kt-portlet__body">
                     <div className="form-group row">
                       <div className="col-lg-3">
-                        
+
                       </div>
                     </div>
                     <div className="form-group row">
@@ -247,14 +247,16 @@ class Modal extends React.Component {
                         >
                           <option value="">Select parent</option>
                           {this.state.parents.map(parent => (
-                            !this.state.selectedParents.includes(parent.id) && <option value={parent.id}>{parent.name}</option>
+                            // !this.state.selectedParents.includes(parent.id) && 
+                            <option value={parent.id}>{parent.name}</option>
+
                           ))}
                         </select>
                       </div>
                       <div className="col-lg-3">
                         <button type="button" className="btn btn-outline-brand mt-4" onClick={addParentModalInstance.show}>Add Parent</button>
                       </div>
-                      <div className="col-lg-8">
+                      {/* <div className="col-lg-8">
                         <label for="exampleSelect1">Second Parent:</label>
                         <select
                           name="parent2"
@@ -268,7 +270,7 @@ class Modal extends React.Component {
                             !this.state.selectedParents.includes(parent.id) && <option value={parent.id}>{parent.name}</option>
                           ))}
                         </select>
-                      </div>
+                      </div> */}
                       <div className="col-lg-3">
                         <button type="button" className="btn btn-outline-brand mt-4" onClick={addSecondParentModalInstance.show}>Add Second Parent</button>
                       </div>
