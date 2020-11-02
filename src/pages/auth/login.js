@@ -163,7 +163,7 @@ class Login extends React.Component {
                     })
                 } catch (err) {
                     console.log({ err })
-                    if (!err.response && !err.response.data)
+                    if (err && !err.response && !err.response.data)
                         _this.setState({ error: err.message })
 
                     _this.setState({ error: err.response.data.message })
