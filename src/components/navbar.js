@@ -15,10 +15,10 @@ class Navbar extends React.Component {
     const schools = Data.schools.list();
     const school = Data.schools.getSelected();
 
-    console.log({ schools,school })
+    console.log({ schools, school })
 
     // console.log("before", { schools })
-    this.setState({ schools });
+    this.setState({ schools, school });
 
     Data.schools.subscribe(({ schools }) => {
       this.setState({
@@ -247,7 +247,7 @@ class Navbar extends React.Component {
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
 
-                  <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/settings/school" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
                           <span />

@@ -53,9 +53,17 @@ var Data = (function () {
   // when the data store gets innitialized, fetch all data and store in cache
   const init = (done) => {
     query(`{
+      user{
+        name,
+        email,
+        phone
+      }
       schools{
         id,
         name,
+        phone,
+        email,
+        address,
         complaints{
           id
           time
@@ -343,6 +351,11 @@ var Data = (function () {
         return;
       }
     },
+    user: {
+      getOne() {
+        
+      }
+    },
     students: {
       create: data =>
         new Promise(async (resolve, reject) => {
@@ -603,7 +616,6 @@ var Data = (function () {
       subscribe(cb) {
         // listen for even change on the students observables
         subs.schools = cb;
-        console.log({ cb })
         return schools;
       },
       getSelected() {
