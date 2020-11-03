@@ -79,9 +79,12 @@ class BasicTable extends React.Component {
             <div className="kt-portlet__body" style={{ minHeight: "500px" }}>
               <div className="row">
                 <div className="col-md-6">
-
-
                   <>
+                    <div class="kt-portlet__head">
+                      <div class="kt-portlet__head-label">
+                        <h3 class="kt-portlet__head-title">Your Information</h3>
+                      </div>
+                    </div>
                     <h5>Your Username is : username1</h5>
                     <h5>Your Email : username1@gmail.com</h5>
                     <h5>Your Phone : 0711657108</h5>
