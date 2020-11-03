@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { calculateTripDuration, calculateScheduleDuration } from "../../../utils/time"
-// src/pages/trip/components/trip-details.js
+import { calculateTripDuration, calculateScheduleDuration } from "../../../../utils/time"
+
 import Stat from "./stat";
 
 export default ({ trip, stats }) => {

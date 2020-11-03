@@ -14,6 +14,10 @@ import schedules from "./pages/schedules"
 import complaints from "./pages/complaints"
 import trips from "./pages/trips"
 import trip from "./pages/trip"
+
+import userSettings from "./pages/settings/user"
+import schoolSettings from "./pages/settings/school"
+
 import communications from "./pages/communications"
 
 import login from "./pages/auth/login";
@@ -56,6 +60,10 @@ class App extends React.Component {
       <PrivateRoute path="/reports/bus/:id" component={students} />
       <PrivateRoute path="/trips/:filter" component={trips} />
       <PrivateRoute path="/trip/:id" component={trip} />
+      <PrivateRoute path="/settings/user" component={userSettings} />
+      <PrivateRoute path="/settings/school" component={schoolSettings} />
+      
+     
 
       {/* super admin routes */}
 
