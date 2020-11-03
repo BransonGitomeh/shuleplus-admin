@@ -28,6 +28,7 @@ class Navbar extends React.Component {
         // console.log(this.state.selectedSchool.id)
         // console.log("set", { selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] })
         localStorage.setItem("school", Data.schools.getSelected().id)
+        document.title = `${Data.schools.getSelected().name} | Shule Plus`;
         this.setState({ selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] });
       });
     });
