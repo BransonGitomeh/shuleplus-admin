@@ -12,7 +12,7 @@ function Page() {
             <ol className="carousel-indicators">
               <li data-target="#myCarousel" data-slide-to={0} className="active" />
               <li data-target="#myCarousel" data-slide-to={1} />
-              <li data-target="#myCarousel" data-slide-to={2} />
+              {/* <li data-target="#myCarousel" data-slide-to={2} /> */}
             </ol>
             <div className="carousel-inner">
               <div className="carousel-item active">
@@ -42,7 +42,7 @@ function Page() {
                   alt="Second slide"
                 />
                 <div className="container">
-                  <div className="carousel-caption">
+                  <div className="carousel-caption text-left">
                     <h1>Connect to your parents directly.</h1>
                     <p>
                       Parents get realtime information of where their children are.
@@ -55,7 +55,7 @@ function Page() {
                   </div>
                 </div>
               </div>
-              <div className="carousel-item">
+              {/* <div className="carousel-item">
                 <img
                   className="third-slide"
                   src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
@@ -76,7 +76,7 @@ function Page() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
             <a
               className="carousel-control-prev"
@@ -211,12 +211,12 @@ function Page() {
           </div>
           {/* /.container */}
           {/* FOOTER */}
-          <footer className="container">
+          <footer className="container mt-5">
             <p className="float-right">
               <a href="#">Back to top</a>
             </p>
             <p>
-              © 2017-2018 Company, Inc. · <a href="#">Privacy</a> ·{" "}
+              © {(new Date()).getUTCFullYear()} Shule Plus, Inc. · <a href="#">Privacy</a> ·{" "}
               <a href="#">Terms</a>
             </p>
           </footer>
