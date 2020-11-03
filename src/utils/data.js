@@ -29,6 +29,7 @@ var Data = (function () {
   var classes = classesData;
   var teachers = teachersData;
   var schools = schoolsData;
+  var school = undefined
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
@@ -50,7 +51,7 @@ var Data = (function () {
   // subs.students(9); //emits '9' to all listeners;
 
   // when the data store gets innitialized, fetch all data and store in cache
-  const init = () => {
+  const init = (done) => {
     query(`{
       schools{
         id,
@@ -223,12 +224,23 @@ var Data = (function () {
         }
     }
   }`).then(response => {
-      console.log(response)
-      // let { students } = response
-      let { schools } = response
+      // done(response)
+      schools = response.schools
 
-      let school = schools[0]
+      school = schools[0]
       schoolID = school.id
+
+      // schoolID = localStorage.getItem("school")
+
+      // overide the school if there is one selected
+      if (localStorage.getItem("school")) {
+        schoolID = localStorage.getItem("school")
+        school = schools.filter(s => s.id == schoolID ? true : false)[0]
+        // console.log("selected school is " + JSON.stringify(school), schools)
+      } else {
+        school = schools[0]
+        schoolID = localStorage.setItem("school", school.id)
+      }
 
       students = school.students.map(student => {
 
@@ -252,6 +264,8 @@ var Data = (function () {
       });
 
       subs.students({ students });
+
+      schools = schools
       subs.schools({ schools });
 
       buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
@@ -263,7 +277,6 @@ var Data = (function () {
       teachers = school.teachers
       subs.teachers({ teachers });
 
-      console.log({ school })
       classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
       subs.classes({ classes });
 
@@ -293,7 +306,9 @@ var Data = (function () {
   }
 
   if (localStorage.getItem('authorization'))
-    init()
+    init(() => {
+      console.log("data module initialization complete")
+    })
 
 
   function createInstance() {
@@ -303,6 +318,7 @@ var Data = (function () {
   }
 
   return {
+    onReady: (cb) => cb(),
     getInstance: function () {
       if (!instance) {
         instance = createInstance();
@@ -310,7 +326,7 @@ var Data = (function () {
 
       return instance;
     },
-    init,
+    init: () => init(),
     comms: {
       send: ({ type, parents, message }) => new Promise(async (resolve, reject) => {
         resolve('ok')
@@ -579,6 +595,23 @@ var Data = (function () {
         return teachers;
       },
       getOne(id) { }
+    },
+    schools: {
+      list() {
+        return schools;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.schools = cb;
+        console.log({ cb })
+        return schools;
+      },
+      getSelected() {
+        if (school)
+          return school
+
+        return {}
+      }
     },
     classes: {
       create: data =>

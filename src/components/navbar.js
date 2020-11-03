@@ -1,13 +1,39 @@
+/* eslint-env location */
+
 import React from "react";
 import { Link } from "react-router-dom";
 import app from "../scripts.bundle"
+import Data from "../utils/data";
 
 const KTUtil = window.KTUtil
 const KTOffcanvas = window.KTOffcanvas
 
 class Navbar extends React.Component {
   componentDidMount() {
-    console.log(localStorage.getItem("user"))
+
+    // Data.onReady(() => {
+    const schools = Data.schools.list();
+    const school = Data.schools.getSelected();
+
+    console.log({ schools,school })
+
+    // console.log("before", { schools })
+    this.setState({ schools });
+
+    Data.schools.subscribe(({ schools }) => {
+      this.setState({
+        selectedSchool: schools[0],
+        availableSchools: schools
+      }, () => {
+        // console.log(this.state.selectedSchool.id)
+        // console.log("set", { selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] })
+        localStorage.setItem("school", Data.schools.getSelected().id)
+        this.setState({ selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] });
+      });
+    });
+
+    this.setState({ selectedSchool: school });
+
     // window.KTLayout.init();
     app.init()
 
@@ -44,9 +70,20 @@ class Navbar extends React.Component {
   }
   state = {
     profileShowing: false,
-    buses: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    selectedSchool: {},
+    availableSchools: Data.schools.list()
   };
+  async switchSchools(justSelectedSchool) {
+    console.log({ justSelectedSchool })
+    localStorage.setItem("school", justSelectedSchool.id)
+    this.setState({ selectedSchool: justSelectedSchool })
+
+    const schools = Data.schools.list();
+    window.location.reload();
+  }
   render() {
+    const { user } = JSON.parse(localStorage.getItem("user"))[Object.keys(JSON.parse(localStorage.getItem("user")))[0]]
+
     return (
       <div
         id="kt_header"
@@ -75,6 +112,28 @@ class Navbar extends React.Component {
             className="kt-header-menu kt-header-menu-mobile "
           >
             <ul className="kt-menu__nav ">
+              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">{this.state.selectedSchool.name}</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
+                <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                  <ul className="kt-menu__subnav">
+                    {
+                      this.state.availableSchools.map(school => {
+                        return (<li onClick={() => this.switchSchools(school)} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                          <Link to="/students" className="kt-menu__link">
+                            <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
+                              <span />
+                            </i>
+                            <span className="kt-menu__link-text">
+                              <span className="kt-menu__link-text">{school.name}</span>
+                            </span>
+                          </Link>
+                        </li>)
+                      })
+                    }
+                  </ul>
+                </div>
+              </li>
+
+
               <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
@@ -95,7 +154,7 @@ class Navbar extends React.Component {
                 </Link>
               </li>
 
-              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Configurations</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
+              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Data</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
 
@@ -159,13 +218,6 @@ class Navbar extends React.Component {
                         </span>
                       </Link>
                     </li>
-                  </ul>
-                </div>
-              </li>
-
-              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Data</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
-                <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                  <ul className="kt-menu__subnav">
 
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/students" className="kt-menu__link">
@@ -184,6 +236,34 @@ class Navbar extends React.Component {
                         </i>
                         <span className="kt-menu__link-text">
                           <span className="kt-menu__link-text">Parents</span>
+                        </span>
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </li>
+
+              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Settings</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
+                <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                  <ul className="kt-menu__subnav">
+
+                  <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                      <Link to="/settings/school" className="kt-menu__link">
+                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
+                          <span />
+                        </i>
+                        <span className="kt-menu__link-text">
+                          <span className="kt-menu__link-text">School Details</span>
+                        </span>
+                      </Link>
+                    </li>
+                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                      <Link to="/settings/user" className="kt-menu__link">
+                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
+                          <span />
+                        </i>
+                        <span className="kt-menu__link-text">
+                          <span className="kt-menu__link-text">User Details</span>
                         </span>
                       </Link>
                     </li>
@@ -224,13 +304,14 @@ class Navbar extends React.Component {
         </div>
         {/* end: Header Menu */} {/* begin:: Header Topbar */}
         <div className="kt-header__topbar kt-grid__item kt-grid__item--fluid">
+
           {/*begin: User bar */}
           <div
             className="kt-header__topbar-item kt-header__topbar-item--user"
             id="kt_offcanvas_toolbar_profile_toggler_btn"
           >
             <div className="kt-header__topbar-welcome">Hi,</div>
-            <div className="kt-header__topbar-username">Gathoni</div>
+            <div className="kt-header__topbar-username">{user}</div>
             <div className="kt-header__topbar-wrapper">
               <img alt="Pic" src="https://placeimg.com/140/140/any" />
             </div>
@@ -274,19 +355,19 @@ class Navbar extends React.Component {
               </div>
               <div className="kt-user-card-v3__detalis">
                 <a href="#" className="kt-user-card-v3__name">
-                  {JSON.parse(localStorage.getItem("user")).admin.user}
-              </a>
+                  {user}
+                </a>
                 <div className="kt-user-card-v3__desc">
                   {/* Project Manager */}
-              </div>
+                </div>
                 <div className="kt-user-card-v3__info">
                   <a href="#" className="kt-user-card-v3__item">
                     <i className="flaticon-email-black-circular-button kt-font-brand" />
-                    <span className="kt-user-card-v3__tag">gathoni@smartkids.com</span>
+                    <span className="kt-user-card-v3__tag">{user}</span>
                   </a>
                   <a href="#" className="kt-user-card-v3__item">
                     <i className="flaticon-twitter-logo-button kt-font-success" />
-                    <span className="kt-user-card-v3__tag">@gathoni</span>
+                    <span className="kt-user-card-v3__tag">{user}</span>
                   </a>
                   <a href="#" className="kt-user-card-v3__item">
 
