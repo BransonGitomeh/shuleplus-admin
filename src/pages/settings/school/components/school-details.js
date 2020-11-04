@@ -11,10 +11,10 @@ const editSchoolModalInstance = new EditSchoolModal();
 
 export default class SchoolDetails extends React.Component {
   componentDidMount() {
-    // if (Data.school.getSelected()) {
-    // const school = Data.school.getSelected();
-    // this.setState({ school: school ? school : {} });
-    // }
+    if (Data.schools.getSelected()) {
+      const school = Data.schools.getSelected();
+      this.setState({ school });
+    }
 
     Data.schools.subscribe(({ schools }) => {
       const school = Data.schools.getSelected();
@@ -44,7 +44,7 @@ export default class SchoolDetails extends React.Component {
   render() {
     return (
       <>
-        <EditSchoolModal edit={this.state.school} save={()=>this.savePaymentDetail()}/>
+        <EditSchoolModal edit={this.state.school} save={() => this.savePaymentDetail()} />
         <div class="kt-portlet__head">
           <div class="kt-portlet__head-label">
             <h3 class="kt-portlet__head-title">School Information</h3>

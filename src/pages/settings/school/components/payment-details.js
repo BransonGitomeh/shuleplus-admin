@@ -12,10 +12,10 @@ const editSchoolModalInstance = new EditSchoolModal();
 
 export default class PaymentDetails extends React.Component {
   componentDidMount() {
-    // if (Data.school.getSelected()) {
-    // const school = Data.school.getSelected();
-    // this.setState({ school: school ? school : {} });
-    // }
+    if (Data.schools.getSelected()) {
+      const school = Data.schools.getSelected();
+      this.setState({ school });
+    }
 
     Data.schools.subscribe(({ schools }) => {
       const school = Data.schools.getSelected();
