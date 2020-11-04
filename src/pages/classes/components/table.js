@@ -8,6 +8,11 @@ export default props => {
     <div className="kt_datatable kt-datatable kt-datatable--default kt-datatable--brand kt-datatable--loaded">
       <table
         className="kt-datatable__table"
+        style={{
+          "display": "block",
+          "overflow-x": "auto",
+          "white-space": "nowrap"
+        }}
       >
         <thead className="kt-datatable__head">
           <tr className="kt-datatable__row">

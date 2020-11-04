@@ -6,7 +6,12 @@ export default props => {
   return (
     <table
       className="table"
-    // width="100%"
+      // width="100%"
+      style={{
+        "display": "block",
+        "overflow-x": "auto",
+        "white-space": "nowrap"
+      }}
     >
       <thead>
         <tr>

@@ -6,7 +6,12 @@ export default props => {
   return (
     <table
       className="table"
-      // width="100%"
+      style={{
+        "display": "block",
+        "overflow-x": "auto",
+        "white-space": "nowrap"
+      }}
+    // width="100%"
     >
       <thead>
         <tr>
@@ -60,12 +65,12 @@ export default props => {
                     </button>
                   ) : null}
                   <button
-                      title="Delete"
-                      type="button"
-                      className="btn btn-sm btn-clean"
-                      onClick={() => props.onClick(row)}
-                    >
-                      View
+                    title="Delete"
+                    type="button"
+                    className="btn btn-sm btn-clean"
+                    onClick={() => props.onClick(row)}
+                  >
+                    View
                     </button>
                 </span>
               </td>
