@@ -22,16 +22,31 @@ export default class PaymentDetails extends React.Component {
       this.setState({ schools, school });
     });
   }
+  async savePaymentDetail(school) {
+    const {
+      id,
+      name,
+      phone,
+      email,
+      address
+    } = this.state.school
+
+    Data.schools.update({
+      id,
+      name,
+      phone,
+      email,
+      address
+    })
+  }
   state = {
     school: {}
   }
   render() {
     return (
       <>
-        <EditPaymentsModal
-        // remove={remove}
-        // save={trip => Data.trips.delete(trip)
-        />
+        <EditPaymentsModal edit={this.state.school} save={() => this.savePaymentDetail()} />
+
         <div class="kt-portlet__head">
           <div class="kt-portlet__head-label">
             <h3 class="kt-portlet__head-title">Payments Information</h3>

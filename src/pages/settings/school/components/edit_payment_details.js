@@ -111,7 +111,7 @@ class Modal extends React.Component {
                         name="busmake"
                         minLength="2"
                         required
-                        value={this.state.edit.make}
+                        value={this.state.edit.phone}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
                           make: e.target.value
                         }))}

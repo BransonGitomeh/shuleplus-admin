@@ -353,7 +353,7 @@ var Data = (function () {
     },
     user: {
       getOne() {
-        
+
       }
     },
     students: {
@@ -613,6 +613,28 @@ var Data = (function () {
       list() {
         return schools;
       },
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+        mutation ($school: USchool!) {
+          schools {
+            update(school: $school) {
+              id
+            }
+          }
+        } 
+        `,
+            {
+              school: data
+            }
+          );
+
+          const subtract = schools.filter(({ id }) => id !== data.id);
+          schools = [data, ...subtract];
+          subs.schools({ schools });
+          resolve();
+        }),
       subscribe(cb) {
         // listen for even change on the students observables
         subs.schools = cb;

@@ -15,8 +15,6 @@ class Navbar extends React.Component {
     const schools = Data.schools.list();
     const school = Data.schools.getSelected();
 
-    console.log({ schools, school })
-
     // console.log("before", { schools })
     this.setState({ schools, school });
 

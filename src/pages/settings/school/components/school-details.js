@@ -24,10 +24,27 @@ export default class SchoolDetails extends React.Component {
   state = {
     school: {}
   }
+  async savePaymentDetail(school) {
+    const {
+      id,
+      name,
+      phone,
+      email,
+      address
+    } = this.state.school
+
+    Data.schools.update({
+      id,
+      name,
+      phone,
+      email,
+      address
+    })
+  }
   render() {
     return (
       <>
-        <EditSchoolModal />
+        <EditSchoolModal edit={this.state.school} save={()=>this.savePaymentDetail()}/>
         <div class="kt-portlet__head">
           <div class="kt-portlet__head-label">
             <h3 class="kt-portlet__head-title">School Information</h3>

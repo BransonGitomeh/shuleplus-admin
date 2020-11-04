@@ -12,10 +12,10 @@ class Modal extends React.Component {
   state = {
     loading: false,
     edit: {
-      make: "",
-      size: "",
-      plate: "",
-      driver:""
+      name: "",
+      phone: "",
+      email: "",
+      address: ""
     }
   };
 
@@ -73,6 +73,7 @@ class Modal extends React.Component {
     const {
       edit: { names, route = {}, bus = {}, gender } = {}
     } = this.state;
+
     return (
       <div>
         <div
@@ -112,13 +113,13 @@ class Modal extends React.Component {
                         name="name"
                         minLength="2"
                         required
-                        value={this.state.edit.make}
+                        value={this.state.edit.name}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
                           name: e.target.value
                         }))}
                       />
                     </div>
-    
+
                   </div>
                   <div className="form-group row">
                     <div className="col-lg-6">
@@ -130,13 +131,13 @@ class Modal extends React.Component {
                         name="phone"
                         minLength="2"
                         required
-                        value={this.state.edit.make}
+                        value={this.state.edit.phone}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
                           phone: e.target.value
                         }))}
                       />
                     </div>
-    
+
                   </div>
 
                   <div className="form-group row">
@@ -149,13 +150,13 @@ class Modal extends React.Component {
                         name="email"
                         minLength="2"
                         required
-                        value={this.state.edit.make}
+                        value={this.state.edit.email}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
                           email: e.target.value
                         }))}
                       />
                     </div>
-    
+
                   </div>
 
                   <div className="form-group row">
@@ -168,13 +169,13 @@ class Modal extends React.Component {
                         name="address"
                         minLength="2"
                         required
-                        value={this.state.edit.make}
+                        value={this.state.edit.address}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
                           address: e.target.value
                         }))}
                       />
                     </div>
-    
+
                   </div>
 
 
