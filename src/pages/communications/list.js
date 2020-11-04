@@ -65,11 +65,12 @@ export default class MessageList extends Component {
                 </label>
               </li>
             })}
-            }
+            
           </ul>
         </div>
 
         <div className="col-md-8 col-lg-8 col-sm-12">
+          <br></br>
           <MessageView type={this.state.type} onClickSwitch={this.onClickSwitch} onClickSend={this.onClickSend} onChange={this.onChangeHandler} />
         </div>
         
