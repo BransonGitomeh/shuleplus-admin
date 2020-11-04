@@ -21,7 +21,7 @@ const MessageView = ({ type, onClickSend, onClickSwitch, onChange }) => {
         </div>
       </div>
       <div className="kt-portlet__body">
-        <textarea className="form-control my-2" onChange={onChange}></textarea>
+        <textarea className="form-control my-2" rows="8" onChange={onChange}></textarea>
       </div>
       <div className="kt-portlet__foot">
         <button className="btn btn-outline-success btn-pill btn-sm" onClick={onClickSend}>Send Message</button>
