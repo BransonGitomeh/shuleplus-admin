@@ -94,26 +94,7 @@ class Navbar extends React.Component {
           >
             <ul className="kt-menu__nav ">
 
-              <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
-              >
-                <Link to="/auth" className="kt-menu__link">
-                  <span className="kt-menu__link-text">Sign In</span>
-                </Link>
-              </li>
-
-              <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
-              >
-                <Link to="/register" className="kt-menu__link">
-                  <span className="kt-menu__link-text">Join Us</span>
-                </Link>
-              </li>
-
+            
               <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
@@ -139,11 +120,33 @@ class Navbar extends React.Component {
                 </Link>
               </li>
 
+
+              <li
+                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
+                data-ktmenu-submenu-toggle="click"
+                aria-haspopup="true"
+              >
+                <Link to="/register" className="kt-menu__link">
+                  <span className="kt-menu__link-text">Join Us</span>
+                </Link>
+              </li>
+
+
+              <li
+                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
+                data-ktmenu-submenu-toggle="click"
+                aria-haspopup="true"
+              >
+                <Link to="/auth" className="kt-menu__link">
+                  <span className="kt-menu__link-text">Sign In</span>
+                </Link>
+              </li>
+
             </ul>
           </div>
         </div>
         {/* end: Header Menu */} {/* begin:: Header Topbar */}
-        <div
+        {/* <div
           className="kt-header-menu-wrapper kt-grid__item"
           id="kt_header_menu_wrapper"
         >
@@ -175,7 +178,7 @@ class Navbar extends React.Component {
               </li>
             </ul>
           </div>
-        </div>
+        </div> */}
 
 
 
@@ -185,7 +188,7 @@ class Navbar extends React.Component {
               <img
                 alt="Logo"
                 style={{ width: 150, filter: 'invert(100 %)' }}
-                src="/assets/media/logos/logo-v5.png"
+                src="/assets/media/logos/logo-v6.png"
               />
             </Link>
           </div>
