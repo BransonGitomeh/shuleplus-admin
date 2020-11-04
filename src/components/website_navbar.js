@@ -76,7 +76,7 @@ class Navbar extends React.Component {
             <img
               alt="Logo"
               style={{ width: 150 }}
-              src="/assets/media/logos/logo-v4.png"
+              src="/assets/media/logos/logo-v5.png"
             />
           </Link>
         </div>
@@ -185,7 +185,7 @@ class Navbar extends React.Component {
               <img
                 alt="Logo"
                 style={{ width: 150, filter: 'invert(100 %)' }}
-                src="/assets/media/logos/logo-v4.png"
+                src="/assets/media/logos/logo-v5.png"
               />
             </Link>
           </div>

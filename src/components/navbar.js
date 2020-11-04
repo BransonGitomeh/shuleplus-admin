@@ -94,7 +94,7 @@ class Navbar extends React.Component {
             <img
               alt="Logo"
               style={{ width: 150 }}
-              src="/assets/media/logos/logo-v4.png"
+              src="/assets/media/logos/logo-v5.png"
             />
           </Link>
         </div>
@@ -321,15 +321,18 @@ class Navbar extends React.Component {
 
 
         <div id="kt_header_mobile" className="kt-header-mobile  kt-header-mobile--fixed ">
-          <div className="kt-header-mobile__logo">
-            <Link to="/trips/all">
-              <img
-                alt="Logo"
-                style={{ width: 150, filter: 'invert(100 %)' }}
-                src="/assets/media/logos/logo-v4.png"
-              />
-            </Link>
-          </div>
+
+          
+            <div className="kt-header-mobile__logo">
+              <Link to="/trips/all">
+                <img
+                  alt="Logo"
+                  style={{ width: 150, filter: 'invert(100 %)' }}
+                  src="/assets/media/logos/logo-v6.png"
+                />
+              </Link>
+            </div>
+        
           <div className="kt-header-mobile__toolbar">
             <button className="kt-header-mobile__toolbar-toggler" id="kt_header_mobile_toggler"><span /></button>
             <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler"><i className="flaticon-more" /></button>
