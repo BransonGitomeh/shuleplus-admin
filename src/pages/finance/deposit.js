@@ -13,7 +13,9 @@ class Modal extends React.Component {
     loading: false,
     edit: {
       phone: "",
-    }
+    },
+    error:false,
+    message:false
   };
 
   show() {
@@ -102,7 +104,7 @@ class Modal extends React.Component {
                 </div>
 
                 <div className="modal-body">
-                  <div className="kt-portlet__body" style={{ "flex": 1, justifyContent:"center" }}>
+                  <div className="kt-portlet__body" style={{ "flex": 1, justifyContent: "center" }}>
                     <div className="form-group row">
                       <img style={{ "width": "40%" }} src={"/img/lipa-na-mpesa.svg"} alt="Logo" />
                     </div>
@@ -121,6 +123,11 @@ class Modal extends React.Component {
                             phone: e.target.value
                           }))}
                         />
+                      </div>
+                    </div>
+                    <div className="form-group row">
+                      <div className={"alert alert-" + this.state.error ? "danger" : "success"} role="alert">
+                        {this.state.error ? this.state.error : this.state.message}
                       </div>
                     </div>
                   </div>

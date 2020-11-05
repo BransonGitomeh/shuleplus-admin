@@ -158,16 +158,6 @@ class Navbar extends React.Component {
                   <ul className="kt-menu__subnav">
 
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
-                      <Link to="/buses" className="kt-menu__link">
-                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
-                          <span />
-                        </i>
-                        <span className="kt-menu__link-text">
-                          <span className="kt-menu__link-text">Buses</span>
-                        </span>
-                      </Link>
-                    </li>
-                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/drivers" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
                           <span />
@@ -177,6 +167,18 @@ class Navbar extends React.Component {
                         </span>
                       </Link>
                     </li>
+
+                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                      <Link to="/buses" className="kt-menu__link">
+                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
+                          <span />
+                        </i>
+                        <span className="kt-menu__link-text">
+                          <span className="kt-menu__link-text">Buses</span>
+                        </span>
+                      </Link>
+                    </li>
+
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/routes" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
@@ -351,17 +353,17 @@ class Navbar extends React.Component {
 
         <div id="kt_header_mobile" className="kt-header-mobile  kt-header-mobile--fixed ">
 
-          
-            <div className="kt-header-mobile__logo">
-              <Link to="/trips/all">
-                <img
-                  alt="Logo"
-                  style={{ width: 150, filter: 'invert(100 %)' }}
-                  src="/assets/media/logos/logo-v6.png"
-                />
-              </Link>
-            </div>
-        
+
+          <div className="kt-header-mobile__logo">
+            <Link to="/trips/all">
+              <img
+                alt="Logo"
+                style={{ width: 150, filter: 'invert(100 %)' }}
+                src="/assets/media/logos/logo-v6.png"
+              />
+            </Link>
+          </div>
+
           <div className="kt-header-mobile__toolbar">
             <button className="kt-header-mobile__toolbar-toggler" id="kt_header_mobile_toggler"><span /></button>
             <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler"><i className="flaticon-more" /></button>
