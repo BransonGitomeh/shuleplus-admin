@@ -42,7 +42,7 @@ class App extends React.Component {
 
     return (<HashRouter>
       {/* overal stuff */}
-      <Route exact path="/" component={website} />
+      <Route exact path="/" component={login} />
       <Route exact path="/register" component={register} />
       <Route exact path="/recover" component={recover} />
       <Route exact path="/auth" component={login} />

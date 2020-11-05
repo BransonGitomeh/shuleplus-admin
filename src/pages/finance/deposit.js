@@ -72,7 +72,7 @@ class Modal extends React.Component {
     const {
       edit: { names, route = {}, parent = {}, gender } = {}
     } = this.state;
-    console.log(this.state)
+
     return (
       <div>
         <div
@@ -90,7 +90,7 @@ class Modal extends React.Component {
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Student</h5>
+                  <h5 className="modal-title">Make Mpesa Payment</h5>
                   <button
                     type="button"
                     className="close"
@@ -102,7 +102,10 @@ class Modal extends React.Component {
                 </div>
 
                 <div className="modal-body">
-                  <div className="kt-portlet__body">
+                  <div className="kt-portlet__body" style={{ "flex": 1, justifyContent:"center" }}>
+                    <div className="form-group row">
+                      <img style={{ "width": "40%" }} src={"/img/lipa-na-mpesa.svg"} alt="Logo" />
+                    </div>
                     <div className="form-group row">
                       <div className="col-lg-4">
                         <label>Mpesa Number:</label>
@@ -152,7 +155,7 @@ class Modal extends React.Component {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     );
   }
 }
