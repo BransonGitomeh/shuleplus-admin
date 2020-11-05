@@ -304,22 +304,22 @@ class Navbar extends React.Component {
                   <ul className="kt-menu__subnav">
 
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
-                      <Link to="/messages" className="kt-menu__link">
+                      <Link to="/finance/topup" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
                           <span />
                         </i>
                         <span className="kt-menu__link-text">
-                          <span className="kt-menu__link-text">Top Up</span>
+                          <span className="kt-menu__link-text">Mpesa Top Up</span>
                         </span>
                       </Link>
                     </li>
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
-                      <Link to="/comms" className="kt-menu__link">
+                      <Link to="/finance/charges" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
                           <span />
                         </i>
                         <span className="kt-menu__link-text">
-                          <span className="kt-menu__link-text">View Spending</span>
+                          <span className="kt-menu__link-text">Your Charges</span>
                         </span>
                       </Link>
                     </li>

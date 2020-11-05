@@ -116,19 +116,25 @@ class Login extends React.Component {
     }
     componentDidMount() {
         var _this = this
-        window.fbAsyncInit = function () {
-            console.log("env", process.env)
-            /*global FB*/
-            FB.init({
-                appId: "388407632531072",
-                cookie: true,
-                xfbml: true,
-                version: 'v2.7'
-            });
+        // window.fbAsyncInit = function () {
+        //     console.log("env", process.env)
+        //     /*global FB*/
+        //     FB.init({
+        //         appId: "388407632531072",
+        //         cookie: true,
+        //         xfbml: true,
+        //         version: 'v2.7'
+        //     });
 
-            /*global FB*/
-            FB.AppEvents.logPageView();
-        };
+        //     /*global FB*/
+        //     FB.AppEvents.logPageView();
+        // };
+
+
+        if (localStorage.getItem("authorization"))
+            return _this.props.history.push({
+                pathname: '/trips/all'
+            })
 
         this.validator = window.$("#login").validate({
             errorClass: "invalid-feedback",

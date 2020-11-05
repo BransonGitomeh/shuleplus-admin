@@ -26,6 +26,9 @@ import website from "./pages/website";
 import recover from "./pages/auth/recover";
 import register from "./pages/auth/register";
 
+import topup from "./pages/finance/topup"
+import charges from "./pages/finance/charges"
+
 const PrivateRoute = ({ component: Component, ...rest }) => (
   <Route {...rest} render={(props) => (
     localStorage.getItem('authorization')
@@ -62,6 +65,8 @@ class App extends React.Component {
       <PrivateRoute path="/trip/:id" component={trip} />
       <PrivateRoute path="/settings/user" component={userSettings} />
       <PrivateRoute path="/settings/school" component={schoolSettings} />
+      <PrivateRoute path="/finance/topup" component={topup} />
+      <PrivateRoute path="/finance/charges" component={charges} />
       
      
 

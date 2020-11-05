@@ -12,6 +12,8 @@ const schedulesData = [];
 const classesData = [];
 const teachersData = [];
 const schoolsData = [];
+const paymentsData = []
+const chargesData = []
 let schoolID = undefined;
 
 var Data = (function () {
@@ -29,6 +31,8 @@ var Data = (function () {
   var classes = classesData;
   var teachers = teachersData;
   var schools = schoolsData;
+  var payments = paymentsData;
+  var charges = chargesData;
   var school = undefined
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
@@ -44,6 +48,8 @@ var Data = (function () {
   emitize(subs, "complaints");
   emitize(subs, "classes");
   emitize(subs, "teachers");
+  emitize(subs, "payments");
+  emitize(subs, "charges");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -64,6 +70,19 @@ var Data = (function () {
         phone,
         email,
         address,
+        charges {
+          ammount
+          reason
+          time
+          id
+        }
+        payments{
+          ammount
+          type
+          phone
+          ref
+          time
+        }
         complaints{
           id
           time
@@ -233,12 +252,13 @@ var Data = (function () {
     }
   }`).then(response => {
       // done(response)
-      schools = response.schools
+      schoolsData.push(...response.schools)
 
+      schools = schoolsData
       school = schools[0]
       schoolID = school.id
 
-      // schoolID = localStorage.getItem("school")
+      // schoolID = localStorage.getItem("school")                                    
 
       // overide the school if there is one selected
       if (localStorage.getItem("school")) {
@@ -249,6 +269,8 @@ var Data = (function () {
         school = schools[0]
         schoolID = localStorage.setItem("school", school.id)
       }
+
+      console.log({ schools, school })
 
       students = school.students.map(student => {
 
@@ -273,8 +295,14 @@ var Data = (function () {
 
       subs.students({ students });
 
-      schools = schools
+      schools = schoolsData
       subs.schools({ schools });
+
+      charges = school.charges
+      subs.charges({ charges });
+
+      payments = school.payments
+      subs.payments({ payments });
 
       buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
       subs.buses({ buses });
@@ -449,9 +477,18 @@ var Data = (function () {
         return students;
       },
       subscribe(cb) {
-        // listen for even change on the students observables
         subs.students = cb;
         return students;
+      },
+      getOne(id) { }
+    },
+    payments: {
+      list() {
+        return payments;
+      },
+      subscribe(cb) {
+        subs.payments = cb;
+        return payments;
       },
       getOne(id) { }
     },
@@ -946,6 +983,17 @@ var Data = (function () {
           subs.complaints({ complaints });
           resolve();
         }),
+      getOne(id) { }
+    },
+    charges: {
+      list() {
+        return charges;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.charges = cb;
+        return charges;
+      },
       getOne(id) { }
     },
     routes: {

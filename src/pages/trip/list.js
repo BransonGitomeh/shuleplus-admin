@@ -95,15 +95,13 @@ class BasicTable extends React.Component {
                   <div className="kt-checkbox-list">
                     {
                       this.state.students.map(student => {
-                        console.log(student, events)
+
                         let checked = false;
                         let studentInfo = events.filter(event => !event.student ? null : event.student.id == student.id)[0]
 
                         if (studentInfo && studentInfo.type && studentInfo.type === 'CHECKEDON') {
                           checked = true
                         }
-
-                        console.log(studentInfo)
 
                         return (<label className="kt-checkbox">
                           <input

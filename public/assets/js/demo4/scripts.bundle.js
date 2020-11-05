@@ -2940,8 +2940,6 @@ var KTMenu = function(elementId, options) {
                 //Plugin.hideSubmenuDropdown(item, false);
             }
 
-            // console.log('test!');
-
             Plugin.showSubmenuDropdown(item);
         },
 
