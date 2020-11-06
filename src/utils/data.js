@@ -70,6 +70,10 @@ var Data = (function () {
         phone,
         email,
         address,
+        id
+        financial {
+          balance
+        }
         charges {
           ammount
           reason

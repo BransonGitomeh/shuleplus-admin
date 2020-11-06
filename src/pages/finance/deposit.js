@@ -1,6 +1,11 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
+
+import Data from "../../utils/data";
+
+
 const IErrorMessage = new ErrorMessage();
+
 
 const $ = window.$;
 
@@ -14,8 +19,8 @@ class Modal extends React.Component {
     edit: {
       phone: "",
     },
-    error:false,
-    message:false
+    error: false,
+    message: false
   };
 
   show() {
@@ -29,6 +34,18 @@ class Modal extends React.Component {
     $("#" + modalNumber).modal("hide");
   }
   componentDidMount() {
+    const school = Data.schools.getSelected();
+
+    this.setState({ school });
+
+    Data.schools.subscribe(({ schools }) => {
+      const school = Data.schools.getSelected();
+
+      console.log({ school })
+      this.setState({ school });
+    });
+
+
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
@@ -47,7 +64,9 @@ class Modal extends React.Component {
           _this.setState({ loading: true });
 
           // replace the names with the selected values with ids
-          await _this.props.save(_this.state.edit);
+          // await _this.props.save(_this.state.edit);
+          
+
           _this.hide();
           _this.setState({ loading: false });
         } catch (error) {

@@ -7,11 +7,6 @@ export default props => {
     <table
       className="table"
       // width="100%"
-      style={{
-        "display": "block",
-        "overflow-x": "auto",
-        "white-space": "nowrap"
-      }}
     >
       <thead>
         <tr>
