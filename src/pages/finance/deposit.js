@@ -65,7 +65,7 @@ class Modal extends React.Component {
 
           // replace the names with the selected values with ids
           // await _this.props.save(_this.state.edit);
-          
+
 
           _this.hide();
           _this.setState({ loading: false });
@@ -88,6 +88,9 @@ class Modal extends React.Component {
         };
       }
     return null;
+  }
+  charge(){
+    return Data.schools.charge()
   }
   render() {
     const {
@@ -125,7 +128,7 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body" style={{ "flex": 1, justifyContent: "center" }}>
                     <div className="form-group row">
-                      <img style={{ "width": "40%" }} src={"/img/lipa-na-mpesa.svg"} alt="Logo" />
+                      <img style={{ "width": "20%" }} src={"/img/lipa-na-mpesa.svg"} alt="Logo" />
                     </div>
                     <div className="form-group row">
                       <div className="col-lg-4">
@@ -143,6 +146,31 @@ class Modal extends React.Component {
                           }))}
                         />
                       </div>
+
+                    </div>
+                    <div className="form-group row">
+                      <h3>Instructions to Pay</h3>
+                      <ul>
+                        <li><button
+                          type="button"
+                          className="btn btn-success"
+                          type="button"
+                          disabled={this.state.loading}
+                          onClick={() => this.charge()}
+                        >
+                          {this.state.loading ? (
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                              "Start Transaction"
+                            )}
+                        </button></li>
+                        <li><h4>2. Check a payment popup on your phone</h4></li>
+                        <li><h4>3. Input Mpesa Pin and click OK</h4></li>
+                      </ul>
                     </div>
                     <div className="form-group row">
                       <div className={"alert alert-" + this.state.error ? "danger" : "success"} role="alert">
@@ -153,22 +181,7 @@ class Modal extends React.Component {
                 </div>
 
                 <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-success"
-                    type="submit"
-                    disabled={this.state.loading}
-                  >
-                    {this.state.loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                        "Start Transaction"
-                      )}
-                  </button>
+
                   <button
                     data-dismiss="modal"
                     type="button"

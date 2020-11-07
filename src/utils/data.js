@@ -705,6 +705,53 @@ var Data = (function () {
         return school
 
         return {}
+      },
+      async charge() {
+        if (school)
+          return await mutate(
+            `mutation ($payment: mpesaStartTxInput!) {
+              payments {
+                init(payment: $payment){
+                  CheckoutRequestID,
+                  MerchantRequestID
+                }
+              }
+            }
+            `,
+            {
+              "payment": {
+                "id": school.id
+              }
+            }
+          );
+
+
+
+        return {}
+      },
+      async verifyTx() {
+        if (school)
+          await mutate(
+            `mutation ($Ipayment: mpesaStartTxVerificationInput!) {
+              payments {
+                confirm(payment: $Ipayment) {
+                  success,
+                  message
+                }
+              }
+            }
+            `,
+            {
+              "Ipayment": {
+                "MerchantRequestID": "11473-60586661-1",
+                "CheckoutRequestID": "ws_CO_07112020183301770885"
+              }
+            }
+          );
+
+        return school
+
+        return {}
       }
     },
     classes: {
