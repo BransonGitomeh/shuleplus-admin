@@ -686,6 +686,25 @@ var Data = (function () {
           return school
 
         return {}
+      },
+      async archive() {
+        if (school)
+          await mutate(
+            `mutation ($school: USchool!) {
+                schools {
+                  archive(school: $school) {
+                    id
+                  }
+                }
+              }`,
+            {
+              school: { id: school.id }
+            }
+          );
+
+        return school
+
+        return {}
       }
     },
     classes: {

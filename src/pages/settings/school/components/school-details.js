@@ -4,7 +4,7 @@ import { calculateTripDuration, calculateScheduleDuration } from "../../../../ut
 // src/pages/trip/components/trip-details.js
 import Stat from "./stat";
 import EditSchoolModal from "./edit_school_details.js";
-import DeleteSchoolModal from "../delete.js";
+import DeleteSchoolModal from "./delete.js";
 import Data from "../../../../utils/data";
 
 const editSchoolModalInstance = new EditSchoolModal();
@@ -42,10 +42,13 @@ export default class SchoolDetails extends React.Component {
       address
     })
   }
+  async archiveSchool(){
+    Data.schools.archive()
+  }
   render() {
     return (
       <>
-        <DeleteSchoolModal remove={this.state.school}/>
+        <DeleteSchoolModal save={() => this.archiveSchool()} remove={this.state.school}/>
         <EditSchoolModal edit={this.state.school} save={() => this.savePaymentDetail()} />
         <div class="kt-portlet__head">
           <div class="kt-portlet__head-label">

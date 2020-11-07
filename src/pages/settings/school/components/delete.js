@@ -1,5 +1,5 @@
 import React from "react";
-import ErrorMessage from "./components/error-toast";
+import ErrorMessage from "../components/error-toast";
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
