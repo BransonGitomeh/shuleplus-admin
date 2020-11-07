@@ -4,10 +4,11 @@ import { calculateTripDuration, calculateScheduleDuration } from "../../../../ut
 // src/pages/trip/components/trip-details.js
 import Stat from "./stat";
 import EditSchoolModal from "./edit_school_details.js";
+import DeleteSchoolModal from "../delete.js";
 import Data from "../../../../utils/data";
 
-
 const editSchoolModalInstance = new EditSchoolModal();
+const deleteSchoolModalInstance = new DeleteSchoolModal();
 
 export default class SchoolDetails extends React.Component {
   componentDidMount() {
@@ -44,6 +45,7 @@ export default class SchoolDetails extends React.Component {
   render() {
     return (
       <>
+        <DeleteSchoolModal remove={this.state.school}/>
         <EditSchoolModal edit={this.state.school} save={() => this.savePaymentDetail()} />
         <div class="kt-portlet__head">
           <div class="kt-portlet__head-label">
@@ -63,6 +65,18 @@ export default class SchoolDetails extends React.Component {
           onClick={() => editSchoolModalInstance.show()}
         >
           Change school details
+        </button>
+
+        <br></br>
+        <br></br>
+
+        <button
+          type="submit"
+          className="btn btn-danger"
+          // disabled={this.state.loading}
+          onClick={() => deleteSchoolModalInstance.show()}
+        >
+          Archive school
         </button>
       </>
     )
