@@ -55,7 +55,7 @@ class BasicTable extends React.Component {
               drivers={drivers}
               save={schedule => Data.schedules.update(schedule)}
             /> */}
-            <DepositModal edit={{ phone: school.phone }} />
+            <DepositModal edit={{ ammount:2 ,phone: school.phone }} />
             <div className="kt-portlet__body">
               {/*begin: Search Form */}
               <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">

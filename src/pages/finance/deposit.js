@@ -1,5 +1,6 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
+import "./spinner.css"
 
 import Data from "../../utils/data";
 
@@ -15,11 +16,15 @@ const modalNumber = Math.random()
 
 class Modal extends React.Component {
   state = {
+    started: false,
     loading: false,
+    verifying: false,
+    verified: false,
     edit: {
       phone: "",
+      ammount: "",
     },
-    error: false,
+    success: false,
     message: false
   };
 
@@ -89,8 +94,45 @@ class Modal extends React.Component {
       }
     return null;
   }
-  charge(){
-    return Data.schools.charge()
+  async verifyTx(CheckoutRequestID, MerchantRequestID) {
+    this.setState({ verifying: true, loading: true });
+
+    const {
+      payments,
+      errors
+    } = await Data.schools.verifyTx({ CheckoutRequestID, MerchantRequestID })
+
+    if (errors) {
+      this.setState({ verifying: false, loading: false });
+      return;
+    }
+
+    const { confirm: { success, message } = {} } = payments
+
+    if (!message) {
+      return this.verifyTx(CheckoutRequestID, MerchantRequestID)
+    }
+
+    // console.log({ success, message })
+    if (success == true)
+      return this.setState({ verifying: false, loading: false, success: true, message });
+
+    this.setState({ verifying: false, loading: false, error: true, success: false, message });
+  }
+  async charge(ammount) {
+    this.setState({ started: true, loading: true });
+    const { payments, errors } = await Data.schools.charge(this.state.school.phone, ammount.toString())
+
+    if (errors) {
+      return
+    }
+    const { init: { CheckoutRequestID, MerchantRequestID } = {} } = payments
+
+    if (CheckoutRequestID && MerchantRequestID) {
+      this.setState({ CheckoutRequestID, MerchantRequestID, loading: false });
+
+      this.verifyTx(CheckoutRequestID, MerchantRequestID)
+    }
   }
   render() {
     const {
@@ -132,7 +174,7 @@ class Modal extends React.Component {
                     </div>
                     <div className="form-group row">
                       <div className="col-lg-4">
-                        <label>Mpesa Number:</label>
+                        {/* <label>Mpesa Number:</label> */}
                         <input
                           type="text"
                           className="form-control"
@@ -146,17 +188,29 @@ class Modal extends React.Component {
                           }))}
                         />
                       </div>
+                      <div className="col-lg-2">
+                        {/* <label>Mpesa Number:</label> */}
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="ammount"
+                          name="ammount"
+                          minLength="1"
+                          required
+                          value={this.state.edit.ammount}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
+                            ammount: e.target.value
+                          }))}
+                        />
+                      </div>
 
-                    </div>
-                    <div className="form-group row">
-                      <h3>Instructions to Pay</h3>
-                      <ul>
-                        <li><button
+                      <div className="col-lg-4">
+                        <button
                           type="button"
                           className="btn btn-success"
                           type="button"
                           disabled={this.state.loading}
-                          onClick={() => this.charge()}
+                          onClick={() => this.charge(this.state.edit.ammount)}
                         >
                           {this.state.loading ? (
                             <span
@@ -165,18 +219,57 @@ class Modal extends React.Component {
                               aria-hidden="true"
                             />
                           ) : (
-                              "Start Transaction"
+                              "Start Payment"
                             )}
-                        </button></li>
-                        <li><h4>2. Check a payment popup on your phone</h4></li>
-                        <li><h4>3. Input Mpesa Pin and click OK</h4></li>
-                      </ul>
-                    </div>
-                    <div className="form-group row">
-                      <div className={"alert alert-" + this.state.error ? "danger" : "success"} role="alert">
-                        {this.state.error ? this.state.error : this.state.message}
+                        </button>
                       </div>
                     </div>
+                    <div className="form-group row">
+                      <div className="col-lg-6">
+
+                        {
+                          this.state.started ? "" :
+                            <div class="alert alert-info" role="alert">
+                              Waiting to start transaction...
+                            </div>
+                        }
+
+
+                        {
+                          this.state.verifying
+                            ? <div class="alert alert-info" role="alert">
+                              Checking transaction status ...
+                              </div>
+                            : ""
+                        }
+
+                        {
+                          this.state.success
+                            ? <div class="alert alert-success" role="alert">
+                              {this.state.message}
+                            </div>
+                            : ""
+                        }
+
+                        {
+                          this.state.loading ?
+                            <div class="alert alert-info" role="alert">
+                              Please check your phone...
+                          </div>
+                            : ""}
+
+                        {
+                          !this.state.success && this.state.message
+                            ? <div class="alert alert-danger" role="alert">
+                              {this.state.message}
+                            </div>
+                            : ""}
+
+                      </div>
+                    </div>
+
+
+
                   </div>
                 </div>
 

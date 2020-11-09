@@ -706,7 +706,7 @@ var Data = (function () {
 
         return {}
       },
-      async charge() {
+      async charge(phone, ammount) {
         if (school)
           return await mutate(
             `mutation ($payment: mpesaStartTxInput!) {
@@ -720,7 +720,9 @@ var Data = (function () {
             `,
             {
               "payment": {
-                "id": school.id
+                "id": school.id,
+                ammount,
+                phone
               }
             }
           );
@@ -729,9 +731,9 @@ var Data = (function () {
 
         return {}
       },
-      async verifyTx() {
+      async verifyTx({ MerchantRequestID, CheckoutRequestID }) {
         if (school)
-          await mutate(
+          return await mutate(
             `mutation ($Ipayment: mpesaStartTxVerificationInput!) {
               payments {
                 confirm(payment: $Ipayment) {
@@ -743,8 +745,8 @@ var Data = (function () {
             `,
             {
               "Ipayment": {
-                "MerchantRequestID": "11473-60586661-1",
-                "CheckoutRequestID": "ws_CO_07112020183301770885"
+                MerchantRequestID,
+                CheckoutRequestID
               }
             }
           );
