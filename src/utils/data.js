@@ -746,7 +746,8 @@ var Data = (function () {
             {
               "Ipayment": {
                 MerchantRequestID,
-                CheckoutRequestID
+                CheckoutRequestID,
+                school:school.id
               }
             }
           );

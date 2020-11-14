@@ -46,7 +46,6 @@ class Modal extends React.Component {
     Data.schools.subscribe(({ schools }) => {
       const school = Data.schools.getSelected();
 
-      console.log({ school })
       this.setState({ school });
     });
 
@@ -114,9 +113,10 @@ class Modal extends React.Component {
     }
 
     // console.log({ success, message })
-    if (success == true)
+    if (success == true) {
+      window.location.reload()
       return this.setState({ verifying: false, loading: false, success: true, message });
-
+    }
     this.setState({ verifying: false, loading: false, error: true, success: false, message });
   }
   async charge(ammount) {
