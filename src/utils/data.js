@@ -14,6 +14,7 @@ const teachersData = [];
 const schoolsData = [];
 const paymentsData = []
 const chargesData = []
+const gradesData = []
 let schoolID = undefined;
 
 var Data = (function () {
@@ -33,6 +34,7 @@ var Data = (function () {
   var schools = schoolsData;
   var payments = paymentsData;
   var charges = chargesData;
+  var grades = gradesData;
   var school = undefined
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
@@ -50,6 +52,7 @@ var Data = (function () {
   emitize(subs, "teachers");
   emitize(subs, "payments");
   emitize(subs, "charges");
+  emitize(subs, "grades");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -71,6 +74,36 @@ var Data = (function () {
         email,
         address,
         id
+        grades {
+          id
+          name
+          subjects {
+            id
+            name
+            topicOrder
+            topics {
+              id
+              name
+              subtopics {
+                id
+                name
+                questions {
+                  id
+                  name
+                  type
+                  answers {
+                    id
+                    value
+                  }
+                  options {
+                    id
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
         financial {
           balance
         }
@@ -570,6 +603,83 @@ var Data = (function () {
         // listen for even change on the students observables
         subs.parents = cb;
         return parents;
+      },
+      getOne(id) { }
+    },
+    grades: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { id } = await mutate(
+            `
+            mutation ($Igrade: Igrade!) {
+              grades {
+                create(grade: $Igrade) {
+                  id
+                }
+              }
+            } `,
+            {
+              Igrade: Object.assign(data, { school: schoolID })
+            }
+          );
+
+          data.id = id;
+
+          grades = [...grades, data];
+          subs.grades({ grades });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Igrade: Ugrade!) {
+              grades {
+                update(grade: $Igrade) {
+                  id
+                }
+              }
+            } `,
+            {
+              Igrade: data
+            }
+          );
+
+          const subtract = grades.filter(({ id }) => id !== data.id);
+          grades = [data, ...subtract];
+          subs.parents({ grades });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Igrade: Ugrade!) {
+              grades {
+                archive(grade: $Igrade) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Igrade: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = grades.filter(({ id }) => id !== data.id);
+          grades = [...subtract];
+          subs.parents({ grades });
+          resolve();
+        }),
+      list() {
+        return grades;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.grades = cb;
+        return grades;
       },
       getOne(id) { }
     },

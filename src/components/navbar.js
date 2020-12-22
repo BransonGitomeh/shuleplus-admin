@@ -10,6 +10,7 @@ const KTOffcanvas = window.KTOffcanvas
 
 class Navbar extends React.Component {
   componentDidMount() {
+    const userData = JSON.parse(localStorage.getItem("user"))
 
     // Data.onReady(() => {
     const schools = Data.schools.list();
@@ -31,7 +32,7 @@ class Navbar extends React.Component {
       });
     });
 
-    this.setState({ selectedSchool: school });
+    this.setState({ selectedSchool: school, userRole: Object.keys(userData)[0] });
 
     // window.KTLayout.init();
     app.init()
@@ -111,7 +112,7 @@ class Navbar extends React.Component {
             className="kt-header-menu kt-header-menu-mobile "
           >
             <ul className="kt-menu__nav ">
-              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">{this.state.selectedSchool.name}</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
+              {this.state.availableSchools.length != 1 || this.state.userRole == "admin" ? <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">{this.state.selectedSchool.name}</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
                     {
@@ -130,7 +131,7 @@ class Navbar extends React.Component {
                     }
                   </ul>
                 </div>
-              </li>
+              </li> : ""}
 
 
               <li
@@ -327,6 +328,17 @@ class Navbar extends React.Component {
                     </li>
                   </ul>
                 </div>
+              </li>
+
+
+              <li
+                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
+                data-ktmenu-submenu-toggle="click"
+                aria-haspopup="true"
+              >
+                <Link to="/learning" className="kt-menu__link">
+                  <span className="kt-menu__link-text">Learning</span>
+                </Link>
               </li>
 
             </ul>
