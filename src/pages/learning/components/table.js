@@ -5,19 +5,19 @@ export default props => {
   const { options = { deleteable: true, editable: true, linkable: true } } = props;
   return (props.data && props.data.length > 0 &&
     <table
-      className="table table-striped table-bordered table-hover table-sm"
+      className="table"
     // width="100%"
       style={{
         "overflowX": "auto",
         "whiteSpace": "nowrap"
       }}
     >
-      <thead>
+      {/* <thead>
         <tr>
           <th title="Field #0">Name</th>
           <th title="Field #0">Actions</th>
         </tr> 
-      </thead>
+      </thead> */}
       <tbody>
         {props.data && props.data.map(row => {
           return (
