@@ -105,45 +105,6 @@ class BasicTable extends React.Component {
       this.setState({ grades });
     });
 
-    const subjects = Data.subjects.list();
-    this.setState({ subjects });
-
-    Data.subjects.subscribe(({ subjects }) => {
-      console.log({ subjects })
-      this.setState({ subjects });
-    });
-
-    const topics = Data.topics.list();
-    this.setState({ topics });
-
-    Data.topics.subscribe(({ topics }) => {
-      console.log({ topics })
-      this.setState({ topics });
-    });
-
-    const subtopics = Data.subtopics.list();
-    this.setState({ subtopics });
-
-    Data.subtopics.subscribe(({ subtopics }) => {
-      console.log({ subtopics })
-      this.setState({ subtopics });
-    });
-
-    const questions = Data.questions.list();
-    this.setState({ questions });
-
-    Data.questions.subscribe(({ questions }) => {
-      console.log({ questions })
-      this.setState({ questions });
-    });
-
-    const options = Data.options.list();
-    this.setState({ options });
-
-    Data.options.subscribe(({ options }) => {
-      console.log({ options })
-      this.setState({ options });
-    });
   }
 
   render() {
