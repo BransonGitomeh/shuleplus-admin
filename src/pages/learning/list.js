@@ -72,27 +72,27 @@ class BasicTable extends React.Component {
     gradeToDelete: {},
     gradeToEdit: {},
     selectedGrade: null,
-    subjects: [],
+    subjects: null,
     subjectToEdit: {},
     subjectToDelete: {},
     selectedSubject: null,
-    topics: [],
+    topics: null,
     topicToEdit: {},
     topicToDelete: {},
     selectedTopic: {},
-    subtopics: [],
+    subtopics: null,
     subtopicToEdit: {},
     subtopicToDelete: {},
     selectedSubtopic: null,
-    questions: [],
+    questions: null,
     questionToEdit: {},
     questionToDelete: {},
     selectedQuestion: null,
-    options: [],
+    options: null,
     optionToEdit: {},
     optionToDelete: {},
     trip: {},
-    events: [],
+    events: null,
     students: []
   };
 
@@ -176,7 +176,7 @@ class BasicTable extends React.Component {
                   />
                 </div>
 
-                {this.state.subjects && !this.state.subjects[0] ? "" : <div className="col-md-4">
+                {!this.state.subjects ? "" : <div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
                       <h3 class="kt-portlet__head-title">Subjects</h3>
@@ -211,7 +211,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {this.state.topics && !this.state.topics[0] ? "" : <div className="col-md-4">
+                {!this.state.topics ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -247,7 +247,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {this.state.subtopics && !this.state.subtopics[0] ? "" :<div className="col-md-4">
+                {!this.state.subtopics ? "" :<div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
                       <h3 class="kt-portlet__head-title">Subtopics</h3>
@@ -281,7 +281,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {this.state.questions && !this.state.questions[0] ? "" : <div className="col-md-4">
+                {!this.state.questions ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -316,7 +316,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {this.state.options && !this.state.options[0] ? "" :<div className="col-md-4">
+                {!this.state.options ? "" :<div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
