@@ -13,8 +13,13 @@ const classesData = [];
 const teachersData = [];
 const schoolsData = [];
 const paymentsData = []
-const chargesData = []
-const gradesData = []
+const chargesData = [];
+const gradesData = [];
+const subjectsData = [];
+const topicsData = [];
+const subtopicsData = [];
+const questionsData = [];
+const optionsData = [];
 let schoolID = undefined;
 
 var Data = (function () {
@@ -35,6 +40,11 @@ var Data = (function () {
   var payments = paymentsData;
   var charges = chargesData;
   var grades = gradesData;
+  var subjects = subjectsData;
+  var topics = topicsData;
+  var subtopics = subtopicsData;
+  var questions = questionsData;
+  var options = optionsData;
   var school = undefined
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
@@ -53,6 +63,11 @@ var Data = (function () {
   emitize(subs, "payments");
   emitize(subs, "charges");
   emitize(subs, "grades");
+  emitize(subs, "subjects");
+  emitize(subs, "topics");
+  emitize(subs, "subtopics");
+  emitize(subs, "questions");
+  emitize(subs, "options");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -375,6 +390,39 @@ var Data = (function () {
 
       complaints = school.complaints;
       subs.complaints({ complaints });
+
+      grades = school.grades;
+      subs.grades({ grades });
+
+      grades.forEach(grade => {
+        grade.subjects.forEach(subject => { subjects.push(subject) })
+      });
+      subjects = [...subjects];
+      subs.subjects({ subjects });
+
+      subjects.forEach(subject => {
+        subject.topics.forEach(topic => { topics.push(topic) })
+      });
+      topics = [...topics];
+      subs.topics({ topics });
+
+      topics.forEach(topic => {
+        topic.subtopics.forEach(subtopic => { subtopics.push(subtopic) })
+      });
+      subtopics = [...subtopics];
+      subs.subtopics({ subtopics });
+
+      subtopics.forEach(subtopic => {
+        subtopic.questions.forEach(question => { questions.push(question) })
+      });
+      questions = [...questions];
+      subs.questions({ questions });
+
+      questions.forEach(question => {
+        question.options.forEach(option => { options.push(option) })
+      });
+      options = [...options];
+      subs.options({ options });
     });
   }
 
@@ -609,7 +657,7 @@ var Data = (function () {
     grades: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
+          const { grades: { create: { id } } } = await mutate(
             `
             mutation ($Igrade: Igrade!) {
               grades {
@@ -622,7 +670,6 @@ var Data = (function () {
               Igrade: Object.assign(data, { school: schoolID })
             }
           );
-
           data.id = id;
 
           grades = [...grades, data];
@@ -647,7 +694,7 @@ var Data = (function () {
 
           const subtract = grades.filter(({ id }) => id !== data.id);
           grades = [data, ...subtract];
-          subs.parents({ grades });
+          subs.grades({ grades });
           resolve();
         }),
       delete: data =>
@@ -670,7 +717,7 @@ var Data = (function () {
 
           const subtract = grades.filter(({ id }) => id !== data.id);
           grades = [...subtract];
-          subs.parents({ grades });
+          subs.grades({ grades });
           resolve();
         }),
       list() {
@@ -680,6 +727,386 @@ var Data = (function () {
         // listen for even change on the students observables
         subs.grades = cb;
         return grades;
+      },
+      getOne(id) { }
+    },
+    subjects: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { subjects: { create: { id } } } = await mutate(
+            `
+            mutation ($Isubject: Isubject!) {
+              subjects {
+                create(subject: $Isubject) {
+                  id
+                }
+              }
+            } `,
+            {
+              Isubject: data
+            }
+          );
+          data.id = id;
+
+          subjects = [...subjects, data];
+          subs.subjects({ subjects });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Isubject: Usubject!) {
+              subjects {
+                update(subject: $Isubject) {
+                  id
+                }
+              }
+            } `,
+            {
+              Isubject: data
+            }
+          );
+
+          const subtract = subjects.filter(({ id }) => id !== data.id);
+          subjects = [data, ...subtract];
+          subs.subjects({ subjects });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Isubject: Usubject!) {
+              subjects {
+                archive(subject: $Isubject) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Isubject: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = subjects.filter(({ id }) => id !== data.id);
+          subjects = [...subtract];
+          subs.subjects({ subjects });
+          resolve();
+        }),
+      list() {
+        return subjects;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.subjects = cb;
+        return subjects;
+      },
+      getOne(id) { }
+    },
+    topics: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { topics: { create: { id } } } = await mutate(
+            `
+            mutation ($Itopic: Itopic!) {
+              topics {
+                create(topic: $Itopic) {
+                  id
+                }
+              }
+            } `,
+            {
+              Itopic: data
+            }
+          );
+          data.id = id;
+
+          topics = [...topics, data];
+          subs.topics({ topics });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Itopic: Utopic!) {
+              topics {
+                update(topic: $Itopic) {
+                  id
+                }
+              }
+            } `,
+            {
+              Itopic: data
+            }
+          );
+
+          const subtract = topics.filter(({ id }) => id !== data.id);
+          topics = [data, ...subtract];
+          subs.topics({ topics });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Itopic: Utopic!) {
+              topics {
+                archive(topic: $Itopic) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Itopic: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = topics.filter(({ id }) => id !== data.id);
+          topics = [...subtract];
+          subs.topics({ topics });
+          resolve();
+        }),
+      list() {
+        return topics;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.topics = cb;
+        return topics;
+      },
+      getOne(id) { }
+    },
+    subtopics: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { subtopics: { create: { id } } } = await mutate(
+            `
+            mutation ($Isubtopic: Isubtopic!) {
+              subtopics {
+                create(subtopic: $Isubtopic) {
+                  id
+                }
+              }
+            } `,
+            {
+              Isubtopic: data
+            }
+          );
+          data.id = id;
+
+          subtopics = [...subtopics, data];
+          subs.subtopics({ subtopics });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Isubtopic: Usubtopic!) {
+              subtopics {
+                update(subtopic: $Isubtopic) {
+                  id
+                }
+              }
+            } `,
+            {
+              Isubtopic: data
+            }
+          );
+
+          const subtract = subtopics.filter(({ id }) => id !== data.id);
+          subtopics = [data, ...subtract];
+          subs.subtopics({ subtopics });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Isubtopic: Usubtopic!) {
+              subtopics {
+                archive(subtopic: $Isubtopic) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Isubtopic: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = subtopics.filter(({ id }) => id !== data.id);
+          subtopics = [...subtract];
+          subs.subtopics({ subtopics });
+          resolve();
+        }),
+      list() {
+        return subtopics;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.subtopics = cb;
+        return subtopics;
+      },
+      getOne(id) { }
+    },
+    questions: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { questions: { create: { id } } } = await mutate(
+            `
+            mutation ($Iquestion: Iquestion!) {
+              questions {
+                create(question: $Iquestion) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iquestion: data
+            }
+          );
+          data.id = id;
+
+          questions = [...questions, data];
+          subs.questions({ questions });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Iquestion: Uquestion!) {
+              questions {
+                update(question: $Iquestion) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iquestion: data
+            }
+          );
+
+          const subtract = questions.filter(({ id }) => id !== data.id);
+          questions = [data, ...subtract];
+          subs.questions({ questions });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Iquestion: Uquestion!) {
+              questions {
+                archive(question: $Iquestion) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Iquestion: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = questions.filter(({ id }) => id !== data.id);
+          questions = [...subtract];
+          subs.questions({ questions });
+          resolve();
+        }),
+      list() {
+        return questions;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.questions = cb;
+        return questions;
+      },
+      getOne(id) { }
+    },
+    options: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { options: { create: { id } } } = await mutate(
+            `
+            mutation ($Ioption: Ioption!) {
+              options {
+                create(option: $Ioption) {
+                  id
+                }
+              }
+            } `,
+            {
+              Ioption: data
+            }
+          );
+          data.id = id;
+
+          options = [...options, data];
+          subs.options({ options });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Ioption: Uoption!) {
+              options {
+                update(option: $Ioption) {
+                  id
+                }
+              }
+            } `,
+            {
+              Ioption: data
+            }
+          );
+
+          const subtract = options.filter(({ id }) => id !== data.id);
+          options = [data, ...subtract];
+          subs.options({ options });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Ioption: Uoption!) {
+              options {
+                archive(option: $Ioption) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Ioption: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = options.filter(({ id }) => id !== data.id);
+          options = [...subtract];
+          subs.options({ options });
+          resolve();
+        }),
+      list() {
+        return options;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.options = cb;
+        return options;
       },
       getOne(id) { }
     },
