@@ -233,7 +233,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.topics}
-                    show={ topic => this.setState({ subtopics: topic.subtopics|| [], selectedTopic: topic.id }) }
+                    show={ topic => this.setState({ subtopics: topic.subtopics || [], selectedTopic: topic.id }) }
                     edit={topic => {
                       this.setState({ topicToEdit: topic }, () => {
                         editSubjectModalInstance.show();
@@ -267,7 +267,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.subtopics}
-                    show={ subtopic => this.setState({ questions: subtopic.questions|| [], selectedSubtopic: subtopic.id }) }
+                    show={ subtopic => this.setState({ questions: subtopic.questions || [], selectedSubtopic: subtopic.id }) }
                     edit={topic => {
                       this.setState({ subtopicToEdit: topic }, () => {
                         editSubjectModalInstance.show();
@@ -302,7 +302,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.questions}
-                    show={ question => this.setState({ options: question.options|| [], selectedQuestion: question.id }) }
+                    show={ question => this.setState({ options: question.options || [], selectedQuestion: question.id }) }
                     edit={question => {
                       this.setState({ questionToEdit: question }, () => {
                         editSubjectModalInstance.show();
