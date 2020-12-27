@@ -521,8 +521,8 @@ var Data = (function () {
                 parent2_name: undefined,
                 class: data.class.id,
                 class_name: undefined,
-                parent: data.parent.id,
-                parent2: data.parent2.id,
+                parent: data?.parent?.id,
+                parent2: data?.parent2?.id,
                 route_name: undefined,
                 route: data.route.id
               })
