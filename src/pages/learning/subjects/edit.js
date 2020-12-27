@@ -1,9 +1,7 @@
 import React from "react";
 import ErrorMessage from "../components/error-toast";
-import SuccessMessage from "../components/success-toast";
 
 const IErrorMessage = new ErrorMessage();
-const ISuccessMessage = new SuccessMessage();
 
 const $ = window.$;
 
@@ -47,12 +45,18 @@ class Modal extends React.Component {
         event.preventDefault();
         try {
           _this.setState({ loading: true });
-          const data = _this.state.subject;
-          delete data.topics;
+          // const data = _this.state.subject;
+          // delete data.topics;
+          const data = {};
+          Object.assign(data, {
+            id: _this.state.subject.id,
+            name: _this.state.subject.name,
+            grade: _this.state.subject.grade,
+          });
           await _this.props.edit(data);
+          _this.props.onUpdate(data);
           _this.hide();
           _this.setState({ loading: false });
-          ISuccessMessage.show();
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {

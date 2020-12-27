@@ -26,6 +26,7 @@ class Modal extends React.Component {
     try {
       this.setState({ loading: true });
       await this.props.delete(this.props.subject);
+      this.props.onDelete(this.props.subject);
       this.setState({ loading: false });
       this.hide();
     } catch (error) {

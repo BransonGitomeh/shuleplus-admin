@@ -4,6 +4,7 @@ import ErrorMessage from "../components/error-toast";
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
+let selectedGrade = null;
 
 const modalNumber = Math.random()
   .toString()
@@ -28,6 +29,15 @@ class Modal extends React.Component {
   hide() {
     $("#" + modalNumber).modal("hide");
   }
+  componentDidUpdate(){
+    const _this = this;
+    if(_this.props.grade != selectedGrade){
+      selectedGrade = _this.props.grade;
+      _this.setState(Object.assign(_this.state.subject, {
+          grade: _this.props.grade
+      }));
+    }
+  }
   componentDidMount() {
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
@@ -46,8 +56,14 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
           _this.state.loading = undefined;
-          delete _this.state.subject.id;
-          await _this.props.save(_this.state.subject);
+          const data = {};
+          Object.assign(data, {
+            name: _this.state.subject.name,
+            grade: _this.state.subject.grade,
+          });
+          const id = await _this.props.save(data);
+          data.id = id;
+          _this.props.onCreate(data);
           _this.hide();
           _this.setState({
             loading: false
@@ -55,9 +71,9 @@ class Modal extends React.Component {
           _this.setState(Object.assign(_this.state.subject, {
               name: ""
           }));
-          _this.setState(Object.assign(_this.state.subject, {
-              grade: ""
-          }));
+          // _this.setState(Object.assign(_this.state.subject, {
+          //     grade: ""
+          // }));
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {

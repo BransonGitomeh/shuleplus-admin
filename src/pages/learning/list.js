@@ -7,6 +7,8 @@ import DeleteModal from "./delete";
 import Data from "../../utils/data";
 import Stat from "../home/components/stat";
 
+import SuccessMessage from "./components/success-toast";
+
 import AddGradeModal from "./grades/add";
 import EditGradeModal from "./grades/edit";
 import DeleteGradeModal from "./grades/delete";
@@ -31,7 +33,9 @@ import AddOptionModal from "./options/add";
 import EditOptionModal from "./options/edit";
 import DeleteOptionModal from "./options/delete";
 
-import "./scrolling.css"
+import "./scrolling.css";
+
+const ISuccessMessage = new SuccessMessage();
 
 //const $ = window.$;
 const deleteModalInstance = new DeleteModal();
@@ -72,29 +76,90 @@ class BasicTable extends React.Component {
     gradeToDelete: {},
     gradeToEdit: {},
     selectedGrade: null,
-    subjects: null,
+    subjects: [],
     subjectToEdit: {},
     subjectToDelete: {},
     selectedSubject: null,
-    topics: null,
+    topics: [],
     topicToEdit: {},
     topicToDelete: {},
     selectedTopic: {},
-    subtopics: null,
+    subtopics: [],
     subtopicToEdit: {},
     subtopicToDelete: {},
     selectedSubtopic: null,
-    questions: null,
+    questions: [],
     questionToEdit: {},
     questionToDelete: {},
     selectedQuestion: null,
-    options: null,
+    options: [],
     optionToEdit: {},
     optionToDelete: {},
     trip: {},
     events: null,
     students: []
   };
+
+  // Subject alerts
+  onSubjectCreated = (subject) => {
+    ISuccessMessage.show({ message: 'Subject has been CREATED successfuly!', heading: 'Create subject' });
+    subject.topics = [];
+    const subjects = [...this.state.subjects, subject];
+    
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == subject.grade;
+    });
+    if(grade.length){
+      grade[0].subjects.push(subject);
+    }
+  }
+
+  onSubjectUpdated = (subject) => {
+    ISuccessMessage.show({ message: 'Subject has been UPDATED successfuly!', heading: 'Edit subject' });
+    const subjects = this.state.subjects.map(sub => {
+      if (sub.id == subject.id) {
+        subject.topics = sub.topics;
+        return subject;
+      }
+      return sub;
+    });
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == subject.grade;
+    });
+    
+    if(grade.length){
+      grade[0].subjects = grade[0].subjects.map(sub => {
+        if (sub.id == subject.id) {
+          subject.topics = sub.topics;
+          return subject;
+        }
+        return sub;
+      });
+    }
+  }
+
+  onSubjectDeleted = (subject) => {
+    console.log(subject);
+    ISuccessMessage.show({ message: 'Subject has been DELETED successfuly!', heading: 'Delete subject' });
+    const subjects = this.state.subjects.filter(sub => {
+      return sub.id != subject.id;
+    });
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == this.state.selectedGrade;
+    });
+    
+    if(grade.length){
+      grade[0].subjects = grade[0].subjects.filter(sub => {
+        return sub.id != subject.id;
+      });
+    }
+  }
 
   componentDidMount() {
     const grades = Data.grades.list();
@@ -108,7 +173,6 @@ class BasicTable extends React.Component {
   }
 
   render() {
-
     const { gradeToDelete, gradeToEdit, subjectToEdit, subjectToDelete, trip, remove } = this.state;
     const events = trip.events ? trip.events.map(ev => ({ ...ev, name: ev.student ? ev.student.name : '' })) : []
     const students = trip.schedule && trip.schedule.route && trip.schedule.route.students
@@ -119,20 +183,28 @@ class BasicTable extends React.Component {
           <div className="kt-portlet kt-portlet--mobile">
             
             <AddGradeModal save={grade => Data.grades.create(grade)} />
-            <EditGradeModal grade={gradeToEdit} edit={grade => Data.grades.update(grade)} />
-            <DeleteGradeModal grade={gradeToDelete} delete={grade => Data.grades.delete(grade)} />
+            <EditGradeModal grade={this.state.gradeToEdit} edit={grade => Data.grades.update(grade)} />
+            <DeleteGradeModal grade={this.state.gradeToDelete} delete={grade => Data.grades.delete(grade)} />
 
-            <AddSubjectModal grade={this.state.selectedGrade} grades={this.state.grades} save={subject => Data.subjects.create(subject)} />
-            <EditSubjectModal grade={this.state.selectedGrade} grades={this.state.grades} subject={subjectToEdit} edit={subject => Data.subjects.update(subject)} />
-            <DeleteSubjectModal grades={this.state.grades} subject={subjectToDelete} delete={subject => Data.subjects.delete(subject)} />
+            <AddSubjectModal onCreate={this.onSubjectCreated} grade={this.state.selectedGrade} grades={this.state.grades} save={subject => Data.subjects.create(subject)} />
+            <EditSubjectModal onUpdate={this.onSubjectUpdated} grade={this.state.selectedGrade} grades={this.state.grades} subject={this.state.subjectToEdit} edit={subject => Data.subjects.update(subject)} />
+            <DeleteSubjectModal onDelete={this.onSubjectDeleted} grades={this.state.grades} subject={this.state.subjectToDelete} delete={subject => Data.subjects.delete(subject)} />
 
             <AddTopicModal subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} save={topic => Data.topics.create(topic)} />
+            <EditTopicModal topic={this.state.topicToEdit} subjects={this.state.subjects} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={topic => Data.topics.update(topic)} />
+            <DeleteTopicModal topic={this.state.topicToDelete} delete={topic => Data.topics.delete(topic)} />
 
             <AddSubtopicModal topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} save={subtopic => Data.subtopics.create(subtopic)} />
-            
+            <EditSubtopicModal subtopic={this.state.subtopicToEdit} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={subtopic => Data.subtopics.update(subtopic)} />
+            <DeleteSubtopicModal subtopic={this.state.subtopicToDelete} delete={option => Data.subtopics.delete(option)} />
+
             <AddQuestionModal subtopic={this.state.selectedSubtopic} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} save={question => Data.questions.create(question)} />
+            <EditQuestionModal question={this.state.questionToEdit} subtopic={this.state.selectedSubtopic} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={question => Data.questions.update(question)} />
+            <DeleteQuestionModal question={this.state.questionToDelete} delete={question => Data.questions.delete(question)} />
 
             <AddOptionModal question={this.state.selectedQuestion} subtopic={this.state.selectedSubtopic} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} save={option => Data.options.create(option)} />
+            <EditOptionModal option={this.state.optionToEdit} question={this.state.selectedQuestion} subtopic={this.state.selectedSubtopic} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={option => Data.options.update(option)} />
+            <DeleteOptionModal option={this.state.optionToDelete} delete={option => Data.options.delete(option)} />
 
             <div class="kt-portlet__head">
               <div class="kt-portlet__head-label">
@@ -162,7 +234,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.grades}
-                    show={ grade => this.setState({ subjects: grade.subjects || [], selectedGrade: grade.id }) }
+                    show={ grade => this.setState({ subjects: grade.subjects, selectedGrade: grade.id, topics: [], subtopics: [], questions: [], options: [] }) }
                     edit={grade => {
                       this.setState({ gradeToEdit: grade }, () => {
                         editGradeModalInstance.show();
@@ -197,7 +269,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.subjects}
-                    show={ subject => this.setState({ topics: subject.topics || [], selectedSubject: subject.id }) }
+                    show={ subject => this.setState({ topics: subject.topics, selectedSubject: subject.id, subtopics: [], questions: [], options: [] }) }
                     edit={subject => {
                       this.setState({ subjectToEdit: subject }, () => {
                         editSubjectModalInstance.show();
@@ -233,15 +305,15 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.topics}
-                    show={ topic => this.setState({ subtopics: topic.subtopics || [], selectedTopic: topic.id }) }
+                    show={ topic => this.setState({ subtopics: topic.subtopics, selectedTopic: topic.id, questions: [], options: [] }) }
                     edit={topic => {
                       this.setState({ topicToEdit: topic }, () => {
-                        editSubjectModalInstance.show();
+                        editTopicModalInstance.show();
                       });
                     }}
                     delete={topic => {
                       this.setState({ topicToDelete: topic }, () => {
-                        deleteSubjectModalInstance.show();
+                        deleteTopicModalInstance.show();
                       });
                     }}
                   />
@@ -267,15 +339,15 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.subtopics}
-                    show={ subtopic => this.setState({ questions: subtopic.questions || [], selectedSubtopic: subtopic.id }) }
-                    edit={topic => {
-                      this.setState({ subtopicToEdit: topic }, () => {
-                        editSubjectModalInstance.show();
+                    show={ subtopic => this.setState({ questions: subtopic.questions, selectedSubtopic: subtopic.id, options: [] }) }
+                    edit={subtopic => {
+                      this.setState({ subtopicToEdit: subtopic }, () => {
+                        editSubtopicModalInstance.show();
                       });
                     }}
-                    delete={topic => {
-                      this.setState({ subtopicToDelete: topic }, () => {
-                        deleteSubjectModalInstance.show();
+                    delete={subtopic => {
+                      this.setState({ subtopicToDelete: subtopic }, () => {
+                        deleteSubtopicModalInstance.show();
                       });
                     }}
                   />
@@ -302,15 +374,15 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.questions}
-                    show={ question => this.setState({ options: question.options || [], selectedQuestion: question.id }) }
+                    show={ question => this.setState({ options: question.options, selectedQuestion: question.id  }) }
                     edit={question => {
                       this.setState({ questionToEdit: question }, () => {
-                        editSubjectModalInstance.show();
+                        editQuestionModalInstance.show();
                       });
                     }}
                     delete={question => {
                       this.setState({ questionToDelete: question }, () => {
-                        deleteSubjectModalInstance.show();
+                        deleteQuestionModalInstance.show();
                       });
                     }}
                   />
@@ -338,14 +410,14 @@ class BasicTable extends React.Component {
                     ]}
                     options={{linkable: false, editable: true, deleteable: true}}
                     data={this.state.options}
-                    edit={question => {
-                      this.setState({ questionToEdit: question }, () => {
-                        editSubjectModalInstance.show();
+                    edit={option => {
+                      this.setState({ optionToEdit: option }, () => {
+                        editOptionModalInstance.show();
                       });
                     }}
-                    delete={question => {
-                      this.setState({ questionToDelete: question }, () => {
-                        deleteSubjectModalInstance.show();
+                    delete={option => {
+                      this.setState({ optionToDelete: option }, () => {
+                        deleteOptionModalInstance.show();
                       });
                     }}
                   />

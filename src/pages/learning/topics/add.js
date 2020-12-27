@@ -5,6 +5,9 @@ const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
 
+let selectedGrade = null;
+let selectedSubject = null;
+
 const modalNumber = Math.random()
   .toString()
   .split(".")[1];
@@ -27,9 +30,11 @@ class Modal extends React.Component {
       keyboard: false
     });
   }
+  
   hide() {
     $("#" + modalNumber).modal("hide");
   }
+  
   setSubjects(id){
     const grade = this.props.grades.filter(grade => {
       return grade.id == id;
@@ -38,14 +43,29 @@ class Modal extends React.Component {
       this.setState({subjects: grade[0].subjects});
     }
   }
+
+  componentDidUpdate(){
+    const _this = this;
+    if(_this.props.grade != selectedGrade){
+      selectedGrade = _this.props.grade;
+      _this.setState({grade: _this.props.grade});
+      let subjects = [];
+      _this.props.grades.forEach(grade => {
+        if(grade.id == selectedGrade){
+           _this.setState({subjects: grade.subjects}); 
+        }
+      });
+    }
+    
+    if(_this.props.subject != selectedSubject){
+      selectedSubject = _this.props.subject;
+      _this.setState(Object.assign(_this.state.topic, {
+          subject: _this.props.subject
+      }));
+    }
+  }
+
   componentDidMount() {
-    if(this.props.grade){
-      this.setState({grade: this.props.grade});
-      this.setSubjects(this.props.grade);
-    }
-    if(this.props.subject){
-      this.setState({subject: this.props.subject});
-    }
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
@@ -69,14 +89,15 @@ class Modal extends React.Component {
           _this.setState({
             loading: false,
             grade: "",
-            subjects: [],
           });
+          selectedGrade = null;
+          selectedSubject = null;
           _this.setState(Object.assign(_this.state.topic, {
               name: ""
           }));
-          _this.setState(Object.assign(_this.state.topic, {
-              subject: ""
-          }));
+          // _this.setState(Object.assign(_this.state.topic, {
+          //     subject: ""
+          // }));
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {
