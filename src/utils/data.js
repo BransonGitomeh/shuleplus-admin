@@ -749,7 +749,7 @@ var Data = (function () {
 
           subjects = [...subjects, data];
           subs.subjects({ subjects });
-          resolve();
+          resolve(id);
         }),
       update: data =>
         new Promise(async (resolve, reject) => {

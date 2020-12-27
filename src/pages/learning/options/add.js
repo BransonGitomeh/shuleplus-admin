@@ -119,14 +119,9 @@ class Modal extends React.Component {
       let subjects = [];
       _this.props.grades.forEach(grade => {
         if(grade.id == selectedGrade){
-          grade.subjects.forEach(subject =>  {
-            subjects.push(subject);
-          });
+          _this.setState({subjects: grade.subjects});
         }
       });
-
-      subjects = [...subjects];
-      _this.setState({subjects});
     }
 
     if(_this.props.subject != selectedSubject){
@@ -135,14 +130,9 @@ class Modal extends React.Component {
       let topics = [];
       _this.state.subjects.forEach(subject => {
         if(subject.id == selectedSubject){
-          subject.topics.forEach(topic =>  {
-            topics.push(topic);
-          });
+          _this.setState({topics: subject.topics}); 
         }
       });
-
-      topics = [...topics];
-      _this.setState({topics}); 
     }
 
     if(_this.props.topic != selectedTopic){
@@ -151,14 +141,9 @@ class Modal extends React.Component {
       let subtopics = [];
       _this.state.topics.forEach(topic => {
         if(topic.id == selectedTopic){
-          topic.subtopics.forEach(subtopic =>  {
-            subtopics.push(subtopic);
-          });
+          _this.setState({subtopics: topic.subtopics});
         }
-      });
-
-      subtopics = [...subtopics];
-      _this.setState({subtopics}); 
+      }); 
     }
 
     if(_this.props.subtopic != selectedSubtopic){
@@ -167,14 +152,9 @@ class Modal extends React.Component {
       let questions = [];
       _this.state.subtopics.forEach(subtopic => {
         if(subtopic.id == selectedSubtopic){
-          subtopic.questions.forEach(question =>  {
-            questions.push(question);
-          });
+          _this.setState({questions: subtopic.questions}); 
         }
       });
-
-      questions = [...questions];
-      _this.setState({questions}); 
     }
 
     if(_this.props.question != selectedQuestion){

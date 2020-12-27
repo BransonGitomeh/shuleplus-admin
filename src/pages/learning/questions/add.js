@@ -92,12 +92,9 @@ class Modal extends React.Component {
       let subjects = [];
       _this.props.grades.forEach(grade => {
         if(grade.id == selectedGrade){
-          subjects = grade.subjects;
+          _this.setState({subjects: grade.subjects});
         }
       });
-
-      subjects = [...subjects];
-      _this.setState({subjects});
     }
 
     if(_this.props.subject != selectedSubject){

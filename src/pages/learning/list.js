@@ -7,6 +7,8 @@ import DeleteModal from "./delete";
 import Data from "../../utils/data";
 import Stat from "../home/components/stat";
 
+import SuccessMessage from "./components/success-toast";
+
 import AddGradeModal from "./grades/add";
 import EditGradeModal from "./grades/edit";
 import DeleteGradeModal from "./grades/delete";
@@ -31,7 +33,9 @@ import AddOptionModal from "./options/add";
 import EditOptionModal from "./options/edit";
 import DeleteOptionModal from "./options/delete";
 
-import "./scrolling.css"
+import "./scrolling.css";
+
+const ISuccessMessage = new SuccessMessage();
 
 //const $ = window.$;
 const deleteModalInstance = new DeleteModal();
@@ -96,6 +100,67 @@ class BasicTable extends React.Component {
     students: []
   };
 
+  // Subject alerts
+  onSubjectCreated = (subject) => {
+    ISuccessMessage.show({ message: 'Subject has been CREATED successfuly!', heading: 'Create subject' });
+    subject.topics = [];
+    const subjects = [...this.state.subjects, subject];
+    
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == subject.grade;
+    });
+    if(grade.length){
+      grade[0].subjects.push(subject);
+    }
+  }
+
+  onSubjectUpdated = (subject) => {
+    ISuccessMessage.show({ message: 'Subject has been UPDATED successfuly!', heading: 'Edit subject' });
+    const subjects = this.state.subjects.map(sub => {
+      if (sub.id == subject.id) {
+        subject.topics = sub.topics;
+        return subject;
+      }
+      return sub;
+    });
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == subject.grade;
+    });
+    
+    if(grade.length){
+      grade[0].subjects = grade[0].subjects.map(sub => {
+        if (sub.id == subject.id) {
+          subject.topics = sub.topics;
+          return subject;
+        }
+        return sub;
+      });
+    }
+  }
+
+  onSubjectDeleted = (subject) => {
+    console.log(subject);
+    ISuccessMessage.show({ message: 'Subject has been DELETED successfuly!', heading: 'Delete subject' });
+    const subjects = this.state.subjects.filter(sub => {
+      return sub.id != subject.id;
+    });
+    this.setState({subjects});
+    
+    const grade = this.state.grades.filter(grade => {
+      return grade.id == this.state.selectedGrade;
+    });
+    
+    if(grade.length){
+      grade[0].subjects = grade[0].subjects.filter(sub => {
+        return sub.id != subject.id;
+      });
+    }
+  }
+
   componentDidMount() {
     const grades = Data.grades.list();
     this.setState({ grades });
@@ -108,7 +173,6 @@ class BasicTable extends React.Component {
   }
 
   render() {
-
     const { gradeToDelete, gradeToEdit, subjectToEdit, subjectToDelete, trip, remove } = this.state;
     const events = trip.events ? trip.events.map(ev => ({ ...ev, name: ev.student ? ev.student.name : '' })) : []
     const students = trip.schedule && trip.schedule.route && trip.schedule.route.students
@@ -122,9 +186,9 @@ class BasicTable extends React.Component {
             <EditGradeModal grade={this.state.gradeToEdit} edit={grade => Data.grades.update(grade)} />
             <DeleteGradeModal grade={this.state.gradeToDelete} delete={grade => Data.grades.delete(grade)} />
 
-            <AddSubjectModal grade={this.state.selectedGrade} grades={this.state.grades} save={subject => Data.subjects.create(subject)} />
-            <EditSubjectModal grade={this.state.selectedGrade} grades={this.state.grades} subject={this.state.subjectToEdit} edit={subject => Data.subjects.update(subject)} />
-            <DeleteSubjectModal grades={this.state.grades} subject={this.state.subjectToDelete} delete={subject => Data.subjects.delete(subject)} />
+            <AddSubjectModal onCreate={this.onSubjectCreated} grade={this.state.selectedGrade} grades={this.state.grades} save={subject => Data.subjects.create(subject)} />
+            <EditSubjectModal onUpdate={this.onSubjectUpdated} grade={this.state.selectedGrade} grades={this.state.grades} subject={this.state.subjectToEdit} edit={subject => Data.subjects.update(subject)} />
+            <DeleteSubjectModal onDelete={this.onSubjectDeleted} grades={this.state.grades} subject={this.state.subjectToDelete} delete={subject => Data.subjects.delete(subject)} />
 
             <AddTopicModal subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} save={topic => Data.topics.create(topic)} />
             <EditTopicModal topic={this.state.topicToEdit} subjects={this.state.subjects} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={topic => Data.topics.update(topic)} />
