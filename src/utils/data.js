@@ -517,7 +517,6 @@ var Data = (function () {
           } `,
             {
               student: Object.assign({}, data, {
-                school: schoolID,
                 parent_name: undefined,
                 parent2_name: undefined,
                 class: data.class.id,
