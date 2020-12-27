@@ -25,7 +25,7 @@ class Modal extends React.Component {
   async deleteRecord() {
     try {
       this.setState({ loading: true });
-      await this.props.delete(this.props.grade);
+      await this.props.delete(this.props.option);
       this.setState({ loading: false });
       this.hide();
     } catch (error) {
@@ -54,7 +54,7 @@ class Modal extends React.Component {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Delete grade</h5>
+                <h5 className="modal-title">Delete option</h5>
                 <button
                   type="button"
                   className="close"
@@ -65,7 +65,7 @@ class Modal extends React.Component {
                 </button>
               </div>
               <div className="modal-body">
-                <p>{`Are you sure you want to delete the: "${this.props.grade.name}" grade ?`}</p>
+                <p>{`Are you sure you want to delete the: "${this.props.option.value}" option ?`}</p>
               </div>
               <div className="modal-footer">
                 {!this.state.loading ? (

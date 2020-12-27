@@ -4,6 +4,7 @@ import ErrorMessage from "../components/error-toast";
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
+let selectedGrade = null;
 
 const modalNumber = Math.random()
   .toString()
@@ -27,6 +28,15 @@ class Modal extends React.Component {
   }
   hide() {
     $("#" + modalNumber).modal("hide");
+  }
+  componentDidUpdate(){
+    const _this = this;
+    if(_this.props.grade != selectedGrade){
+      selectedGrade = _this.props.grade;
+      _this.setState(Object.assign(_this.state.subject, {
+          grade: _this.props.grade
+      }));
+    }
   }
   componentDidMount() {
     const _this = this;

@@ -6,6 +6,10 @@ const IErrorMessage = new ErrorMessage();
 const $ = window.$;
 
 const types = ['SINGLECHOICE', 'MULTICHOICE'];
+let selectedGrade = null;
+let selectedSubject = null;
+let selectedTopic = null;
+let selectedSubtopic = null;
 
 const modalNumber = Math.random()
   .toString()
@@ -34,6 +38,7 @@ class Modal extends React.Component {
       keyboard: false
     });
   }
+
   hide() {
     $("#" + modalNumber).modal("hide");
   }
@@ -43,7 +48,14 @@ class Modal extends React.Component {
       return grade.id == id;
     });
     if(grade.length){
-      this.setState({subjects: grade[0].subjects});
+      this.setState({
+        subject: "",
+        subjects: grade[0].subjects,
+        topic: "",
+        topics: [],
+        subtopic: "",
+        subtopics: [],
+      });
     }
   }
   
@@ -52,7 +64,14 @@ class Modal extends React.Component {
       return subject.id == id;
     });
     if(subject.length){
-      this.setState({topics: subject[0].topics});
+      this.setState({
+        topic: "",
+        topics: subject[0].topics,
+        subtopics: [],
+      });
+      this.setState(Object.assign(this.state.question, {
+          subtopic: ""
+      }));
     }
   }
   
@@ -65,14 +84,53 @@ class Modal extends React.Component {
     }
   }
 
+  componentDidUpdate(){
+    const _this = this;
+    if(_this.props.grade != selectedGrade){
+      selectedGrade = _this.props.grade;
+      _this.setState({grade: _this.props.grade});
+      let subjects = [];
+      _this.props.grades.forEach(grade => {
+        if(grade.id == selectedGrade){
+          subjects = grade.subjects;
+        }
+      });
+
+      subjects = [...subjects];
+      _this.setState({subjects});
+    }
+
+    if(_this.props.subject != selectedSubject){
+      selectedSubject = _this.props.subject;
+      this.setState({subject: _this.props.subject});
+      let topics = [];
+      _this.state.subjects.forEach(subject => {
+        if(subject.id == selectedSubject){
+          _this.setState({topics: subject.topics}); 
+        }
+      });
+    }
+
+    if(_this.props.topic != selectedTopic){
+      selectedTopic = _this.props.topic;
+      this.setState({topic: _this.props.topic});
+      let subtopics = [];
+      _this.state.topics.forEach(topic => {
+        if(topic.id == selectedTopic){
+          _this.setState({subtopics: topic.subtopics});
+        }
+      });
+    }
+
+    if(_this.props.subtopic != selectedSubtopic){
+      selectedSubtopic = _this.props.subtopic;
+      _this.setState(Object.assign(_this.state.question, {
+          subtopic: _this.props.subtopic
+      }));
+    }
+  }
+
   componentDidMount() {
-    if(this.props.grade){
-      this.setState({grade: this.props.grade});
-      this.setSubjects(this.props.grade);
-    }
-    if(this.props.subject){
-      this.setState({subject: this.props.subject});
-    }
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
@@ -97,17 +155,21 @@ class Modal extends React.Component {
             loading: false,
             grade: "",
             subject: "",
-            subjects: [],
             topic: "",
-            topics: [],
-            subtopics: [],
+            // subjects: [],
+            // topics: [],
+            // subtopics: [],
           });
+          selectedGrade = null;
+          selectedSubject = null;
+          selectedTopic = null;
+          selectedSubtopic = null;
           _this.setState(Object.assign(_this.state.question, {
               name: ""
           }));
-          _this.setState(Object.assign(_this.state.question, {
-              subtopic: ""
-          }));
+          // _this.setState(Object.assign(_this.state.question, {
+          //     subtopic: ""
+          // }));
           _this.setState(Object.assign(_this.state.question, {
               type: ""
           }));
@@ -122,6 +184,7 @@ class Modal extends React.Component {
       }
     });
   }
+
   render() {
     return (
       <div>

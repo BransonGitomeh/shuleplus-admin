@@ -5,6 +5,10 @@ const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
 
+let selectedGrade = null;
+let selectedSubject = null;
+let selectedTopic = null;
+
 const modalNumber = Math.random()
   .toString()
   .split(".")[1];
@@ -12,10 +16,8 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
-    subtopic: {
-      name: "",
-      topic: "",
-    },
+    name: "",
+    topic: "",
     grade: "",
     subject: "",
     subjects: [],
@@ -37,7 +39,12 @@ class Modal extends React.Component {
       return grade.id == id;
     });
     if(grade.length){
-      this.setState({subjects: grade[0].subjects});
+      this.setState({
+        subject: "",
+        subjects: grade[0].subjects,
+        topics: []
+      });
+      this.setState({topic: ""});
     }
   }
   setTopics(id){
@@ -45,17 +52,40 @@ class Modal extends React.Component {
       return subject.id == id;
     });
     if(subject.length){
-      this.setState({topics: subject[0].topics});
+      this.setState({
+        topics: subject[0].topics
+      });
+      this.setState({topic: ""});
+    }
+  }
+  componentDidUpdate(){
+    const _this = this;
+    if(_this.props.grade != selectedGrade){
+      selectedGrade = _this.props.grade;
+      _this.setState({grade: _this.props.grade});
+      let subjects = [];
+      _this.props.grades.forEach(grade => {
+        if(grade.id == selectedGrade){
+          _this.setState({subjects: grade.subjects});
+        }
+      });
+    }
+    if(_this.props.subject != selectedSubject){
+      selectedSubject = _this.props.subject;
+      _this.setState({subject: _this.props.subject});
+      let topics = [];
+      _this.state.subjects.forEach(subject => {
+        if(subject.id == selectedSubject){
+          _this.setState({topics: subject.topics});
+        }
+      }); 
+    }
+    if(_this.props.topic != selectedTopic){
+      selectedTopic = _this.props.topic;
+      _this.setState({topic: _this.props.topic});
     }
   }
   componentDidMount() {
-    if(this.props.grade){
-      this.setState({grade: this.props.grade});
-      this.setSubjects(this.props.grade);
-    }
-    if(this.props.subject){
-      this.setState({subject: this.props.subject});
-    }
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
@@ -73,22 +103,24 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
           _this.state.loading = undefined;
-          delete _this.state.subtopic.id;
-          await _this.props.save(_this.state.subtopic);
+          const data = {};
+          Object.assign(data, {
+            name: _this.state.name,
+            topic: _this.state.topic,
+          });
+          await _this.props.save(data);
           _this.hide();
           _this.setState({
             loading: false,
             grade: "",
             subject: "",
-            subjects: [],
-            topics: [],
+            topic: "",
           });
-          _this.setState(Object.assign(this.state.subtopic, {
-            name: ""
-          }));
-          _this.setState(Object.assign(this.state.subtopic, {
-            topic: ""
-          }));
+          selectedGrade = null;
+          selectedSubject = null;
+          selectedTopic = null;
+          _this.setState({name: ""});
+          _this.setState({topic: ""});
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {
@@ -139,10 +171,10 @@ class Modal extends React.Component {
                           id="name"
                           name="name"
                           minLength="2"
-                          value={this.state.subtopic.name}
-                          onChange={(e) => this.setState(Object.assign(this.state.subtopic, {
+                          value={this.state.name}
+                          onChange={(e) => this.setState({
                             name: e.target.value
-                          }))}
+                          })}
                           required
                         />
                       </div>
@@ -193,10 +225,10 @@ class Modal extends React.Component {
                           type="text"
                           class="form-control"
                           required
-                          value={this.state.subtopic.topic}
-                          onChange={(e) => this.setState(Object.assign(this.state.subtopic, {
+                          value={this.state.topic}
+                          onChange={(e) => this.setState({
                             topic: e.target.value
-                          }))}
+                          })}
                         >
                           <option value="">Select topic</option>
                           {this.state.topics.map(
