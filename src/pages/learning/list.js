@@ -1,6 +1,7 @@
 import React from "react";
 
 import Table from "./components/table";
+import Search from './components/search';
 import Map from "./components/map"
 import TripDetails from "./components/trip-details";
 import DeleteModal from "./delete";
@@ -76,32 +77,43 @@ class BasicTable extends React.Component {
     gradeToDelete: {},
     gradeToEdit: {},
     selectedGrade: null,
+
     subjects: [],
+    filteredSubjects: [],
     subjectToEdit: {},
     subjectToDelete: {},
     selectedSubject: null,
+    
     topics: [],
+    filteredTopics: [],
     topicToEdit: {},
     topicToDelete: {},
     selectedTopic: {},
+    
     subtopics: [],
+    filteredSubtopics: [],
     subtopicToEdit: {},
     subtopicToDelete: {},
     selectedSubtopic: null,
+    
     questions: [],
+    filteredQuestions: [],
     questionToEdit: {},
     questionToDelete: {},
     selectedQuestion: null,
+    
     options: [],
+    filteredOptions: [],
     optionToEdit: {},
     optionToDelete: {},
+    
     trip: {},
     events: null,
     students: []
   };
 
   // Subject alerts
-  onSubjectCreated = (subject) => {
+  onSubjectCreated = subject => {
     ISuccessMessage.show({ message: 'Subject has been CREATED successfuly!', heading: 'Create subject' });
     subject.topics = [];
     const subjects = [...this.state.subjects, subject];
@@ -116,7 +128,7 @@ class BasicTable extends React.Component {
     }
   }
 
-  onSubjectUpdated = (subject) => {
+  onSubjectUpdated = subject => {
     ISuccessMessage.show({ message: 'Subject has been UPDATED successfuly!', heading: 'Edit subject' });
     const subjects = this.state.subjects.map(sub => {
       if (sub.id == subject.id) {
@@ -142,7 +154,7 @@ class BasicTable extends React.Component {
     }
   }
 
-  onSubjectDeleted = (subject) => {
+  onSubjectDeleted = subject => {
     console.log(subject);
     ISuccessMessage.show({ message: 'Subject has been DELETED successfuly!', heading: 'Delete subject' });
     const subjects = this.state.subjects.filter(sub => {
@@ -159,6 +171,121 @@ class BasicTable extends React.Component {
         return sub.id != subject.id;
       });
     }
+  }
+
+  onGradeSearch = e => {
+    const grades = Data.grades.list();
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      if(grades.length != this.state.grades.length){
+        this.setState({ grades });
+      }
+      return;
+    }
+
+    const filteredGrades = grades.filter(grade => 
+      grade.name.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ grades: filteredGrades });
+  }
+
+  onSubjectSearch = e => {
+    if(!this.state.selectedGrade){
+      return;
+    }
+
+    const subjects = this.state.subjects;
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      this.setState({ filteredSubjects: subjects });
+      return;
+    }
+
+    const filteredSubjects = subjects.filter(subject => 
+      subject.name.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ filteredSubjects });
+  }
+
+  onTopicSearch = e => {
+    if(!this.state.selectedSubject){
+      return;
+    }
+
+    const topics = this.state.topics;
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      this.setState({ filteredTopics: topics });
+      return;
+    }
+
+    const filteredTopics = topics.filter(topic => 
+      topic.name.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ filteredTopics });
+  }
+
+  onSubtopicSearch = e => {
+    if(!this.state.selectedTopic){
+      return;
+    }
+
+    const subtopics = this.state.subtopics;
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      this.setState({ filteredSubtopics: subtopics });
+      return;
+    }
+
+    const filteredSubtopics = subtopics.filter(subtopic => 
+      subtopic.name.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ filteredSubtopics });
+  }
+
+  onQuestionSearch = e => {
+    if(!this.state.selectedSubtopic){
+      return;
+    }
+
+    const questions = this.state.questions;
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      this.setState({ filteredQuestions: questions });
+      return;
+    }
+
+    const filteredQuestions = questions.filter(question => 
+      question.name.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ filteredQuestions });
+  }
+
+  onOptionSearch = e => {
+    if(!this.state.selectedQuestion){
+      return;
+    }
+
+    const options = this.state.options;
+    const a = e.target.value;
+    if (a == null || a == "" || a.length == 0 || a.trim().length == 0) {
+      this.setState({ filteredOptions: options });
+      return;
+    }
+
+    const filteredOptions = options.filter(option => 
+      option.value.toLowerCase().match(e.target.value.toLowerCase())
+    );
+    this.setState({ filteredOptions });
+  }
+
+  onPageChanged = data => {
+    const { grades } = this.state;
+    const { currentPage, totalPages, pageLimit } = data;
+    const offset = (currentPage - 1) * pageLimit;
+    const currentGrades = grades.slice(offset, offset + pageLimit);
+
+    this.setState({ grades: currentGrades });
   }
 
   componentDidMount() {
@@ -226,6 +353,7 @@ class BasicTable extends React.Component {
 
                   </div>
                   <br></br>
+                  <Search title="grades" onSearch={this.onGradeSearch}/>
                   <Table
                     headers={[
                       {
@@ -234,7 +362,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.grades}
-                    show={ grade => this.setState({ subjects: grade.subjects, selectedGrade: grade.id, topics: [], subtopics: [], questions: [], options: [] }) }
+                    show={ grade => this.setState({ subjects: grade.subjects, filteredSubjects: grade.subjects,  selectedGrade: grade.id, topics: [], subtopics: [], questions: [], options: [] }) }
                     edit={grade => {
                       this.setState({ gradeToEdit: grade }, () => {
                         editGradeModalInstance.show();
@@ -260,7 +388,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
-
+                  {this.state.subjects.length ? <Search title="subjects" onSearch={this.onSubjectSearch}/>: ""}
                   <Table
                     headers={[
                       {
@@ -268,8 +396,8 @@ class BasicTable extends React.Component {
                         key: "name"
                       },
                     ]}
-                    data={this.state.subjects}
-                    show={ subject => this.setState({ topics: subject.topics, selectedSubject: subject.id, subtopics: [], questions: [], options: [] }) }
+                    data={this.state.filteredSubjects}
+                    show={ subject => this.setState({ filteredTopics: subject.topics, topics: subject.topics, selectedSubject: subject.id, subtopics: [], questions: [], options: [] }) }
                     edit={subject => {
                       this.setState({ subjectToEdit: subject }, () => {
                         editSubjectModalInstance.show();
@@ -283,7 +411,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.topics ? "" : <div className="col-md-4">
+                {!this.state.filteredTopics ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -296,7 +424,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
-
+                  {this.state.topics.length ? <Search title="topics" onSearch={this.onTopicSearch}/>: ""}
                   <Table
                     headers={[
                       {
@@ -304,8 +432,8 @@ class BasicTable extends React.Component {
                         key: "name"
                       },
                     ]}
-                    data={this.state.topics}
-                    show={ topic => this.setState({ subtopics: topic.subtopics, selectedTopic: topic.id, questions: [], options: [] }) }
+                    data={this.state.filteredTopics}
+                    show={ topic => this.setState({ filteredSubtopics: topic.subtopics, subtopics: topic.subtopics, selectedTopic: topic.id, questions: [], options: [] }) }
                     edit={topic => {
                       this.setState({ topicToEdit: topic }, () => {
                         editTopicModalInstance.show();
@@ -319,7 +447,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.subtopics ? "" :<div className="col-md-4">
+                {!this.state.filteredSubtopics ? "" :<div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
                       <h3 class="kt-portlet__head-title">Subtopics</h3>
@@ -331,6 +459,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
+                  {this.state.subtopics.length ? <Search title="subtopics" onSearch={this.onSubtopicSearch}/>: ""}
                   <Table
                     headers={[
                       {
@@ -338,8 +467,8 @@ class BasicTable extends React.Component {
                         key: "name"
                       },
                     ]}
-                    data={this.state.subtopics}
-                    show={ subtopic => this.setState({ questions: subtopic.questions, selectedSubtopic: subtopic.id, options: [] }) }
+                    data={this.state.filteredSubtopics}
+                    show={ subtopic => this.setState({ filteredQuestions: subtopic.questions, questions: subtopic.questions, selectedSubtopic: subtopic.id, options: [] }) }
                     edit={subtopic => {
                       this.setState({ subtopicToEdit: subtopic }, () => {
                         editSubtopicModalInstance.show();
@@ -353,7 +482,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.questions ? "" : <div className="col-md-4">
+                {!this.state.filteredQuestions ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -366,6 +495,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
+                  {this.state.questions.length ? <Search title="questions" onSearch={this.onQuestionSearch}/>: ""}
                   <Table
                     headers={[
                       {
@@ -373,8 +503,8 @@ class BasicTable extends React.Component {
                         key: "name"
                       },
                     ]}
-                    data={this.state.questions}
-                    show={ question => this.setState({ options: question.options, selectedQuestion: question.id  }) }
+                    data={this.state.filteredQuestions}
+                    show={ question => this.setState({ filteredOptions: question.options, options: question.options, selectedQuestion: question.id  }) }
                     edit={question => {
                       this.setState({ questionToEdit: question }, () => {
                         editQuestionModalInstance.show();
@@ -388,7 +518,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.options ? "" :<div className="col-md-4">
+                {!this.state.filteredOptions ? "" :<div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -401,6 +531,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
+                  {this.state.options.length ? <Search title="options" onSearch={this.onOptionSearch}/>: ""}
                   <Table
                     headers={[
                       {
@@ -409,7 +540,7 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     options={{linkable: false, editable: true, deleteable: true}}
-                    data={this.state.options}
+                    data={this.state.filteredOptions}
                     edit={option => {
                       this.setState({ optionToEdit: option }, () => {
                         editOptionModalInstance.show();
