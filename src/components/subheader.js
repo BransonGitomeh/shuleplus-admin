@@ -85,7 +85,7 @@ class Subheader extends React.Component {
         </div>
 
 
-        {this.state.selectedSchool.financial?.balance > MIN_BALANCE ? "" : <div id="kt_subheader" className="kt-subheader kt-grid__item " style={{ backgroundColor: "red", color: "white" }}>
+        {this.state.selectedSchool.financial?.balance < MIN_BALANCE ? "" : <div id="kt_subheader" className="kt-subheader kt-grid__item " style={{ backgroundColor: "red", color: "white" }}>
           <div className="kt-container  kt-container--fluid ">
             <div className="kt-subheader__title">
               <div className="kt-subheader__breadcrumbs">
