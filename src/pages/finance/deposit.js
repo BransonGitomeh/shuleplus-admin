@@ -121,7 +121,7 @@ class Modal extends React.Component {
   }
   async charge(ammount) {
     this.setState({ started: true, loading: true });
-    const { payments, errors } = await Data.schools.charge(this.state.school.phone, ammount.toString())
+    const { payments, errors } = await Data.schools.charge(this.state.edit.phone, ammount.toString())
 
     if (errors) {
       return
