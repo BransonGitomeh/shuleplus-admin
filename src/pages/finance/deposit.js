@@ -295,4 +295,4 @@ class Modal extends React.Component {
   }
 }
 
-export default withRouter(Modal);
+export default Modal;
