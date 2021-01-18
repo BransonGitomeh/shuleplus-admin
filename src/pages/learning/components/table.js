@@ -23,7 +23,7 @@ export default props => {
           return (
             <tr key={Math.random().toString()}>
               {props.headers.map(header => {
-                return <td>{row[header.key]}</td>;
+                return <td style={{paddingTop:18}}>{row[header.key]}</td>;
               })}
 
               <td
