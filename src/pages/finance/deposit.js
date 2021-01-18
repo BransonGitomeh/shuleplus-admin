@@ -5,9 +5,7 @@ import "./spinner.css"
 import Data from "../../utils/data";
 import { withRouter } from "react-router";
 
-
 const IErrorMessage = new ErrorMessage();
-
 
 const $ = window.$;
 
@@ -114,9 +112,7 @@ class Modal extends React.Component {
     }
 
     if (success == true) {
-      this.props.history.push({
-        pathname:"/finance/topup"
-      })
+      window.document.location.href = "/finance/topup"
       window.location.reload()
       return this.setState({ verifying: false, loading: false, success: true, message });
     }
