@@ -3,6 +3,7 @@ import ErrorMessage from "./components/error-toast";
 import "./spinner.css"
 
 import Data from "../../utils/data";
+import { withRouter } from "react-router";
 
 
 const IErrorMessage = new ErrorMessage();
@@ -112,8 +113,10 @@ class Modal extends React.Component {
       return this.verifyTx(CheckoutRequestID, MerchantRequestID)
     }
 
-    // console.log({ success, message })
     if (success == true) {
+      this.props.history.push({
+        pathname:"/finance/topup"
+      })
       window.location.reload()
       return this.setState({ verifying: false, loading: false, success: true, message });
     }
@@ -292,4 +295,4 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+export default withRouter(Modal);
