@@ -286,7 +286,7 @@ class Navbar extends React.Component {
               </li>
 
 
-              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Finance</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
+              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">{this.state.selectedSchool.financial?.balanceFormated}, Finance</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
 
@@ -336,7 +336,6 @@ class Navbar extends React.Component {
             className="kt-header__topbar-item kt-header__topbar-item--user"
             id="kt_offcanvas_toolbar_profile_toggler_btn"
           >
-            <div className="kt-header__topbar-username" style={{ marginRight: 20 }}>{this.state.selectedSchool.financial?.balanceFormated}</div>
             <div className="kt-header__topbar-welcome">Hi,</div>
             <div className="kt-header__topbar-username">{user}</div>
             <div className="kt-header__topbar-wrapper">
