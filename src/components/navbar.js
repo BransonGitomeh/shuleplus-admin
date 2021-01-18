@@ -352,6 +352,7 @@ class Navbar extends React.Component {
             className="kt-header__topbar-item kt-header__topbar-item--user"
             id="kt_offcanvas_toolbar_profile_toggler_btn"
           >
+            <div className="kt-header__topbar-username" style={{marginRight:20}}>{this.state.selectedSchool.financial?.balanceFormated}</div>
             <div className="kt-header__topbar-welcome">Hi,</div>
             <div className="kt-header__topbar-username">{user}</div>
             <div className="kt-header__topbar-wrapper">
@@ -360,6 +361,7 @@ class Navbar extends React.Component {
           </div>
           {/*end: User bar */}
         </div>
+        
         {/* end:: Header Topbar */}
 
 

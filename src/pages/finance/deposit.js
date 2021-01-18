@@ -126,7 +126,7 @@ class Modal extends React.Component {
     if (errors) {
       return
     }
-    const { init: { CheckoutRequestID, MerchantRequestID } = {} } = payments
+    const { init: { CheckoutRequestID, MerchantRequestID } = {} } = {} = payments
 
     if (CheckoutRequestID && MerchantRequestID) {
       this.setState({ CheckoutRequestID, MerchantRequestID, loading: false });

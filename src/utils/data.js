@@ -120,7 +120,8 @@ var Data = (function () {
           }
         }
         financial {
-          balance
+          balance,
+          balanceFormated
         }
         charges {
           ammount
