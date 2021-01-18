@@ -88,7 +88,7 @@ class BasicTable extends React.Component {
     filteredTopics: [],
     topicToEdit: {},
     topicToDelete: {},
-    selectedTopic: {},
+    selectedTopic: null,
     
     subtopics: [],
     filteredSubtopics: [],
@@ -435,7 +435,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.filteredTopics ? "" : <div className="col-md-4">
+                {!this.state.selectedSubject ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -480,7 +480,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.filteredSubtopics ? "" :<div className="col-md-4">
+                {!this.state.selectedTopic ? "" :<div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
                       <h3 class="kt-portlet__head-title">Subtopics</h3>
@@ -522,7 +522,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.filteredQuestions ? "" : <div className="col-md-4">
+                {!this.state.selectedSubtopic ? "" : <div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
@@ -563,7 +563,7 @@ class BasicTable extends React.Component {
                   />
                 </div>}
 
-                {!this.state.filteredOptions ? "" :<div className="col-md-4">
+                {!this.state.selectedQuestion ? "" :<div className="col-md-4">
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
