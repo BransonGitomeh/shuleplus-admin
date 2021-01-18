@@ -4,6 +4,8 @@ import Table from "./components/table";
 import DepositModal from "./deposit";
 import Data from "../../utils/data";
 
+import { withRouter } from "react-router";
+
 const $ = window.$;
 const depositModalInstance = new DepositModal();
 
@@ -13,6 +15,14 @@ class BasicTable extends React.Component {
     school: {}
   };
   componentDidMount() {
+    const search = this.props.history.location.search;
+    const params = new URLSearchParams(search);
+    const popup = params.get('popup');
+
+    if (popup) {
+      depositModalInstance.show()
+    }
+
     const payments = Data.payments.list();
     const school = Data.schools.getSelected();
 
@@ -55,7 +65,7 @@ class BasicTable extends React.Component {
               drivers={drivers}
               save={schedule => Data.schedules.update(schedule)}
             /> */}
-            <DepositModal edit={{ ammount:2 ,phone: school.phone }} />
+            <DepositModal edit={{ ammount: 2, phone: school.phone }} />
             <div className="kt-portlet__body">
               {/*begin: Search Form */}
               <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">
@@ -139,4 +149,4 @@ class BasicTable extends React.Component {
   }
 }
 
-export default BasicTable;
+export default withRouter(BasicTable);
