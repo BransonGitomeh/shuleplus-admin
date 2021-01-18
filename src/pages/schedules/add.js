@@ -12,7 +12,7 @@ class Modal extends React.Component {
   state = {
     loading: false,
     route: "",
-    driver:"",
+    driver: "",
     days: [
       "MONDAY",
       "TUESDAY",
@@ -250,6 +250,9 @@ class Modal extends React.Component {
                             message: e.target.value
                           })}
                         />
+                      </div>
+                      <div className="col-lg-12">
+                        <code>{`You can use the following placeholders {{student_name}} {{parent_name}} {{school_name}} {{time_ago}} {{time}}`}</code>
                       </div>
                     </div>
                   </div>
