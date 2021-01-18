@@ -4,6 +4,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import app from "../scripts.bundle"
 import Data from "../utils/data";
+import { withRouter } from "react-router";
+
 
 const KTUtil = window.KTUtil
 const KTOffcanvas = window.KTOffcanvas
@@ -74,7 +76,6 @@ class Navbar extends React.Component {
     availableSchools: Data.schools.list()
   };
   async switchSchools(justSelectedSchool) {
-    console.log({ justSelectedSchool })
     localStorage.setItem("school", justSelectedSchool.id)
     this.setState({ selectedSchool: justSelectedSchool })
 
@@ -241,13 +242,6 @@ class Navbar extends React.Component {
                         </span>
                       </Link>
                     </li>
-                  </ul>
-                </div>
-              </li>
-
-              <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true"><a href="javascript:;" className="kt-menu__link kt-menu__toggle"><span className="kt-menu__link-text">Settings</span><i className="kt-menu__hor-arrow la la-angle-down" /><i className="kt-menu__ver-arrow la la-angle-right" /></a>
-                <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                  <ul className="kt-menu__subnav">
 
                     <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/settings/school" className="kt-menu__link">
@@ -256,16 +250,6 @@ class Navbar extends React.Component {
                         </i>
                         <span className="kt-menu__link-text">
                           <span className="kt-menu__link-text">School Details</span>
-                        </span>
-                      </Link>
-                    </li>
-                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
-                      <Link to="/settings/user" className="kt-menu__link">
-                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
-                          <span />
-                        </i>
-                        <span className="kt-menu__link-text">
-                          <span className="kt-menu__link-text">User Details</span>
                         </span>
                       </Link>
                     </li>
@@ -352,7 +336,7 @@ class Navbar extends React.Component {
             className="kt-header__topbar-item kt-header__topbar-item--user"
             id="kt_offcanvas_toolbar_profile_toggler_btn"
           >
-            <div className="kt-header__topbar-username" style={{marginRight:20}}>{this.state.selectedSchool.financial?.balanceFormated}</div>
+            <div className="kt-header__topbar-username" style={{ marginRight: 20 }}>{this.state.selectedSchool.financial?.balanceFormated}</div>
             <div className="kt-header__topbar-welcome">Hi,</div>
             <div className="kt-header__topbar-username">{user}</div>
             <div className="kt-header__topbar-wrapper">
@@ -361,7 +345,7 @@ class Navbar extends React.Component {
           </div>
           {/*end: User bar */}
         </div>
-        
+
         {/* end:: Header Topbar */}
 
 
@@ -416,17 +400,31 @@ class Navbar extends React.Component {
                     <i className="flaticon-twitter-logo-button kt-font-success" />
                     <span className="kt-user-card-v3__tag">{user}</span>
                   </a>
-                  <a href="#" className="kt-user-card-v3__item">
 
-                    <span className="kt-user-card-v3__tag"><button
+                  <span className="kt-user-card-v3__tag" style={{paddingRight:10}}>
+                    <button
+                      className="btn btn-outline-brand"
+                      type="button"
+                      onClick={() => this.props.history.push({
+                        pathname: "/settings/user"
+                      })}
+                    >
+                      My User Details
+                    </button>
+                  </span>
+
+
+                  <span className="kt-user-card-v3__tag">
+                    <button
                       className="btn btn-outline-brand"
                       type="button"
                       onClick={() => localStorage.clear()}
                     >
                       Log Out
-          </button>
-                    </span>
-                  </a>
+                      </button>
+                  </span>
+
+
                 </div>
               </div>
             </div>
@@ -438,4 +436,4 @@ class Navbar extends React.Component {
   }
 }
 
-export default Navbar;
+export default withRouter(Navbar);
