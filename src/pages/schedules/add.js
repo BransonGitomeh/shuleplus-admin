@@ -244,6 +244,7 @@ class Modal extends React.Component {
                           id="name"
                           name="name"
                           minLength="2"
+                          rows="8"
                           required
                           value={this.state.message}
                           onChange={(e) => this.setState({
