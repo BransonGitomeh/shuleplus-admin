@@ -75,7 +75,13 @@ class BasicTable extends React.Component {
 
   render() {
     const { remove, trips, filter } = this.state;
-    const filteredTrips = trips.filter(filters[filter])
+
+
+    let filteredTrips = []
+    if (this.state.trips.length > 0) {
+      filteredTrips = trips
+    }
+
     return (
       <div className="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default kt-page--loading">
         <div className="kt-grid kt-grid--hor kt-grid--root">

@@ -9,6 +9,7 @@ import Questions from "./components/common-questions";
 import Map from "./components/map";
 import ProfilePanel from "../../components/profile-panel";
 import Data from "../../utils/data";
+import List from "../trips/list";
 
 class Home extends React.Component {
   state = {
@@ -78,46 +79,6 @@ class Home extends React.Component {
           >
             <div className="kt-container  kt-grid__item kt-grid__item--fluid">
               <div className="row">
-                <div className="col-lg-2 col-xl-2">
-                  <Stat label="All trips" number={this.state.trips.length} />
-                </div>
-                <div className="col-lg-2 col-xl-2">
-                  <Stat
-                    label="Running Trips"
-                    number={
-                      this.state.trips.filter(
-                        trip => !trip.completedAt && !trip.isCancelled
-                      ).length
-                    }
-                  />
-                </div>
-                <div className="col-lg-2 col-xl-2">
-                  <Stat
-                    label="Scheduled trips"
-                    number={this.state.schedules.length}
-                  />
-                </div>
-                <div className="col-lg-2 col-xl-2">
-                  <Stat
-                    label="Complete trips"
-                    number={
-                      this.state.trips.filter(trip => trip.completedAt).length
-                    }
-                  />
-                </div>
-                <div className="col-lg-2 col-xl-2">
-                  <Stat
-                    label="Cancelled trips"
-                    number={
-                      this.state.trips.filter(trip => trip.isCancelled).length
-                    }
-                  />
-                </div>
-                <div className="col-lg-2 col-xl-2">
-                  <Stat label="Students In Bus" number={this.state.students} />
-                </div>
-              </div>
-              <div className="row">
                 <div className="col-lg-6 col-xl-4 order-lg-1 order-xl-1">
                   <div className="row">
                     <div className="col-lg-12 col-xl-12 order-lg-1 order-xl-1">
@@ -163,6 +124,11 @@ class Home extends React.Component {
                     </div> */}
                   </div>
                 </div>
+
+                <div className="col-lg-12 col-xl-12 order-lg-1 order-xl-1">
+                  <List filter={this.props.match.params.filter} />
+                </div>
+
               </div>
             </div>
           </div>

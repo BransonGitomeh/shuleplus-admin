@@ -134,23 +134,12 @@ class Navbar extends React.Component {
                 </div>
               </li> : ""}
 
-
               <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
                 aria-haspopup="true"
               >
                 <Link to="/home" className="kt-menu__link">
-                  <span className="kt-menu__link-text">Dashboard</span>
-                </Link>
-              </li>
-
-              <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
-              >
-                <Link to="/trips/all" className="kt-menu__link">
                   <span className="kt-menu__link-text">Reports</span>
                 </Link>
               </li>

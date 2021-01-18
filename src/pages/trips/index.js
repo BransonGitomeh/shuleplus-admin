@@ -23,7 +23,7 @@ class App extends React.Component {
             id="kt_content"
           >
             <div className="kt-container  kt-grid__item kt-grid__item--fluid">
-              <List filter={this.props.match.params.filter} />
+              <List />
             </div>
           </div>
           <Footer />
