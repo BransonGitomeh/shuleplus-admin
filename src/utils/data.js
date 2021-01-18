@@ -241,6 +241,7 @@ var Data = (function () {
         }
         schedules {
           id
+          message
           time
           end_time
           name

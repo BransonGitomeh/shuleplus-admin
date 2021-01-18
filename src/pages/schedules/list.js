@@ -145,6 +145,10 @@ class BasicTable extends React.Component {
                   {
                     label: "Days",
                     key: "days"
+                  },
+                  {
+                    label: "Message",
+                    key: "message"
                   }
                 ]}
                 data={this.state.filteredSchedules.map(schedule => {

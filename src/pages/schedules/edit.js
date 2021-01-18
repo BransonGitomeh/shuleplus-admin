@@ -297,6 +297,22 @@ class Modal extends React.Component {
                           )}
                         </select>
                       </div>
+
+                      <div className="col-lg-12">
+                        <label>Schedule message:</label>
+                        <textarea
+                          type="text"
+                          className="form-control"
+                          id="name"
+                          name="name"
+                          minLength="2"
+                          required
+                          value={this.state.edit.message}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
+                            message: e.target.value
+                          }))}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
