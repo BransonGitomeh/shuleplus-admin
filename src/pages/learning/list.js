@@ -288,7 +288,7 @@ class BasicTable extends React.Component {
     this.setState({ grades: currentGrades });
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     const grades = Data.grades.list();
     this.setState({ grades });
 
@@ -297,6 +297,13 @@ class BasicTable extends React.Component {
       this.setState({ grades });
     });
 
+    const state = await localStorage.getItem("learningState")
+    this.setState(JSON.parse(state));
+  }
+
+  async componentWillUnmount(){
+    const stateString = JSON.stringify(this.state)
+    await localStorage.setItem("learningState",stateString)
   }
 
   render() {
