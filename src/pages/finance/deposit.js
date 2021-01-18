@@ -112,7 +112,7 @@ class Modal extends React.Component {
     }
 
     if (success == true) {
-      window.document.location.href = "/finance/topup"
+      window.document.location.href = "/home"
       window.location.reload()
       return this.setState({ verifying: false, loading: false, success: true, message });
     }
