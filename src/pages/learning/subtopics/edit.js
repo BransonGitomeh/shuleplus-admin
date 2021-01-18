@@ -31,62 +31,62 @@ class Modal extends React.Component {
       keyboard: false
     });
   }
-  
+
   hide() {
     $("#" + modalNumber).modal("hide");
   }
 
-  setSubjects(id){
+  setSubjects(id) {
     const grade = this.props.grades.filter(grade => {
       return grade.id == id;
     });
-    if(grade.length){
+    if (grade.length) {
       this.setState({
         subject: "",
         subjects: grade[0].subjects,
         topics: []
       });
-      this.setState({topic: ""});
+      this.setState({ topic: "" });
     }
   }
 
-  setTopics(id){
+  setTopics(id) {
     const subject = this.state.subjects.filter(subject => {
       return subject.id == id;
     });
-    if(subject.length){
+    if (subject.length) {
       this.setState({
         topics: subject[0].topics
       });
-      this.setState({topic: ""});
+      this.setState({ topic: "" });
     }
   }
 
-  componentDidUpdate(){
+  componentDidUpdate() {
     const _this = this;
-    if(_this.props.grade != selectedGrade){
+    if (_this.props.grade != selectedGrade) {
       selectedGrade = _this.props.grade;
-      _this.setState({grade: _this.props.grade});
+      _this.setState({ grade: _this.props.grade });
       let subjects = [];
       _this.props.grades.forEach(grade => {
-        if(grade.id == selectedGrade){
-          _this.setState({subjects: grade.subjects});
+        if (grade.id == selectedGrade) {
+          _this.setState({ subjects: grade.subjects });
         }
       });
     }
-    if(_this.props.subject != selectedSubject){
+    if (_this.props.subject != selectedSubject) {
       selectedSubject = _this.props.subject;
-      _this.setState({subject: _this.props.subject});
+      _this.setState({ subject: _this.props.subject });
       let topics = [];
       _this.state.subjects.forEach(subject => {
-        if(subject.id == selectedSubject){
-          _this.setState({topics: subject.topics});
+        if (subject.id == selectedSubject) {
+          _this.setState({ topics: subject.topics });
         }
-      }); 
+      });
     }
-    if(_this.props.topic != selectedTopic){
+    if (_this.props.topic != selectedTopic) {
       selectedTopic = _this.props.topic;
-      _this.setState({topic: _this.props.topic});
+      _this.setState({ topic: _this.props.topic });
     }
   }
 
@@ -137,8 +137,8 @@ class Modal extends React.Component {
           selectedGrade = null;
           selectedSubject = null;
           selectedTopic = null;
-          _this.setState({name: ""});
-          _this.setState({topic: ""});
+          _this.setState({ name: "" });
+          _this.setState({ topic: "" });
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {
@@ -195,66 +195,6 @@ class Modal extends React.Component {
                           })}
                           required
                         />
-                      </div>
-                      <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect1">Grades:</label>
-                        <select
-                          name="grades"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.grade}
-                          onChange={(e) => this.setState({
-                            grade: e.target.value
-                          }, this.setSubjects(e.target.value))}
-                        >
-                          <option value="">Select grade</option>
-                          {this.props.grades.map(
-                            grade => (
-                              <option key={grade.id} value={grade.id}>{grade.name}</option>
-                            )
-                          )}
-                        </select>
-                      </div>
-                      <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect2">Subjects:</label>
-                        <select
-                          name="subjects"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.subject}
-                          onChange={(e) => this.setState({
-                            subject: e.target.value
-                          }, this.setTopics(e.target.value))}
-                        >
-                          <option value="">Select subject</option>
-                          {this.state.subjects.map(
-                            subject => (
-                              <option key={subject.id} value={subject.id}>{subject.name}</option>
-                            )
-                          )}
-                        </select>
-                      </div>
-                      <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect2">Topics:</label>
-                        <select
-                          name="subjects"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.topic}
-                          onChange={(e) => this.setState({
-                            topic: e.target.value
-                          })}
-                        >
-                          <option value="">Select topic</option>
-                          {this.state.topics.map(
-                            topic => (
-                              <option key={topic.id} value={topic.id}>{topic.name}</option>
-                            )
-                          )}
-                        </select>
                       </div>
                     </div>
                   </div>

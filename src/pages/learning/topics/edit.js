@@ -166,46 +166,8 @@ class Modal extends React.Component {
                           required
                         />
                       </div>
-                      <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect1">Grades:</label>
-                        <select
-                          name="grades"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.grade}
-                          onChange={(e) => this.setState({
-                            grade: e.target.value
-                          }, this.setSubjects(e.target.value))}
-                        >
-                          <option value="">Select grade</option>
-                          {this.props.grades.map(
-                            grade => (
-                              <option key={grade.id} value={grade.id}>{grade.name}</option>
-                            )
-                          )}
-                        </select>
-                      </div>
-                      <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect2">Subjects:</label>
-                        <select
-                          name="subjects"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.subject}
-                          onChange={(e) => this.setState({
-                            subject: e.target.value
-                          })}
-                        >
-                          <option value="">Select subject</option>
-                          {this.state.subjects.map(
-                            subject => (
-                              <option key={subject.id} value={subject.id}>{subject.name}</option>
-                            )
-                          )}
-                        </select>
-                      </div>
+                      
+                     
                     </div>
                   </div>
                 </div>

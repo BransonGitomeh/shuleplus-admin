@@ -123,26 +123,6 @@ class Modal extends React.Component {
                         }))}
                       />
                     </div>
-                    <div className="col-lg-12 mt-4">
-                        <label for="exampleSelect1">Grades:</label>
-                        <select
-                          name="seats"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.grade}
-                          onChange={(e) => this.setState(Object.assign(this.state.subject, {
-                            grade: e.target.value
-                          }))}
-                        >
-                          <option value="">Select grade</option>
-                          {this.props.grades.map(
-                            grade => (
-                              <option key={grade.id} value={grade.id}>{grade.name}</option>
-                            )
-                          )}
-                        </select>
-                      </div>
                   </div>
                 </div>
                 <div className="modal-footer">
