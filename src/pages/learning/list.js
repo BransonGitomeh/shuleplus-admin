@@ -362,7 +362,20 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.grades}
-                    show={ grade => this.setState({ subjects: grade.subjects, filteredSubjects: grade.subjects,  selectedGrade: grade.id, topics: [], subtopics: [], questions: [], options: [] }) }
+                    show={ grade => this.setState({ 
+                                  subjects: grade.subjects, 
+                                  filteredSubjects: grade.subjects,
+                                  selectedGrade: grade.id, 
+                                  filteredTopics: [],
+                                  topics: [],
+                                  filteredSubtopics: [],
+                                  subtopics: [],
+                                  filteredQuestions: [],
+                                  questions: [],
+                                  filteredOptions: [],
+                                  options: [],
+                                }) 
+                          }
                     edit={grade => {
                       this.setState({ gradeToEdit: grade }, () => {
                         editGradeModalInstance.show();
@@ -376,7 +389,7 @@ class BasicTable extends React.Component {
                   />
                 </div>
 
-                {!this.state.subjects ? "" : <div className="col-md-4">
+                {!this.state.filteredSubjects ? "" : <div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
                       <h3 class="kt-portlet__head-title">Subjects</h3>
@@ -397,7 +410,18 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.filteredSubjects}
-                    show={ subject => this.setState({ filteredTopics: subject.topics, topics: subject.topics, selectedSubject: subject.id, subtopics: [], questions: [], options: [] }) }
+                    show={ subject => this.setState({ 
+                                  filteredTopics: subject.topics, 
+                                  topics: subject.topics, 
+                                  selectedSubject: subject.id, 
+                                  filteredSubtopics: [],
+                                  subtopics: [],
+                                  filteredQuestions: [],
+                                  questions: [], 
+                                  filteredOptions: [],
+                                  options: [], 
+                                }) 
+                          }
                     edit={subject => {
                       this.setState({ subjectToEdit: subject }, () => {
                         editSubjectModalInstance.show();
@@ -433,7 +457,16 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.filteredTopics}
-                    show={ topic => this.setState({ filteredSubtopics: topic.subtopics, subtopics: topic.subtopics, selectedTopic: topic.id, questions: [], options: [] }) }
+                    show={ topic => this.setState({ 
+                                    filteredSubtopics: topic.subtopics, 
+                                    subtopics: topic.subtopics, 
+                                    selectedTopic: topic.id, 
+                                    filteredQuestions: [], 
+                                    questions: [],
+                                    filteredOptions: [],
+                                    options: [],
+                                  })
+                          }
                     edit={topic => {
                       this.setState({ topicToEdit: topic }, () => {
                         editTopicModalInstance.show();
@@ -468,7 +501,14 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.filteredSubtopics}
-                    show={ subtopic => this.setState({ filteredQuestions: subtopic.questions, questions: subtopic.questions, selectedSubtopic: subtopic.id, options: [] }) }
+                    show={ subtopic => this.setState({ 
+                                    filteredQuestions: subtopic.questions, 
+                                    questions: subtopic.questions, 
+                                    selectedSubtopic: subtopic.id, 
+                                    filteredOptions: [],
+                                    options: [],
+                                  }) 
+                          }
                     edit={subtopic => {
                       this.setState({ subtopicToEdit: subtopic }, () => {
                         editSubtopicModalInstance.show();
@@ -504,7 +544,12 @@ class BasicTable extends React.Component {
                       },
                     ]}
                     data={this.state.filteredQuestions}
-                    show={ question => this.setState({ filteredOptions: question.options, options: question.options, selectedQuestion: question.id  }) }
+                    show={ question => this.setState({ 
+                                      filteredOptions: question.options, 
+                                      options: question.options, 
+                                      selectedQuestion: question.id  
+                                    }) 
+                          }
                     edit={question => {
                       this.setState({ questionToEdit: question }, () => {
                         editQuestionModalInstance.show();
