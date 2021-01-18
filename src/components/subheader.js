@@ -2,7 +2,7 @@ import React from "react";
 import { withRouter } from "react-router";
 import Data from "../utils/data";
 
-const MIN_BALANCE = 100
+const MIN_BALANCE = 300
 
 class Subheader extends React.Component {
   componentDidMount() {
