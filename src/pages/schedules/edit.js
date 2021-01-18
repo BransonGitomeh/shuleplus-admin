@@ -315,7 +315,7 @@ class Modal extends React.Component {
                       </div>
 
                       <div className="col-lg-12">
-                        <code>{`You can use the following placeholders {{student_name}} {{parent_name}} {{school_name}} {{time_ago}} {{time}}`}</code>
+                        <code>{`You can use the following placeholders {{student_name}} {{parent_name}} {{school_name}} {{time}}`}</code>
                       </div>
                     </div>
                   </div>
