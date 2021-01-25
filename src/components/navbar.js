@@ -387,7 +387,10 @@ class Navbar extends React.Component {
                     <button
                       className="btn btn-outline-brand"
                       type="button"
-                      onClick={() => localStorage.clear()}
+                      onClick={() => {
+                        localStorage.clear()
+                        window.location.reload()
+                      }}
                     >
                       Log Out
                       </button>

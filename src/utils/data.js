@@ -319,6 +319,10 @@ var Data = (function () {
         schoolID = localStorage.getItem("school")
         school = schools.filter(s => s.id == schoolID ? true : false)[0]
         // console.log("selected school is " + JSON.stringify(school), schools)
+
+        if (!school) {
+          school = schools[0]
+        }
       } else {
         school = schools[0]
         schoolID = localStorage.setItem("school", school.id)
@@ -1285,7 +1289,7 @@ var Data = (function () {
               "Ipayment": {
                 MerchantRequestID,
                 CheckoutRequestID,
-                school:school.id
+                school: school.id
               }
             }
           );
