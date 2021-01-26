@@ -11,12 +11,15 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
-    name: "",
-    school: "",
-    national_id:"",
-    phone: '',
-    email: '',
-    gender: ''
+    edit: {
+      names: "",
+      id: '',
+      name: '',
+      phone: '',
+      email: '',
+      school: '',
+      
+    }
   };
 
   show() {
@@ -29,10 +32,6 @@ class Modal extends React.Component {
   hide() {
     $("#" + modalNumber).modal("hide");
   }
-  componentWillReceiveProps(props) {
-    this.setState({school: props.school });
-  }
-
   componentDidMount() {
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
@@ -50,18 +49,18 @@ class Modal extends React.Component {
         event.preventDefault();
         try {
           _this.setState({ loading: true });
-
-          _this.state.loading = undefined;
-          await _this.props.save(_this.state);
-          _this.hide();
-          _this.setState({
-            loading: false,
-            name: "",
-            phone: '',
-            email: '',
-            gender: '',
-            school: '',
+          const data = {}
+          Object.assign(data, {
+            id: _this.state.edit.id,
+            name: _this.state.edit.name,
+            phone: _this.state.edit.phone,
+            email: _this.state.edit.email,
+            school: _this.state.edit.school,
           });
+          
+          await _this.props.update(data);
+          _this.hide();
+          _this.setState({ loading: false });
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {
@@ -73,7 +72,19 @@ class Modal extends React.Component {
       }
     });
   }
+  static getDerivedStateFromProps(props, state) {
+    if (props.teamToEdit)
+      if (props.teamToEdit.id !== state.edit.id) {
+        return {
+          edit: props.teamToEdit
+        };
+      }
+    return null;
+  }
   render() {
+    const {
+      edit: { names, route = {}, parent = {}, gender } = {}
+    } = this.state;
     return (
       <div>
         <div
@@ -91,7 +102,7 @@ class Modal extends React.Component {
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Create Teacher</h5>
+                  <h5 className="modal-title">Edit Team</h5>
                   <button
                     type="button"
                     className="close"
@@ -104,33 +115,18 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                    <div className="col-lg-3">
-                        <label>National ID Number:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="fullname"
-                          name="fullname"
-                          minLength="2"
-                          value={this.state.national_id}
-                          onChange={(e) => this.setState({
-                            national_id: e.target.value
-                          })}
-                          required
-                        />
-                      </div>
                       <div className="col-lg-6">
-                        <label>Full Name:</label>
+                        <label>Name:</label>
                         <input
                           type="text"
                           className="form-control"
                           id="fullname"
                           name="fullname"
                           minLength="2"
-                          value={this.state.name}
-                          onChange={(e) => this.setState({
+                          value={this.state.edit.name}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             name: e.target.value
-                          })}
+                          }))}
                           required
                         />
                       </div>
@@ -142,10 +138,10 @@ class Modal extends React.Component {
                           id="phone"
                           name="phone"
                           minLength="10"
-                          value={this.state.phone}
-                          onChange={(e) => this.setState({
+                          value={this.state.edit.phone}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             phone: e.target.value
-                          })}
+                          }))}
                           required
                         />
                       </div>
@@ -157,35 +153,19 @@ class Modal extends React.Component {
                           id="eail"
                           name="email"
                           minLength="2"
-                          value={this.state.email}
-                          onChange={(e) => this.setState({
+                          value={this.state.edit.email}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             email: e.target.value
-                          })}
+                          }))}
                           required
                         />
-                      </div>
-                      <div className="col-lg-3">
-                        <label for="exampleSelect1">Gender:</label>
-                        <select
-                          name="route"
-                          class="form-control"
-                          required
-                          value={this.state.gender}
-                          onChange={(e) => this.setState({
-                            gender: e.target.value
-                          })}
-                        >
-                          <option value="">Select gender</option>
-                          {["MALE", "FEMALE"].map(gender => (
-                            <option value={gender}>{gender}</option>
-                          ))}
-                        </select>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button
+                    type="button"
                     className="btn btn-outline-brand"
                     type="submit"
                     disabled={this.state.loading}

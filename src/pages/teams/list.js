@@ -16,40 +16,37 @@ const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
   state = {
-    teachers: [],
-    filteredTeachers:[]
+    teamToDelete: {},
+    teamToEdit: {},
+    teams: [],
+    filteredTeams:[]
   };
   componentDidMount() {
-    const teachers = Data.teachers.list();
-    this.setState({ teachers, filteredTeachers: teachers });
+    const teams = Data.teams.list();
+    console.log(teams)
+    this.setState({ teams, filteredTeams: teams });
 
-    Data.teachers.subscribe(({ teachers }) => {
-      this.setState({ teachers, filteredTeachers: teachers });
+    Data.teams.subscribe(({ teams }) => {
+      this.setState({ teams, filteredTeams: teams });
     });
   }
 
   onSearch = e => {
-    const { teachers } = this.state
-    const filteredTeachers = teachers.filter(teacher => teacher.name.toLowerCase().match(e.target.value.toLowerCase()))
-    this.setState({ filteredTeachers })
+    const { teams } = this.state
+    const filteredTeams = teams.filter(team => team.name.toLowerCase().match(e.target.value.toLowerCase()))
+    this.setState({ filteredTeams })
   }
 
   render() {
-    const { edit, remove } = this.state;
+    const { teamToEdit, teamToDelete } = this.state;
     return (
       <div className="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default kt-page--loading">
         <div className="kt-grid kt-grid--hor kt-grid--root">
           <div className="kt-portlet kt-portlet--mobile">
-            <AddModal school={school} save={teacher => Data.teachers.create(teacher)} />
-            <UploadModal save={teachers => teachers.forEach(teacher => Data.teachers.create(teacher))} />
-            <DeleteModal
-              remove={remove}
-              save={teacher => Data.teachers.delete(teacher)}
-            />
-            <EditModal
-              edit={edit}
-              save={teacher => Data.teachers.update(teacher)}
-            />
+            <AddModal school={school} save={team => Data.teams.create(team)} />
+            <UploadModal save={team => team.forEach(team => Data.teams.create(team))} />
+            <DeleteModal teamToDelete={teamToDelete} delete={team => Data.teams.delete(team)}/>
+            <EditModal teamToEdit={teamToEdit} update={team => Data.teams.update(team)}/>
             <div className="kt-portlet__body">
               {/*begin: Search Form */}
               <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">
@@ -98,16 +95,8 @@ class BasicTable extends React.Component {
               <Table
                 headers={[
                   {
-                    label: "Teacher Names",
+                    label: "Team Names",
                     key: "name"
-                  },
-                  {
-                    label: "ID Number",
-                    key: "national_id"
-                  },
-                  {
-                    label: "Gender",
-                    key: "gender"
                   },
                   {
                     label: "Email",
@@ -118,14 +107,14 @@ class BasicTable extends React.Component {
                     key: "phone"
                   }
                 ]}
-                data={this.state.filteredTeachers}
-                edit={teacher => {
-                  this.setState({ edit: teacher }, () => {
+                data={this.state.filteredTeams}
+                edit={team => {
+                  this.setState({ teamToEdit: team }, () => {
                     editModalInstance.show();
                   });
                 }}
-                delete={teacher => {
-                  this.setState({ remove: teacher }, () => {
+                delete={team => {
+                  this.setState({ teamToDelete: team }, () => {
                     deleteModalInstance.show();
                   });
                 }}

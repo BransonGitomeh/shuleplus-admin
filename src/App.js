@@ -7,6 +7,7 @@ import student from "./pages/student";
 import parents from "./pages/parents";
 import classes from "./pages/classes";
 import teachers from "./pages/teachers";
+import teams from "./pages/teams";
 import drivers from "./pages/drivers";
 import buses from "./pages/buses"
 import routes from "./pages/routes"
@@ -69,6 +70,7 @@ class App extends React.Component {
       <PrivateRoute path="/settings/school" component={schoolSettings} />
       <PrivateRoute path="/finance/topup" component={topup} />
       <PrivateRoute path="/finance/charges" component={charges} />
+      <PrivateRoute path="/teams" component={teams} />
       
      
 
