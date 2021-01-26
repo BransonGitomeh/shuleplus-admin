@@ -21,6 +21,7 @@ const subtopicsData = [];
 const questionsData = [];
 const optionsData = [];
 const teamsData = [];
+const invitationsData = [];
 let schoolID = undefined;
 
 var Data = (function () {
@@ -48,6 +49,7 @@ var Data = (function () {
   var options = optionsData;
   var school = undefined
   var teams = teamsData;
+  var invitations = invitationsData;
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
@@ -71,6 +73,7 @@ var Data = (function () {
   emitize(subs, "questions");
   emitize(subs, "options");
   emitize(subs, "teams");
+  emitize(subs, "invitations");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -123,6 +126,7 @@ var Data = (function () {
           }
         }
         invitations {
+          id
           message
           user
           email
@@ -459,6 +463,9 @@ var Data = (function () {
 
       teams = school.teams;
       subs.teams({ teams });
+
+      invitations = school.invitations;
+      subs.invitations({ invitations });
     });
   }
 
@@ -1977,6 +1984,17 @@ var Data = (function () {
         // listen for even change on the students observables
         subs.teams = cb;
         return teams;
+      },
+      getOne(id) { }
+    },
+    invitations: {
+      list() {
+        return invitations;
+      },
+      subscribe(cb) {
+        // listen for even change on the invitations observables
+        subs.invitations = cb;
+        return invitations;
       },
       getOne(id) { }
     },
