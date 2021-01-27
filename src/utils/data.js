@@ -20,6 +20,8 @@ const topicsData = [];
 const subtopicsData = [];
 const questionsData = [];
 const optionsData = [];
+const teamsData = [];
+const invitationsData = [];
 let schoolID = undefined;
 
 var Data = (function () {
@@ -46,6 +48,8 @@ var Data = (function () {
   var questions = questionsData;
   var options = optionsData;
   var school = undefined
+  var teams = teamsData;
+  var invitations = invitationsData;
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
@@ -68,6 +72,8 @@ var Data = (function () {
   emitize(subs, "subtopics");
   emitize(subs, "questions");
   emitize(subs, "options");
+  emitize(subs, "teams");
+  emitize(subs, "invitations");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -116,6 +122,31 @@ var Data = (function () {
                   }
                 }
               }
+            }
+          }
+        }
+        invitations {
+          id
+          message
+          user
+          email
+          phone
+        }
+        teams {
+          id
+          name
+          phone
+          email
+          team_members{
+            id
+            user
+            team
+            members{
+              id
+              name
+              phone
+              email
+              gender
             }
           }
         }
@@ -429,6 +460,12 @@ var Data = (function () {
       });
       options = [...options];
       subs.options({ options });
+
+      teams = school.teams;
+      subs.teams({ teams });
+
+      invitations = school.invitations;
+      subs.invitations({ invitations });
     });
   }
 
@@ -1873,7 +1910,94 @@ var Data = (function () {
         },
         getOne(id) { }
       }
-    }
+    },
+    teams: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { id } = await mutate(
+            `
+            mutation ($Iteam: Iteam!) {
+              teams {
+                create(team: $Iteam) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iteam: data
+            }
+          );
+          data.id = id;
+
+          teams = [...teams, data];
+          subs.teams({ teams });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Iteam: Uteam!) {
+              teams {
+                update(team: $Iteam) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iteam: data
+            }
+          );
+
+          const subtract = teams.filter(({ id }) => id !== data.id);
+          teams = [data, ...subtract];
+          subs.teams({ teams });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+            mutation ($Iteam: Uteam!) {
+              teams {
+                archive(team: $Iteam) {
+                  id
+                }
+              }
+            }  `,
+            {
+              Iteam: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = teams.filter(({ id }) => id !== data.id);
+          teams = [...subtract];
+          subs.teams({ teams });
+          resolve();
+        }),
+      list() {
+        return teams;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.teams = cb;
+        return teams;
+      },
+      getOne(id) { }
+    },
+    invitations: {
+      list() {
+        return invitations;
+      },
+      subscribe(cb) {
+        // listen for even change on the invitations observables
+        subs.invitations = cb;
+        return invitations;
+      },
+      getOne(id) { }
+    },
   };
 })();
 

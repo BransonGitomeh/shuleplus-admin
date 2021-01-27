@@ -7,6 +7,7 @@ import student from "./pages/student";
 import parents from "./pages/parents";
 import classes from "./pages/classes";
 import teachers from "./pages/teachers";
+import teams from "./pages/teams";
 import drivers from "./pages/drivers";
 import buses from "./pages/buses"
 import routes from "./pages/routes"
@@ -15,6 +16,7 @@ import complaints from "./pages/complaints"
 import trips from "./pages/trips"
 import trip from "./pages/trip"
 import learning from "./pages/learning"
+import invitations from "./pages/invitations"
 
 import userSettings from "./pages/settings/user"
 import schoolSettings from "./pages/settings/school"
@@ -69,6 +71,8 @@ class App extends React.Component {
       <PrivateRoute path="/settings/school" component={schoolSettings} />
       <PrivateRoute path="/finance/topup" component={topup} />
       <PrivateRoute path="/finance/charges" component={charges} />
+      <PrivateRoute path="/teams" component={teams} />
+      <PrivateRoute path="/invitations" component={invitations} />
       
      
 
