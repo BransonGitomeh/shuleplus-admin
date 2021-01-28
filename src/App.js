@@ -17,6 +17,7 @@ import trips from "./pages/trips"
 import trip from "./pages/trip"
 import learning from "./pages/learning"
 import invitations from "./pages/invitations"
+import members from "./pages/members"
 
 import userSettings from "./pages/settings/user"
 import schoolSettings from "./pages/settings/school"
@@ -73,7 +74,7 @@ class App extends React.Component {
       <PrivateRoute path="/finance/charges" component={charges} />
       <PrivateRoute path="/teams" component={teams} />
       <PrivateRoute path="/invitations" component={invitations} />
-      
+      <PrivateRoute path="/members" component={members} />
      
 
       {/* super admin routes */}

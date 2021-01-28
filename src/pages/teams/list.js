@@ -95,7 +95,7 @@ class BasicTable extends React.Component {
               <Table
                 headers={[
                   {
-                    label: "Team Names",
+                    label: "Team Name",
                     key: "name"
                   },
                   {

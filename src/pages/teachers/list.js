@@ -16,6 +16,7 @@ const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
   state = {
+    userToInvite: '',
     teachers: [],
     filteredTeachers:[]
   };
@@ -32,6 +33,19 @@ class BasicTable extends React.Component {
     const { teachers } = this.state
     const filteredTeachers = teachers.filter(teacher => teacher.name.toLowerCase().match(e.target.value.toLowerCase()))
     this.setState({ filteredTeachers })
+  }
+
+  sendInvite = async() => {
+    try {
+      const data = {};
+      Object.assign(data, {
+        school,
+        user: this.state.userToInvite,
+      });
+
+      await Data.teams.invite(data);      
+    } catch (error) {
+    }
   }
 
   render() {
@@ -128,6 +142,11 @@ class BasicTable extends React.Component {
                   this.setState({ remove: teacher }, () => {
                     deleteModalInstance.show();
                   });
+                }}
+                invite={user => {
+                  this.setState({ userToInvite: user.id }, () => {
+                    this.sendInvite();
+                  })
                 }}
               />
             </div>

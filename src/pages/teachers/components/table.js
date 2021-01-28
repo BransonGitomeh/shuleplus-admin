@@ -26,6 +26,7 @@ export default props => {
                 headers={props.headers}
                 data={row}
                 edit={() => props.edit(row)}
+                invite={() => props.invite(row)}
                 delete={() => props.delete(row)}
                 options={options}
               />
