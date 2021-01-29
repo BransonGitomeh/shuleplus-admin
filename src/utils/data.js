@@ -1180,7 +1180,7 @@ var Data = (function () {
             `
           mutation ($teacher: Uteacher!) {
             teachers {
-              update(techer: $teacher) {
+              update(teacher: $teacher) {
                 id
               }
             }
