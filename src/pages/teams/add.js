@@ -53,8 +53,6 @@ class Modal extends React.Component {
           const data = {};
           Object.assign(data, {
             name: _this.state.name,
-            phone: _this.state.phone,
-            email: _this.state.email,
             school: _this.state.school,
           });
 
@@ -89,7 +87,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <form
                 id={modalNumber + "form"}
@@ -109,7 +107,7 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-6">
+                      <div className="col-lg-12">
                         <label>Name:</label>
                         <input
                           type="text"
@@ -120,36 +118,6 @@ class Modal extends React.Component {
                           value={this.state.name}
                           onChange={(e) => this.setState({
                             name: e.target.value
-                          })}
-                          required
-                        />
-                      </div>
-                      <div className="col-lg-3">
-                        <label>Phone Number:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="phone"
-                          name="phone"
-                          minLength="10"
-                          value={this.state.phone}
-                          onChange={(e) => this.setState({
-                            phone: e.target.value
-                          })}
-                          required
-                        />
-                      </div>
-                      <div className="col-lg-3">
-                        <label>Email:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="eail"
-                          name="email"
-                          minLength="2"
-                          value={this.state.email}
-                          onChange={(e) => this.setState({
-                            email: e.target.value
                           })}
                           required
                         />

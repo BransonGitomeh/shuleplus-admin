@@ -19,7 +19,7 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
-    teachers:[]
+    buses:[]
   };
 
   show() {
@@ -49,7 +49,7 @@ class Modal extends React.Component {
         event.preventDefault();
         try {
           _this.setState({ loading: true });
-          await _this.props.save(_this.state.teams);
+          await _this.props.save(_this.state.buses);
           _this.hide();
           _this.setState({ loading: false });
         } catch (err) {
@@ -62,12 +62,17 @@ class Modal extends React.Component {
 
   onChange = e => {
     readXlsx(e.target.files[0]).then(rows => {
-      const teams = rows.map(([
-        team_name
+      const buses = rows.map(([
+        make,
+        plate,
+        size
       ]) => ({
-        name: `${team_name}`,
+        make,
+        plate,
+        size
       }))
-      this.setState({ teams })
+
+      this.setState({ buses })
     })
   }
 
@@ -82,7 +87,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-xl">
             <div className="modal-content">
               <DeleteModal
                 remove={this.state.remove}
@@ -95,7 +100,7 @@ class Modal extends React.Component {
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Upload Teams</h5>
+                  <h5 className="modal-title">Upload bus</h5>
                   <button
                     type="button"
                     className="close"
@@ -118,7 +123,7 @@ class Modal extends React.Component {
                         Please upload an Excell sheet with the following
                         collumns in the following order
                         {/* <br/> */}
-                        <code>team_name</code>
+                        <code>bus_make, bus_plate, bus_size etc</code>
                       </div>
                     </div>
                     <div className="form-group row">
@@ -138,22 +143,30 @@ class Modal extends React.Component {
                     <Table
                       headers={[
                         {
-                          label: "Team Name",
-                          key: "name"
+                          label: "Bus Plate",
+                          key: "plate"
                         },
+                        {
+                          label: "Bus Make",
+                          key: "make"
+                        },
+                        {
+                          label: "Bus Capacity",
+                          key: "size"
+                        }
                       ]}
                       options={{
                         deleteable: true,
                         editable: false
                       }}
-                      data={this.state.teachers}
-                      delete={teacher => {
-                        this.setState({ remove: teacher }, () => {
+                      data={this.state.buses}
+                      delete={bus => {
+                        this.setState({ remove: bus }, () => {
                           IDeleteModal.show();
                         });
 
                         // rm from state to not send to server
-                        // this.setState(students:[...students])
+                        // this.setState(bus:[...bus])
                       }}
                     />
                   </div>

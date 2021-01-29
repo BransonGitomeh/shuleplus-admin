@@ -95,17 +95,9 @@ class BasicTable extends React.Component {
               <Table
                 headers={[
                   {
-                    label: "Team Names",
+                    label: "Team Name",
                     key: "name"
                   },
-                  {
-                    label: "Email",
-                    key: "email"
-                  },
-                  {
-                    label: "Phone",
-                    key: "phone"
-                  }
                 ]}
                 data={this.state.filteredTeams}
                 edit={team => {

@@ -22,6 +22,7 @@ const questionsData = [];
 const optionsData = [];
 const teamsData = [];
 const invitationsData = [];
+const teamMembersData = [];
 let schoolID = undefined;
 
 var Data = (function () {
@@ -50,6 +51,7 @@ var Data = (function () {
   var school = undefined
   var teams = teamsData;
   var invitations = invitationsData;
+  var team_members = teamMembersData;
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
@@ -74,6 +76,7 @@ var Data = (function () {
   emitize(subs, "options");
   emitize(subs, "teams");
   emitize(subs, "invitations");
+  emitize(subs, "team_members");
 
   // subs.students = log; //subscribe to events (named 'x') with cb (log)
   // //another subscription won't override the previous one
@@ -135,19 +138,12 @@ var Data = (function () {
         teams {
           id
           name
-          phone
-          email
-          team_members{
+          members{
             id
-            user
-            team
-            members{
-              id
-              name
-              phone
-              email
-              gender
-            }
+            name
+            phone
+            email
+            gender
           }
         }
         financial {
@@ -466,6 +462,9 @@ var Data = (function () {
 
       invitations = school.invitations;
       subs.invitations({ invitations });
+
+      // team_members = school.invitations;
+      // subs.invitations({ invitations });
     });
   }
 
@@ -1914,7 +1913,7 @@ var Data = (function () {
     teams: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
+          const { teams : { create: { id } } } = await mutate(
             `
             mutation ($Iteam: Iteam!) {
               teams {
@@ -1928,6 +1927,7 @@ var Data = (function () {
             }
           );
           data.id = id;
+          data.members = [];
 
           teams = [...teams, data];
           subs.teams({ teams });
@@ -1954,6 +1954,24 @@ var Data = (function () {
           subs.teams({ teams });
           resolve();
         }),
+      invite: data =>
+        new Promise(async (resolve, reject) => {
+          const res = await mutate(
+            `
+            mutation ($Iinvite: Iinvite!) {
+              teams {
+                invite(team: $Iinvite) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iinvite: data
+            }
+          );
+          console.log(res);
+          resolve();
+      }),
       delete: data =>
         new Promise(async (resolve, reject) => {
           mutate(
@@ -1997,6 +2015,46 @@ var Data = (function () {
         return invitations;
       },
       getOne(id) { }
+    },
+    team_members: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const { team_members: { create: { id } } } = await mutate(
+            `
+            mutation ($IteamMember: IteamMember!) {
+              team_members {
+                create(team_member: $IteamMember) {
+                  id
+                }
+              }
+            } `,
+            {
+              IteamMember: data
+            }
+          );
+          resolve(id);
+      }),
+      delete: data =>
+       new Promise(async (resolve, reject) => {
+        const { team_members: { archive: { id } } } = await mutate(
+            `
+            mutation ($UteamMember: UteamMember!) {
+              team_members {
+                archive(team_member: $UteamMember) {
+                  id
+                }
+              }
+            }  `,
+            {
+              UteamMember: {
+                user: data.user,
+                team: data.team
+              }
+            }
+          );
+
+          resolve(id);
+      }),
     },
   };
 })();

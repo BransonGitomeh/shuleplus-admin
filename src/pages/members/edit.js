@@ -1,5 +1,5 @@
 import React from "react";
-import ErrorMessage from "../components/error-toast";
+import ErrorMessage from "./components/error-toast";
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
@@ -12,11 +12,10 @@ class Modal extends React.Component {
   state = {
     loading: false,
     edit: {
-      name: "",
-      phone: "",
-      email: "",
-      address: "",
-      inviteSmsText: ""
+      make: "",
+      size: "",
+      plate: "",
+      driver:""
     }
   };
 
@@ -74,7 +73,6 @@ class Modal extends React.Component {
     const {
       edit: { names, route = {}, bus = {}, gender } = {}
     } = this.state;
-
     return (
       <div>
         <div
@@ -92,7 +90,7 @@ class Modal extends React.Component {
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Schools' Details</h5>
+                  <h5 className="modal-title">Edit bus</h5>
                   <button
                     type="button"
                     className="close"
@@ -103,102 +101,76 @@ class Modal extends React.Component {
                   </button>
                 </div>
                 <div className="modal-body">
-
                   <div className="form-group row">
                     <div className="col-lg-6">
-                      <label>Name:</label>
+                      <label>Bus Make:</label>
                       <input
                         type="text"
                         className="form-control"
-                        id="name"
-                        name="name"
+                        id="busmake"
+                        name="busmake"
                         minLength="2"
                         required
-                        value={this.state.edit.name}
+                        value={this.state.edit.make}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                          name: e.target.value
+                          make: e.target.value
                         }))}
                       />
                     </div>
-
-                  </div>
-                  <div className="form-group row">
-                    <div className="col-lg-6">
-                      <label>Phone:</label>
+                    <div className="col-lg-3">
+                      <label>Plate Number:</label>
                       <input
                         type="text"
                         className="form-control"
-                        id="phone"
-                        name="phone"
-                        minLength="2"
+                        id="plate"
+                        name="plate"
                         required
-                        value={this.state.edit.phone}
+                        value={this.state.edit.plate}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                          phone: e.target.value
+                          plate: e.target.value
                         }))}
                       />
                     </div>
-
-                  </div>
-
-                  <div className="form-group row">
-                    <div className="col-lg-6">
-                      <label>Email:</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="email"
-                        name="email"
-                        minLength="2"
+                    <div className="col-lg-3">
+                      <label for="exampleSelect1">Capacity:</label>
+                      <select
+                        name="seats"
+                        class="form-control"
                         required
-                        value={this.state.edit.email}
+                        value={this.state.edit.size}
                         onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                          email: e.target.value
+                          size: Number(e.target.value)
                         }))}
-                      />
+                      >
+                        <option value="">Number of Seats</option>
+                        {["14", "28", "42", "65"].map(
+                          seats => (
+                            <option key={seats} value={seats}>{seats}</option>
+                          )
+                        )}
+                      </select>
                     </div>
-
+                    <div className="col-lg-3">
+                        <label for="exampleSelect1">Drivers:</label>
+                        <select
+                          name="seats"
+                          type="text"
+                          class="form-control"
+                          required
+                          value={this.state.driver}
+                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
+                            driver: e.target.value
+                          }))}
+                        >
+                          <option value="">Select driver</option>
+                          {this.props.drivers.map(
+                            driver => (
+                              <option key={driver.id} value={driver.id}>{driver.username}</option>
+                            )
+                          )}
+                        </select>
+                      </div>
                   </div>
-
-                  <div className="form-group row">
-                    <div className="col-lg-6">
-                      <label>Address:</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="address"
-                        name="address"
-                        minLength="2"
-                        required
-                        value={this.state.edit.address}
-                        onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                          address: e.target.value
-                        }))}
-                      />
-                    </div>
-
-                  </div>
-
-                  <div className="col-lg-12">
-                    <label>Invite message:</label>
-                    <textarea
-                      type="text"
-                      className="form-control"
-                      id="name"
-                      name="name"
-                      minLength="2"
-                      rows="8"
-                      required
-                      value={this.state.inviteSmsText}
-                      onChange={(e) => this.setState({
-                        message: e.target.value
-                      })}
-                    />
-                  </div>
-                  <div className="col-lg-12">
-                    <code>{`You can use the following placeholders {{username}} {{team_name}} {{phone_number}} {{password}}`}</code>
-                  </div>
-
                 </div>
                 <div className="modal-footer">
                   <button

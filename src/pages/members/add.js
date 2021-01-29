@@ -11,15 +11,9 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
-    edit: {
-      names: "",
-      id: '',
-      name: '',
-      phone: '',
-      email: '',
-      school: '',
-      
-    }
+    make: "",
+    size: 14,
+    plate: ""
   };
 
   show() {
@@ -41,6 +35,7 @@ class Modal extends React.Component {
       highlight: function (element) {
         $(element).addClass("is-invalid");
       },
+
       unhighlight: function (element) {
         $(element).removeClass("is-invalid");
       },
@@ -49,16 +44,15 @@ class Modal extends React.Component {
         event.preventDefault();
         try {
           _this.setState({ loading: true });
-          const data = {}
-          Object.assign(data, {
-            id: _this.state.edit.id,
-            name: _this.state.edit.name,
-            school: _this.state.edit.school,
-          });
-          
-          await _this.props.update(data);
+          _this.state.loading = undefined
+          await _this.props.save(_this.state);
           _this.hide();
-          _this.setState({ loading: false });
+          _this.setState({
+            loading: false,
+            make: "",
+            size: "",
+            plate: ""
+          });
         } catch (error) {
           _this.setState({ loading: false });
           if (error) {
@@ -70,19 +64,7 @@ class Modal extends React.Component {
       }
     });
   }
-  static getDerivedStateFromProps(props, state) {
-    if (props.teamToEdit)
-      if (props.teamToEdit.id !== state.edit.id) {
-        return {
-          edit: props.teamToEdit
-        };
-      }
-    return null;
-  }
   render() {
-    const {
-      edit: { names, route = {}, parent = {}, gender } = {}
-    } = this.state;
     return (
       <div>
         <div
@@ -93,14 +75,14 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-xl">
             <div className="modal-content">
               <form
                 id={modalNumber + "form"}
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Team</h5>
+                  <h5 className="modal-title">Create bus</h5>
                   <button
                     type="button"
                     className="close"
@@ -113,27 +95,75 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-12">
-                        <label>Name:</label>
+                      <div className="col-lg-3">
+                        <label>Bus Make:</label>
                         <input
                           type="text"
                           className="form-control"
-                          id="fullname"
-                          name="fullname"
+                          id="busmake"
+                          name="busmake"
                           minLength="2"
-                          value={this.state.edit.name}
-                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                            name: e.target.value
-                          }))}
                           required
+                          value={this.state.make}
+                          onChange={(e) => this.setState({
+                            make: e.target.value
+                          })}
                         />
+                      </div>
+                      <div className="col-lg-3">
+                        <label>Plate Number:</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="plate"
+                          name="plate"
+                          required
+                          value={this.state.plate}
+                          onChange={(e) => this.setState({
+                            plate: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div className="col-lg-3">
+                        <label>Capacity:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          id="plate"
+                          name="plate"
+                          min="14"
+                          required
+                          value={this.state.size}
+                          onChange={(e) => this.setState({
+                            size: Number(e.target.value)
+                          })}
+                        />
+                      </div>
+                      <div className="col-lg-3">
+                        <label for="exampleSelect1">Drivers:</label>
+                        <select
+                          name="seats"
+                          type="text"
+                          class="form-control"
+                          required
+                          value={this.state.driver}
+                          onChange={(e) => this.setState({
+                            driver: e.target.value
+                          })}
+                        >
+                          <option value="">Select driver</option>
+                          {this.props.drivers.map(
+                            driver => (
+                              <option key={driver.id} value={driver.id}>{driver.username}</option>
+                            )
+                          )}
+                        </select>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button
-                    type="button"
                     className="btn btn-outline-brand"
                     type="submit"
                     disabled={this.state.loading}

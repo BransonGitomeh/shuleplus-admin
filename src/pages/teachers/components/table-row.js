@@ -53,7 +53,7 @@ class TableRow extends React.Component {
                     this.props.edit(this.props.data);
                   }}
                 >
-                  <i className="la la-edit" />
+                  <i style={{color: "#1dc9b7"}} className="la la-edit" />
                 </button>
               ) : null}
               {this.props.options.deleteable === true ? (
@@ -65,9 +65,19 @@ class TableRow extends React.Component {
                     this.props.delete(this.props.data);
                   }}
                 >
-                  <i className="la la-trash" />
+                  <i style={{color: "#fd397a"}} className="la la-trash" />
                 </button>
               ) : null}
+              <button
+                title="Send"
+                type="button"
+                className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                onClick={() => {
+                  this.props.invite(this.props.data);
+                }}
+              >
+                Invite
+              </button>
             </span>
           </td>
         </tr>
