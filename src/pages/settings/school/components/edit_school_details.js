@@ -15,7 +15,8 @@ class Modal extends React.Component {
       name: "",
       phone: "",
       email: "",
-      address: ""
+      address: "",
+      inviteSmsText: ""
     }
   };
 
@@ -178,6 +179,25 @@ class Modal extends React.Component {
 
                   </div>
 
+                  <div className="col-lg-12">
+                    <label>Invite message:</label>
+                    <textarea
+                      type="text"
+                      className="form-control"
+                      id="name"
+                      name="name"
+                      minLength="2"
+                      rows="8"
+                      required
+                      value={this.state.inviteSmsText}
+                      onChange={(e) => this.setState({
+                        message: e.target.value
+                      })}
+                    />
+                  </div>
+                  <div className="col-lg-12">
+                    <code>{`You can use the following placeholders {{username}} {{team_name}} {{phone_number}} {{password}}`}</code>
+                  </div>
 
                 </div>
                 <div className="modal-footer">

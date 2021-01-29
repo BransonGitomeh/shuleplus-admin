@@ -53,8 +53,6 @@ class Modal extends React.Component {
           Object.assign(data, {
             id: _this.state.edit.id,
             name: _this.state.edit.name,
-            phone: _this.state.edit.phone,
-            email: _this.state.edit.email,
             school: _this.state.edit.school,
           });
           
@@ -95,7 +93,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <form
                 id={modalNumber + "form"}
@@ -115,7 +113,7 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-6">
+                      <div className="col-lg-12">
                         <label>Name:</label>
                         <input
                           type="text"
@@ -126,36 +124,6 @@ class Modal extends React.Component {
                           value={this.state.edit.name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             name: e.target.value
-                          }))}
-                          required
-                        />
-                      </div>
-                      <div className="col-lg-3">
-                        <label>Phone Number:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="phone"
-                          name="phone"
-                          minLength="10"
-                          value={this.state.edit.phone}
-                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                            phone: e.target.value
-                          }))}
-                          required
-                        />
-                      </div>
-                      <div className="col-lg-3">
-                        <label>Email:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="eail"
-                          name="email"
-                          minLength="2"
-                          value={this.state.edit.email}
-                          onChange={(e) => this.setState(Object.assign(this.state.edit, {
-                            email: e.target.value
                           }))}
                           required
                         />

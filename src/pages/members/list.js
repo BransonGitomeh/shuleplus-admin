@@ -37,12 +37,8 @@ class BasicTable extends React.Component {
 
     if(teams.length){
       this.setState({selectedTeam: teams[0].id});
-      const team_members = teams[0].team_members;
-      if(team_members.length){
-        const members = team_members.map(team_member => {
-          return team_member.members[0];
-        })
-
+      const members = teams[0].members;
+      if(members.length){
         const filteredTeachers = [];
         this.state.teachers.forEach(teacher => {
           let count = 0;
@@ -99,10 +95,7 @@ class BasicTable extends React.Component {
         });
 
         if(team.length){
-          data.id = response_id;
-          data.members = []
-          data.members.push(user[0]);
-          team[0].team_members.push(data);
+          team[0].members.push(user[0]);
 
           const teams = this.state.teams.map(team => {
             if(team.id == team[0].id){
@@ -121,60 +114,46 @@ class BasicTable extends React.Component {
   removeHandler = async() => {
     try {
       const data = {};
+      Object.assign(data, {
+        team: this.state.selectedTeam,
+        user: this.state.selectedUser,
+      });
+
+      const response_id = await Data.team_members.delete(data);
+      const members = this.state.members.filter(member => {
+        return member.id != data.user;
+      });
+
+      const filteredTeachers = [];
+      this.state.teachers.forEach(teacher => {
+        let count = 0;
+        members.forEach(member => {
+          if(member.id == teacher.id){
+            count++;
+          }
+        });
+        if(count == 0){
+          filteredTeachers.push(teacher);
+        }
+      });
+
+      this.setState({members, filteredTeachers});
 
       const team = this.state.teams.filter(team => {
-        return team.id == this.state.selectedTeam;
+        return team.id == data.team;
       });
 
       if(team.length){
-        const team_members = team[0].team_members;
-        if(team_members.length){
-          const member = team_members.filter(team_member => {
-            return team_member.members[0].id == this.state.selectedUser;
-          });
+        team[0].members = members;
 
-          if(member.length){
-            Object.assign(data, {
-              id: member[0].id
-            });
-      
-            await Data.team_members.delete(data);
-            const subtracted_team_members = team_members.filter(team_member => {
-              return team_member.id != data.id;
-            });
-
-            const subtracted_members = subtracted_team_members[0].members.filter(member => {
-              return member.id != this.state.selectedUser;
-            });
-
-            console.log('Members', subtracted_members)
-            const filteredTeachers = [];
-            this.state.teachers.forEach(teacher => {
-              let count = 0;
-              subtracted_members.forEach(member => {
-                if(member.id == teacher.id){
-                  count++;
-                }
-              });
-              if(count == 0){
-                filteredTeachers.push(teacher);
-              }
-            });
-            console.log('Filtered Teachers', filteredTeachers);
-            this.setState({filteredTeachers, members: subtracted_members});
-
-            // team[0].team_members = members;
-            team[0].team_members = subtracted_team_members;
-            const teams = this.state.teams.map(team => {
-              if(team.id == team[0].id){
-                return team[0];
-              }
-              return team;
-            });
-
-            this.setState({teams});
+        const teams = this.state.teams.map(team => {
+          if(team.id == team[0].id){
+            return team[0];
           }
-        }
+          return team;
+        });
+
+        this.setState({ teams });
       }
     } catch (error) {
     }

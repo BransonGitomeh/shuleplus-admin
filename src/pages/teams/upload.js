@@ -63,9 +63,9 @@ class Modal extends React.Component {
   onChange = e => {
     readXlsx(e.target.files[0]).then(rows => {
       const teams = rows.map(([
-        team_name, team_phone, team_email
+        team_name
       ]) => ({
-        name: `${team_name}`, phone: `${team_phone}`, email: `${team_email}`,
+        name: `${team_name}`,
       }))
       this.setState({ teams })
     })
@@ -82,7 +82,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <DeleteModal
                 remove={this.state.remove}
@@ -118,7 +118,7 @@ class Modal extends React.Component {
                         Please upload an Excell sheet with the following
                         collumns in the following order
                         {/* <br/> */}
-                        <code>team_name, team_email, team_phone etc</code>
+                        <code>team_name</code>
                       </div>
                     </div>
                     <div className="form-group row">
@@ -140,14 +140,6 @@ class Modal extends React.Component {
                         {
                           label: "Team Name",
                           key: "name"
-                        },
-                        {
-                          label: "Email",
-                          key: "email"
-                        },
-                        {
-                          label: "Phone",
-                          key: "phone"
                         },
                       ]}
                       options={{

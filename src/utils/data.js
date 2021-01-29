@@ -138,19 +138,12 @@ var Data = (function () {
         teams {
           id
           name
-          phone
-          email
-          team_members{
+          members{
             id
-            user
-            team
-            members{
-              id
-              name
-              phone
-              email
-              gender
-            }
+            name
+            phone
+            email
+            gender
           }
         }
         financial {
@@ -1920,7 +1913,7 @@ var Data = (function () {
     teams: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
+          const { teams : { create: { id } } } = await mutate(
             `
             mutation ($Iteam: Iteam!) {
               teams {
@@ -1934,6 +1927,7 @@ var Data = (function () {
             }
           );
           data.id = id;
+          data.members = [];
 
           teams = [...teams, data];
           subs.teams({ teams });
@@ -2041,8 +2035,8 @@ var Data = (function () {
           resolve(id);
       }),
       delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
+       new Promise(async (resolve, reject) => {
+        const { team_members: { archive: { id } } } = await mutate(
             `
             mutation ($UteamMember: UteamMember!) {
               team_members {
@@ -2053,15 +2047,13 @@ var Data = (function () {
             }  `,
             {
               UteamMember: {
-                id: data.id
+                user: data.user,
+                team: data.team
               }
             }
           );
 
-          const subtract = team_members.filter(({ id }) => id !== data.id);
-          team_members = [...subtract];
-          subs.team_members({ team_members });
-          resolve();
+          resolve(id);
       }),
     },
   };

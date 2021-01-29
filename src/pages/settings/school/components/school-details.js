@@ -31,15 +31,24 @@ export default class SchoolDetails extends React.Component {
       name,
       phone,
       email,
-      address
+      address,
+      inviteSmsText
     } = this.state.school
 
+    console.log(id,
+      name,
+      phone,
+      email,
+      address,
+      inviteSmsText)
+      return
     Data.schools.update({
       id,
       name,
       phone,
       email,
-      address
+      address,
+      inviteSmsText
     })
   }
   async archiveSchool(){
