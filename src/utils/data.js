@@ -1154,7 +1154,7 @@ var Data = (function () {
     teachers: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
+          const { teachers: { create: { id } } } = await mutate(
             `
           mutation ($Iteacher: Iteacher!) {
             teachers {
@@ -1167,7 +1167,6 @@ var Data = (function () {
               Iteacher: Object.assign(data, { school: schoolID })
             }
           );
-
           data.id = id;
 
           teachers = [...teachers, data];
@@ -1431,6 +1430,7 @@ var Data = (function () {
             }
           );
 
+          console.log(res)
           const { id } = res.drivers.create
           data.id = id;
 
@@ -1483,7 +1483,25 @@ var Data = (function () {
           drivers = [...subtract];
           subs.drivers({ drivers });
           resolve();
-        }),
+      }),
+      invite: data =>
+        new Promise(async (resolve, reject) => {
+          const res = await mutate(
+            `
+            mutation ($Iinvite: Iinvite!) {
+              drivers {
+                invite(driver: $Iinvite) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iinvite: data
+            }
+          );
+          console.log(res);
+          resolve();
+      }),
       list() {
         return drivers;
       },
@@ -1969,7 +1987,6 @@ var Data = (function () {
               Iinvite: data
             }
           );
-          console.log(res);
           resolve();
       }),
       delete: data =>

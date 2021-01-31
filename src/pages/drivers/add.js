@@ -12,7 +12,7 @@ class Modal extends React.Component {
   state = {
     loading: false,
     username: "",
-    password: "",
+    // password: "",
     phone: "",
     photo: "https://via.placeholder.com/150",
     email: "",
@@ -189,7 +189,7 @@ class Modal extends React.Component {
                           required
                         />
                       </div>
-                      <div className="col-lg-4">
+                      {/* <div className="col-lg-4">
                         <label>Password:</label>
                         <input
                           type="password"
@@ -203,7 +203,7 @@ class Modal extends React.Component {
                           })}
                           required
                         />
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>

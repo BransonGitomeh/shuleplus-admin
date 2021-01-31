@@ -204,7 +204,7 @@ class Modal extends React.Component {
                           required
                         />
                       </div>
-                      <div className="col-lg-4">
+                      {/* <div className="col-lg-4">
                         <label>Password:</label>
                         <input
                           type="password"
@@ -220,7 +220,7 @@ class Modal extends React.Component {
                           })}
                           required
                         />
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>

@@ -49,7 +49,7 @@ export default props => {
                         props.edit(row);
                       }}
                     >
-                      <i className="la la-edit" />
+                      <i style={{color: "#1dc9b7"}} className="la la-edit" />
                     </button>
                   ) : null}
                   {options.deleteable === true ? (
@@ -61,9 +61,19 @@ export default props => {
                         props.delete(row);
                       }}
                     >
-                      <i className="la la-trash" />
+                      <i style={{color: "#fd397a"}} className="la la-trash" />
                     </button>
                   ) : null}
+                  <button
+                    title="Send"
+                    type="button"
+                    className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                    onClick={() => {
+                      props.invite(row);
+                    }}
+                  >
+                    <strong style={{color: "#5867dd"}}>Invite</strong>
+                  </button>
                 </span>
               </td>
             </tr>

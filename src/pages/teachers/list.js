@@ -6,12 +6,14 @@ import UploadModal from "./upload";
 import EditModal from "./edit";
 import DeleteModal from "./delete";
 import Data from "../../utils/data";
+import SuccessMessage from "./components/success-toast";
 
 const $ = window.$;
 const addModalInstance = new AddModal();
 const uploadModalInstance = new UploadModal();
 const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
+const ISuccessMessage = new SuccessMessage();
 const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
@@ -43,7 +45,8 @@ class BasicTable extends React.Component {
         user: this.state.userToInvite,
       });
 
-      await Data.teams.invite(data);      
+      await Data.teams.invite(data);
+      ISuccessMessage.show(); 
     } catch (error) {
     }
   }
