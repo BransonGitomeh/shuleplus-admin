@@ -6,15 +6,20 @@ import UploadModal from "./upload";
 import EditModal from "./edit";
 import DeleteModal from "./delete";
 import Data from "../../utils/data";
+import SuccessMessage from "./components/success-toast";
 
 const $ = window.$;
 const addModalInstance = new AddModal();
 const uploadModalInstance = new UploadModal();
 const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
+const ISuccessMessage = new SuccessMessage();
+
+const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
   state = {
+    driverToInvite: "",
     drivers: [],
     filteredDrivers:[]
   };
@@ -31,6 +36,20 @@ class BasicTable extends React.Component {
     const { drivers } = this.state
     const filteredDrivers = drivers.filter(driver => driver.username.toLowerCase().match(e.target.value.toLowerCase()))
     this.setState({ filteredDrivers })
+  }
+
+  sendInvite = async() => {
+    try {
+      const data = {};
+      Object.assign(data, {
+        school,
+        user: this.state.driverToInvite,
+      });
+
+      await Data.drivers.invite(data);
+      ISuccessMessage.show();   
+    } catch (error) {
+    }
   }
 
   render() {
@@ -131,6 +150,11 @@ class BasicTable extends React.Component {
                   this.setState({ remove: driver }, () => {
                     deleteModalInstance.show();
                   });
+                }}
+                invite={driver => {
+                  this.setState({ driverToInvite: driver.id }, () => {
+                    this.sendInvite();
+                  })
                 }}
               />
             </div>
