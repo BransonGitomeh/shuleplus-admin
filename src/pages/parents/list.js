@@ -6,15 +6,20 @@ import UploadModal from "./upload";
 import EditModal from "./edit";
 import DeleteModal from "./delete";
 import Data from "../../utils/data";
+import SuccessMessage from "./components/success-toast";
 
 const $ = window.$;
 const addModalInstance = new AddModal();
 const uploadModalInstance = new UploadModal();
 const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
+const ISuccessMessage = new SuccessMessage();
+
+const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
   state = {
+    parentToInvite: '',
     parents: [],
     filteredParents:[]
   };
@@ -31,6 +36,20 @@ class BasicTable extends React.Component {
     const { parents } = this.state
     const filteredParents = parents.filter(parent => parent.name.toLowerCase().match(e.target.value.toLowerCase()))
     this.setState({ filteredParents })
+  }
+
+  sendInvite = async() => {
+    try {
+      const data = {};
+      Object.assign(data, {
+        school,
+        user: this.state.parentToInvite,
+      });
+
+      await Data.parents.invite(data);
+      ISuccessMessage.show();   
+    } catch (error) {
+    }
   }
 
   render() {
@@ -127,6 +146,11 @@ class BasicTable extends React.Component {
                   this.setState({ remove: parent }, () => {
                     deleteModalInstance.show();
                   });
+                }}
+                invite={parent => {
+                  this.setState({ parentToInvite: parent.id }, () => {
+                    this.sendInvite();
+                  })
                 }}
               />
             </div>

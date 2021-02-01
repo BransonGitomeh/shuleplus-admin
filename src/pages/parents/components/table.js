@@ -32,6 +32,7 @@ export default props => {
                 data={row}
                 edit={() => props.edit(row)}
                 delete={() => props.delete(row)}
+                invite={() => props.invite(row)}
                 options={options}
               />
             );

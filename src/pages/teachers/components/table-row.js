@@ -76,7 +76,7 @@ class TableRow extends React.Component {
                   this.props.invite(this.props.data);
                 }}
               >
-                Invite
+                <strong style={{color: "#5867dd"}}>Invite</strong>
               </button>
             </span>
           </td>

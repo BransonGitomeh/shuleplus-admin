@@ -6,7 +6,7 @@ const toastNumber = Math.random()
   .split(".")[1];
 
 class Toast extends React.Component {
-  show({ message = "Invite message has been sent successfuly!", header = "Invite Message" } = {}) {
+  show({ message = "Invite message has been sent successfuly!", header = "Driver Invite Message" } = {}) {
     toastr.options = {
       closeButton: true,
       debug: false,
