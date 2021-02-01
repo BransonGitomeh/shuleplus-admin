@@ -462,9 +462,6 @@ var Data = (function () {
 
       invitations = school.invitations;
       subs.invitations({ invitations });
-
-      // team_members = school.invitations;
-      // subs.invitations({ invitations });
     });
   }
 
@@ -621,7 +618,7 @@ var Data = (function () {
     parents: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
+          const { parents: { create: { id } } } = await mutate(
             `
           mutation ($Iparent: Iparent!) {
             parents {
@@ -685,6 +682,29 @@ var Data = (function () {
           subs.parents({ parents });
           resolve();
         }),
+      invite: data =>
+        new Promise(async (resolve, reject) => {
+          const { parents: { invite: { id, phone, message } } } = await mutate(
+            `
+            mutation ($Iinvite: Iinvite!) {
+              parents {
+                invite(parent: $Iinvite) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iinvite: data
+            }
+          );
+          const invitation = {};
+          invitation.id = id;
+          invitation.phone = phone;
+          invitation.message = message;
+          invitations = [...invitations, invitation];
+          subs.invitations({ invitations });
+          resolve();
+      }),
       list() {
         return parents;
       },
@@ -1430,7 +1450,6 @@ var Data = (function () {
             }
           );
 
-          console.log(res)
           const { id } = res.drivers.create
           data.id = id;
 
@@ -1486,7 +1505,7 @@ var Data = (function () {
       }),
       invite: data =>
         new Promise(async (resolve, reject) => {
-          const res = await mutate(
+          const { drivers: { invite: { id, phone, message } } } = await mutate(
             `
             mutation ($Iinvite: Iinvite!) {
               drivers {
@@ -1499,7 +1518,13 @@ var Data = (function () {
               Iinvite: data
             }
           );
-          console.log(res);
+
+          const invitation = {};
+          invitation.id = id;
+          invitation.phone = phone;
+          invitation.message = message;
+          invitations = [...invitations, invitation];
+          subs.invitations({ invitations });
           resolve();
       }),
       list() {
@@ -1974,7 +1999,7 @@ var Data = (function () {
         }),
       invite: data =>
         new Promise(async (resolve, reject) => {
-          const res = await mutate(
+          const { teams: { invite: { id, phone, message } } } = await mutate(
             `
             mutation ($Iinvite: Iinvite!) {
               teams {
@@ -1987,6 +2012,12 @@ var Data = (function () {
               Iinvite: data
             }
           );
+          const invitation = {};
+          invitation.id = id;
+          invitation.phone = phone;
+          invitation.message = message;
+          invitations = [...invitations, invitation];
+          subs.invitations({ invitations });
           resolve();
       }),
       delete: data =>
