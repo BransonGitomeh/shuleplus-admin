@@ -1527,6 +1527,48 @@ var Data = (function () {
           subs.invitations({ invitations });
           resolve();
       }),
+      transfer: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Itransfer: Itransfer!) {
+              drivers {
+                transfer(driver: $Itransfer) {
+                  id
+                }
+              }
+            } `,
+            {
+              Itransfer: data
+            }
+          );
+
+          const targetSchool = schools.filter(school => {
+            return school.id === data.school;
+          });
+
+          console.log(targetSchool)
+
+          if(targetSchool.length){
+            const driver = drivers.filter(driver => {
+              return driver.id === data.driver;
+            })
+
+            if(driver.length){
+              if(!targetSchool[0].drivers){
+                targetSchool[0].drivers = [];
+                targetSchool[0].drivers.push(driver[0]);
+              }else{
+                targetSchool[0].drivers.push(driver[0]);
+              }
+            }
+          }
+
+          const subtract = drivers.filter(({ id }) => id !== data.driver);
+          drivers = [...subtract];
+          subs.drivers({ drivers });
+          resolve();
+      }),
       list() {
         return drivers;
       },

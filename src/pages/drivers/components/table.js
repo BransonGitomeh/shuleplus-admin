@@ -2,7 +2,7 @@ import React from "react";
 
 export default props => {
   if (!props.headers || !props.data) return null;
-  const { options = { deleteable: true, editable: true } } = props;
+  const { options = { deleteable: true, editable: true, adminable: false } } = props;
   return (
     <table
       className="table"
@@ -67,13 +67,25 @@ export default props => {
                   <button
                     title="Send"
                     type="button"
-                    className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                    className="btn btn-sm btn-clean btn-icon btn-icon-md mx-2"
                     onClick={() => {
                       props.invite(row);
                     }}
                   >
                     <strong style={{color: "#5867dd"}}>Invite</strong>
                   </button>
+                  {options.adminable === true ? (
+                  <button
+                    title="Send"
+                    type="button"
+                    className="btn btn-sm btn-clean btn-icon btn-icon-md mx-2"
+                    onClick={() => {
+                      props.transfer(row);
+                    }}
+                  >
+                    <strong style={{color: "#dc3545"}}>Transfer</strong>
+                  </button>
+                  ) : null}
                 </span>
               </td>
             </tr>
