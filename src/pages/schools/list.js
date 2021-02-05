@@ -5,10 +5,10 @@ import AddModal from "./add";
 import UploadModal from "./upload";
 import EditModal from "./edit";
 import DeleteModal from "./delete";
-import TransferModal from "./transfer";
 import InviteModal from "./invite";
 import Data from "../../utils/data";
 import SuccessMessage from "./components/success-toast";
+import ErrorMessage from "./components/error-toast";
 
 const $ = window.$;
 const addModalInstance = new AddModal();
@@ -16,20 +16,18 @@ const uploadModalInstance = new UploadModal();
 const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
 const ISuccessMessage = new SuccessMessage();
-const transferModalInstance = new TransferModal();
+const IErrorMessage = new ErrorMessage();
 const inviteModalInstance = new InviteModal();
-
-const school = localStorage.getItem("school");
 
 class BasicTable extends React.Component {
   state = {
-    selectedDriver: {},
+    schoolToInvite: {},
     admin: false,
-    driverToInvite: "",
-    driverToTransfer: {},
-    drivers: [],
+    remove: {},
+    schoolToEdit: "",
+    selectedSchool: "",
     schools: [],
-    filteredDrivers:[]
+    filteredSchools:[]
   };
   componentDidMount() {
     let user = localStorage.getItem('user');
@@ -38,63 +36,71 @@ class BasicTable extends React.Component {
       this.setState({ admin: true });
     }
 
-    const drivers = Data.drivers.list();
-    this.setState({ drivers, filteredDrivers: drivers });
-
     const schools = Data.schools.list();
-    this.setState({ schools });
+    this.setState({ schools, filteredSchools: schools });
 
-    Data.drivers.subscribe(({ drivers }) => {
-      this.setState({ drivers, filteredDrivers: drivers });
+    Data.schools.subscribe(({ schools }) => {
+      this.setState({ schools, filteredSchools: schools });
     });
   }
 
   onSearch = e => {
-    const { drivers } = this.state
-    const filteredDrivers = drivers.filter(driver => driver.username.toLowerCase().match(e.target.value.toLowerCase()))
-    this.setState({ filteredDrivers })
+    const { schools } = this.state
+    const filteredSchools = schools.filter(school => school.name.toLowerCase().match(e.target.value.toLowerCase()))
+    this.setState({ filteredSchools })
   }
 
-  sendInvite = async() => {
+  sendInvite = async(school) => {
     try {
       const data = {};
       Object.assign(data, {
-        school,
-        user: this.state.driverToInvite,
+        id: this.state.schoolToInvite.id,
+        name: this.state.schoolToInvite.name,
+        email: this.state.schoolToInvite.email,
+        phone: this.state.schoolToInvite.phone,
+        address: this.state.schoolToInvite.address,
       });
 
-      await Data.drivers.invite(data);
+      await Data.schools.invite(data);
       ISuccessMessage.show();   
     } catch (error) {
     }
   }
 
-  getAllSchools = async() => {
-    try {
-      const schools = await Data.schools.list();
-      this.setState({schools});   
-    } catch (error) {
+  createSchool = async(school) => {
+    try{
+      await Data.schools.create(school);
+      ISuccessMessage.show({ message: "School has been created successfuly!", header: "Create School" });
+    } catch(error){
+      throw new Error(error.message)
     }
   }
 
+  editSchool = async(school) => {
+    try{
+      await Data.schools.update(school);
+      ISuccessMessage.show({ message: "School has been updated successfuly!", header: "Edit School" });
+    } catch(error){}
+  }
+
+  deleteSchool = async(school) => {
+    try{
+      await Data.schools.delete(school);
+      ISuccessMessage.show({ message: "School has been deleted successfuly!", header: "Delete School" });
+    } catch(error){}
+  }
+
   render() {
-    const { edit, remove, selectedDriver, schools, driverToTransfer, admin } = this.state;
+    const { edit, schoolToInvite, remove, schools, filteredSchools, admin } = this.state;
     return (
       <div className="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default kt-page--loading">
         <div className="kt-grid kt-grid--hor kt-grid--root">
           <div className="kt-portlet kt-portlet--mobile">
-            <AddModal save={drivers => Data.drivers.create(drivers)} />
-            <UploadModal driver={this.driver} save={drivers => drivers.forEach(driver => Data.drivers.create(driver))} />
-            <DeleteModal
-              remove={remove}
-              save={driver => Data.drivers.delete(driver)}
-            />
-            <InviteModal driver={selectedDriver} invite={() => this.sendInvite()}/>
-            <EditModal
-              edit={edit}
-              save={driver => Data.drivers.update(driver)}
-            />
-            <TransferModal schools={schools} driver={driverToTransfer} transfer={driver => Data.drivers.transfer(driver)} />
+            <AddModal save={school => this.createSchool(school)} />
+            <UploadModal user={this.user} save={schools => schools.forEach(school => Data.schools.create(school))} />
+            <DeleteModal remove={remove} delete={school => this.deleteSchool(school)}/>
+            <InviteModal school={schoolToInvite} invite={() => this.sendInvite()}/>
+            <EditModal edit={edit} save={school => this.editSchool(school)}/>
             <div className="kt-portlet__body">
               {/*begin: Search Form */}
               <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">
@@ -143,50 +149,36 @@ class BasicTable extends React.Component {
               <Table
                 headers={[
                   {
-                    label: "Drivers Names",
-                    key: "username"
-                  },
-                  {
-                    label: "Email",
-                    key: "email"
+                    label: "School Names",
+                    key: "name"
                   },
                   {
                     label: "Phone",
                     key: "phone"
                   },
                   {
-                    label: "Licence No.",
-                    key: "licence_number"
+                    label: "Email",
+                    key: "email"
                   },
                   {
-                    label: "Licence Expiry",
-                    key: "license_expiry"
-                  },
-                  {
-                    label: "Home Area",
-                    key: "home"
+                    label: "Address",
+                    key: "address"
                   }
                 ]}
-                options={{ deleteable: true, editable: true, adminable: admin === true }}
-                data={this.state.filteredDrivers}
-                edit={driver => {
-                  this.setState({ edit: driver }, () => {
+                data={this.state.filteredSchools}
+                edit={school => {
+                  this.setState({ edit: school }, () => {
                     editModalInstance.show();
                   });
                 }}
-                delete={driver => {
-                  this.setState({ remove: driver }, () => {
+                delete={school => {
+                  this.setState({ remove: school }, () => {
                     deleteModalInstance.show();
                   });
                 }}
-                invite={driver => {
-                  this.setState({ driverToInvite: driver.id, selectedDriver: driver }, () => {
+                invite={school => {
+                  this.setState({ schoolToInvite: school }, () => {
                     inviteModalInstance.show();
-                  })
-                }}
-                transfer={driver => {
-                  this.setState({ driverToTransfer: driver }, () => {
-                    transferModalInstance.show();
                   })
                 }}
               />
