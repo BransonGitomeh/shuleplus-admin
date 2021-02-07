@@ -1248,6 +1248,37 @@ var Data = (function () {
       getOne(id) { }
     },
     schools: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const res = await mutate(
+            `
+          mutation ($school: ISchool!) {
+            schools {
+              create(school: $school) {
+                id
+                error
+              }
+            }
+          }`,
+            {
+              school: data
+            }
+          );
+
+          if(res?.schools?.create?.error){
+            const data = {
+              message: res?.schools?.create?.error
+            };
+            reject(data);
+          }else{
+            console.log(res)
+            data.id = res?.schools?.create?.id;
+
+            schools = [...schools, data];
+            subs.schools({ schools });
+            resolve();
+          } 
+        }),
       list() {
         return schools;
       },
@@ -1273,6 +1304,51 @@ var Data = (function () {
           subs.schools({ schools });
           resolve();
         }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          mutate(
+            `
+          mutation ($school: USchool!) {
+            schools {
+              archive(school: $school) {
+                id
+              }
+            }
+          } `,
+            {
+              school: data
+            }
+          );
+
+          const subtract = schools.filter(({ id }) => id !== data.id);
+          schools = [...subtract];
+          subs.schools({ schools });
+          resolve();
+      }),
+      invite: data =>
+        new Promise(async (resolve, reject) => {
+          const { schools: { invite: { id, phone, message } } } = await mutate(
+            `
+            mutation ($school: USchool!) {
+              schools {
+                invite(school: $school) {
+                  id
+                }
+              }
+            } `,
+            {
+              school: data
+            }
+          );
+
+          const invitation = {};
+          invitation.id = id;
+          invitation.phone = phone;
+          invitation.message = message;
+          invitations = [...invitations, invitation];
+          subs.invitations({ invitations });
+          resolve();
+      }),
       subscribe(cb) {
         // listen for even change on the students observables
         subs.schools = cb;

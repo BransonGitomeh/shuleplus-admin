@@ -2,7 +2,7 @@ import React from "react";
 
 export default props => {
   if (!props.headers || !props.data) return null;
-  const { options = { deleteable: true, editable: true, adminable: false } } = props;
+  const { options = { deleteable: true, editable: true } } = props;
   return (
     <table
       className="table"
@@ -75,19 +75,6 @@ export default props => {
                     <i className="la la-envelope" />
                     <strong>Invite</strong>
                   </button>
-                  {options.adminable === true ? (
-                  <button
-                    title="Send"
-                    type="button"
-                    className="btn btn-sm btn-outline-danger mx-2"
-                    onClick={() => {
-                      props.transfer(row);
-                    }}
-                  >
-                    <i className="la la-random" />
-                    <strong>Transfer</strong>
-                  </button>
-                  ) : null}
                 </span>
               </td>
             </tr>
