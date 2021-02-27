@@ -732,6 +732,7 @@ var Data = (function () {
             }
           );
           data.id = id;
+          data.subjects = [];
 
           grades = [...grades, data];
           subs.grades({ grades });

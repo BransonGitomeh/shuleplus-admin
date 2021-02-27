@@ -45,8 +45,12 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
           _this.state.loading = undefined
-          delete _this.state.grade.id;
-          await _this.props.save(_this.state.grade);
+          // delete _this.state.grade.id;
+          const data = {};
+          data.name = _this.state.grade.name;
+          data.school = _this.state.grade;
+          // await _this.props.save(_this.state.grade);
+          await _this.props.save(data);
           _this.hide();
           _this.setState({
             loading: false,
