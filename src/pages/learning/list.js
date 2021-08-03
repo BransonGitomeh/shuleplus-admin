@@ -399,7 +399,7 @@ class BasicTable extends React.Component {
                 {!this.state.selectedGrade ? "" : <div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title"> Subjects</h3>
+                      <h3 class="kt-portlet__head-title"> {this.state.selectedGrade.name} Subjects</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" class="btn btn-primary pull-right" onClick={() => addSubjectModalInstance.show()}>
@@ -408,7 +408,7 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <br></br>
-                  {this.state.subjects.length ? <Search title="subjects" onSearch={this.onSubjectSearch} /> : ""}
+                  <Search title="subjects" onSearch={this.onSubjectSearch} />
                   <Table
                     headers={[
                       {
@@ -447,7 +447,7 @@ class BasicTable extends React.Component {
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Topics</h3>
+                      <h3 class="kt-portlet__head-title"> {this.state.selectedSubject.name} Topics</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" class="btn btn-primary pull-right" onClick={() => addTopicModalInstance.show()}>
@@ -491,7 +491,7 @@ class BasicTable extends React.Component {
                 {!this.state.selectedTopic ? "" : <div className="col-md-4">
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Subtopics</h3>
+                      <h3 class="kt-portlet__head-title">{this.state.selectedTopic.name} Subtopics</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" class="btn btn-primary pull-right" onClick={() => addSubtopicModalInstance.show()}>
@@ -534,7 +534,7 @@ class BasicTable extends React.Component {
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Question</h3>
+                      <h3 class="kt-portlet__head-title">{this.state.selectedSubtopic.name} Question</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" class="btn btn-primary pull-right" onClick={() => addQuestionModalInstance.show()}>
@@ -575,7 +575,7 @@ class BasicTable extends React.Component {
 
                   <div class="kt-portlet__head">
                     <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Posible Answers</h3>
+                      <h3 class="kt-portlet__head-title">{this.state.selectedQuestion.name} Posible Answers</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" class="btn btn-primary pull-right" onClick={() => addOptionModalInstance.show()}>

@@ -88,14 +88,15 @@ class Subheader extends React.Component {
         {this.state.selectedSchool.financial?.balance < MIN_BALANCE ? "" : <div id="kt_subheader" className="kt-subheader kt-grid__item " style={{ backgroundColor: "#FA064B", color: "white" }}>
           <div className="kt-container  kt-container--fluid ">
             <div className="kt-subheader__title">
-              <div className="kt-subheader__breadcrumbs">
+              <div className="kt-subheader__breadcrumbs justify-content-end">
                 Your account balance is currently bellow KSH {MIN_BALANCE}, please top up your account to avoid service disruption
 
-                <button onClick={() => this.props.history.push({
+                
+              </div>
+              <button class="btn btn-success btn-sm btn-bold btn-upper" onClick={() => this.props.history.push({
                 pathname: "/finance/topup",
                 search: "?" + new URLSearchParams({ popup: true }).toString()
-              })} class="btn btn-success btn-sm btn-bold btn-upper float-right">Top Up Using Mpesa</button>
-              </div>
+              })}>Top Up Using Mpesa</button>
             </div>
           </div>
         </div>}
