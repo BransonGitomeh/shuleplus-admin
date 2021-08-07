@@ -329,7 +329,7 @@ class Navbar extends React.Component {
               </li>
 
 
-              <li
+              {/* <li
                 className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
                 data-ktmenu-submenu-toggle="click"
                 aria-haspopup="true"
@@ -337,7 +337,7 @@ class Navbar extends React.Component {
                 <Link to="/learning" className="kt-menu__link">
                   <span className="kt-menu__link-text">Learning</span>
                 </Link>
-              </li>
+              </li> */}
 
             </ul>
           </div>
