@@ -186,13 +186,13 @@ class BasicTable extends React.Component {
                   {
                     label: "On-Board",
                     component: (row) => (<td style={{ 'font-size': "23px", color: "red" }}>
-                      <i class="fas fa-level-up-alt"></i> {row.offBus}
+                      <i class="fas fa-level-up-alt"></i> {row.inBus}
                     </td>)
                   },
                   {
                     label: "Off-Board",
                     component: (row) => (<td style={{ 'font-size': "23px", color: "blue" }}>
-                      <i class="fas fa-level-down-alt"></i> {row.inBus}
+                      <i class="fas fa-level-down-alt"></i> {row.offBus}
                     </td>)
                   },
                   {
