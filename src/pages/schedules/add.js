@@ -22,6 +22,11 @@ class Modal extends React.Component {
       "SATURDAY",
       "SUNDAY"
     ],
+    type: '',
+    types: [
+        'PICK',
+        'DROP'
+    ],
     selectedDays: [
       "MONDAY"
     ]
@@ -60,13 +65,22 @@ class Modal extends React.Component {
           _this.state.time = $('#timepicker_start').data("timepicker").getTime()
           _this.state.end_time = $('#timepicker_end').data("timepicker").getTime()
 
-          await _this.props.save(Object.assign({}, _this.state, {
-            selectedDays: undefined,
-            days: _this.state.selectedDays
-          }));
+          const schedule = {};
+          schedule.time = _this.state.time;
+          schedule.end_time = _this.state.end_time;
+          schedule.days = _this.state.selectedDays
+          schedule.type = _this.state.type;
+          schedule.name = _this.state.name;
+          schedule.bus = _this.state.bus;
+          schedule.message = _this.state.message;
+          schedule.route = _this.state.route;
+          schedule.driver = _this.state.driver;
+
+          await _this.props.save(schedule);
           _this.hide();
           _this.setState({ loading: false });
         } catch (error) {
+          console.log(error);
           _this.setState({ loading: false });
           if (error) {
             const { message } = error;
@@ -192,7 +206,26 @@ class Modal extends React.Component {
                           )}
                         </select>
                       </div>
-                      <div className="col-lg-6">
+                      <div className="col-lg-3">
+                        <label for="exampleSelect1">Schedule Type:</label>
+                        <select
+                          name="type"
+                          type="text"
+                          class="form-control"
+                          value={this.state.type}
+                          onChange={(e) => this.setState({
+                            type: e.target.value
+                          })}
+                        >
+                          <option value="">Select type</option>
+                          {this.state.types.map(
+                            (type, index) => (
+                              <option key={index} value={type}>{type}</option>
+                            )
+                          )}
+                        </select>
+                      </div>
+                      <div className="col-lg-3">
                         <br />
                         <label for="exampleSelect1">Select Days the route is taken</label>
                         <div className="kt-checkbox-list">
@@ -235,7 +268,6 @@ class Modal extends React.Component {
                           )}
                         </select>
                       </div>
-
                       <div className="col-lg-12">
                         <label>Schedule message:</label>
                         <textarea

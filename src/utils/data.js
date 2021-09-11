@@ -270,6 +270,7 @@ var Data = (function () {
           id
           message
           time
+          type
           end_time
           name
           days
@@ -1913,6 +1914,8 @@ var Data = (function () {
               schedule: Object.assign({}, schedule, { school: schoolID })
             }
           );
+
+          console.log(res);
 
           const { id } = res
 

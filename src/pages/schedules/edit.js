@@ -6,6 +6,11 @@ const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
 
+const schedule_types = [
+  'PICK',
+  'DROP'
+];
+
 const modalNumber = Math.random()
   .toString()
   .split(".")[1];
@@ -22,6 +27,7 @@ class Modal extends React.Component {
       "SATURDAY",
       "SUNDAY"
     ],
+    type: '',
     edit: {
       routes: [],
       buses: [],
@@ -249,7 +255,26 @@ class Modal extends React.Component {
                           )}
                         </select>
                       </div>
-                      <div className="col-lg-6">
+                      <div className="col-lg-3">
+                        <label for="exampleSelect1">Schedule Type:</label>
+                        <select
+                          name="type"
+                          type="text"
+                          class="form-control"
+                          value={this.state.edit.type}
+                          onChange={(e) => this.setState({
+                            type: e.target.value
+                          })}
+                        >
+                          <option value="">Select type</option>
+                          {schedule_types.map(
+                            (type, index) => (
+                              <option key={index} value={type}>{type}</option>
+                            )
+                          )}
+                        </select>
+                      </div>
+                      <div className="col-lg-3">
                         <br />
                         <label for="exampleSelect1">Select Days the route is taken</label>
                         <div className="kt-checkbox-list">
