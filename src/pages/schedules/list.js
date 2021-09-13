@@ -127,6 +127,10 @@ class BasicTable extends React.Component {
                     key: "name"
                   },
                   {
+                    label: "Trip Type",
+                    key: "type"
+                  },
+                  {
                     label: "Start Time",
                     key: "time"
                   },
