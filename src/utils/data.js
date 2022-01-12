@@ -338,6 +338,11 @@ var Data = (function () {
 
       schools = schoolsData
       school = schools[0]
+      if (!school) {
+        school = {
+          students: []
+        }
+      }
       schoolID = school.id
 
       // schoolID = localStorage.getItem("school")                                    
@@ -705,7 +710,7 @@ var Data = (function () {
           invitations = [...invitations, invitation];
           subs.invitations({ invitations });
           resolve();
-      }),
+        }),
       list() {
         return parents;
       },
@@ -1266,19 +1271,19 @@ var Data = (function () {
             }
           );
 
-          if(res?.schools?.create?.error){
+          if (res?.schools?.create?.error) {
             const data = {
               message: res?.schools?.create?.error
             };
             reject(data);
-          }else{
+          } else {
             console.log(res)
             data.id = res?.schools?.create?.id;
 
             schools = [...schools, data];
             subs.schools({ schools });
             resolve();
-          } 
+          }
         }),
       list() {
         return schools;
@@ -1325,7 +1330,7 @@ var Data = (function () {
           schools = [...subtract];
           subs.schools({ schools });
           resolve();
-      }),
+        }),
       invite: data =>
         new Promise(async (resolve, reject) => {
           const { schools: { invite: { id, phone, message } } } = await mutate(
@@ -1349,7 +1354,7 @@ var Data = (function () {
           invitations = [...invitations, invitation];
           subs.invitations({ invitations });
           resolve();
-      }),
+        }),
       subscribe(cb) {
         // listen for even change on the students observables
         subs.schools = cb;
@@ -1579,7 +1584,7 @@ var Data = (function () {
           drivers = [...subtract];
           subs.drivers({ drivers });
           resolve();
-      }),
+        }),
       invite: data =>
         new Promise(async (resolve, reject) => {
           const { drivers: { invite: { id, phone, message } } } = await mutate(
@@ -1603,7 +1608,7 @@ var Data = (function () {
           invitations = [...invitations, invitation];
           subs.invitations({ invitations });
           resolve();
-      }),
+        }),
       transfer: data =>
         new Promise(async (resolve, reject) => {
           await mutate(
@@ -1626,16 +1631,16 @@ var Data = (function () {
 
           console.log(targetSchool)
 
-          if(targetSchool.length){
+          if (targetSchool.length) {
             const driver = drivers.filter(driver => {
               return driver.id === data.driver;
             })
 
-            if(driver.length){
-              if(!targetSchool[0].drivers){
+            if (driver.length) {
+              if (!targetSchool[0].drivers) {
                 targetSchool[0].drivers = [];
                 targetSchool[0].drivers.push(driver[0]);
-              }else{
+              } else {
                 targetSchool[0].drivers.push(driver[0]);
               }
             }
@@ -1645,7 +1650,7 @@ var Data = (function () {
           drivers = [...subtract];
           subs.drivers({ drivers });
           resolve();
-      }),
+        }),
       list() {
         return drivers;
       },
@@ -2077,7 +2082,7 @@ var Data = (function () {
     teams: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { teams : { create: { id } } } = await mutate(
+          const { teams: { create: { id } } } = await mutate(
             `
             mutation ($Iteam: Iteam!) {
               teams {
@@ -2140,7 +2145,7 @@ var Data = (function () {
           invitations = [...invitations, invitation];
           subs.invitations({ invitations });
           resolve();
-      }),
+        }),
       delete: data =>
         new Promise(async (resolve, reject) => {
           mutate(
@@ -2202,10 +2207,10 @@ var Data = (function () {
             }
           );
           resolve(id);
-      }),
+        }),
       delete: data =>
-       new Promise(async (resolve, reject) => {
-        const { team_members: { archive: { id } } } = await mutate(
+        new Promise(async (resolve, reject) => {
+          const { team_members: { archive: { id } } } = await mutate(
             `
             mutation ($UteamMember: UteamMember!) {
               team_members {
@@ -2223,7 +2228,7 @@ var Data = (function () {
           );
 
           resolve(id);
-      }),
+        }),
     },
   };
 })();
