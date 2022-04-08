@@ -5,6 +5,7 @@ const studentsData = [];
 const parentsData = [];
 const busesData = [];
 const driversData = [];
+const adminsData = [];
 const routesData = [];
 const complaintsData = []
 const tripsData = [];
@@ -32,6 +33,7 @@ var Data = (function () {
   var students = studentsData;
   var parents = parentsData;
   var drivers = driversData;
+  var admins = adminsData;
   var buses = busesData;
   var routes = routesData;
   var schedules = schedulesData;
@@ -59,6 +61,7 @@ var Data = (function () {
   emitize(subs, "students");
   emitize(subs, "parents");
   emitize(subs, "drivers");
+  emitize(subs, "admins");
   emitize(subs, "buses");
   emitize(subs, "routes");
   emitize(subs, "schedules");
@@ -216,6 +219,12 @@ var Data = (function () {
           licence_number
           home
         }
+        admins {
+          id
+          names
+          email
+          phone
+        }
         parents {
           id
           national_id
@@ -363,7 +372,11 @@ var Data = (function () {
 
       console.log({ schools, school })
 
-      students = school.students.map(student => {
+      if(!school){
+        return;
+      }
+
+      var students = school.students.map(student => {
 
         if (student.parent) {
           student.parent_name = student.parent.name;
@@ -412,6 +425,9 @@ var Data = (function () {
 
       drivers = school.drivers;
       subs.drivers({ drivers });
+
+      admins = school.admins;
+      subs.admins({ admins });
 
       schedules = school.schedules.map(schedule => {
         if (schedule.bus)
@@ -1658,6 +1674,152 @@ var Data = (function () {
         // listen for even change on the students observables
         subs.drivers = cb;
         return drivers;
+      },
+      getOne(id) { }
+    },
+    admins: {
+      create: data =>
+        new Promise(async (resolve, reject) => {
+          const res = await mutate(
+            `
+            mutation ($Iadmin: Iadmin!) {
+              admins {
+                create(admin: $Iadmin) {
+                  id
+                }
+              }
+            }`,
+            {
+              Iadmin: Object.assign(data, { school: schoolID })
+            }
+          );
+
+          const { id } = res.admins.create
+          data.id = id;
+
+          admins = [...admins, data];
+          subs.admins({ admins });
+          resolve();
+        }),
+      update: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+          mutation ($admin: Uadmin!) {
+            admins {
+              update(admin: $admins) {
+                id
+              }
+            }
+          } 
+          `,
+            {
+              admin: data
+            }
+          );
+
+          const subtract = drivers.filter(({ id }) => id !== data.id);
+          drivers = [data, ...subtract];
+          subs.drivers({ drivers });
+          resolve();
+        }),
+      delete: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+          mutation ($Iadmin: Uadmin!) {
+            admins {
+              archive(admin: $Iadmin) {
+                id
+              }
+            }
+          } 
+          `,
+            {
+              Iadmins: {
+                id: data.id
+              }
+            }
+          );
+
+          const subtract = admins.filter(({ id }) => id !== data.id);
+          admins = [...subtract];
+          subs.admins({ admins });
+          resolve();
+        }),
+      invite: data =>
+        new Promise(async (resolve, reject) => {
+          const { drivers: { invite: { id, phone, message } } } = await mutate(
+            `
+            mutation ($Iinvite: Iinvite!) {
+              admins {
+                invite(admin: $Iinvite) {
+                  id
+                }
+              }
+            } `,
+            {
+              Iinvite: data
+            }
+          );
+
+          const invitation = {};
+          invitation.id = id;
+          invitation.phone = phone;
+          invitation.message = message;
+          invitations = [...invitations, invitation];
+          subs.invitations({ invitations });
+          resolve();
+        }),
+      transfer: data =>
+        new Promise(async (resolve, reject) => {
+          await mutate(
+            `
+            mutation ($Itransfer: Itransfer!) {
+              drivers {
+                transfer(driver: $Itransfer) {
+                  id
+                }
+              }
+            } `,
+            {
+              Itransfer: data
+            }
+          );
+
+          const targetSchool = schools.filter(school => {
+            return school.id === data.school;
+          });
+
+          console.log(targetSchool)
+
+          if (targetSchool.length) {
+            const driver = admins.filter(driver => {
+              return driver.id === data.driver;
+            })
+
+            if (driver.length) {
+              if (!targetSchool[0].admins) {
+                targetSchool[0].admins = [];
+                targetSchool[0].admins.push(driver[0]);
+              } else {
+                targetSchool[0].admins.push(driver[0]);
+              }
+            }
+          }
+
+          const subtract = admins.filter(({ id }) => id !== data.driver);
+          admins = [...subtract];
+          subs.admins({ admins });
+          resolve();
+        }),
+      list() {
+        return admins;
+      },
+      subscribe(cb) {
+        // listen for even change on the students observables
+        subs.admins = cb;
+        return admins;
       },
       getOne(id) { }
     },

@@ -33,6 +33,7 @@ import register from "./pages/auth/register";
 
 import topup from "./pages/finance/topup"
 import charges from "./pages/finance/charges"
+import admins from "./pages/admins";
 
 const PrivateRoute = ({ component: Component, ...rest }) => (
   <Route {...rest} render={(props) => (
@@ -59,6 +60,7 @@ class App extends React.Component {
       <PrivateRoute path="/schedules" component={schedules} />
       <PrivateRoute path="/parents" component={parents} />
       <PrivateRoute path="/drivers" component={drivers} />
+      <PrivateRoute path="/admins" component={admins} />
       <PrivateRoute path="/buses" component={buses} />
       <PrivateRoute path="/routes" component={routes} />
       <PrivateRoute path="/messages" component={complaints} />

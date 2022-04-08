@@ -159,6 +159,19 @@ class Navbar extends React.Component {
                       </Link>
                     </li>
 
+
+
+                    <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
+                      <Link to="/admins" className="kt-menu__link">
+                        <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
+                          <span />
+                        </i>
+                        <span className="kt-menu__link-text">
+                          <span className="kt-menu__link-text">Admins</span>
+                        </span>
+                      </Link>
+                    </li>
+
                   <li className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                       <Link to="/teams" className="kt-menu__link">
                         <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
