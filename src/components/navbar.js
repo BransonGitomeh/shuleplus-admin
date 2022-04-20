@@ -93,7 +93,7 @@ class Navbar extends React.Component {
         id="kt_header"
         className="kt-header kt-grid__item kt-grid kt-grid--ver  kt-header--fixed "
       >
-        {this.state.updated != true ? <Pace color="#ffffff" height={2}/>: undefined}
+        {this.state.updated != true ? <Pace color="#ffffff" height={3}/>: undefined}
         {/* begin:: Brand */}
         <div className="kt-header__brand   kt-grid__item" id="kt_header_brand">
           <Link to="/home">
