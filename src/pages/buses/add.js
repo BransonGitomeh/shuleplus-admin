@@ -1,6 +1,12 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
+
+import AddDriverModal from "../drivers/add";
+
 const IErrorMessage = new ErrorMessage();
+
+
+const addDriverModal = new AddDriverModal();
 
 const $ = window.$;
 
@@ -95,7 +101,7 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>Bus Make:</label>
                         <input
                           type="text"
@@ -110,7 +116,7 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>Plate Number:</label>
                         <input
                           type="text"
@@ -124,7 +130,7 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>Capacity:</label>
                         <input
                           type="number"
@@ -139,25 +145,45 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
-                        <label for="exampleSelect1">Drivers:</label>
-                        <select
-                          name="seats"
-                          type="text"
-                          class="form-control"
-                          required
-                          value={this.state.driver}
-                          onChange={(e) => this.setState({
-                            driver: e.target.value
-                          })}
-                        >
-                          <option value="">Select driver</option>
-                          {this.props.drivers.map(
-                            driver => (
-                              <option key={driver.id} value={driver.id}>{driver.username}</option>
-                            )
-                          )}
-                        </select>
+                      <div className="col-lg-6">
+                        <div className="row">
+                          <div className="col-lg-6">
+                            <label for="exampleSelect1">Drivers:</label>
+                            <select
+                              name="seats"
+                              type="text"
+                              class="form-control"
+                              required
+                              value={this.state.driver}
+                              onChange={(e) => this.setState({
+                                driver: e.target.value
+                              })}
+                            >
+                              <option value="">Select driver</option>
+                              {this.props.drivers.map(
+                                driver => (
+                                  <option key={driver.id} value={driver.id}>{driver.username}</option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                          <div className="col-lg-6">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                addDriverModal.show()
+                              }}
+                            >
+                              Create
+                            </button>
+                          </div>
+                        </div>
+
+
                       </div>
                     </div>
                   </div>
@@ -175,8 +201,8 @@ class Modal extends React.Component {
                         aria-hidden="true"
                       />
                     ) : (
-                        "Save"
-                      )}
+                      "Save"
+                    )}
                   </button>
                   <button
                     data-dismiss="modal"

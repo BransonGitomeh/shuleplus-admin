@@ -105,8 +105,8 @@ class Modal extends React.Component {
                         <input
                           type="text"
                           className="form-control"
-                          id="fullname"
-                          name="fullname"
+                          id="names"
+                          name="names"
                           minLength="2"
                           value={this.state.name}
                           onChange={(e) => this.setState({
@@ -135,8 +135,8 @@ class Modal extends React.Component {
                         <input
                           type="email"
                           className="form-control"
-                          id="fullname"
-                          name="fullname"
+                          id="email"
+                          name="email"
                           minLength="2"
                           value={this.state.email}
                           onChange={(e) => this.setState({
@@ -150,8 +150,8 @@ class Modal extends React.Component {
                         <input
                           type="text"
                           className="form-control"
-                          id="fullname"
-                          name="fullname"
+                          id="address"
+                          name="address"
                           minLength="2"
                           value={this.state.address}
                           onChange={(e) => this.setState({
@@ -168,7 +168,6 @@ class Modal extends React.Component {
                 </div>
                 <div className="modal-footer">
                   <button
-                    type="button"
                     className="btn btn-outline-brand"
                     type="submit"
                     disabled={this.state.loading}
