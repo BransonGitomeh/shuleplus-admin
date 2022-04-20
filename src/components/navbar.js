@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import app from "../scripts.bundle"
 import Data from "../utils/data";
 import { withRouter } from "react-router";
+import Pace from 'react-pace-progress'
 
 
 const KTUtil = window.KTUtil
@@ -22,6 +23,7 @@ class Navbar extends React.Component {
     this.setState({ schools, school });
 
     Data.schools.subscribe(({ schools }) => {
+      this.setState({ updated: true });
       this.setState({
         selectedSchool: schools[0],
         availableSchools: schools
@@ -72,6 +74,7 @@ class Navbar extends React.Component {
   }
   state = {
     profileShowing: false,
+    updated: false,
     selectedSchool: {},
     availableSchools: Data.schools.list()
   };
@@ -84,12 +87,13 @@ class Navbar extends React.Component {
   }
   render() {
     const { user } = JSON.parse(localStorage.getItem("user"))[Object.keys(JSON.parse(localStorage.getItem("user")))[0]]
-
+    console.log(this.state)
     return (
       <div
         id="kt_header"
         className="kt-header kt-grid__item kt-grid kt-grid--ver  kt-header--fixed "
       >
+        {this.state.updated != true ? <Pace color="#ffffff" height={2}/>: undefined}
         {/* begin:: Brand */}
         <div className="kt-header__brand   kt-grid__item" id="kt_header_brand">
           <Link to="/home">
