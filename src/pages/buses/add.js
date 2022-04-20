@@ -3,6 +3,9 @@ import ErrorMessage from "./components/error-toast";
 
 import AddDriverModal from "../drivers/add";
 
+import Select from 'react-select';
+import Data from "../../utils/data";
+
 const IErrorMessage = new ErrorMessage();
 
 
@@ -13,6 +16,15 @@ const $ = window.$;
 const modalNumber = Math.random()
   .toString()
   .split(".")[1];
+
+var options = [
+  { value: 'one', label: 'One' },
+  { value: 'two', label: 'Two' }
+];
+
+function logChange(val) {
+  console.log("Selected: " + val);
+}
 
 class Modal extends React.Component {
   state = {
@@ -51,6 +63,7 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
           _this.state.loading = undefined
+          _this.state.setDriver = undefined
           await _this.props.save(_this.state);
           _this.hide();
           _this.setState({
@@ -73,6 +86,7 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
+        <AddDriverModal save={drivers => Data.drivers.create(drivers)} />
         <div
           className="modal"
           id={modalNumber}
@@ -149,23 +163,16 @@ class Modal extends React.Component {
                         <div className="row">
                           <div className="col-lg-6">
                             <label for="exampleSelect1">Drivers:</label>
-                            <select
-                              name="seats"
-                              type="text"
-                              class="form-control"
-                              required
-                              value={this.state.driver}
-                              onChange={(e) => this.setState({
-                                driver: e.target.value
+
+                            <Select
+                              name="driver"
+                              value={this.state.setDriver}
+                              options={this.props.drivers.map(({ id: value, username: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                driver: value,
+                                setDriver: { value, label }
                               })}
-                            >
-                              <option value="">Select driver</option>
-                              {this.props.drivers.map(
-                                driver => (
-                                  <option key={driver.id} value={driver.id}>{driver.username}</option>
-                                )
-                              )}
-                            </select>
+                            />
                           </div>
                           <div className="col-lg-6">
                             <label for="exampleSelect1">↓</label>
@@ -175,6 +182,7 @@ class Modal extends React.Component {
                               type="button"
                               onClick={() => {
                                 console.log("adding")
+                                this.hide()
                                 addDriverModal.show()
                               }}
                             >
