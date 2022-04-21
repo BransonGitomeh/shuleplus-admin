@@ -163,7 +163,6 @@ class Modal extends React.Component {
                         <div className="row">
                           <div className="col-lg-6">
                             <label for="exampleSelect1">Drivers:</label>
-
                             <Select
                               name="driver"
                               value={this.state.setDriver}
@@ -186,7 +185,7 @@ class Modal extends React.Component {
                                 addDriverModal.show()
                               }}
                             >
-                              Create
+                              Add a Driver
                             </button>
                           </div>
                         </div>

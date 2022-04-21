@@ -1,7 +1,20 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
-const IErrorMessage = new ErrorMessage();
 
+
+import Select from 'react-select';
+import Data from "../../utils/data";
+
+import AddRouteModal from "../routes/add";
+import AddBusModal from "../buses/add"
+import AddDriverModal from "../drivers/add"
+
+// embeded modals
+const addRouteModal = new AddRouteModal();
+const addBusModal = new AddBusModal()
+const addDriverModal = new AddDriverModal()
+
+const IErrorMessage = new ErrorMessage();
 const $ = window.$;
 
 const modalNumber = Math.random()
@@ -24,8 +37,8 @@ class Modal extends React.Component {
     ],
     type: '',
     types: [
-        'PICK',
-        'DROP'
+      'PICK',
+      'DROP'
     ],
     selectedDays: [
       "MONDAY"
@@ -97,6 +110,9 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
+        <AddRouteModal />
+        <AddBusModal drivers={this.props.drivers} />
+        <AddDriverModal />
         <div
           className="modal"
           id={modalNumber}
@@ -125,7 +141,7 @@ class Modal extends React.Component {
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>Trip name:</label>
                         <input
                           type="text"
@@ -140,7 +156,7 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>Start Time</label>
                         <input
                           type="text"
@@ -154,7 +170,7 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label>End Time</label>
                         <input
                           type="text"
@@ -168,7 +184,7 @@ class Modal extends React.Component {
                           })}
                         />
                       </div>
-                      <div className="col-lg-3">
+                      {/* <div className="col-lg-3">
                         <label for="exampleSelect1">Route:</label>
                         <select
                           name="seats"
@@ -186,27 +202,77 @@ class Modal extends React.Component {
                             )
                           )}
                         </select>
+                      </div> */}
+                      <div className="col-lg-6">
+                        <div className="row">
+
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Select Route:</label>
+                            <Select
+                              name="route"
+                              value={this.state.setRoute}
+                              options={this.props.routes?.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                route: value,
+                                setRoute: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addRouteModal.show()
+                              }}
+                            >
+                              Add a Route
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-lg-3">
-                        <label for="exampleSelect1">Bus:</label>
-                        <select
-                          name="bus"
-                          class="form-control"
-                          required
-                          value={this.state.bus}
-                          onChange={(e) => this.setState({
-                            bus: e.target.value
-                          })}
-                        >
-                          <option value="">Select Bus</option>
-                          {this.props.buses.map(
-                            bus => (
-                              <option key={bus.id} value={bus.id}>{bus.plate}</option>
-                            )
-                          )}
-                        </select>
+
+                      <div className="col-lg-6">
+
+                        <div className="row">
+
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Select Bus:</label>
+                            <Select
+                              name="bus"
+                              value={this.state.setBus}
+                              options={this.props.buses?.map(({ id: value, plate: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                route: value,
+                                setBus: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addBusModal.show()
+                              }}
+                            >
+                              Add a Bus
+                            </button>
+                          </div>
+                        </div>
+
+
+
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <label for="exampleSelect1">Schedule Type:</label>
                         <select
                           name="type"
@@ -225,7 +291,7 @@ class Modal extends React.Component {
                           )}
                         </select>
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
                         <br />
                         <label for="exampleSelect1">Select Days the route is taken</label>
                         <div className="kt-checkbox-list">
@@ -249,7 +315,8 @@ class Modal extends React.Component {
                           })}
                         </div>
                       </div>
-                      <div className="col-lg-3">
+                      <div className="col-lg-6">
+                        {/* 
                         <label for="exampleSelect1">Driver:</label>
                         <select
                           name="seats"
@@ -266,7 +333,39 @@ class Modal extends React.Component {
                               <option key={driver.id} value={driver.id}>{driver.username}</option>
                             )
                           )}
-                        </select>
+                        </select> */}
+
+                        <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Drivers:</label>
+                            <Select
+                              name="driver"
+                              value={this.state.setDriver}
+                              options={this.props.drivers.map(({ id: value, username: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                driver: value,
+                                setDriver: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addDriverModal.show()
+                              }}
+                            >
+                              Add a Driver
+                            </button>
+                          </div>
+                        </div>
+
+
                       </div>
                       <div className="col-lg-12">
                         <label>Schedule message:</label>
@@ -303,8 +402,8 @@ class Modal extends React.Component {
                         aria-hidden="true"
                       />
                     ) : (
-                        "Save"
-                      )}
+                      "Save"
+                    )}
                   </button>
                   <button
                     data-dismiss="modal"
