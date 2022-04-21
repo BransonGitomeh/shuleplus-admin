@@ -3,6 +3,7 @@ import ErrorMessage from "./components/error-toast";
 import AddParentModal from "../parents/add";
 import AddParentModal2 from "../parents/add";
 import AddClassModal from "../classes/add"
+import AddRouteModal from "../routes/add"
 
 import Select from 'react-select';
 
@@ -13,6 +14,7 @@ const $ = window.$;
 const addParentModal = new AddParentModal();
 const addParentModal2 = new AddParentModal2();
 const addClassModal = new AddClassModal();
+const addRouteModal = new AddRouteModal();
 
 const modalNumber = Math.random()
   .toString()
@@ -66,6 +68,13 @@ class Modal extends React.Component {
 
     Data.teachers.subscribe(({ teachers }) => {
       this.setState({ teachers });
+    });
+
+    const students = Data.students.list();
+    this.setState({ students });
+
+    Data.students.subscribe(({ students }) => {
+      this.setState({ students });
     });
 
     const routes = Data.routes.list();
@@ -131,6 +140,7 @@ class Modal extends React.Component {
         <AddParentModal save={parent => Data.parents.create(parent)} />
         <AddParentModal2 save={parent => Data.parents.create(parent)} />
         <AddClassModal save={classData => Data.classes.create(classData)} teachers={this.state.teachers} />
+        <AddRouteModal students={this.state.students}  save={route => Data.routes.create(route)}/>
         <div
           className="modal"
           id={modalNumber}
@@ -280,7 +290,7 @@ class Modal extends React.Component {
                               onClick={() => {
                                 console.log("adding")
                                 this.hide()
-                                addClassModal.show()
+                                addRouteModal.show()
                               }}
                             >
                               Add a Route
