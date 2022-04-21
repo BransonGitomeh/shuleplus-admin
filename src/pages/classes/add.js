@@ -1,8 +1,14 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
+import AddTeacherModal from "../teachers/add"
+import Select from 'react-select';
+import Data from "../../utils/data";
+
 const IErrorMessage = new ErrorMessage();
 
+const addTeacherModal = new AddTeacherModal()
 const $ = window.$;
+const school = localStorage.getItem("school");
 
 const modalNumber = Math.random()
   .toString()
@@ -12,7 +18,7 @@ class Modal extends React.Component {
   state = {
     loading: false,
     name: "",
-    teacher:""
+    teacher: ""
   };
 
   show() {
@@ -44,6 +50,7 @@ class Modal extends React.Component {
           _this.setState({ loading: true });
 
           _this.state.loading = undefined;
+          _this.state.setTeacher = undefined;
           await _this.props.save(_this.state);
           _this.hide();
           _this.setState({
@@ -64,6 +71,7 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
+        <AddTeacherModal school={school} save={teacher => Data.teachers.create(teacher)} />
         <div
           className="modal"
           id={modalNumber}
@@ -108,22 +116,38 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Teacher:</label>
-                        <select
-                          name="gender"
-                          class="form-control"
-                          id="exampleSelect1"
-                          required
-                          value={this.state.teacher}
-                          onChange={(e) => this.setState({
-                            teacher: e.target.value
-                          })}
-                        >
-                          <option value="">Select teacher</option>
-                          {this.props.teachers.map(teacher => {
-                            return <option value={teacher.id}>{teacher.name}</option>
-                          })}
-                        </select>
+
+                        <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Teacher:</label>
+                            <Select
+                              name="driver"
+                              value={this.state.setTeacher}
+                              options={this.props.teachers.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                teacher: value,
+                                setTeacher: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addTeacherModal.show()
+                              }}
+                            >
+                              Add a Teacher
+                            </button>
+                          </div>
+                        </div>
+
+
                       </div>
                     </div>
                   </div>
@@ -141,8 +165,8 @@ class Modal extends React.Component {
                         aria-hidden="true"
                       />
                     ) : (
-                        "Save"
-                      )}
+                      "Save"
+                    )}
                   </button>
                   <button
                     data-dismiss="modal"
