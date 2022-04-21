@@ -247,7 +247,7 @@ class Modal extends React.Component {
                               value={this.state.setBus}
                               options={this.props.buses?.map(({ id: value, plate: label }) => ({ value, label }))}
                               onChange={({ value, label }) => this.setState({
-                                bus: value,
+                                route: value,
                                 setBus: { value, label }
                               })}
                             />
@@ -317,24 +317,7 @@ class Modal extends React.Component {
                         </div>
                       </div>
                       <div className="col-lg-6">
-                        {/* 
-                        <label for="exampleSelect1">Driver:</label>
-                        <select
-                          name="seats"
-                          type="text"
-                          class="form-control"
-                          value={this.state.driver}
-                          onChange={(e) => this.setState({
-                            driver: e.target.value
-                          })}
-                        >
-                          <option value="">Select driver</option>
-                          {this.props.drivers.map(
-                            driver => (
-                              <option key={driver.id} value={driver.id}>{driver.username}</option>
-                            )
-                          )}
-                        </select> */}
+                        
 
                         <div className="row">
                           <div className="col-lg-8">
