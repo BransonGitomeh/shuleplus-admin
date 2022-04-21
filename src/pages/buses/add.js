@@ -160,35 +160,7 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-6">
-                        <div className="row">
-                          <div className="col-lg-6">
-                            <label for="exampleSelect1">Drivers:</label>
-                            <Select
-                              name="driver"
-                              value={this.state.setDriver}
-                              options={this.props.drivers.map(({ id: value, username: label }) => ({ value, label }))}
-                              onChange={({ value, label }) => this.setState({
-                                driver: value,
-                                setDriver: { value, label }
-                              })}
-                            />
-                          </div>
-                          <div className="col-lg-6">
-                            <label for="exampleSelect1">↓</label>
-                            <br></br>
-                            <button
-                              className="btn btn-outline-brand"
-                              type="button"
-                              onClick={() => {
-                                console.log("adding")
-                                this.hide()
-                                addDriverModal.show()
-                              }}
-                            >
-                              Add a Driver
-                            </button>
-                          </div>
-                        </div>
+                        
 
 
                       </div>

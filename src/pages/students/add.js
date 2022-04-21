@@ -1,14 +1,18 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
-import AddParentModal from "./add_parent";
-import AddSecondParentModal from "./add_parent";
+import AddParentModal from "../parents/add";
+import AddParentModal2 from "../parents/add";
+import AddClassModal from "../classes/add"
+
+import Select from 'react-select';
 
 import Data from "../../utils/data"
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
-const addParentModalInstance = new AddParentModal();
-const addSecondParentModalInstance = new AddSecondParentModal();
+const addParentModal = new AddParentModal();
+const addParentModal2 = new AddParentModal2();
+const addClassModal = new AddClassModal();
 
 const modalNumber = Math.random()
   .toString()
@@ -50,15 +54,34 @@ class Modal extends React.Component {
   }
 
   async componentDidMount() {
-    const parents = await Data.parents.list()
-    this.setState({ parents, filteredParents: parents })
+    const classes = Data.classes.list();
+    this.setState({ classes, filteredClasses: classes });
 
-    const classes = await Data.classes.list()
-    this.setState({ classes })
+    Data.classes.subscribe(({ classes }) => {
+      this.setState({ classes, filteredClasses: classes });
+    });
 
+    const teachers = Data.teachers.list();
+    this.setState({ teachers });
 
-    Data.parents.subscribe(({ parents }) => this.setState({ parents, filteredParents: parents }))
-    Data.classes.subscribe(({ classes }) => this.setState({ classes }))
+    Data.teachers.subscribe(({ teachers }) => {
+      this.setState({ teachers });
+    });
+
+    const routes = Data.routes.list();
+    this.setState({ routes });
+
+    Data.routes.subscribe(({ routes }) => {
+      this.setState({ routes });
+    });
+
+    const parents = Data.parents.list();
+    this.setState({ parents, filteredParents: parents });
+
+    Data.parents.subscribe(({ parents }) => {
+      console.log({ parents })
+      this.setState({ parents, filteredParents: parents });
+    });
 
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
@@ -105,6 +128,9 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
+        <AddParentModal save={parent => Data.parents.create(parent)} />
+        <AddParentModal2 save={parent => Data.parents.create(parent)} />
+        <AddClassModal save={classData => Data.classes.create(classData)} teachers={this.state.teachers} />
         <div
           className="modal"
           id={modalNumber}
@@ -113,22 +139,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <AddParentModal save={async parent => {
-            Data.parents.create(parent)
-            const parents = Data.parents.list()
-            console.log(parents)
-            const { id } = parents[parents.length - 1]
 
-            this.setState({ parents, parent: id })
-          }} />
-          <AddSecondParentModal save={async parent => {
-            Data.parents.create(parent)
-            const parents = Data.parents.list()
-            console.log(parents)
-            const { id } = parents[parents.length - 1]
-
-            this.setState({ parents, parent2: id })
-          }} />
           <div className="modal-dialog modal-xl">
             <div className="modal-content">
               <form
@@ -148,11 +159,7 @@ class Modal extends React.Component {
                 </div>
                 <div className="modal-body">
                   <div className="kt-portlet__body">
-                    <div className="form-group row">
-                      <div className="col-lg-3">
 
-                      </div>
-                    </div>
                     <div className="form-group row">
                       <div className="col-lg-4">
                         <label>Full Name:</label>
@@ -185,6 +192,55 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-4">
+                        <label for="gender">Gender:</label>
+                        <select
+                          name="gender"
+                          class="form-control"
+                          id="gender"
+                          required
+                          value={this.state.gender}
+                          onChange={(e) => this.setState({
+                            gender: e.target.value
+                          })}
+                        >
+                          <option value="">Select gender</option>
+                          {["MALE", "FEMALE"].map(gender => {
+                            return <option value={gender}>{gender}</option>
+                          })}
+                        </select>
+                      </div>
+                      <div className="col-lg-6">
+                        <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Class:</label>
+                            <Select
+                              name="classes"
+                              value={this.state.setClass}
+                              options={this.state.classes?.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                class: value,
+                                setClass: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addClassModal.show()
+                              }}
+                            >
+                              Add a Class
+                            </button>
+                          </div>
+                        </div>
+
+                        {/*                         
                         <label for="exampleSelect1">Class:</label>
                         <select
                           name="class"
@@ -199,10 +255,39 @@ class Modal extends React.Component {
                           {this.state.classes.map(Iclass => (
                             <option value={Iclass.id}>{Iclass.name}</option>
                           ))}
-                        </select>
+                        </select> */}
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Route:</label>
+                      <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Route:</label>
+                            <Select
+                              name="classes"
+                              value={this.state.setRoute}
+                              options={this.state.routes?.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                route: value,
+                                setRoute: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addClassModal.show()
+                              }}
+                            >
+                              Add a Route
+                            </button>
+                          </div>
+                        </div>
+                        {/* <label for="exampleSelect1">Route:</label>
                         <select
                           name="route"
                           class="form-control"
@@ -216,64 +301,61 @@ class Modal extends React.Component {
                           {this.props.routes.map(route => (
                             <option value={route.id}>{route.name}</option>
                           ))}
-                        </select>
+                        </select> */}
                       </div>
+                      
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Gender:</label>
-                        <select
-                          name="gender"
-                          class="form-control"
-                          id="exampleSelect1"
-                          required
-                          value={this.state.gender}
-                          onChange={(e) => this.setState({
-                            gender: e.target.value
-                          })}
-                        >
-                          <option value="">Select gender</option>
-                          {["MALE", "FEMALE"].map(gender => {
-                            return <option value={gender}>{gender}</option>
-                          })}
-                        </select>
+                        <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Parent:</label>
+                            <Select
+                              name="driver"
+                              value={this.state.setParent}
+                              options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                driver: value,
+                                setParent: { value, label }
+                              })}
+                            />
+                          </div>
+                          <div className="col-lg-4">
+                            <label for="exampleSelect1">↓</label>
+                            <br></br>
+                            <button
+                              className="btn btn-outline-brand"
+                              type="button"
+                              onClick={() => {
+                                console.log("adding")
+                                this.hide()
+                                addParentModal.show()
+                              }}
+                            >
+                              Add a Parent
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-lg-8">
-                        <label for="exampleSelect1">Parent:</label>
-                        <select
-                          name="parent"
-                          class="form-control"
-                          required
-                          value={this.state.parent}
-                          onChange={this.onParentChange}
-                        >
-                          <option value="">Select parent</option>
-                          {this.state.parents.map(parent => (
-                            // !this.state.selectedParents.includes(parent.id) && 
-                            <option value={parent.id}>{parent.name}</option>
 
-                          ))}
-                        </select>
+                      <div className="col-lg-6">
+                        <div className="row">
+                          <div className="col-lg-8">
+                            <label for="exampleSelect1">Second Parent:</label>
+                            <Select
+                              name="driver"
+                              value={this.state.setParent2}
+                              options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
+                              onChange={({ value, label }) => this.setState({
+                                parent2: value,
+                                setParent2: { value, label }
+                              })}
+                            />
+                          </div>
+                          
+                        </div>
+
                       </div>
-                      <div className="col-lg-3">
-                        <button type="button" className="btn btn-outline-brand mt-4" onClick={addParentModalInstance.show}>Add Parent</button>
-                      </div>
-                      {/* <div className="col-lg-8">
-                        <label for="exampleSelect1">Second Parent:</label>
-                        <select
-                          name="parent2"
-                          class="form-control"
-                          value={this.state.parent2}
-                          onChange={this.onParentChange}
-                        >
-                          <option value="">Select parent</option>
-                          <option value={this.state.parent2}>{this.state.parents.find(p => p.id === this.state.parent2)?.name}</option>
-                          {this.state.parents.map(parent => (
-                            !this.state.selectedParents.includes(parent.id) && <option value={parent.id}>{parent.name}</option>
-                          ))}
-                        </select>
-                      </div> */}
-                      <div className="col-lg-3">
-                        <button type="button" className="btn btn-outline-brand mt-4" onClick={addSecondParentModalInstance.show}>Add Second Parent</button>
-                      </div>
+
+
                     </div>
                   </div>
                 </div>
@@ -290,8 +372,8 @@ class Modal extends React.Component {
                         aria-hidden="true"
                       />
                     ) : (
-                        "Save"
-                      )}
+                      "Save"
+                    )}
                   </button>
                   <button
                     data-dismiss="modal"

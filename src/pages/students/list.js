@@ -61,12 +61,7 @@ class BasicTable extends React.Component {
       <div className="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default kt-page--loading">
         <div className="kt-grid kt-grid--hor kt-grid--root">
           <div className="kt-portlet kt-portlet--mobile">
-            <AddModal routes={this.state.routes} save={async student =>{ 
-              await Data.students.create(student)
-              const students = Data.students.list();
-
-              this.setState({ students })
-            }} />
+            <AddModal routes={this.state.routes} save={student => Data.students.create(student)} />
             <UploadModal save={students => students.forEach(student => Data.students.create(student))} />
             <DeleteModal
               remove={remove}

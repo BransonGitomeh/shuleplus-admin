@@ -123,7 +123,7 @@ class Modal extends React.Component {
                             <Select
                               name="driver"
                               value={this.state.setTeacher}
-                              options={this.props.teachers.map(({ id: value, name: label }) => ({ value, label }))}
+                              options={this.props.teachers?.map(({ id: value, name: label }) => ({ value, label }))}
                               onChange={({ value, label }) => this.setState({
                                 teacher: value,
                                 setTeacher: { value, label }

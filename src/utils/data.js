@@ -376,7 +376,7 @@ var Data = (function () {
         return;
       }
 
-      var students = school.students.map(student => {
+      students = school.students.map(student => {
 
         if (student.parent) {
           student.parent_name = student.parent.name;
