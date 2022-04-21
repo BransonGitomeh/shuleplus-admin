@@ -277,6 +277,7 @@ class Modal extends React.Component {
                         <select
                           name="type"
                           type="text"
+                          required
                           class="form-control"
                           value={this.state.type}
                           onChange={(e) => this.setState({
@@ -372,8 +373,8 @@ class Modal extends React.Component {
                         <textarea
                           type="text"
                           className="form-control"
-                          id="name"
-                          name="name"
+                          id="message"
+                          name="message"
                           minLength="2"
                           rows="8"
                           required
