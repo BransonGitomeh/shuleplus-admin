@@ -1707,20 +1707,19 @@ var Data = (function () {
             `
           mutation ($admin: Uadmin!) {
             admins {
-              update(admin: $admins) {
+              update(admin: $admin) {
                 id
               }
             }
-          } 
-          `,
+          }`,
             {
               admin: data
             }
           );
 
-          const subtract = drivers.filter(({ id }) => id !== data.id);
-          drivers = [data, ...subtract];
-          subs.drivers({ drivers });
+          const subtract = admins.filter(({ id }) => id !== data.id);
+          admins = [data, ...subtract];
+          subs.admins({ admins });
           resolve();
         }),
       delete: data =>
