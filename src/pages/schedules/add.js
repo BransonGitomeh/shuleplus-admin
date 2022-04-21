@@ -247,7 +247,7 @@ class Modal extends React.Component {
                               value={this.state.setBus}
                               options={this.props.buses?.map(({ id: value, plate: label }) => ({ value, label }))}
                               onChange={({ value, label }) => this.setState({
-                                route: value,
+                                bus: value,
                                 setBus: { value, label }
                               })}
                             />
