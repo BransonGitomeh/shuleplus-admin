@@ -14,11 +14,10 @@ class Modal extends React.Component {
     username: "",
     // password: "",
     phone: "",
-    photo: "https://via.placeholder.com/150",
     email: "",
     license_expiry: "",
     licence_number: "",
-    home: "",
+    home: ""
   };
 
   show() {

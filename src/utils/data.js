@@ -213,7 +213,6 @@ var Data = (function () {
         drivers {
           id
           username
-          email
           phone
           license_expiry
           licence_number
@@ -372,7 +371,7 @@ var Data = (function () {
 
       console.log({ schools, school })
 
-      if(!school){
+      if (!school) {
         return;
       }
 
@@ -1534,6 +1533,7 @@ var Data = (function () {
     drivers: {
       create: data =>
         new Promise(async (resolve, reject) => {
+          console.log({ schoolID })
           const res = await mutate(
             `
             mutation ($Idriver: Idriver!) {
