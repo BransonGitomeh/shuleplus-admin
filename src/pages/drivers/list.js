@@ -51,7 +51,7 @@ class BasicTable extends React.Component {
 
   onSearch = e => {
     const { drivers } = this.state
-    const filteredDrivers = drivers.filter(driver => driver.username.toLowerCase().match(e.target.value.toLowerCase()))
+    const filteredDrivers = drivers.filter(driver => driver.names.toLowerCase().match(e.target.value.toLowerCase()))
     this.setState({ filteredDrivers })
   }
 
@@ -144,11 +144,7 @@ class BasicTable extends React.Component {
                 headers={[
                   {
                     label: "Drivers Names",
-                    key: "username"
-                  },
-                  {
-                    label: "Email",
-                    key: "email"
+                    key: "names"
                   },
                   {
                     label: "Phone",

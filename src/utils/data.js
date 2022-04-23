@@ -207,12 +207,12 @@ var Data = (function () {
           make
           size
           driver{
-            username
+            names
           }
         }
         drivers {
           id
-          username
+          names
           phone
           license_expiry
           licence_number
@@ -295,7 +295,7 @@ var Data = (function () {
           id
           driver{
             id
-            username
+            names
           }
           schedule {
             name
@@ -320,7 +320,7 @@ var Data = (function () {
           }
           driver{
             id,
-            username
+            names
           }
           locReports{
             id
@@ -407,7 +407,7 @@ var Data = (function () {
       payments = school.payments
       subs.payments({ payments });
 
-      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.username : "" }));
+      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.names : "" }));
       subs.buses({ buses });
 
       parents = school.parents;

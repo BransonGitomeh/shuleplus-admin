@@ -26,7 +26,7 @@ export default ({ trip, stats }) => {
           </tr>
           <tr>
             <th scope="row"><i class="fas fa-address-card"></i> </th>
-            <td >{driver.username}</td>
+            <td >{driver.names}</td>
           </tr>
           <tr>
             <th scope="row"><i class="fas fa-bus-alt"></i> </th>
