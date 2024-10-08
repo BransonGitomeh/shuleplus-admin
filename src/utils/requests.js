@@ -4,9 +4,9 @@ let API;
 
 if (window.location.href.includes('localhost')) {
     API = `http://localhost:4001`
-    // API = `https://development-smartkids.herokuapp.com`
+    API = `https://us-central1-wellwash-411511.cloudfunctions.net/shuleplus-server`
 } else {
-    API = `https://development-smartkids.herokuapp.com`
+    API = `https://us-central1-wellwash-411511.cloudfunctions.net/shuleplus-server`
 }
 
 const query = (query, params) => {
