@@ -3,24 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "axios": "^0.19.0",
-    "deep-equal": "^1.1.0",
-    "google-map-react": "^1.1.5",
+    "axios": "^1.7.7",
+    "deep-equal": "^2.2.3",
+    "google-map-react": "^2.2.1",
     "google-maps-react": "^2.0.2",
-    "jquery": "^3.5.1",
-    "jquery-validation": "^1.19.1",
-    "moment": "^2.24.0",
-    "react": "^16.9.0",
-    "react-collapsing-table": "^1.0.0",
-    "react-dom": "^16.9.0",
+    "jquery": "^3.7.1",
+    "jquery-validation": "^1.21.0",
+    "moment": "^2.30.1",
+    "react": "^18.3.1",
+    "react-collapsing-table": "^1.0.5",
+    "react-dom": "^18.3.1",
     "react-pace-progress": "^2.0.0",
-    "react-router": "^5.0.1",
-    "react-router-dom": "^5.0.1",
-    "react-scripts": "3.1.1",
-    "react-select": "^5.3.0",
+    "react-router": "^6.26.2",
+    "react-router-dom": "^6.26.2",
+    "react-scripts": "5.0.1",
+    "react-select": "^5.8.1",
     "react-select-2": "^2.0.11",
-    "react-social-login-buttons": "^3.1.0",
-    "read-excel-file": "^4.0.5"
+    "react-social-login-buttons": "^4.1.0",
+    "read-excel-file": "^5.8.6"
   },
   "scripts": {
     "dev": "npx react-app-rewired start",
@@ -45,9 +45,9 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-optional-chaining": "^7.7.4",
-    "customize-cra": "^0.9.1",
-    "react-app-rewired": "^2.1.6",
-    "serve": "^11.3.2"
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
+    "customize-cra": "^1.0.0",
+    "react-app-rewired": "^2.2.1",
+    "serve": "^14.2.3"
   }
 }
