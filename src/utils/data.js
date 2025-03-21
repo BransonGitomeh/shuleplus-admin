@@ -353,7 +353,7 @@ var Data = (function () {
       }
       schoolID = school.id
 
-      // schoolID = localStorage.getItem("school")                                    
+      schoolID = localStorage.getItem("school")                                    
 
       // overide the school if there is one selected
       if (localStorage.getItem("school")) {

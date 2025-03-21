@@ -11,7 +11,7 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
-    username: "",
+    names: "",
     // password: "",
     phone: "",
     email: "",
@@ -108,7 +108,7 @@ class Modal extends React.Component {
                           minLength="2"
                           value={this.state.username}
                           onChange={(e) => this.setState({
-                            username: e.target.value
+                            names: e.target.value
                           })}
                           required
                         />
