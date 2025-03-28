@@ -3,10 +3,10 @@ import axios from "axios"
 let API;
 
 if (window.location.href.includes('localhost')) {
-    API = `http://localhost:4001`
+    API = `http://68.183.27.113:4001`
     // API = `https://development-smartkids.herokuapp.com`
 } else {
-    API = `https://development-smartkids.herokuapp.com`
+   API = `http://68.183.27.113:4001`
 }
 
 const query = (query, params) => {
