@@ -106,7 +106,7 @@ class Modal extends React.Component {
                           id="fullname"
                           name="fullname"
                           minLength="2"
-                          value={this.state.username}
+                          value={this.state.names}
                           onChange={(e) => this.setState({
                             names: e.target.value
                           })}

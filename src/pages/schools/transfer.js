@@ -106,7 +106,7 @@ class Modal extends React.Component {
                     <div className="form-group row">
                         <div className="col-lg-12 mb-4">
                             <h6>Driver details:</h6>
-                            <p>Name: {this.state.driver.username}</p>
+                            <p>Name: {this.state.driver.names}</p>
                             <p>Phone: {this.state.driver.phone}</p>
                         </div>
                         <div className="col-lg-12">

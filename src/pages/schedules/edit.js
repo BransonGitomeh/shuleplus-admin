@@ -317,7 +317,7 @@ class Modal extends React.Component {
                           <option value="">Select driver</option>
                           {this.props.drivers.map(
                             driver => (
-                              <option key={driver.id} value={driver.id}>{driver.username}</option>
+                              <option key={driver.id} value={driver.id}>{driver.names}</option>
                             )
                           )}
                         </select>

@@ -12,7 +12,7 @@ class Modal extends React.Component {
   state = {
     loading: false,
     edit: {
-      username: "",
+      names: "",
       email: "",
       phone: "",
       licence_number: "",
@@ -110,10 +110,10 @@ class Modal extends React.Component {
                           id="fullname"
                           name="fullname"
                           minLength="2"
-                          value={this.state.edit.username}
+                          value={this.state.edit.names}
                           onChange={(e) => this.setState({
                             edit: Object.assign(this.state.edit, {
-                              username: e.target.value
+                              names: e.target.value
                             })
                           })}
                           required

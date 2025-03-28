@@ -63,7 +63,7 @@ class Modal extends React.Component {
   onChange = e => {
     readXlsx(e.target.files[0]).then(rows => {
       const drivers = rows.map(([
-        username,
+        names,
         phone,
         email,
         licence_number,
@@ -72,7 +72,7 @@ class Modal extends React.Component {
         experience,
         password
       ]) => ({
-        username,
+        names,
         phone: `${phone}`,
         email,
         licence_number: `${licence_number}`,
@@ -153,7 +153,7 @@ class Modal extends React.Component {
                       headers={[
                         {
                           label: "Drivers Names",
-                          key: "username"
+                          key: "names"
                         },
                         {
                           label: "Email",
