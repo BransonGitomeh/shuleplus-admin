@@ -40,6 +40,7 @@ class Modal extends React.Component {
     }
   }
   render() {
+    console.log(this.props.admin)
     return (
       <div>
         <div
@@ -64,7 +65,7 @@ class Modal extends React.Component {
                 </button>
               </div>
               <div className="modal-body">
-                <p>{`Are you sure you want to send a admin invite SMS to: "${this.props.admin.username}"?`}</p>
+                <p>{`Are you sure you want to send a admin invite SMS to: "${this.props.admin.phone}"?`}</p>
               </div>
               <div className="modal-footer">
                 {!this.state.loading ? (

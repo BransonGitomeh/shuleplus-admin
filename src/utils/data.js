@@ -353,7 +353,7 @@ var Data = (function () {
       }
       schoolID = school.id
 
-      schoolID = localStorage.getItem("school")                                    
+      schoolID = localStorage.getItem("school")
 
       // overide the school if there is one selected
       if (localStorage.getItem("school")) {
@@ -1749,7 +1749,7 @@ var Data = (function () {
         }),
       invite: data =>
         new Promise(async (resolve, reject) => {
-          const { drivers: { invite: { id, phone, message } } } = await mutate(
+          const { admins: { invite: { id, phone, message } } } = await mutate(
             `
             mutation ($Iinvite: Iinvite!) {
               admins {

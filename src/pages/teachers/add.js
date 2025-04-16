@@ -105,7 +105,7 @@ class Modal extends React.Component {
                   <div className="kt-portlet__body">
                     <div className="form-group row">
                     <div className="col-lg-3">
-                        <label>National TSE Number:</label>
+                        <label>National TSC Number:</label>
                         <input
                           type="text"
                           className="form-control"
