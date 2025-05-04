@@ -284,7 +284,7 @@ class Modal extends React.Component {
                 noValidate // Disable browser validation, rely on jquery-validate + manual check
               >
                 <div className="modal-header">
-                  <h5 className="modal-title">Create new question</h5>
+                  <h5 className="modal-title">New Content</h5>
                   <button
                     type="button"
                     className="close"
@@ -299,8 +299,6 @@ class Modal extends React.Component {
                   <div className="kt-portlet__body">
                     <div className="form-group row">
                       <div className="col-lg-12">
-                        <label>Question content:</label>
-
                         {/* --- react-draft-wysiwyg EDITOR --- */}
                         <div style={{ border: '1px solid #ced4da', borderRadius: '.25rem', minHeight: '250px' }}>
                           <Editor

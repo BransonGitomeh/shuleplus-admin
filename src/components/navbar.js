@@ -1,403 +1,299 @@
-/* eslint-env browser */ // Use 'browser' instead of 'location' for DOM/window access
+/* eslint-env browser */
 
 import React from "react";
-import { Link, withRouter } from "react-router-dom"; // Combined import
-// import app from "../scripts.bundle"; // Assuming this initializes KTLayout etc. - Keep if necessary
+import { Link, withRouter } from "react-router-dom";
 import Data from "../utils/data";
-import Pace from 'react-pace-progress';
+import Pace from 'react-pace-progress'; // Keep for loading indicator
 
-// Assuming KTUtil and KTOffcanvas are globally available via included scripts
+// Assuming KTUtil and KTOffcanvas are globally available
 const KTUtil = window.KTUtil;
 const KTOffcanvas = window.KTOffcanvas;
 
 class Navbar extends React.Component {
-    // Define state directly
     state = {
-        profileShowing: false, // This might not be needed if KTOffcanvas handles visibility
-        updated: false, // Used for Pace progress bar
-        selectedSchool: Data.schools.getSelected() || {}, // Initialize with selected or empty object
+        profileShowing: false, // Likely managed by KTOffcanvas itself
+        updated: false,
+        selectedSchool: Data.schools.getSelected() || {},
         availableSchools: Data.schools.list(),
-        userData: null, // To store parsed user data
-        userRole: null, // Store the role if needed elsewhere
-        isLoading: true, // Initial loading state for Pace
+        userData: null,
+        userRole: null, // Example: "Admin", "Teacher", etc. (derive from userData if possible)
+        isLoading: true,
     };
 
-    // To store the offcanvas instance
     profileOffcanvas = null;
 
     componentDidMount() {
-        this.setState({ isLoading: true }); // Start loading indicator
+        this.setState({ isLoading: true });
 
-        // 1. Parse User Data Safely
+        // --- Robust User Data Parsing ---
         let parsedUserData = null;
         const userJson = localStorage.getItem("user");
-
         if (userJson) {
             try {
                 parsedUserData = JSON.parse(userJson);
-                console.log(parsedUserData)
                 if (!parsedUserData || typeof parsedUserData !== 'object') {
-                    throw new Error("Invalid user data in localStorage");
+                    throw new Error("Invalid user data format in localStorage");
                 }
-
-                this.setState({ userData: parsedUserData });
-
+                // Optionally derive role here:
+                // const userRole = parsedUserData.role || 'User';
+                this.setState({ userData: parsedUserData /*, userRole */ });
             } catch (error) {
-                console.error("Error parsing user data from localStorage:", error);
-                // Optionally clear invalid data and redirect
-                // localStorage.removeItem("user");
-                // localStorage.removeItem("authorization"); // Also clear token
-                this.props.history.push('/'); // Redirect to login
-                return; // Stop further execution in componentDidMount
+                console.error("Error parsing user data:", error);
+                this.handleLogout(true); // Force logout on bad data
+                return;
             }
         } else {
-            console.warn("No user data found in localStorage. Redirecting to login.");
-            // Redirect if no user data found at all
-            this.props.history.push('/login');
+            console.warn("No user data found. Redirecting to login.");
+            this.props.history.push('/login'); // Use history passed by withRouter
             return;
         }
 
-        // Set state with parsed data
-        this.setState({ userData: parsedUserData });
+        // --- Initialize Data & Components ---
+        this.initializeSchoolData(parsedUserData);
+        // Debounce or ensure KT components init after DOM is ready
+        // setTimeout(this.initializeKTComponents, 0); // Slight delay might help sometimes
+        this.initializeKTComponents(); // Try immediate initialization
 
-        // 2. Initialize School Data
-        this.initializeSchoolData(parsedUserData); // Pass userData if needed for role check
+        // --- Set Initial Title ---
+        this.updateTitle(this.state.selectedSchool);
 
-        // 3. Initialize KT Components (Offcanvas, Layout)
-        this.initializeKTComponents();
-
-        // 4. Set document title
-        if (this.state.selectedSchool?.name) {
-            document.title = `${this.state.selectedSchool.name} | Shule Plus`; // Use state value
-        }
-
-        // Indicate loading finished after a short delay (optional, for Pace)
-        // You might tie this to Data.onReady if that's more appropriate
-         setTimeout(() => this.setState({ isLoading: false, updated: true }), 500); // Example delay
+        // --- Finish Loading ---
+        // Consider tying this to Data readiness if applicable
+        setTimeout(() => this.setState({ isLoading: false, updated: true }), 300); // Shorter delay
     }
 
     componentWillUnmount() {
-         // Clean up listeners or instances if necessary
-         if (this.profileOffcanvas) {
-             // Check if KTOffcanvas has a destroy method
-             if (typeof this.profileOffcanvas.destroy === 'function') {
-                this.profileOffcanvas.destroy();
-             }
-             this.profileOffcanvas = null;
-         }
-        // Unsubscribe from Data changes if a subscription method exists
-        // Example: Data.schools.unsubscribe(this.handleSchoolUpdate);
+        // --- Cleanup ---
+        if (this.profileOffcanvas && typeof this.profileOffcanvas.destroy === 'function') {
+            this.profileOffcanvas.destroy();
+        }
+        // Unsubscribe if implemented
+        // if (this.schoolUpdateHandler) Data.schools.unsubscribe(this.schoolUpdateHandler);
     }
 
     initializeSchoolData = (currentUserData) => {
-         // Use initial state values set in constructor/state definition
-        const { availableSchools, selectedSchool } = this.state;
-
-        // Set initial document title based on selected school
-        if (selectedSchool?.name) {
-            document.title = `${selectedSchool.name} | Shule Plus`;
-        }
-
-        // Subscribe to future school changes (assuming Data.schools has a subscribe method)
-        // Make sure to store the handler reference if you need to unsubscribe later
-        // Example: this.schoolUpdateHandler = ({ schools }) => { ... }; Data.schools.subscribe(this.schoolUpdateHandler);
-        Data.schools.subscribe(({ schools }) => { // Assuming 'schools' is the list
+        // Subscribe to future school changes
+        this.schoolUpdateHandler = ({ schools }) => {
             console.log("Schools updated:", schools);
-            const currentSchoolId = localStorage.getItem("school") || schools[0]?.id; // Get current ID or default
-            const newSelected = schools.find(s => s.id == currentSchoolId) || schools[0] || {}; // Find or default
-
-            console.log(`Selected School ID: ${currentSchoolId}`);
-            // console.log(`New Selected School: ${JSON.stringify(newSelected, null, 2)}`);
+            const currentSchoolId = localStorage.getItem("school") || schools[0]?.id;
+            const newSelected = schools.find(s => s.id == currentSchoolId) || schools[0] || {};
 
             this.setState({
-                availableSchools: schools,
+                availableSchools: schools || [], // Ensure it's always an array
                 selectedSchool: newSelected,
-                updated: true // Trigger Pace update if needed
+                updated: true
             }, () => {
                 if (newSelected.id) {
-                    localStorage.setItem("school", newSelected.id); // Ensure localStorage is current
-                    document.title = `${newSelected.name} | Shule Plus`;
-                    console.log(`Updated document title to: ${document.title}`);
+                    localStorage.setItem("school", newSelected.id);
+                    this.updateTitle(newSelected);
                 } else {
-                    console.log("No school selected, defaulting document title.");
-                    document.title = `Shule Plus`; // Default title
+                    this.updateTitle(); // Set default title
                 }
             });
-        });
+        };
+        Data.schools.subscribe(this.schoolUpdateHandler);
+
+        // Ensure initial state values are arrays
+         this.setState(prevState => ({
+             availableSchools: Array.isArray(prevState.availableSchools) ? prevState.availableSchools : [],
+             selectedSchool: prevState.selectedSchool || {}
+         }));
     }
 
-    /**
- * Initializes or re-initializes specific KeenThemes components,
- * focusing on the profile offcanvas panel.
- * Ensures proper cleanup before re-initializing to prevent duplicates.
- */
-initializeKTComponents = () => {
-    console.log("Attempting to initialize/re-initialize KT Components for Profile Offcanvas...");
+    initializeKTComponents = () => {
+        console.log("Attempting to initialize Profile Offcanvas...");
+        const profilePanelId = 'kt_offcanvas_toolbar_profile';
+        const profilePanel = document.getElementById(profilePanelId);
 
-    // 1. Global Theme Initialization (Important!)
-    // ------------------------------------------
-    // This should ideally happen ONLY ONCE when your application loads.
-    // Avoid calling `app.init()` or `KTLayout.init()` here if this function
-    // might be called multiple times (e.g., on route changes).
-    // Ensure your main application setup calls it appropriately.
-    // Example: Check if already initialized
-    if (!window.KTLayout?.initialized) {
-        console.log("Running Global KTLayout init...");
-        if (window.app && typeof window.app.init === 'function') {
-            window.app.init(); // Assumes this calls KTLayout.init() and sets a flag
-        } else if (window.KTLayout && typeof window.KTLayout.init === 'function') {
-             console.warn("app.init() not found, attempting direct KTLayout.init(). Make sure this is intended.");
-             window.KTLayout.init();
-             // You might want to manually set a flag:
-             // window.KTLayout.initialized = true; // Or check if KTLayout sets one itself
-        } else {
-             console.error("Critical: Theme layout initialization function (app.init or KTLayout.init) not found!");
+        if (!KTUtil || !KTOffcanvas) {
+            console.warn("KTUtil or KTOffcanvas missing.");
+            return;
         }
-    } else {
-        // console.log("Global KTLayout already initialized.");
-    }
-
-
-    // 2. Initialize Offcanvas Panel Specifically
-    // ------------------------------------------
-    const profilePanelId = 'kt_offcanvas_toolbar_profile';
-    const profilePanel = document.getElementById(profilePanelId); // Use standard DOM API for clarity
-
-    // Check dependencies first
-    if (!window.KTUtil || !window.KTOffcanvas) {
-        console.warn("KTUtil or KTOffcanvas is not available. Cannot initialize offcanvas panel.");
-        return; // Exit if core KT libraries are missing
-    }
-
-    if (!profilePanel) {
-        console.warn(`Profile panel element '#${profilePanelId}' not found in the DOM.`);
-        return; // Exit if the target element doesn't exist
-    }
-
-    // --- Cleanup previous instances if they exist ---
-    // Check if we stored a reference to a previous instance
-    if (this.profileOffcanvas instanceof KTOffcanvas) {
-        console.log(`Destroying previous KTOffcanvas instance for #${profilePanelId}`);
-        // Check if the theme component provides a destroy method (common practice)
-        if (typeof this.profileOffcanvas.destroy === 'function') {
-            this.profileOffcanvas.destroy();
-        } else {
-            console.warn(`KTOffcanvas instance for #${profilePanelId} might not have a .destroy() method. Manual cleanup might be needed if issues arise.`);
-            // If no destroy method, you might need manual listener removal,
-            // but often just nullifying the reference helps if the element is removed/replaced.
-        }
-        this.profileOffcanvas = null; // Remove the reference
-
-        // Also destroy the associated scrollbar instance
-        const body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
-        if (body) {
-            console.log(`Destroying previous scrollbar for #${profilePanelId} body`);
-            KTUtil.scrollDestroy(body); // Use KTUtil's scroll destroy
-        }
-    }
-    // --- End Cleanup ---
-
-
-    // --- Initialize New Instance ---
-    const head = KTUtil.find(profilePanel, '.kt-offcanvas-panel__head');
-    const body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
-
-    console.log(`Initializing new KTOffcanvas instance for #${profilePanelId}`);
-    try {
-        // Store the new instance on 'this' (assuming 'this' context is stable)
-        this.profileOffcanvas = new KTOffcanvas(profilePanel, {
-            overlay: true,
-            baseClass: 'kt-offcanvas-panel',
-            closeBy: 'kt_offcanvas_toolbar_profile_close', // Ensure this element ID exists
-            toggleBy: 'kt_offcanvas_toolbar_profile_toggler_btn' // Ensure this element ID exists
-        });
-
-        // Initialize Scroll for the panel body
-        if (body) {
-            console.log(`Initializing scrollbar for #${profilePanelId} body`);
-            KTUtil.scrollInit(body, {
-                disableForMobile: true,
-                resetHeightOnDestroy: true, // Good practice if height is dynamic
-                handleWindowResize: true,   // Recalculate height on resize
-                height: function () {
-                    let height = parseInt(KTUtil.getViewPort().height);
-                    if (head) {
-                        // Use actualHeight for potentially hidden elements initially
-                        height = height - parseInt(KTUtil.actualHeight(head));
-                        height = height - (parseInt(KTUtil.css(head, 'marginBottom')) || 0); // Added fallback
-                    }
-                    height = height - (parseInt(KTUtil.css(profilePanel, 'paddingTop')) || 0);  // Added fallback
-                    height = height - (parseInt(KTUtil.css(profilePanel, 'paddingBottom')) || 0); // Added fallback
-
-                    // Ensure a minimum reasonable height
-                    const minHeight = 200; // Example minimum height
-                    height = Math.max(height, minHeight);
-                    // console.log("Calculated scroll height:", height);
-                    return height;
-                }
-            });
-        } else {
-            console.warn(`Offcanvas body element (.kt-offcanvas-panel__body) not found within #${profilePanelId}. Cannot initialize scrollbar.`);
+        if (!profilePanel) {
+            console.warn(`#${profilePanelId} not found.`);
+            return;
         }
 
-    } catch (error) {
-        console.error(`Error initializing KTOffcanvas for #${profilePanelId}:`, error);
-        // Clean up the potentially partially created instance if possible
-        if(this.profileOffcanvas) {
-             if (typeof this.profileOffcanvas.destroy === 'function') {
-                this.profileOffcanvas.destroy();
-             }
+        // --- Cleanup existing instances ---
+        if (this.profileOffcanvas instanceof KTOffcanvas && typeof this.profileOffcanvas.destroy === 'function') {
+             console.log(`Destroying previous KTOffcanvas instance for #${profilePanelId}`);
+             this.profileOffcanvas.destroy();
+             const body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
+             if(body) KTUtil.scrollDestroy(body); // Destroy associated scrollbar
              this.profileOffcanvas = null;
         }
-    }
-}
 
-    // Switch Schools Logic
+        // --- Initialize New Instance ---
+        try {
+             const head = KTUtil.find(profilePanel, '.kt-offcanvas-panel__head');
+             const body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
+
+            this.profileOffcanvas = new KTOffcanvas(profilePanel, {
+                overlay: true,
+                baseClass: 'kt-offcanvas-panel',
+                closeBy: 'kt_offcanvas_toolbar_profile_close',
+                toggleBy: 'kt_offcanvas_toolbar_profile_toggler_btn'
+            });
+
+            if (body) {
+                KTUtil.scrollInit(body, {
+                    disableForMobile: true,
+                    resetHeightOnDestroy: true,
+                    handleWindowResize: true,
+                    height: function () {
+                        let height = parseInt(KTUtil.getViewPort().height);
+                        if (head) {
+                            height = height - parseInt(KTUtil.actualHeight(head));
+                            height = height - (parseInt(KTUtil.css(head, 'marginBottom')) || 0);
+                        }
+                        height = height - (parseInt(KTUtil.css(profilePanel, 'paddingTop')) || 0);
+                        height = height - (parseInt(KTUtil.css(profilePanel, 'paddingBottom')) || 0);
+                        return Math.max(height, 200); // Ensure min height
+                    }
+                });
+            }
+        } catch (error) {
+            console.error(`Error initializing KTOffcanvas for #${profilePanelId}:`, error);
+            this.profileOffcanvas = null; // Ensure reference is null on error
+        }
+    }
+
+    updateTitle = (school) => {
+        if (school?.name) {
+            document.title = `${school.name} | Shule Plus`;
+        } else {
+            document.title = `Shule Plus`; // Default title
+        }
+    }
+
     switchSchools = (justSelectedSchool) => {
-        if (!justSelectedSchool || !justSelectedSchool.id) return;
-
+        if (!justSelectedSchool || !justSelectedSchool.id || justSelectedSchool.id === this.state.selectedSchool?.id) {
+            return; // Don't switch if invalid or already selected
+        }
         localStorage.setItem("school", justSelectedSchool.id);
-        this.setState({ selectedSchool: justSelectedSchool });
-
-        // Force reload to re-initialize data context for the new school
-        window.location.reload();
+        // setState might be redundant if reloading anyway, but good practice
+        this.setState({ selectedSchool: justSelectedSchool, isLoading: true }, () => {
+            window.location.reload(); // Force reload
+        });
     }
 
-    // Logout Logic
-    handleLogout = () => {
-        localStorage.clear(); // Clear everything
-        // Could also clear specific items:
-        // localStorage.removeItem("user");
-        // localStorage.removeItem("authorization");
-        // localStorage.removeItem("school");
-        window.location.reload(); // Reload to go to login (or redirect explicitly)
-        // this.props.history.push('/login'); // Alternative to reload
+    handleLogout = (isErrorLogout = false) => {
+        localStorage.clear();
+        // Redirect after clearing, no need for reload if using history
+        if (!isErrorLogout) { // Avoid multiple redirects if called from error handler
+            this.props.history.push('/login');
+        }
     }
 
     render() {
-        console.log(this.state)
-        // Get data from state, provide fallbacks
         const { isLoading, selectedSchool = {}, availableSchools = [], userData = {} } = this.state;
-        const userName = userData?.names || 'User'; // Fallback name
-        const userEmail = userData?.email || 'No email';
-        const userPhone = userData?.phone || 'No phone';
-        const userOtherPhone = userData?.other_phone; // Optional
+        const userName = userData?.names || 'User';
+        const userEmail = userData?.email; // Optional chaining handles null/undefined
+        const userPhone = userData?.phone;
+        const userOtherPhone = userData?.other_phone;
+        const userRole = this.state.userRole || 'User'; // Use state role or fallback
 
-        // Conditional rendering based on available schools and maybe user role
-        const canSwitchSchools = availableSchools.length > 1 // || this.state.userRole === "superadmin"; // Add role check if needed
+        const canSwitchSchools = Array.isArray(availableSchools) && availableSchools.length > 1;
+        const schoolBalance = selectedSchool?.financial?.balanceFormatted;
 
         return (
-            <div
-                id="kt_header"
-                className="kt-header kt-grid__item kt-grid kt-grid--ver kt-header--fixed"
-            >
-                {/* Pace loading indicator */}
+            <div id="kt_header" className="kt-header kt-grid__item kt-grid kt-grid--ver kt-header--fixed">
                 {isLoading && <Pace color="#366cf3" height={3} />}
 
                 {/* Brand */}
                 <div className="kt-header__brand kt-grid__item" id="kt_header_brand">
-                    <Link to="/trips/all"> {/* Link to a default dashboard/home */}
-                        <img
-                            alt="Logo"
-                            style={{ width: 150 }}
-                            // Ensure this path is correct relative to your public folder
-                            src="/assets/media/logos/logo-v5.png"
-                        />
+                    <Link to="/trips/all">
+                        <img alt="Logo" style={{ width: 150 }} src="/assets/media/logos/logo-v5.png" />
                     </Link>
                 </div>
 
                 {/* Header Menu */}
-                <div className="kt-header-menu-wrapper kt-grid__item" id="kt_header_menu_wrapper">
-                    <div id="kt_header_menu" className="kt-header-menu kt-header-menu-mobile">
-                        <ul className="kt-menu__nav">
-                            {/* School Switcher Dropdown */}
-                            {!canSwitchSchools && (
-                                <li className="kt-menu__item">
-                                    <h4 className="kt-menu__link-text">{selectedSchool.name || 'Select School'}</h4>
-                                </li>
-                            )}
-                            {canSwitchSchools && (
-                                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                                    <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
-                                        <span className="kt-menu__link-text">{selectedSchool.name || 'Select School'}</span>
-                                        <i className="kt-menu__hor-arrow la la-angle-down" />
-                                        <i className="kt-menu__ver-arrow la la-angle-right" />
-                                    </a>
+                <div className="kt-header-menu-wrapper kt-grid__item" id="kt_header_menu_wrapper" style={{ borderRadius: '10px', margin: '10px' }}>
+                    <div id="kt_header_menu" className="kt-header-menu kt-header-menu-mobile" >
+                        <ul className="kt-menu__nav" >
+
+                            {/* School Name / Switcher */}
+                            <li className={`kt-menu__item ${canSwitchSchools ? 'kt-menu__item--submenu kt-menu__item--rel' : ''}`}
+                                data-ktmenu-submenu-toggle={canSwitchSchools ? 'click' : null} // Only add toggle if switchable
+                                aria-haspopup={canSwitchSchools}>
+                                <a href={canSwitchSchools ? "javascript:;" : null} // Make it a link only if switchable
+                                   className={`kt-menu__link ${canSwitchSchools ? 'kt-menu__toggle' : ''}`}>
+                                    <span className="kt-menu__link-text kt-font-bold">{selectedSchool.name || 'Loading School...'}</span>
+                                    {canSwitchSchools && <i className="kt-menu__hor-arrow la la-angle-down" />}
+                                    {canSwitchSchools && <i className="kt-menu__ver-arrow la la-angle-right" />}
+                                </a>
+                                {canSwitchSchools && (
                                     <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                                         <ul className="kt-menu__subnav">
                                             {availableSchools.map(school => (
-                                                <li key={school.id} onClick={() => this.switchSchools(school)} className="kt-menu__item" aria-haspopup="true">
-                                                    {/* Use <a> for theme compatibility, prevent default if needed */}
+                                                <li key={school.id} onClick={() => this.switchSchools(school)}
+                                                    className={`kt-menu__item ${school.id === selectedSchool.id ? 'kt-menu__item--active' : ''}`} // Highlight active
+                                                    aria-haspopup="true">
                                                     <a href="#" onClick={(e) => e.preventDefault()} className="kt-menu__link">
                                                         <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
                                                         <span className="kt-menu__link-text">{school.name}</span>
-                                                        {school.id === selectedSchool.id && <i className="kt-menu__link-icon la la-check" />} {/* Indicate selected */}
+                                                        {/* Use kt-menu__item--active class or explicit checkmark */}
+                                                        {/* {school.id === selectedSchool.id && <i className="kt-menu__link-icon la la-check kt-font-success" />} */}
                                                     </a>
                                                 </li>
                                             ))}
                                         </ul>
                                     </div>
-                                </li>
-                            )}
+                                )}
+                            </li>
 
-                            {/* Reports Link */}
+                            {/* Reports */}
                             <li className="kt-menu__item kt-menu__item--rel">
                                 <Link to="/home" className="kt-menu__link">
                                     <span className="kt-menu__link-text">Reports</span>
                                 </Link>
                             </li>
 
-                            {/* Data Management Dropdown */}
+                            {/* Manage Data */}
                             <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                                <a className="kt-menu__link kt-menu__toggle">
+                                <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
                                     <span className="kt-menu__link-text">Manage Data</span>
                                     <i className="kt-menu__hor-arrow la la-angle-down" />
                                     <i className="kt-menu__ver-arrow la la-angle-right" />
                                 </a>
                                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                                     <ul className="kt-menu__subnav">
-                                        {/* Add key props to mapped elements */}
                                         {[
-                                            { path: "/schools", label: "Schools" },
-                                            { path: "/admins", label: "Admins" },
-                                            { path: "/teams", label: "Teams" },
-                                            { path: "/members", label: "Team Members" },
-                                            { path: "/invitations", label: "Invitations" },
-                                            { path: "/drivers", label: "Drivers" },
-                                            { path: "/buses", label: "Buses" },
-                                            { path: "/routes", label: "Routes" },
-                                            { path: "/schedules", label: "Schedules" },
-                                            { path: "/classes", label: "Classes" },
-                                            { path: "/teachers", label: "Teachers" },
-                                            { path: "/students", label: "Students" },
-                                            { path: "/parents", label: "Parents" },
-                                            { path: "/settings/school", label: "School Details" },
+                                            // Your menu items... (ensure unique keys)
+                                            { path: "/schools", label: "Schools" }, { path: "/admins", label: "Admins" },
+                                            { path: "/invitations", label: "Invitations" }, { path: "/drivers", label: "Drivers" },
+                                            { path: "/buses", label: "Buses" }, { path: "/routes", label: "Routes" },
+                                            { path: "/schedules", label: "Schedules" }, { path: "/classes", label: "Classes" },
+                                            { path: "/teachers", label: "Teachers" }, { path: "/students", label: "Students" },
+                                            { path: "/parents", label: "Parents" }, { path: "/settings/school", label: "School Details" },
                                         ].map(item => (
                                             <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                                                <a href={`#${item.path}`} className="kt-menu__link">
+                                                {/* Use Link for internal SPA navigation */}
+                                                <Link to={item.path} className="kt-menu__link">
                                                     <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
                                                     <span className="kt-menu__link-text">{item.label}</span>
-                                                </a>
+                                                </Link>
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
                             </li>
 
-                             {/* Communications Link */}
+                            {/* Communications */}
                              <li className="kt-menu__item kt-menu__item--rel">
                                 <Link to="/comms" className="kt-menu__link">
                                     <span className="kt-menu__link-text">SMS & Email</span>
                                 </Link>
                             </li>
 
-                            {/* Finance Dropdown */}
+                            {/* Finance */}
                              <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                                <a className="kt-menu__link kt-menu__toggle">
+                                <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
                                     <span className="kt-menu__link-text">
-                                        {/* Display balance if available, otherwise just "Finance" */}
-                                        {selectedSchool?.financial?.balanceFormatted || 'Finance'}
-                                        {selectedSchool?.financial?.balanceFormatted && ', Finance'}
+                                        {/* Display balance nicely */}
+                                        {schoolBalance ? (
+                                             <>{schoolBalance} <span className="kt-hidden-mobile">, Finance</span></>
+                                         ) : 'Finance'}
                                     </span>
                                     <i className="kt-menu__hor-arrow la la-angle-down" />
                                     <i className="kt-menu__ver-arrow la la-angle-right" />
@@ -420,29 +316,25 @@ initializeKTComponents = () => {
                                 </div>
                             </li>
 
-                             {/* Learning Link */}
+                            {/* Learning */}
                              <li className="kt-menu__item kt-menu__item--rel">
                                 <Link to="/learning" className="kt-menu__link">
                                     <span className="kt-menu__link-text">Learning</span>
                                 </Link>
                             </li>
-
                         </ul>
                     </div>
                 </div>
 
                 {/* Header Topbar */}
                 <div className="kt-header__topbar kt-grid__item kt-grid__item--fluid">
-                    {/* User Bar */}
                     <div
                         className="kt-header__topbar-item kt-header__topbar-item--user"
-                        id="kt_offcanvas_toolbar_profile_toggler_btn" // Toggle button for offcanvas
+                        id="kt_offcanvas_toolbar_profile_toggler_btn" // Must match KTOffcanvas config
                     >
-                        <div className="kt-header__topbar-welcome">Hi,</div>
-                        {/* Display user's actual name */}
+                        <div className="kt-header__topbar-welcome kt-hidden-mobile">Hi,</div>
                         <div className="kt-header__topbar-username">{userName}</div>
                         <div className="kt-header__topbar-wrapper">
-                            {/* Use a default avatar or user-specific one if available */}
                             <img alt="User Pic" src={"/assets/media/users/default.jpg"} />
                         </div>
                     </div>
@@ -451,13 +343,10 @@ initializeKTComponents = () => {
                 {/* Mobile Header */}
                 <div id="kt_header_mobile" className="kt-header-mobile kt-header-mobile--fixed">
                     <div className="kt-header-mobile__logo">
-                         <Link to="/trips/all">
-                            <img
-                                alt="Logo"
-                                style={{ width: 120, filter: 'brightness(0) invert(1)' }} // Adjusted style for visibility
-                                src="/assets/media/logos/logo-v6.png" // Ensure path is correct
-                            />
-                        </Link>
+                        <div style={{textAlign: 'left', color: 'white'}}>
+                            <div style={{fontSize: 16, fontWeight: 700}}>{this.state.selectedSchool?.name}</div>
+                            <div style={{fontSize: 14, opacity: 0.7}}>Welcome, {userName}</div>
+                        </div>
                     </div>
                     <div className="kt-header-mobile__toolbar">
                         <button className="kt-header-mobile__toolbar-toggler" id="kt_header_mobile_toggler"><span /></button>
@@ -471,64 +360,66 @@ initializeKTComponents = () => {
                         <h3 className="kt-offcanvas-panel__title">Profile</h3>
                         <a href="#" className="kt-offcanvas-panel__close" id="kt_offcanvas_toolbar_profile_close"><i className="flaticon2-delete" /></a>
                     </div>
-                    {/* Ensure body has kt-scroll class if using KTUtil.scrollInit */}
+                    {/* Make sure body has kt-scroll class if needed by theme's scroll init */}
                     <div className="kt-offcanvas-panel__body kt-scroll">
                         <div className="kt-user-card-v3 kt-margin-b-30">
                             <div className="kt-user-card-v3__avatar">
-                                {/* Use actual avatar or default */}
-                                <img src={"/assets/media/users/default.jpg"} alt="User Avatar" />
+                                <img src={"/assets/media/users/default.jpg"} alt="" />
                             </div>
                             <div className="kt-user-card-v3__detalis">
-                                {/* Display actual name */}
-                                <a href="#" onClick={(e) => e.preventDefault()} className="kt-user-card-v3__name">
-                                    {userName}
-                                </a>
-                                <div className="kt-user-card-v3__desc">
-                                    {/* Display role or other info if available */}
-                                    {this.state.userRole || 'User'}
-                                </div>
-                                <div className="kt-user-card-v3__info">
-                                    {/* Display Email */}
-                                    <div className="kt-user-card-v3__item"> {/* Use div for better structure */}
-                         
-                                        <span className="kt-user-card-v3__tag">{userEmail}</span>
-                                    </div>
-                                    {/* Display Phone */}
-                                    <div className="kt-user-card-v3__item">
-                                        {/* Change icon if desired (e.g., flaticon-phone) */}
-                  
-                                        <span className="kt-user-card-v3__tag">{userPhone}</span>
-                                    </div>
-                                     {/* Display Other Phone if exists */}
+                                {/* User Name and Role */}
+                                <span className="kt-user-card-v3__name">{userName}</span>
+                                <div className="kt-user-card-v3__desc kt-font-sm">{userRole}</div>
+
+                                {/* Contact Info Section */}
+                                <div className="kt-user-card-v3__info kt-margin-t-15">
+                                    {userEmail && (
+                                        <div className="kt-user-card-v3__item">
+                                            <i className="flaticon-email kt-font-brand kt-padding-r-5" /> {/* Added icon */}
+                                            <span className="kt-user-card-v3__tag">{userEmail}</span>
+                                        </div>
+                                    )}
+                                    {userPhone && (
+                                        <div className="kt-user-card-v3__item">
+                                            <i className="flaticon2-phone kt-font-success kt-padding-r-5" /> {/* Added icon */}
+                                            <span className="kt-user-card-v3__tag">{userPhone}</span>
+                                        </div>
+                                     )}
                                      {userOtherPhone && (
                                         <div className="kt-user-card-v3__item">
-                                            <span className="kt-user-card-v3__tag">{userOtherPhone}</span>
+                                             <i className="flaticon2-phone kt-font-warning kt-padding-r-5" /> {/* Added icon */}
+                                            <span className="kt-user-card-v3__tag">{userOtherPhone} (Other)</span>
                                         </div>
                                      )}
                                 </div>
-                                 {/* Action Buttons - separated for clarity */}
-                                <div className="kt-user-card-v3__actions kt-margin-t-20">
+
+                                {/* Action Buttons */}
+                                <div className="kt-user-card-v3__actions kt-margin-t-25">
                                      <button
-                                        className="btn btn-sm btn-label-brand btn-bold" // Adjusted style
+                                        className="btn btn-sm btn-label-brand btn-bold"
                                         type="button"
                                         onClick={() => this.props.history.push("/settings/user")}
                                     >
-                                        My Profile
+                                        <i className="la la-user" /> My Profile
                                     </button>
                                     <button
-                                        className="btn btn-sm btn-label-danger btn-bold kt-margin-l-10" // Adjusted style
+                                        className="btn btn-sm btn-label-danger btn-bold kt-margin-l-10"
                                         type="button"
-                                        onClick={this.handleLogout}
+                                        onClick={() => this.handleLogout()} // No arg needed unless error
                                     >
-                                        Log Out
+                                        <i className="la la-sign-out" /> Log Out
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        {/* PS Scrollbar elements are usually added dynamically by KTUtil.scrollInit */}
-                    </div>
-                </div>
-            </div>
+
+                         {/* Optional: Add more sections here if needed, e.g., quick links */}
+                         {/* <div className="kt-separator kt-separator--space-lg kt-separator--border-dashed"></div> */}
+                         {/* ... */}
+
+                    </div> {/* End Body */}
+                </div> {/* End Panel */}
+            </div> // End Header
         );
     }
 }
