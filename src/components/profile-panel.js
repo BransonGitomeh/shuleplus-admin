@@ -37,7 +37,7 @@ class ProfilePanel extends React.Component {
         <div className="kt-offcanvas-panel__body">
           <div className="kt-user-card-v3 kt-margin-b-30">
             <div className="kt-user-card-v3__avatar">
-              <img src="./assets/media/users/300_21.jpg" alt />
+              <img src="./assets/media/users/300_21.jpg" alt="" />
             </div>
             <div className="kt-user-card-v3__detalis">
               <a href="#" className="kt-user-card-v3__name">

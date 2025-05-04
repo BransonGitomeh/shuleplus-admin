@@ -110,7 +110,7 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
-        <AddRouteModal />
+        <AddRouteModal save={routes => Data.routes.create(routes)}/>
         <AddBusModal drivers={this.props.drivers} />
         <AddDriverModal />
         <div
@@ -185,10 +185,10 @@ class Modal extends React.Component {
                         />
                       </div>
                       {/* <div className="col-lg-3">
-                        <label for="exampleSelect1">Route:</label>
+                        <label htmlFor="exampleSelect1">Route:</label>
                         <select
                           name="seats"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.route}
                           onChange={(e) => this.setState({
@@ -207,7 +207,7 @@ class Modal extends React.Component {
                         <div className="row">
 
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Select Route:</label>
+                            <label htmlFor="exampleSelect1">Select Route:</label>
                             <Select
                               name="route"
                               value={this.state.setRoute}
@@ -219,7 +219,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"
@@ -241,7 +241,7 @@ class Modal extends React.Component {
                         <div className="row">
 
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Select Bus:</label>
+                            <label htmlFor="exampleSelect1">Select Bus:</label>
                             <Select
                               name="bus"
                               value={this.state.setBus}
@@ -253,7 +253,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"
@@ -273,12 +273,12 @@ class Modal extends React.Component {
 
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Schedule Type:</label>
+                        <label htmlFor="exampleSelect1">Schedule Type:</label>
                         <select
                           name="type"
                           type="text"
                           required
-                          class="form-control"
+                          className="form-control"
                           value={this.state.type}
                           onChange={(e) => this.setState({
                             type: e.target.value
@@ -294,10 +294,10 @@ class Modal extends React.Component {
                       </div>
                       <div className="col-lg-6">
                         <br />
-                        <label for="exampleSelect1">Select Days the route is taken</label>
+                        <label htmlFor="exampleSelect1">Select Days the route is taken</label>
                         <div className="kt-checkbox-list">
                           {this.state.days.map(day => {
-                            return (<label className="kt-checkbox">
+                            return (<label key={day} className="kt-checkbox">
                               <input
                                 type="checkbox"
                                 checked={this.state.selectedDays.includes(day)}
@@ -321,7 +321,7 @@ class Modal extends React.Component {
 
                         <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Drivers:</label>
+                            <label htmlFor="exampleSelect1">Drivers:</label>
                             <Select
                               name="driver"
                               value={this.state.setDriver}
@@ -333,7 +333,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"

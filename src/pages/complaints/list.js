@@ -20,11 +20,12 @@ class ComplaintList extends Component {
   render() {
     const { complaints } = this.state
     return (
-      <div class="kt-portlet kt-portlet--height-fluid">
-        <div class="kt-portlet__body kt-portlet__body--fluid">
-          <ul class="list-group list-group-flush col-md-4 col-sm-6">
+      <div className="kt-portlet kt-portlet--height-fluid">
+        <div className="kt-portlet__body kt-portlet__body--fluid">
+          <ul className="list-group list-group-flush col-md-4 col-sm-6">
             {complaints.map(c => {
               return <li
+                key={c.id}
                 className="list-group-item"
                 style={{ cursor: 'pointer' }}
                 onClick={() => this.setState({ selected: complaints.find(comp => comp.id === c.id) })}>

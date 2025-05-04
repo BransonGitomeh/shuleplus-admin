@@ -202,10 +202,10 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-4">
-                        <label for="gender">Gender:</label>
+                        <label htmlFor="gender">Gender:</label>
                         <select
                           name="gender"
-                          class="form-control"
+                          className="form-control"
                           id="gender"
                           required
                           value={this.state.gender}
@@ -215,14 +215,14 @@ class Modal extends React.Component {
                         >
                           <option value="">Select gender</option>
                           {["MALE", "FEMALE"].map(gender => {
-                            return <option value={gender}>{gender}</option>
+                            return <option key={gender} value={gender}>{gender}</option>
                           })}
                         </select>
                       </div>
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Class:</label>
+                            <label htmlFor="exampleSelect1">Class:</label>
                             <Select
                               name="classes"
                               value={this.state.setClass}
@@ -234,7 +234,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"
@@ -251,10 +251,10 @@ class Modal extends React.Component {
                         </div>
 
                         {/*                         
-                        <label for="exampleSelect1">Class:</label>
+                        <label htmlFor="exampleSelect1">Class:</label>
                         <select
                           name="class"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.class}
                           onChange={(e) => this.setState({
@@ -270,7 +270,7 @@ class Modal extends React.Component {
                       <div className="col-lg-6">
                       <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Route:</label>
+                            <label htmlFor="exampleSelect1">Route:</label>
                             <Select
                               name="classes"
                               value={this.state.setRoute}
@@ -282,7 +282,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"
@@ -297,10 +297,10 @@ class Modal extends React.Component {
                             </button>
                           </div>
                         </div>
-                        {/* <label for="exampleSelect1">Route:</label>
+                        {/* <label htmlFor="exampleSelect1">Route:</label>
                         <select
                           name="route"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.route}
                           onChange={(e) => this.setState({
@@ -317,7 +317,7 @@ class Modal extends React.Component {
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Parent:</label>
+                            <label htmlFor="exampleSelect1">Parent:</label>
                             <Select
                               name="driver"
                               value={this.state.setParent}
@@ -329,7 +329,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"
@@ -349,7 +349,7 @@ class Modal extends React.Component {
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Second Parent:</label>
+                            <label htmlFor="exampleSelect1">Second Parent:</label>
                             <Select
                               name="driver"
                               value={this.state.setParent2}

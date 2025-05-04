@@ -13,7 +13,7 @@ export default props => {
           <tr className="kt-datatable__row">
             <th style={{ width: "30px" }} className="kt-datatable__cell"></th>
             {props.headers.map(header => {
-              return <th style={{ width: "150px" }} className="kt-datatable__cell">{header.label}</th>;
+              return <th key={header.key} style={{ width: "150px" }} className="kt-datatable__cell">{header.label}</th>;
             })}
             <th style={{ width: "110px" }} className="kt-datatable__cell"></th>
           </tr>

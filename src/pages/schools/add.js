@@ -161,7 +161,7 @@ class Modal extends React.Component {
                         />
                       </div>
                     </div>
-                      {this.state.error ? <div class="alert alert-danger" role="alert">
+                      {this.state.error ? <div className="alert alert-danger" role="alert">
                         {this.state.error}
                       </div> : ''}
                   </div>

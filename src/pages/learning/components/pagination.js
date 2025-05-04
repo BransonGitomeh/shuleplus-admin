@@ -55,12 +55,12 @@ export default class Pagination extends React.Component {
 	render(){
 		return (!this.totalRecords > this.pageLimit ? "" :
 			<nav aria-label="...">
-			  <ul class="pagination">
-			    <li onClick={this.previousPage} class="page-item disabled">
-			      <a class="page-link" href="#" tabindex="-1">Previous</a>
+			  <ul className="pagination">
+			    <li onClick={this.previousPage} className="page-item disabled">
+			      <a className="page-link" href="#" tabindex="-1">Previous</a>
 			    </li>
-			    <li onClick={this.nextPage} class="page-item">
-			      <a class="page-link" href="#">Next</a>
+			    <li onClick={this.nextPage} className="page-item">
+			      <a className="page-link" href="#">Next</a>
 			    </li>
 			  </ul>
 			</nav>

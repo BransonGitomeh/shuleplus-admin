@@ -9,14 +9,14 @@ export default props => {
       // width="100%"
       style={{
         "display": "block",
-        "overflow-x": "auto",
-        "white-space": "nowrap"
+        "overflowX": "auto",
+        "whiteSpace": "nowrap"
       }}
     >
       <thead>
         <tr>
           {props.headers.map(header => {
-            return <th title="Field #0">{header.label}</th>;
+            return <th key={Math.random().toString()}  title="Field #0">{header.label}</th>;
           })}
         </tr>
       </thead>
@@ -48,7 +48,7 @@ export default props => {
                         props.add(row);
                       }}
                     >
-                      <i class="la la-plus-circle"></i> Add
+                      <i className="la la-plus-circle"></i> Add
                     </button>
                   ) : null}
                   {options.deleteable === true ? (
@@ -59,7 +59,7 @@ export default props => {
                         props.remove(row);
                       }}
                     >
-                      <i class="la la-minus-circle"></i> Remove
+                      <i className="la la-minus-circle"></i> Remove
                     </button>
                   ) : null}
                 </span>

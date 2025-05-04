@@ -38,7 +38,7 @@ class Subheader extends React.Component {
               <div className="kt-subheader__breadcrumbs">
                 {this.props.links.map(link => {
                   return (
-                    <>
+                    <span key={link}>
                       <a
                         href="#"
                         className={
@@ -59,7 +59,7 @@ class Subheader extends React.Component {
                       {/* <a href="#" className="kt-subheader__breadcrumbs-link ">
                       List
                     </a> */}
-                    </>
+                    </span>
                   );
                 })}
               </div>
@@ -85,18 +85,18 @@ class Subheader extends React.Component {
         </div>
 
 
-        {this.state.selectedSchool.financial?.balance < MIN_BALANCE ? "" : <div id="kt_subheader" className="kt-subheader kt-grid__item " style={{ backgroundColor: "rgb(130 86 33)", color: "white" }}>
-          <div className="kt-container  kt-container--fluid ">
-            <div className="kt-subheader__title">
-              <div className="kt-subheader__breadcrumbs justify-content-end">
-                Your account balance is currently bellow KSH {MIN_BALANCE}, please top up your account to avoid service disruption
-
-                
-              </div>
-              <button class="btn btn-success btn-sm btn-bold btn-upper" onClick={() => this.props.history.push({
+        {this.state.selectedSchool.financial?.balance < MIN_BALANCE ? "" : <div id="kt_subheader" className="kt-subheader kt-grid__item " style={{ backgroundColor: "rgb(130 86 33)", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ margin: "0 10px" }} className="kt-subheader__title">
+            <div className="kt-subheader__breadcrumbs">
+              Your balance is below KSH {MIN_BALANCE}. Top up to avoid service disruption
+            </div>
+          </div>
+          <div className="kt-subheader__toolbar">
+            <div className="kt-subheader__toolbar-wrapper">
+              <button className="btn btn-primary btn-sm btn-bold btn-upper" style={{ backgroundColor: "#4CB050", borderColor: "#4CB050", float: "right", margin: "0 10px" }} onClick={() => this.props.history.push({
                 pathname: "/finance/topup",
                 search: "?" + new URLSearchParams({ popup: true }).toString()
-              })}>Top Up Using Mpesa</button>
+              })}><i className="la la-mobile" style={{ marginRight: 5 }}></i>Mpesa Top Up</button>
             </div>
           </div>
         </div>}

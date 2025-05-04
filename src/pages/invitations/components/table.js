@@ -8,15 +8,15 @@ export default props => {
       className="table"
       style={{
         "display": "block",
-        "overflow-x": "auto",
-        "white-space": "nowrap"
+        "overflowX": "auto",
+        "whiteSpace": "nowrap"
       }}
     // width="100%"
     >
       <thead>
         <tr>
           {props.headers.map(header => {
-            return <th title="Field #0">{header.label}</th>;
+            return <th key={header.key} title="Field #0">{header.label}</th>;
           })}
         </tr>
       </thead>

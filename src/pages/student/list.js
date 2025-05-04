@@ -46,9 +46,9 @@ class BasicTable extends React.Component {
                 <StudentDetails
                   student={student}
                 />
-                <div class="kt-portlet__head">
-                  <div class="kt-portlet__head-label">
-                    <h3 class="kt-portlet__head-title">Parent Details</h3>
+                <div className="kt-portlet__head">
+                  <div className="kt-portlet__head-label">
+                    <h3 className="kt-portlet__head-title">Parent Details</h3>
                   </div>
                 </div>
                 <br></br>

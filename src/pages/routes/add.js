@@ -148,12 +148,13 @@ class Modal extends React.Component {
                       </div>
                     </div>
                     <div className="col-md-4 col-lg-4 col-sm-12">
-                      <ul class="list-group list-group-flush">
+                      <ul className="list-group list-group-flush">
                         {this.state.studentList?.map(student => {
                             return <li
+                            key={student.id}
                               className="list-group-item"
                               style={{ cursor: 'pointer' }}>
-                                <label class="kt-checkbox">
+                                <label className="kt-checkbox">
                                   <input onChange={() => this.onSelect(student)} type="checkbox" checked={this.state.students.includes(student.id)} /> {student.names}<span></span>
                                 </label>
                             </li>

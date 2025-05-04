@@ -80,9 +80,9 @@ class BasicTable extends React.Component {
               <div className="row">
                 <div className="col-md-6">
                   <>
-                    <div class="kt-portlet__head">
-                      <div class="kt-portlet__head-label">
-                        <h3 class="kt-portlet__head-title">Your Information</h3>
+                    <div className="kt-portlet__head">
+                      <div className="kt-portlet__head-label">
+                        <h3 className="kt-portlet__head-title">Your Information</h3>
                       </div>
                     </div>
                     <h5>Your Username is : username1</h5>

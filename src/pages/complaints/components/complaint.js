@@ -5,19 +5,19 @@ const ComplaintView = ({ complaint, onClickDelete }) => {
     return (
     <div className="kt-portlet">
       <div className="kt-portlet__head">
-        <div class="kt-portlet__head-label">
-					<span class="kt-portlet__head-icon">
-						<i class="la la-comment-o"></i>
+        <div className="kt-portlet__head-label">
+					<span className="kt-portlet__head-icon">
+						<i className="la la-comment-o"></i>
 					</span>
           <h3 className="kt-portlet__head-title kt-heading kt-heading--center kt-heading--thin">
             {complaint.parent && complaint.parent.name}
 						<small>at {complaint.time}</small>
 					</h3>			
 				</div>
-        <div class="kt-portlet__head-toolbar">
-					<div class="kt-portlet__head-group">
-						<div class="btn-group">
-							<button type="button" class="btn btn-pill btn-outline-danger btn-sm" onClick={onClickDelete}>
+        <div className="kt-portlet__head-toolbar">
+					<div className="kt-portlet__head-group">
+						<div className="btn-group">
+							<button type="button" className="btn btn-pill btn-outline-danger btn-sm" onClick={onClickDelete}>
                 <i className="la la-trash" />
 							</button>
 						</div>

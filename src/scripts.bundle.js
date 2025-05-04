@@ -28,9 +28,9 @@ var KTApp = function () {
 
         el.tooltip({
             trigger: triggerValue,
-            template: '<div class="tooltip ' + skin + ' ' + width + '" role="tooltip">\
-                <div class="arrow"></div>\
-                <div class="tooltip-inner"></div>\
+            template: '<div className="tooltip ' + skin + ' ' + width + '" role="tooltip">\
+                <div className="arrow"></div>\
+                <div className="tooltip-inner"></div>\
             </div>'
         });
     }
@@ -49,10 +49,10 @@ var KTApp = function () {
         el.popover({
             trigger: triggerValue,
             template: '\
-            <div class="popover ' + skin + '" role="tooltip">\
-                <div class="arrow"></div>\
-                <h3 class="popover-header"></h3>\
-                <div class="popover-body"></div>\
+            <div className="popover ' + skin + '" role="tooltip">\
+                <div className="arrow"></div>\
+                <h3 className="popover-header"></h3>\
+                <div className="popover-body"></div>\
             </div>'
         });
     }
@@ -242,12 +242,12 @@ var KTApp = function () {
             var version = options.type ? 'kt-spinner--' + options.type : '';
             var state = options.state ? 'kt-spinner--' + options.state : '';
             var size = options.size ? 'kt-spinner--' + options.size : '';
-            var spinner = '<div class="kt-spinner ' + version + ' ' + state + ' ' + size + '"></div';
+            var spinner = '<div className="kt-spinner ' + version + ' ' + state + ' ' + size + '"></div';
 
             if (options.message && options.message.length > 0) {
                 var classes = 'blockui ' + (options.shadow === false ? 'blockui' : '');
 
-                html = '<div class="' + classes + '"><span>' + options.message + '</span><span>' + spinner + '</span></div>';
+                html = '<div className="' + classes + '"><span>' + options.message + '</span><span>' + spinner + '</span></div>';
 
                 var el = document.createElement('div');
                 KTUtil.get('body').prepend(el);
@@ -257,7 +257,7 @@ var KTApp = function () {
                 KTUtil.remove(el);
 
                 if (target == 'body') {
-                    html = '<div class="' + classes + '" style="margin-left:-' + (options.width / 2) + 'px;"><span>' + options.message + '</span><span>' + spinner + '</span></div>';
+                    html = '<div className="' + classes + '" style="margin-left:-' + (options.width / 2) + 'px;"><span>' + options.message + '</span><span>' + spinner + '</span></div>';
                 }
             } else {
                 html = spinner;
@@ -3219,7 +3219,7 @@ var KTMenu = function (elementId, options) {
             var query;
             var zIndex = (query = KTUtil.child(el, '.kt-menu__submenu') ? KTUtil.css(query, 'z-index') : 0) - 1;
 
-            var dropoff = document.createElement('<div class="kt-menu__dropoff" style="background: transparent; position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: ' + zIndex + '"></div>');
+            var dropoff = document.createElement('<div className="kt-menu__dropoff" style="background: transparent; position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: ' + zIndex + '"></div>');
 
             body.appendChild(dropoff);
 
@@ -4085,9 +4085,9 @@ var KTPortlet = function (elementId, options) {
                         placement: placement,
                         offset: (fullscreenOn ? '0,10px,0,0' : '0,5px'),
                         trigger: 'hover',
-                        template: '<div class="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
-                            <div class="tooltip-arrow arrow"></div>\
-                            <div class="tooltip-inner"></div>\
+                        template: '<div className="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
+                            <div className="tooltip-arrow arrow"></div>\
+                            <div className="tooltip-inner"></div>\
                         </div>'
                     });
 
@@ -4103,9 +4103,9 @@ var KTPortlet = function (elementId, options) {
                         placement: placement,
                         offset: (fullscreenOn ? '0,10px,0,0' : '0,5px'),
                         trigger: 'hover',
-                        template: '<div class="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
-                            <div class="tooltip-arrow arrow"></div>\
-                            <div class="tooltip-inner"></div>\
+                        template: '<div className="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
+                            <div className="tooltip-arrow arrow"></div>\
+                            <div className="tooltip-inner"></div>\
                         </div>'
                     });
 
@@ -4121,9 +4121,9 @@ var KTPortlet = function (elementId, options) {
                         placement: placement,
                         offset: (fullscreenOn ? '0,10px,0,0' : '0,5px'),
                         trigger: 'hover',
-                        template: '<div class="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
-                            <div class="tooltip-arrow arrow"></div>\
-                            <div class="tooltip-inner"></div>\
+                        template: '<div className="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
+                            <div className="tooltip-arrow arrow"></div>\
+                            <div className="tooltip-inner"></div>\
                         </div>'
                     });
 
@@ -4139,9 +4139,9 @@ var KTPortlet = function (elementId, options) {
                         placement: placement,
                         offset: (fullscreenOn ? '0,10px,0,0' : '0,5px'),
                         trigger: 'hover',
-                        template: '<div class="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
-                            <div class="tooltip-arrow arrow"></div>\
-                            <div class="tooltip-inner"></div>\
+                        template: '<div className="tooltip tooltip-portlet tooltip bs-tooltip-' + placement + '" role="tooltip">\
+                            <div className="tooltip-arrow arrow"></div>\
+                            <div className="tooltip-inner"></div>\
                         </div>'
                     });
 
@@ -6255,7 +6255,7 @@ if (typeof module !== 'undefined') {
                         scroll.initPosition = $(scrollable).scrollLeft();
                         $(scrollable).css('overflow-y', 'auto').off().on('scroll', scroll.onScrolling);
                         if (Plugin.getOption('rows.autoHide') !== true) {
-                            $(scrollable).css('overflow-x', 'auto');
+                            $(scrollable).css('overflowX', 'auto');
                         }
                     },
                     onScrolling: function (e) {
@@ -7364,8 +7364,8 @@ if (typeof module !== 'undefined') {
                                 return field === n.field;
                             })[0];
                             $(detailSubTable).
-                                append($('<tr class="' + pfx + 'datatable__row"></tr>').
-                                    append($('<td class="' + pfx + 'datatable__cell"></td>').append($('<span/>').append(column.title))).
+                                append($('<tr className="' + pfx + 'datatable__row"></tr>').
+                                    append($('<td className="' + pfx + 'datatable__cell"></td>').append($('<span/>').append(column.title))).
                                     append(this));
                         });
                         $(detailRowTd).append(detailSubTable);
@@ -7402,7 +7402,7 @@ if (typeof module !== 'undefined') {
                                         addClass(pfx + 'datatable__toggle-detail').
                                         attr('href', '').
                                         on('click', toggleHiddenColumns).
-                                        append('<i class="' + Plugin.getOption('layout.icons.rowDetail.collapse') + '"></i>')));
+                                        append('<i className="' + Plugin.getOption('layout.icons.rowDetail.collapse') + '"></i>')));
                             }
 
                             // check if subtable toggle exist
@@ -7411,11 +7411,11 @@ if (typeof module !== 'undefined') {
                                 $(datatable.tableHead).
                                     find('.' + pfx + 'datatable__row').
                                     first().
-                                    prepend('<th class="' + pfx + 'datatable__cell ' + pfx + 'datatable__toggle-detail"><span></span></th>');
+                                    prepend('<th className="' + pfx + 'datatable__cell ' + pfx + 'datatable__toggle-detail"><span></span></th>');
                                 $(datatable.tableFoot).
                                     find('.' + pfx + 'datatable__row').
                                     first().
-                                    prepend('<th class="' + pfx + 'datatable__cell ' + pfx + 'datatable__toggle-detail"><span></span></th>');
+                                    prepend('<th className="' + pfx + 'datatable__cell ' + pfx + 'datatable__toggle-detail"><span></span></th>');
                             } else {
                                 $(datatable.tableHead).find('.' + pfx + 'datatable__toggle-detail').find('span');
                             }
@@ -9472,7 +9472,7 @@ var KTQuickSearch = function () {
                     hasResult = false;
                     hideProgress();
                     KTUtil.addClass(target, resultClass);
-                    KTUtil.setHTML(resultWrapper, '<span class="kt-quick-search__message">Connection error. Pleae try again later.</div>');
+                    KTUtil.setHTML(resultWrapper, '<span className="kt-quick-search__message">Connection error. Pleae try again later.</div>');
                     showDropdown();
                     KTUtil.scrollUpdate(resultWrapper);
                 }
@@ -9858,6 +9858,6 @@ window.KTOffcanvasPanel = KTOffcanvasPanel
 window.KTOffcanvas = KTOffcanvas
 
 // Init on page load completed
-KTUtil.ready(function () {
-    KTLayout.init();
-});
+// KTUtil.ready(function () {
+//     KTLayout.init();
+// });

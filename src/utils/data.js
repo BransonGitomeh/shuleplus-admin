@@ -341,6 +341,7 @@ var Data = (function () {
         }
     }
   }`).then(response => {
+    console.log(response)
       // done(response)
       schoolsData.push(...response.schools)
 

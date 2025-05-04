@@ -11,7 +11,7 @@ export default props => {
       <thead>
         <tr>
           {props.headers.map(header => {
-            return <th title="Field #0">{header.label}</th>;
+            return <th key={Math.random().toString()}  title="Field #0">{header.label}</th>;
           })}
         </tr>
       </thead>
@@ -20,7 +20,7 @@ export default props => {
           return (
             <tr key={Math.random().toString()}>
               {props.headers.map(header => {
-                return <td>{header.view(row)}</td>;
+                return <td key={header.key}>{header.view(row)}</td>;
               })}
 
               <td

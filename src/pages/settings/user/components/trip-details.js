@@ -12,38 +12,38 @@ export default ({ trip, stats }) => {
 
   return (
     <>
-      <div class="kt-portlet__head">
-        <div class="kt-portlet__head-label">
-          <h3 class="kt-portlet__head-title">Trip Information</h3>
+      <div className="kt-portlet__head">
+        <div className="kt-portlet__head-label">
+          <h3 className="kt-portlet__head-title">Trip Information</h3>
         </div>
       </div>
-      <table class="table table-head-noborder">
+      <table className="table table-head-noborder">
         <tbody>
           <tr>
-            <th noWrap={true} scope="row"><i class="fas fa-wave-square"></i></th>
+            <th noWrap={true} scope="row"><i className="fas fa-wave-square"></i></th>
             <td noWrap={true}>{schedule.route.name}</td>
             <td rowSpan={5} style={{ width: '300px' }}>Note: </td>
           </tr>
           <tr>
-            <th scope="row"><i class="fas fa-address-card"></i> </th>
+            <th scope="row"><i className="fas fa-address-card"></i> </th>
             <td >{driver.username}</td>
           </tr>
           <tr>
-            <th scope="row"><i class="fas fa-bus-alt"></i> </th>
+            <th scope="row"><i className="fas fa-bus-alt"></i> </th>
             <td>{bus.plate}</td>
           </tr>
           <tr>
-            <th scope="row"><i class="fas fa-tachometer-alt"></i></th>
+            <th scope="row"><i className="fas fa-tachometer-alt"></i></th>
             <td>{completedAt != "" ? "Completed" : "Not Completed"}</td>
           </tr>
           {/* <tr>
-            <th scope="row"><i class="fas fa-business-time"></i></th>
+            <th scope="row"><i className="fas fa-business-time"></i></th>
             <td>0.57m delayed</td>
           </tr> */}
         </tbody>
       </table>
 
-      <table class="table table-bordered m-table">
+      <table className="table table-bordered m-table">
         <thead>
           <tr>
             <th></th>

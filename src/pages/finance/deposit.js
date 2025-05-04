@@ -228,7 +228,7 @@ class Modal extends React.Component {
 
                         {
                           this.state.started ? "" :
-                            <div class="alert alert-info" role="alert">
+                            <div className="alert alert-info" role="alert">
                               Waiting to start transaction...
                             </div>
                         }
@@ -236,7 +236,7 @@ class Modal extends React.Component {
 
                         {
                           this.state.verifying
-                            ? <div class="alert alert-info" role="alert">
+                            ? <div className="alert alert-info" role="alert">
                               Checking transaction status ...
                               </div>
                             : ""
@@ -244,7 +244,7 @@ class Modal extends React.Component {
 
                         {
                           this.state.success
-                            ? <div class="alert alert-success" role="alert">
+                            ? <div className="alert alert-success" role="alert">
                               {this.state.message}
                             </div>
                             : ""
@@ -252,14 +252,14 @@ class Modal extends React.Component {
 
                         {
                           this.state.loading ?
-                            <div class="alert alert-info" role="alert">
+                            <div className="alert alert-info" role="alert">
                               Please check your phone...
                           </div>
                             : ""}
 
                         {
                           !this.state.success && this.state.message
-                            ? <div class="alert alert-danger" role="alert">
+                            ? <div className="alert alert-danger" role="alert">
                               {this.state.message}
                             </div>
                             : ""}

@@ -11,7 +11,7 @@ export default props => {
       <thead>
         <tr>
           {props.headers.map(header => {
-            return <th title="Field #0">{header.label}</th>;
+            return <th key={header.label} title="Field #0">{header.label}</th>;
           })}
         </tr>
       </thead>

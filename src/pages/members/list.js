@@ -196,8 +196,8 @@ class BasicTable extends React.Component {
                     </div>
                   </div>
                   <div className="col-xl-4 order-2 order-xl-1">
-                    <div class="form-group">
-                      <label for="exampleFormControlSelect1">Teams list</label>
+                    <div className="form-group">
+                      <label htmlFor="exampleFormControlSelect1">Teams list</label>
                       <select
                         name="seats"
                         type="text"

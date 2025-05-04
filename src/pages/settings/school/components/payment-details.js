@@ -47,9 +47,9 @@ export default class PaymentDetails extends React.Component {
       <>
         <EditPaymentsModal edit={this.state.school} save={() => this.savePaymentDetail()} />
 
-        <div class="kt-portlet__head">
-          <div class="kt-portlet__head-label">
-            <h3 class="kt-portlet__head-title">Payments Information</h3>
+        <div className="kt-portlet__head">
+          <div className="kt-portlet__head-label">
+            <h3 className="kt-portlet__head-title">Payments Information</h3>
           </div>
         </div>
 

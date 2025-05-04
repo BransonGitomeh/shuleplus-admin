@@ -157,15 +157,15 @@ class Modal extends React.Component {
                         >
                           <option value="">Select class</option>
                           {this.props.classes.map(Iclass => (
-                            <option value={Iclass.name}>{Iclass.name}</option>
+                            <option key={Iclass.id} value={Iclass.name}>{Iclass.name}</option>
                           ))}
                         </select>
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Route:</label>
+                        <label htmlFor="exampleSelect1">Route:</label>
                         <select
                           name="route"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.edit.route_name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
@@ -175,15 +175,15 @@ class Modal extends React.Component {
                         >
                           <option value="">Select route</option>
                           {this.props.routes.map(route => (
-                            <option value={route.name}>{route.name}</option>
+                            <option key={route.id} value={route.name}>{route.name}</option>
                           ))}
                         </select>
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Gender:</label>
+                        <label htmlFor="exampleSelect1">Gender:</label>
                         <select
                           name="gender"
-                          class="form-control"
+                          className="form-control"
                           id="exampleSelect1"
                           required
                           value={this.state.edit.gender}
@@ -195,15 +195,15 @@ class Modal extends React.Component {
                         >
                           <option value="">Select gender</option>
                           {["MALE", "FEMALE"].map(gender => {
-                            return <option value={gender}>{gender}</option>
+                            return <option key={gender} value={gender}>{gender}</option>
                           })}
                         </select>
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Parent:</label>
+                        <label htmlFor="exampleSelect1">Parent:</label>
                         <select
                           name="parent"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.edit.parent_name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
@@ -213,15 +213,15 @@ class Modal extends React.Component {
                         >
                           <option value="">Select parent</option>
                           {this.props.parents.map(parent => (
-                            <option value={parent.name}>{parent.name}</option>
+                            <option key={parent.id} value={parent.name}>{parent.name}</option>
                           ))}
                         </select>
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Alternative Parent:</label>
+                        <label htmlFor="exampleSelect1">Alternative Parent:</label>
                         <select
                           name="parent2"
-                          class="form-control"
+                          className="form-control"
                           value={this.state.edit.parent2_name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             parent2: this.props.parents.filter(parent => parent.name == e.target.value)[0],
@@ -230,7 +230,7 @@ class Modal extends React.Component {
                         >
                           <option value="">Select parent</option>
                           {this.props.parents.map(parent => (
-                            <option value={parent.name}>{parent.name}</option>
+                            <option key={parent.id} value={parent.name}>{parent.name}</option>
                           ))}
                         </select>
                       </div>

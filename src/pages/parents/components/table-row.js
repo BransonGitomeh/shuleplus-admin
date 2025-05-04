@@ -26,7 +26,7 @@ class TableRow extends React.Component {
           </td>
           {this.props.headers.map(header => {
             return (
-              <td style={{ width: "150px" }} className="kt-datatable__cell">
+              <td key={header.key} style={{ width: "150px" }} className="kt-datatable__cell">
                 <span>{this.props.data[header.key]}</span>
               </td>
             );
@@ -121,7 +121,7 @@ class TableRow extends React.Component {
                   >
                     {!this.props.data.students ? null : this.props.data.students.map(student => {
                       return (
-                        <tr data-row="0" className="kt-datatable__row">
+                        <tr key={student.id} data-row="0" className="kt-datatable__row">
                           <td
                             data-field="OrderID"
                             className="kt-datatable__cell"

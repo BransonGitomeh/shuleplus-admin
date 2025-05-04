@@ -54,13 +54,14 @@ export default class MessageList extends Component {
       <div className="row">
 
         <div className="col-md-4 col-lg-4 col-sm-12">
-          <ul class="list-group list-group-flush">
+          <ul className="list-group list-group-flush">
             <button style={{ marginBottom: "20px" }} className={`btn btn-${allSelected ? "danger" : "secondary"} btn-pill`} onClick={this.selectAll}>{allSelected ? 'Unselect All Parents' : 'Select All Parents'}</button>
             {parents.map(parent => {
               return <li
+                key={parent.id}
                 className="list-group-item"
                 style={{ cursor: 'pointer' }}>
-                <label class="kt-checkbox">
+                <label className="kt-checkbox">
                   <input onChange={() => this.onSelect(parent)} type="checkbox" checked={selected.includes(parent.id)} /> {parent.name}<span></span>
                 </label>
               </li>

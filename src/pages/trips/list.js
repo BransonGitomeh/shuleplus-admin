@@ -137,16 +137,16 @@ class BasicTable extends React.Component {
                   <div className="col-xl-8 order-2 order-xl-1">
                     <div className="row align-items-center">
                       <div className="col-md-4 kt-margin-b-20-tablet-and-mobile">
-                        <div class="dropdown dropdown-inline">
-                          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <div className="dropdown dropdown-inline">
+                          <button className="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Filter
 							          </button>
-                          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                            <a class="dropdown-item" href="#/trips/all">All</a>
-                            <a class="dropdown-item" href="#/trips/running">Running</a>
-                            <a class="dropdown-item" href="#/schedules">Scheduled</a>
-                            <a class="dropdown-item" href="#/trips/complete">Completed</a>
-                            <a class="dropdown-item" href="#/trips/cancelled">Cancelled</a>
+                          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <a className="dropdown-item" href="#/trips/all">All</a>
+                            <a className="dropdown-item" href="#/trips/running">Running</a>
+                            <a className="dropdown-item" href="#/schedules">Scheduled</a>
+                            <a className="dropdown-item" href="#/trips/complete">Completed</a>
+                            <a className="dropdown-item" href="#/trips/cancelled">Cancelled</a>
                           </div>
                         </div>
                       </div>
@@ -162,9 +162,9 @@ class BasicTable extends React.Component {
                   {
                     label: "Trip / Route",
                     component: (row) => (<td>
-                      <i style={{ color: "green" }} class="fas fa-wave-square"></i> {row.schedule ? row.schedule.route.name : ''}
+                      <i style={{ color: "green" }} className="fas fa-wave-square"></i> {row.schedule ? row.schedule.route.name : ''}
                       <br></br>
-                      <i class="fas fa-user-tie"></i> {row.driver ? row.driver.username : ''}
+                      <i className="fas fa-user-tie"></i> {row.driver ? row.driver.username : ''}
                     </td>)
                   },
                   {
@@ -178,21 +178,21 @@ class BasicTable extends React.Component {
                   {
                     label: "Start/End",
                     component: (row) => (<td>
-                      <i style={{ color: "green" }} class="fas fa-play"></i> {row.startedAt}
+                      <i style={{ color: "green" }} className="fas fa-play"></i> {row.startedAt}
                       <br></br>
-                      <i style={{ color: "red" }} class="fas fa-stop"></i> {row.completedAt}
+                      <i style={{ color: "red" }} className="fas fa-stop"></i> {row.completedAt}
                     </td>)
                   },
                   {
                     label: "On-Board",
                     component: (row) => (<td style={{ 'font-size': "23px", color: "red" }}>
-                      <i class="fas fa-level-up-alt"></i> {row.inBus}
+                      <i className="fas fa-level-up-alt"></i> {row.inBus}
                     </td>)
                   },
                   {
                     label: "Off-Board",
                     component: (row) => (<td style={{ 'font-size': "23px", color: "blue" }}>
-                      <i class="fas fa-level-down-alt"></i> {row.offBus}
+                      <i className="fas fa-level-down-alt"></i> {row.offBus}
                     </td>)
                   },
                   {
@@ -200,11 +200,11 @@ class BasicTable extends React.Component {
                     component: (row) => {
                       if (!row.schedule)
                         return (<td style={{ 'font-size': "23px", color: "red" }}>
-                          <i class="fas fa-bus-alt"></i> {0}
+                          <i className="fas fa-bus-alt"></i> {0}
                         </td>)
 
                       return (<td style={{ 'font-size': "23px", color: "red" }}>
-                        <i class="fas fa-bus-alt"></i> {row.schedule.route.students.length}
+                        <i className="fas fa-bus-alt"></i> {row.schedule.route.students.length}
                       </td>)
                     }
                   },

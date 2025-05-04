@@ -114,10 +114,10 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-6">
-                        <label for="exampleSelect1">Teacher:</label>
+                        <label htmlFor="exampleSelect1">Teacher:</label>
                         <select
                           name="gender"
-                          class="form-control"
+                          className="form-control"
                           id="exampleSelect1"
                           required
                           value={this.state.teacher}

@@ -9,14 +9,14 @@ export default props => {
       // width="100%"
       style={{
         "display": "block",
-        "overflow-x": "auto",
-        "white-space": "nowrap"
+        "overflowX": "auto",
+        "whiteSpace": "nowrap"
       }}
     >
       <thead>
         <tr>
           {props.headers.map(header => {
-            return <th title="Field #0">{header.label}</th>;
+            return <th key={Math.random().toString()}  title="Field #0">{header.label}</th>;
           })}
         </tr>
       </thead>
@@ -25,7 +25,7 @@ export default props => {
           return (
             <tr key={Math.random().toString()}>
               {props.headers.map(header => {
-                return <td>{row[header.key]}</td>;
+                return <td key={header.key}>{row[header.key]}</td>;
               })}
 
               <td

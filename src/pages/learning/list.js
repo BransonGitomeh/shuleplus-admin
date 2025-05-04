@@ -72,6 +72,7 @@ const editOptionModalInstance = new EditOptionModal();
 const deleteOptionModalInstance = new DeleteOptionModal();
 
 class BasicTable extends React.Component {
+  scrollContainerRef = React.createRef();
   state = {
     grades: [],
     gradeToDelete: {},
@@ -306,6 +307,35 @@ class BasicTable extends React.Component {
     await localStorage.setItem("learningState", stateString)
   }
 
+  componentDidUpdate(prevProps, prevState) {
+    // Check if a new column level was likely revealed
+    const gradeSelected = !prevState.selectedGrade && this.state.selectedGrade;
+    const subjectSelected = !prevState.selectedSubject && this.state.selectedSubject;
+    const topicSelected = !prevState.selectedTopic && this.state.selectedTopic;
+    const subtopicSelected = !prevState.selectedSubtopic && this.state.selectedSubtopic;
+    const questionSelected = !prevState.selectedQuestion && this.state.selectedQuestion;
+
+    if (gradeSelected || subjectSelected || topicSelected || subtopicSelected || questionSelected) {
+      this.scrollToEnd();
+    }
+
+    // Optional: Also scroll if data within a level changes significantly,
+    // though scrolling just on new level appearance is usually enough.
+    // Example: if (prevState.filteredSubjects.length === 0 && this.state.filteredSubjects.length > 0) { ... }
+  }
+  // --- Add scrollToEnd method ---
+  scrollToEnd = () => {
+    if (this.scrollContainerRef.current) {
+      // Use smooth scrolling for better UX
+      this.scrollContainerRef.current.scrollTo({
+        left: this.scrollContainerRef.current.scrollWidth, // Scroll to the very end
+        behavior: 'smooth'
+      });
+      // Or instantaneous scroll:
+      // this.scrollContainerRef.current.scrollLeft = this.scrollContainerRef.current.scrollWidth;
+    }
+  }
+
   render() {
     const { gradeToDelete, gradeToEdit, subjectToEdit, subjectToDelete, trip, remove } = this.state;
     const events = trip.events ? trip.events.map(ev => ({ ...ev, name: ev.student ? ev.student.name : '' })) : []
@@ -340,26 +370,31 @@ class BasicTable extends React.Component {
             <EditOptionModal option={this.state.optionToEdit} question={this.state.selectedQuestion} subtopic={this.state.selectedSubtopic} topic={this.state.selectedTopic} subject={this.state.selectedSubject} grade={this.state.selectedGrade} grades={this.state.grades} edit={option => Data.options.update(option)} />
             <DeleteOptionModal option={this.state.optionToDelete} delete={option => Data.options.delete(option)} />
 
-            <div class="kt-portlet__head">
-              <div class="kt-portlet__head-label">
-                <h3 class="kt-portlet__head-title">Student Learning</h3>
+            <div className="kt-portlet__head">
+              <div className="kt-portlet__head-label">
+                <h3 className="kt-portlet__head-title">Student Learning</h3>
               </div>
             </div>
             <div className="kt-portlet__body">
-              <div style={{ minHeight: "500px" }} className="row scrolling-wrapper flex-row flex-nowrap mt-4 pb-4">
+              <div ref={this.scrollContainerRef} style={{
+                minHeight: "800px",
+                overflowX: 'auto',
+                whiteSpace: 'nowrap'
+              }} className="row scrolling-wrapper flex-row flex-nowrap mt-4 pb-4">
                 <div className="col-md-4">
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Grades</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title">Grades</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addGradeModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addGradeModalInstance.show()}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
 
                   </div>
-                  <br></br>
+                  
+                  <div className="kt-portlet__body">
                   <Search title="grades" onSearch={this.onGradeSearch} />
                   <Table
                     headers={[
@@ -394,20 +429,23 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+      </div>
+                 
                 </div>
 
                 {!this.state.selectedGrade ? "" : <div className="col-md-4">
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title"> {this.state.selectedGrade.name} Subjects</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title"> {this.state.selectedGrade.name} Subjects</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addSubjectModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addSubjectModalInstance.show()}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
                   </div>
-                  <br></br>
+                 
+                  <div className="kt-portlet__body">
                   <Search title="subjects" onSearch={this.onSubjectSearch} />
                   <Table
                     headers={[
@@ -440,22 +478,23 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+                  </div>
                 </div>
                 }
 
                 {!this.state.selectedSubject ? "" : <div className="col-md-4">
 
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title"> {this.state.selectedSubject.name} Topics</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title"> {this.state.selectedSubject.name} Topics</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addTopicModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addTopicModalInstance.show()}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
                   </div>
-                  <br></br>
+                  <div className="kt-portlet__body">
                   {this.state.topics.length ? <Search title="topics" onSearch={this.onTopicSearch} /> : ""}
                   <Table
                     headers={[
@@ -486,20 +525,21 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+                  </div>
                 </div>}
 
                 {!this.state.selectedTopic ? "" : <div className="col-md-4">
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">{this.state.selectedTopic.name} Subtopics</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title">{this.state.selectedTopic.name} Subtopics</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addSubtopicModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addSubtopicModalInstance.show()}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
                   </div>
-                  <br></br>
+                  <div className="kt-portlet__body">
                   {this.state.subtopics.length ? <Search title="subtopics" onSearch={this.onSubtopicSearch} /> : ""}
                   <Table
                     headers={[
@@ -528,21 +568,28 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+                  </div>
                 </div>}
 
                 {!this.state.selectedSubtopic ? "" : <div className="col-md-4">
 
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">{this.state.selectedSubtopic.name} Question</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title">{this.state.selectedSubtopic.name} Content</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addQuestionModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addQuestionModalInstance.show({
+                        subtopic: this.state.selectedSubtopic,
+                        topic: this.state.selectedTopic,
+                        subject: this.state.selectedSubject,
+                        grade: this.state.selectedGrade,
+                        grades: this.state.grades
+                      })}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
                   </div>
-                  <br></br>
+                  <div className="kt-portlet__body">
                   {this.state.questions.length ? <Search title="questions" onSearch={this.onQuestionSearch} /> : ""}
                   <Table
                     headers={[
@@ -569,21 +616,23 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+                  </div>
                 </div>}
 
                 {!this.state.selectedQuestion ? "" : <div className="col-md-4">
 
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">{this.state.selectedQuestion.name} Posible Answers</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title">{this.state.selectedQuestion.name} Posible Answers</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" class="btn btn-primary pull-right" onClick={() => addOptionModalInstance.show()}>
-                        <i class="la la-plus-circle"></i> Add
+                      <button type="button" className="btn btn-primary pull-right" onClick={() => addOptionModalInstance.show()}>
+                        <i className="la la-plus-circle"></i> Add
                       </button>
                     </div>
                   </div>
-                  <br></br>
+                  
+                  <div className="kt-portlet__body">
                   {this.state.options.length ? <Search title="options" onSearch={this.onOptionSearch} /> : ""}
                   <Table
                     headers={[
@@ -605,6 +654,7 @@ class BasicTable extends React.Component {
                       });
                     }}
                   />
+                  </div>
                 </div>}
 
               </div>

@@ -119,7 +119,7 @@ class Modal extends React.Component {
 
                         <div className="row">
                           <div className="col-lg-8">
-                            <label for="exampleSelect1">Teacher:</label>
+                            <label htmlFor="exampleSelect1">Teacher:</label>
                             <Select
                               name="driver"
                               value={this.state.setTeacher}
@@ -131,7 +131,7 @@ class Modal extends React.Component {
                             />
                           </div>
                           <div className="col-lg-4">
-                            <label for="exampleSelect1">↓</label>
+                            <label htmlFor="exampleSelect1">↓</label>
                             <br></br>
                             <button
                               className="btn btn-outline-brand"

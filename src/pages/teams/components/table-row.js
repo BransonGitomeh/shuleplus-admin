@@ -11,7 +11,7 @@ class TableRow extends React.Component {
         <tr data-row="0" className="kt-datatable__row kt-datatable__row--hover">
           {this.props.headers.map(header => {
             return (
-              <td style={{ width: "150px" }} className="kt-datatable__cell">
+              <td key={header.key} style={{ width: "150px" }} className="kt-datatable__cell">
                 <span>{this.props.data[header.key]}</span>
               </td>
             );

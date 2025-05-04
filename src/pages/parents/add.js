@@ -159,10 +159,10 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Gender:</label>
+                        <label htmlFor="exampleSelect1">Gender:</label>
                         <select
                           name="route"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.gender}
                           onChange={(e) => this.setState({
@@ -171,7 +171,7 @@ class Modal extends React.Component {
                         >
                           <option value="">Select gender</option>
                           {["MALE", "FEMALE"].map(gender => (
-                            <option value={gender}>{gender}</option>
+                            <option key={gender} value={gender}>{gender}</option>
                           ))}
                         </select>
                       </div>

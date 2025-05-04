@@ -212,10 +212,10 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Route:</label>
+                        <label htmlFor="exampleSelect1">Route:</label>
                         <select
                           name="seats"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.edit.route_name}
                           onChange={(e) => this.setState({
@@ -234,10 +234,10 @@ class Modal extends React.Component {
                         </select>
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Bus:</label>
+                        <label htmlFor="exampleSelect1">Bus:</label>
                         <select
                           name="bus"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.edit.bus_make}
                           onChange={(e) => this.setState({
@@ -256,11 +256,11 @@ class Modal extends React.Component {
                         </select>
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Schedule Type:</label>
+                        <label htmlFor="exampleSelect1">Schedule Type:</label>
                         <select
                           name="type"
                           type="text"
-                          class="form-control"
+                          className="form-control"
                           value={this.state.edit.type}
                           onChange={(e) => this.setState({
                             type: e.target.value
@@ -276,10 +276,10 @@ class Modal extends React.Component {
                       </div>
                       <div className="col-lg-3">
                         <br />
-                        <label for="exampleSelect1">Select Days the route is taken</label>
+                        <label htmlFor="exampleSelect1">Select Days the route is taken</label>
                         <div className="kt-checkbox-list">
                           {this.state.days.map(day => {
-                            return (<label className="kt-checkbox">
+                            return (<label key={day} className="kt-checkbox">
                               <input
                                 type="checkbox"
                                 checked={this.state.edit.days.includes(day)}
@@ -304,11 +304,11 @@ class Modal extends React.Component {
                         </div>
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Driver:</label>
+                        <label htmlFor="exampleSelect1">Driver:</label>
                         <select
                           name="seats"
                           type="text"
-                          class="form-control"
+                          className="form-control"
                           value={this.state.driver}
                           onChange={(e) => this.setState({
                             driver: e.target.value

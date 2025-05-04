@@ -84,9 +84,9 @@ class BasicTable extends React.Component {
                     }}
                   />
 
-                  <div class="kt-portlet__head">
-                    <div class="kt-portlet__head-label">
-                      <h3 class="kt-portlet__head-title">Student CheckList</h3>
+                  <div className="kt-portlet__head">
+                    <div className="kt-portlet__head-label">
+                      <h3 className="kt-portlet__head-title">Student CheckList</h3>
                     </div>
                   </div>
 
@@ -103,7 +103,7 @@ class BasicTable extends React.Component {
                           checked = true
                         }
 
-                        return (<label className="kt-checkbox">
+                        return (<label key={student.id} className="kt-checkbox">
                           <input
                             checked={checked}
                             disabled

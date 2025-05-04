@@ -140,11 +140,11 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-3">
-                        <label for="exampleSelect1">Drivers:</label>
+                        <label htmlFor="exampleSelect1">Drivers:</label>
                         <select
                           name="seats"
                           type="text"
-                          class="form-control"
+                          className="form-control"
                           required
                           value={this.state.driver}
                           onChange={(e) => this.setState({
