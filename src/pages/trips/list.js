@@ -86,10 +86,10 @@ class BasicTable extends React.Component {
       <div className="kt-quick-panel--right kt-demo-panel--right kt-offcanvas-panel--right kt-header--fixed kt-header-mobile--fixed kt-aside--enabled kt-aside--left kt-aside--fixed kt-aside--offcanvas-default kt-page--loading">
         <div className="kt-grid kt-grid--hor kt-grid--root">
           <div className="row">
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat label="All trips" number={this.state.trips.length} />
             </div>
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat
                 label="Running Trips"
                 number={
@@ -99,13 +99,13 @@ class BasicTable extends React.Component {
                 }
               />
             </div>
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat
                 label="Scheduled trips"
                 number={this.state.schedules.length}
               />
             </div>
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat
                 label="Complete trips"
                 number={
@@ -113,7 +113,7 @@ class BasicTable extends React.Component {
                 }
               />
             </div>
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat
                 label="Cancelled trips"
                 number={
@@ -121,7 +121,7 @@ class BasicTable extends React.Component {
                 }
               />
             </div>
-            <div className="col-lg-2 col-xl-2">
+            <div className="col-6 col-md-4 col-lg-2 col-xl-2">
               <Stat label="Students In Bus" number={this.state.students} />
             </div>
           </div>

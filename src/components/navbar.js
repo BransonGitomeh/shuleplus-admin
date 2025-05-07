@@ -303,7 +303,7 @@ class Navbar extends React.Component {
                                          <li className="kt-menu__item" aria-haspopup="true">
                                             <Link to="/finance/topup" className="kt-menu__link">
                                                 <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
-                                                <span className="kt-menu__link-text">Mpesa Top Up</span>
+                                                <span className="kt-menu__link-text">Top Up</span>
                                             </Link>
                                         </li>
                                         <li className="kt-menu__item" aria-haspopup="true">
