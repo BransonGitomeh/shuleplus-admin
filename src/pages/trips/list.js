@@ -164,7 +164,7 @@ class BasicTable extends React.Component {
                     component: (row) => (<td>
                       <i style={{ color: "green" }} className="fas fa-wave-square"></i> {row.schedule ? row.schedule.route.name : ''}
                       <br></br>
-                      <i className="fas fa-user-tie"></i> {row.driver ? row.driver.username : ''}
+                      <i className="fas fa-user-tie"></i> {row.driver ? `${row.driver.names}` : '-'}
                     </td>)
                   },
                   {

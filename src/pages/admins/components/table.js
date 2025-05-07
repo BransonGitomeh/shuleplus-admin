@@ -1,47 +1,48 @@
 import React from "react";
 
-// --- Styles Adjusted ---
+// --- Refined Styles for Subtlety and Auto-Width ---
 
 const tableWrapperStyle = {
   display: "block",         // Allows overflow control
-  width: "100%",            // *** IMPORTANT: Wrapper MUST take full width to know when content overflows ***
+  width: "100%",            // Wrapper takes available width
   overflowX: "auto",        // Enable horizontal scrolling ONLY when content overflows
-  WebkitOverflowScrolling: "touch",
-  // border: "1px solid #e9ecef", // --- REMOVED BORDER ---
-  borderRadius: "0.25rem",     // Keep subtle rounding if desired (often invisible without border/background)
-  marginBottom: "1rem",
+  WebkitOverflowScrolling: "touch", // Smoother scrolling on iOS
+  border: "1px solid #e9ecef",  // Lighter border for the scroll container
+  borderRadius: "0.25rem",     // Subtle rounding
+  marginBottom: "1rem",       // Space below the table container
 };
 
 const tableStyle = {
-  // *** ENSURE NO width: '100%' here ***
-  borderCollapse: "collapse",
-  fontSize: "0.9rem",
-  backgroundColor: "#ffffff", // Keep or remove background as desired
-  // If the table STILL seems too wide, it might be due to wide content (long text, many columns)
-  // or CSS from external stylesheets targeting 'table' or '.table'.
+  // REMOVED width: '100%' - Table now sizes to content
+  borderCollapse: "collapse",   // Cleaner borders
+  fontSize: "0.9rem",           // Keep font size reasonable
+  backgroundColor: "#ffffff",   // White background
+  // Optional: Add a minWidth if you NEVER want it narrower than a certain size
+  // minWidth: '400px',
 };
 
-// ... (Keep other styles: thStyle, tdStyle, actionsCellStyle, etc., as they were)
 const thStyle = {
-  backgroundColor: "#f8f9fa",
-  fontWeight: "500",
-  padding: "0.65rem 0.9rem",
+  backgroundColor: "#f8f9fa", // Very light grey header background
+  fontWeight: "500",         // Slightly less bold header text
+  padding: "0.65rem 0.9rem", // Adjusted padding
   textAlign: "left",
-  borderBottom: "1px solid #dee2e6", // Keep header bottom border for structure
-  whiteSpace: "nowrap",
+  borderBottom: "1px solid #dee2e6", // Standard subtle border below header
+  whiteSpace: "nowrap",      // Essential for horizontal scrolling behavior
   color: "#495057",
+  // textTransform: 'uppercase', // Removed for subtlety
+  // letterSpacing: '0.5px',  // Removed for subtlety
 };
 
 const tdStyle = {
-  padding: "0.65rem 0.9rem",
-  borderBottom: "1px solid #e9ecef", // Keep row separator border
+  padding: "0.65rem 0.9rem",   // Match header padding
+  borderBottom: "1px solid #e9ecef", // Lighter border between rows
   verticalAlign: "middle",
-  whiteSpace: "nowrap",
-  color: '#343a40',
+  whiteSpace: "nowrap",      // Essential for horizontal scrolling behavior
+  color: '#343a40',           // Slightly softer text color
 };
 
 const actionsCellStyle = {
-  ...tdStyle,
+  ...tdStyle,               // Inherit base td styles
   textAlign: "right",
 };
 
@@ -49,7 +50,7 @@ const actionsContainerStyle = {
   display: "flex",
   justifyContent: "flex-end",
   alignItems: "center",
-  gap: "0.5rem",
+  gap: "0.5rem",            // Consistent gap
 };
 
 const iconButtonStyle = {
@@ -58,29 +59,28 @@ const iconButtonStyle = {
   padding: "0.25rem",
   cursor: "pointer",
   lineHeight: 1,
-  color: '#6c757d',
+  color: '#6c757d', // Softer default icon color
 };
 
 const editIconStyle = {
-  color: "#17a2b8",
-  fontSize: "1.1rem",
+  color: "#17a2b8", // Slightly softer teal/info color
+  fontSize: "1.1rem", // Slightly smaller icons
 };
 
 const deleteIconStyle = {
-  color: "#dc3545",
-  fontSize: "1.1rem",
+  color: "#dc3545", // Standard danger red
+  fontSize: "1.1rem", // Slightly smaller icons
 };
 
-const textButtonStyle = {
+const textButtonStyle = { // Style for Invite/Transfer buttons
     padding: '0.2rem 0.5rem',
     fontSize: '0.8rem',
     lineHeight: '1.5',
     borderRadius: '0.2rem',
-    display: 'inline-flex',
+    display: 'inline-flex', // Align icon and text
     alignItems: 'center',
-    gap: '4px',
+    gap: '4px', // Space between icon and text in button
 };
-
 
 // Functional Component
 export default props => {
@@ -103,9 +103,7 @@ export default props => {
 
   // --- Rendering ---
   return (
-    // The wrapper div takes full width to manage scrolling correctly.
-    // The table *inside* sizes to its content due to lack of width: 100% and white-space: nowrap.
-    <div style={tableWrapperStyle}>
+    <div style={tableWrapperStyle}> {/* Scroll wrapper */}
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -114,8 +112,9 @@ export default props => {
                 {header.label}
               </th>
             ))}
+            {/* Add Actions Header conditionally */}
             {showActionsColumn && (
-               <th style={{...thStyle, textAlign: 'right', paddingRight: '0.9rem'}}>Actions</th>
+               <th style={{...thStyle, textAlign: 'right', paddingRight: '0.9rem'}}>Actions</th> // Match padding
             )}
           </tr>
         </thead>
@@ -124,7 +123,7 @@ export default props => {
             <tr>
               <td
                  colSpan={props.headers.length + (showActionsColumn ? 1 : 0)}
-                 style={{...tdStyle, textAlign: 'center', fontStyle: 'italic', color: '#6c757d', padding: '1rem'}}
+                 style={{...tdStyle, textAlign: 'center', fontStyle: 'italic', color: '#6c757d', padding: '1rem'}} // More padding for empty message
               >
                 No data available.
               </td>
@@ -134,13 +133,14 @@ export default props => {
                const rowKey = row.id || `row-${index}`;
 
                return (
-                <tr key={rowKey}> {/* Removed hover style for cleaner example */}
+                <tr key={rowKey} style={{ ':hover': { backgroundColor: '#f8f9fa' }}}> {/* Subtle hover effect can be added via CSS classes */}
                   {props.headers.map(header => (
                     <td key={`${rowKey}-${header.key}`} style={tdStyle}>
-                      {row[header.key] !== undefined && row[header.key] !== null ? String(row[header.key]) : <span style={{color: '#adb5bd'}}>-</span>}
+                      {row[header.key] !== undefined && row[header.key] !== null ? String(row[header.key]) : <span style={{color: '#adb5bd'}}>-</span>} {/* Lighter dash */}
                     </td>
                   ))}
 
+                  {/* --- Actions Cell (Conditional) --- */}
                   {showActionsColumn && (
                      <td style={actionsCellStyle}>
                        <div style={actionsContainerStyle}>
@@ -148,8 +148,8 @@ export default props => {
                             <button
                               title="Edit details"
                               type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md"
-                              style={iconButtonStyle}
+                              className="btn btn-sm btn-clean btn-icon btn-icon-md" // Keep if needed
+                              style={{...iconButtonStyle, /* Specific hover if desired */}}
                               onClick={() => props.edit(row)}
                             >
                               <i style={editIconStyle} className="la la-edit" />
@@ -159,7 +159,7 @@ export default props => {
                             <button
                               title="Delete"
                               type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                              className="btn btn-sm btn-clean btn-icon btn-icon-md" // Keep if needed
                               style={iconButtonStyle}
                               onClick={() => props.delete(row)}
                             >
@@ -170,8 +170,8 @@ export default props => {
                             <button
                               title="Invite User"
                               type="button"
-                              className="btn btn-sm btn-outline-primary"
-                              style={textButtonStyle}
+                              className="btn btn-sm btn-outline-primary" // Bootstrap class
+                              style={textButtonStyle} // Apply consistent text button style
                               onClick={() => props.invite(row)}
                             >
                               <i className="la la-envelope" />
@@ -182,8 +182,8 @@ export default props => {
                             <button
                               title="Transfer Ownership"
                               type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              style={textButtonStyle}
+                              className="btn btn-sm btn-outline-danger" // Bootstrap class
+                              style={textButtonStyle} // Apply consistent text button style
                               onClick={() => props.transfer(row)}
                             >
                               <i className="la la-random" />

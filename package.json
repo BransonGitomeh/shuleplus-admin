@@ -29,7 +29,7 @@
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider npx react-app-rewired start",
     "start": "npx serve -s build -l $PORT",
-    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider npx react-app-rewired build",
+    "build": "cross-env npx react-app-rewired build",
     "test": "cross-env NODE_OPTIONS=--openssl-legacy-provider npx react-app-rewired test",
     "eject": "npx react-scripts eject"
   },
