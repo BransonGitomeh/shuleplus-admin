@@ -4,6 +4,8 @@ exports.handler = async (event) => {
   const path = event.path.replace("/api", ""); // Remove "/api" prefix
   const backendURL = `https://graph-ongyy.kinsta.app${path}`;
 
+  console.log(`[${new Date().toISOString()}] ${event.httpMethod} ${path} -> ${backendURL}`);
+
   try {
     const response = await fetch(backendURL, {
       method: event.httpMethod,
@@ -15,6 +17,7 @@ exports.handler = async (event) => {
     });
 
     const data = await response.text();
+    console.log(`[${new Date().toISOString()}] ${event.httpMethod} ${path} -> ${response.status} ${response.statusText}`);
     return {
       statusCode: response.status,
       body: data,
@@ -24,6 +27,7 @@ exports.handler = async (event) => {
       },
     };
   } catch (error) {
+    console.error(`[${new Date().toISOString()}] ${event.httpMethod} ${path} -> ${error.message}`);
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
