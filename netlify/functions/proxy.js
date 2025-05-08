@@ -2,14 +2,14 @@ const fetch = require("node-fetch");
 
 exports.handler = async (event) => {
   const path = event.path.replace("/api", ""); // Remove "/api" prefix
-  const backendURL = `http://68.183.27.113:4001${path}`;
+  const backendURL = `https://graph-ongyy.kinsta.app${path}`;
 
   try {
     const response = await fetch(backendURL, {
       method: event.httpMethod,
       headers: {
         ...event.headers,
-        host: "68.183.27.113", // Ensure backend receives the correct host header
+        host: "graph-ongyy.kinsta.app", // Ensure backend receives the correct host header
       },
       body: event.body,
     });
