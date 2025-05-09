@@ -73,7 +73,7 @@ class Navbar extends React.Component {
         if (this.profileOffcanvas && typeof this.profileOffcanvas.destroy === 'function') {
             this.profileOffcanvas.destroy();
         }
-        if (this.schoolUpdateHandler) Data.schools.unsubscribe(this.schoolUpdateHandler);
+        // if (this.schoolUpdateHandler) Data.schools.unsubscribe(this.schoolUpdateHandler);
     }
 
     // --- PWA Install Handlers ---

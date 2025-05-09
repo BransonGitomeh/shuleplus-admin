@@ -38,7 +38,7 @@ class Subheader extends React.Component {
             // e.g., this.schoolUpdateSubscription();
             // or Data.schools.unsubscribe(this.handleSchoolUpdate);
              if (typeof Data.schools.unsubscribe === 'function') {
-                Data.schools.unsubscribe(this.handleSchoolUpdate);
+                // Data.schools.unsubscribe(this.handleSchoolUpdate);
             }
         }
     }

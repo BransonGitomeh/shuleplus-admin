@@ -28,7 +28,7 @@ class PaymentsView extends React.Component {
     // Important: Unsubscribe from data changes to prevent memory leaks
     // Assuming Data.payments provides an unsubscribe method
     if (this.paymentSubscription) {
-      this.paymentSubscription.unsubscribe(); // Adjust based on actual API
+      // this.paymentSubscription.unsubscribe(); // Adjust based on actual API
     }
     // Or if it's a simple callback array:
     // Data.payments.unsubscribe(this.handleDataUpdate);
