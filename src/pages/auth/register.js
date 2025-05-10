@@ -33,7 +33,7 @@ const StaffForm = ({ type, onAddStaff, tempStaff, setTempStaff, error }) => {
                     <input type="email" name="email" id={`staffEmail-${type}`} className="form-control form-control-sm" placeholder="Email (Optional)" value={tempStaff.email} onChange={handleChange} />
                 </div>
                 <div className="form-group col-sm-12 col-md-1 mb-2">
-                    <button type="submit" className="btn btn-sm btn-block text-white" style={{ backgroundColor: 'var(--brand-color)' }}>Add</button>
+                    <button type="submit" className="btn btn-sm btn-block text-white" style={{ backgroundColor: 'var(--brand-color-darker)' }}>Add</button>
                 </div>
             </div>
         </form>
@@ -103,51 +103,71 @@ const Register = () => {
         <style>{`
             :root {
                 --brand-color: ${brandColor};
-                --brand-color-darker: rgb(218, 138, 41);
+                --brand-color-darker: rgb(218, 138, 41); /* Darker shade for hovers/accents */
+                --brand-color-lighter: rgb(242, 178, 81); /* Lighter shade */
+                --info-text-color: #fff; /* White text for info panel */
+                --info-text-opacity: 0.9;
             }
             body {
-                background-color: #f4f7f6; /* Light gray page background */
+                background-color: #eef1f5; /* Softer page background */
                 font-family: 'Roboto', 'Segoe UI', sans-serif;
+                line-height: 1.6;
             }
             .register-container {
                 min-height: 100vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 2rem 1rem;
+                padding: 1.5rem; /* Consistent padding */
             }
             .register-card {
                 background-color: #fff;
-                border-radius: 15px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-radius: 12px; /* Slightly softer radius */
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); /* Softer shadow */
                 overflow: hidden;
                 display: flex;
+                flex-direction: column-reverse; /* Info panel on top on mobile */
                 width: 100%;
-                max-width: 1200px; /* Max width for the card */
+                max-width: 1100px; /* Max width for the card */
             }
             .form-panel {
-                padding: 2.5rem 3rem; /* More padding */
-                overflow-y: auto; /* Scroll if content overflows */
-                max-height: 90vh; /* Limit height to allow scrolling */
+                padding: 2rem; 
+                overflow-y: auto; 
+                max-height: 90vh; /* Ensure it doesn't take full viewport height */
             }
             .info-panel {
-                background-color: var(--brand-color);
-                color: white;
-                padding: 3rem;
+                background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-darker) 100%);
+                color: var(--info-text-color);
+                padding: 2.5rem;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
             }
-            .info-panel h1 {
-                font-size: 2.8rem;
+            .text-logo {
+                font-family: 'Poppins', 'Segoe UI', sans-serif; /* A nice font for logo */
+                font-size: 2.2rem;
                 font-weight: 700;
-                margin-bottom: 1.5rem;
-                line-height: 1.2;
+                color: var(--brand-color);
+                margin-bottom: 0; /* Reset margin if used in info panel */
+            }
+            .info-panel .text-logo { /* Specific style for logo in info panel */
+                 color: var(--info-text-color);
+                 margin-bottom: 1.5rem;
+                 text-align: left;
+            }
+
+            .info-panel h1 {
+                font-size: 2.2rem; /* Adjusted for better balance */
+                font-weight: 600;
+                margin-bottom: 1rem;
+                line-height: 1.3;
+                color: var(--info-text-color);
             }
             .info-panel p, .info-panel li {
-                font-size: 1.05rem;
+                font-size: 1rem;
                 line-height: 1.7;
-                opacity: 0.95;
+                opacity: var(--info-text-opacity);
+                color: var(--info-text-color);
             }
             .info-panel ul {
                 list-style-type: none;
@@ -157,17 +177,19 @@ const Register = () => {
                 content: '✓';
                 margin-right: 10px;
                 font-weight: bold;
+                color: var(--brand-color-lighter); /* Lighter checkmark for contrast */
             }
             .form-title {
                 color: var(--brand-color);
                 font-weight: 600;
+                font-size: 1.8rem; /* Slightly smaller for balance */
                 border-bottom: 2px solid var(--brand-color);
                 padding-bottom: 0.5rem;
                 margin-bottom: 1.5rem;
             }
             .form-section-title {
-                color: #444;
-                font-size: 1.2rem;
+                color: #333; /* Darker for better readability */
+                font-size: 1.15rem;
                 font-weight: 500;
                 margin-top: 1.5rem;
                 margin-bottom: 1rem;
@@ -177,9 +199,10 @@ const Register = () => {
                 border-color: var(--brand-color);
                 color: white;
                 font-weight: 500;
-                padding: 0.75rem 1.5rem;
+                padding: 0.65rem 1.25rem; /* Adjusted padding */
+                transition: background-color 0.2s ease-in-out;
             }
-            .btn-brand:hover {
+            .btn-brand:hover, .btn-brand:focus {
                 background-color: var(--brand-color-darker);
                 border-color: var(--brand-color-darker);
                 color: white;
@@ -188,9 +211,10 @@ const Register = () => {
                 color: var(--brand-color);
                 border-color: #dee2e6 #dee2e6 var(--brand-color) !important;
                 font-weight: 500;
+                background-color: #fff; /* Ensure active tab bg is white */
             }
             .nav-tabs .nav-link {
-                color: #6c757d;
+                color: #555; /* Darker inactive tab text */
             }
             .nav-tabs .nav-link:hover {
                 border-color: #e9ecef #e9ecef #dee2e6;
@@ -208,6 +232,57 @@ const Register = () => {
                 border-color: var(--brand-color);
                 box-shadow: 0 0 0 0.2rem rgba(238, 158, 61, 0.25);
             }
+            .alert-danger {
+                background-color: #f8d7da;
+                border-color: #f5c6cb;
+                color: #721c24;
+            }
+            .info-footer {
+                margin-top: auto; /* Pushes footer to bottom */
+                padding-top: 1.5rem; 
+                font-size: 0.85rem; 
+                opacity: 0.8;
+                text-align: center; /* Center footer text */
+            }
+            .info-footer a {
+                color: var(--info-text-color);
+                font-weight: bold;
+                text-decoration: none;
+            }
+            .info-footer a:hover {
+                text-decoration: underline;
+            }
+
+            /* Mobile specific adjustments */
+            @media (max-width: 991.98px) { /* Bootstrap lg breakpoint */
+                .info-panel {
+                    padding: 2rem 1.5rem; /* Less padding on mobile */
+                    text-align: center; /* Center text on mobile */
+                }
+                .info-panel .text-logo {
+                    text-align: center; /* Center logo on mobile */
+                    font-size: 2rem;
+                }
+                .info-panel h1 {
+                    font-size: 1.8rem;
+                }
+                .form-panel {
+                    padding: 1.5rem;
+                    max-height: none; /* Allow full scroll on mobile if needed */
+                }
+                .form-title {
+                    font-size: 1.6rem;
+                }
+                 .register-card {
+                    flex-direction: column; /* Ensure info panel remains on top on mobile */
+                }
+            }
+            @media (min-width: 992px) { /* lg and up */
+                .register-card {
+                    flex-direction: row; /* Side-by-side layout */
+                }
+            }
+
         `}</style>
     );
 
@@ -306,12 +381,11 @@ const Register = () => {
     const renderStep1 = () => (
         <>
             <div className="text-center mb-4">
-                <Link to="/">
-                    <img src="/shulepluslogo.png" alt="Shule Plus Logo" style={{height: '50px', filter: 'brightness(0) invert(1)', mixBlendMode: 'difference' }} />
-                    {/* Assuming you want the logo visible on the form side. Adjust styling as needed */}
+                <Link to="/" className="text-decoration-none">
+                    <h1 className="text-logo">Shule Plus</h1>
                 </Link>
             </div>
-            <h2 className="form-title">Step 1: Register Your School & Admin</h2>
+            <h3 className="form-title">Step 1: Register Your School & Admin</h3>
             <p className="text-muted mb-4">Provide school details and create your administrator account.</p>
             
             <form id="schoolAdminRegisterForm" onSubmit={handleSchoolRegistration} autoComplete="off">
@@ -341,7 +415,7 @@ const Register = () => {
                     <input onChange={(e) => setAdminPassword(e.target.value)} value={adminPassword} className="form-control" type="password" placeholder="Create Password (min. 6 characters)" name="adminPassword" required />
                 </div>
 
-                <button type="submit" className="btn btn-brand btn-block mt-4" disabled={loading}>
+                <button type="submit" className="btn btn-brand btn-block btn-lg mt-4" disabled={loading}>
                     {loading ? "Registering..." : "Register & Proceed to Invite Staff"}
                 </button>
             </form>
@@ -353,7 +427,12 @@ const Register = () => {
 
     const renderStep2 = () => (
         <>
-            <h2 className="form-title">Step 2: Invite Your Team (Optional)</h2>
+         <div className="text-center mb-4">
+                <Link to="/" className="text-decoration-none">
+                    <h1 className="text-logo">Shule Plus</h1>
+                </Link>
+            </div>
+            <h3 className="form-title">Step 2: Invite Your Team (Optional)</h3>
             <p className="text-muted mb-3">Add key personnel for School ID: <strong>{createdSchoolId}</strong>. You can skip this and add them later.</p>
 
             {error && <div className="alert alert-danger">{error}</div>}
@@ -370,7 +449,6 @@ const Register = () => {
                 </li>
             </ul>
 
-            {/* Render StaffForm and StaffTable based on activeStaffTab */}
             {activeStaffTab === 'drivers' && (
                 <>
                     <StaffForm type="Driver" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} />
@@ -390,13 +468,12 @@ const Register = () => {
                 </>
             )}
 
-
-            <div className="d-flex justify-content-between mt-4">
-                <button className="btn btn-outline-secondary" onClick={() => proceedToDashboard(false)} disabled={loading}>
+            <div className="d-flex flex-column flex-sm-row justify-content-between mt-4">
+                <button className="btn btn-outline-secondary mb-2 mb-sm-0" onClick={() => proceedToDashboard(false)} disabled={loading}>
                     {loading ? "Processing..." : "Skip & Go to Dashboard"}
                 </button>
                 <button className="btn btn-brand" onClick={() => proceedToDashboard(true)} disabled={loading}>
-                    {loading ? "Inviting..." : "Invite Added Staff & Go to Dashboard"}
+                    {loading ? "Inviting..." : "Invite & Go to Dashboard"}
                 </button>
             </div>
             <div className="mt-3">
@@ -412,13 +489,13 @@ const Register = () => {
             <CustomStyles />
             <div className="register-container">
                 <div className="register-card">
-                    <div className="col-lg-7 form-panel"> {/* Form Panel (Left) */}
+                    {/* Order of panels is now controlled by flex-direction in CSS for mobile */}
+                    <div className="col-lg-7 form-panel order-lg-1"> {/* Form Panel (Left on Desktop) */}
                         {currentStep === 1 ? renderStep1() : renderStep2()}
                     </div>
-                    <div className="col-lg-5 info-panel d-none d-lg-flex"> {/* Info Panel (Right) - Hidden on smaller screens */}
+                    <div className="col-lg-5 info-panel order-lg-2" style={{color: 'black'}}> {/* Info Panel (Right on Desktop) */}
                         <div>
-                             {/* <img src="res/mipmap-xhdpi/ic_launcher.png" alt="Shule Plus Logo" style={{height: '60px', marginBottom: '2rem'}} /> */}
-                             {/* Replace /shulepluslogo.png with your actual logo path */}
+                             <h1 className="text-logo">Shule Plus</h1>
                             <h1>The Ultimate Platform for Learning & Learner Management.</h1>
                             <p className="mb-4">Join Shule Plus today and transform your school's operations. Get started instantly—it's free, with no payment required upfront!</p>
                             <ul className="mb-4">
@@ -428,11 +505,11 @@ const Register = () => {
                                 <li>Seamless Parent-School Communication</li>
                                 <li>Powerful Reporting & Analytics</li>
                             </ul>
-                            <p><strong>Ready to elevate your school?</strong> Complete the simple steps on the left to gain immediate access to your powerful Shule Plus dashboard.</p>
-                            <div style={{marginTop: 'auto', paddingTop: '20px', fontSize: '0.9em', opacity: 0.8}}>
+                            <p><strong>Ready to elevate your school?</strong> Complete the simple steps to gain immediate access to your powerful Shule Plus dashboard.</p>
+                            <div className="info-footer" style={{color: 'black'}}>
                                 © {new Date().getFullYear()} Shule Plus. All Rights Reserved.
                                 <br/>
-                                Need help? <a href="mailto:shuleplusadmin@gmail.com" style={{color: 'white', fontWeight: 'bold'}}>Contact Support</a>
+                                Need help? <a href="mailto:shuleplusadmin@gmail.com">Contact Support</a>
                             </div>
                         </div>
                     </div>
