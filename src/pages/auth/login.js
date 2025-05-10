@@ -1,5 +1,5 @@
 import React from "react";
-import './login.css';
+import './login.css'; // Assuming this contains necessary base styles for kt- classes if not covered by Bootstrap
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { API } from "../../utils/requests"; // Ensure API points to your base URL
@@ -9,236 +9,169 @@ import Data from "../../utils/data";
 const toastr = window.toastr;
 
 // Keep toastr options as they are
-toastr.options = {
-    closeButton: true,
-    debug: false,
-    newestOnTop: false,
-    progressBar: false,
-    positionClass: "toast-bottom-right",
-    preventDuplicates: false,
-    onclick: null,
-    showDuration: "300",
-    hideDuration: "1000",
-    timeOut: "5000",
-    extendedTimeOut: "1000",
-    showEasing: "swing",
-    hideEasing: "linear",
-    showMethod: "fadeIn",
-    hideMethod: "fadeOut"
-};
+if (toastr) {
+    toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: false,
+        progressBar: true, // Enabled for better feedback
+        positionClass: "toast-bottom-right",
+        preventDuplicates: false,
+        onclick: null,
+        showDuration: "300",
+        hideDuration: "1000",
+        timeOut: "5000",
+        extendedTimeOut: "1000",
+        showEasing: "swing",
+        hideEasing: "linear",
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut"
+    };
+} else {
+    console.warn("Toastr not found. Notifications will not be displayed.");
+}
 
-// Basic phone number regex (adjust if needed for specific country codes/formats)
-// This one is simpler: starts with optional +, then digits, minimum ~7 digits
+
 const PHONE_REGEX = /^\+?\d{7,}$/;
-// More specific Kenyan-like format (if you need it)
-// const PHONE_REGEX_KENYA = /^(\+?254|0)?(7(?:(?:[0-9][0-9])|(?:[4][0-1]))[0-9]{6})$/;
 
 class Login extends React.Component {
     state = {
-        user: "", // Can be username, email, or phone number
-        password: "", // Only for password login
-        otpCode: "", // Only for OTP code input
-        showOtpInput: false, // Controls visibility of OTP input field
-        isOtpSent: false, // Tracks if OTP send request was successful
-        userInputLooksLikePhone: false, // Flag based on user input format
-        isLoading: false, // General loading state for API calls
-        error: "" // Error message display
+        user: "",
+        password: "",
+        otpCode: "",
+        showOtpInput: false,
+        isOtpSent: false,
+        userInputLooksLikePhone: false,
+        isLoading: false,
+        error: ""
     };
 
-    validator = null; // To hold the jQuery validator instance
+    validator = null;
 
     componentDidMount() {
-        // Redirect if already logged in
         if (localStorage.getItem("authorization")) {
-            return this.props.history.push({
-                pathname: '/trips/all' // Adjust redirect path if necessary
-            });
+            return this.props.history.push({ pathname: '/trips/all' });
         }
-
-        // Initialize jQuery Validator if $ is available
         if (window.$ && window.$.fn.validate) {
             this.setupValidator();
         } else {
-            console.error("jQuery or jQuery Validate not found. Form validation might not work as expected.");
+            console.error("jQuery or jQuery Validate not found.");
         }
     }
 
     componentWillUnmount() {
-        // Clean up validator if it exists
         if (this.validator) {
             this.validator.destroy();
         }
     }
 
     setupValidator = () => {
-        const _this = this; // Capture component instance
-
-        // Delay setup slightly if needed to ensure DOM is ready
+        const _this = this;
         setTimeout(() => {
-            if (!window.$("#login").length) {
+            if (!window.$("#loginForm").length) { // Changed ID to loginForm
                 console.warn("Login form not found for validation setup.");
                 return;
             }
-
-            this.validator = window.$("#login").validate({
-                errorClass: "invalid-feedback",
+            this.validator = window.$("#loginForm").validate({ // Changed ID
+                errorClass: "is-invalid", // Bootstrap class for invalid
+                validClass: "is-valid",   // Bootstrap class for valid
                 errorElement: "div",
-
+                errorPlacement: function(error, element) { // Custom placement for Bootstrap
+                    error.addClass("invalid-feedback");
+                    if (element.parent(".input-group").length) {
+                         error.insertAfter(element.parent(".input-group"));
+                    } else {
+                         error.insertAfter(element);
+                    }
+                },
                 highlight: function (element) {
-                    window.$(element).addClass("is-invalid");
+                    window.$(element).addClass("is-invalid").removeClass("is-valid");
                 },
-
                 unhighlight: function (element) {
-                    window.$(element).removeClass("is-invalid");
+                    window.$(element).removeClass("is-invalid").addClass("is-valid");
                 },
-
-                // Custom submit handler based on login mode (OTP or Password)
                 submitHandler: (form, event) => {
                     event.preventDefault();
-                    if (this.state.isLoading) return; // Prevent double submit
-
+                    if (this.state.isLoading) return;
                     if (this.state.showOtpInput) {
-                        // If OTP input is visible, we are verifying OTP
                         this.handleVerifyOtp();
                     } else {
-                        // Otherwise, we are attempting password login
                         this.handlePasswordLogin();
                     }
                 },
-                // Define rules - adjust required based on visible fields
                 rules: {
-                    username: {
-                        required: true
-                    },
-                    password: {
-                        // Only required if OTP input is NOT visible
-                        required: () => !this.state.showOtpInput
-                    },
+                    username: { required: true },
+                    password: { required: () => !this.state.showOtpInput },
                     otpCode: {
-                        // Only required if OTP input IS visible
                         required: () => this.state.showOtpInput,
-                        digits: true, // Assuming OTP is numeric
-                        minlength: 5, // Assuming 5 digits, adjust if needed
-                        maxlength: 5 // Assuming 5 digits, adjust if needed
+                        digits: true,
+                        minlength: 5,
+                        maxlength: 5
                     }
                 },
                 messages: {
                     username: "Please enter your username, email, or phone number",
-                    password: {
-                        required: "Please enter your password"
-                    },
+                    password: { required: "Please enter your password" },
                     otpCode: {
-                        required: "Please enter the OTP code sent to your phone",
-                        digits: "OTP must contain only digits",
-                        minlength: "OTP must be {0} digits long",
-                        maxlength: "OTP must be {0} digits long"
+                        required: "Please enter the OTP code",
+                        digits: "OTP must be digits",
+                        minlength: "OTP must be {0} digits",
+                        maxlength: "OTP must be {0} digits"
                     }
                 }
             });
-        }, 0); // Small delay
+        }, 100); // Increased delay slightly for DOM readiness
     }
 
-    // Handles changes in the 'user' input field
     handleUserInputChange = (e) => {
         const value = e.target.value;
-        const looksLikePhone = PHONE_REGEX.test(value); // Test against the regex
-
-        this.setState({
-            user: value,
-            userInputLooksLikePhone: looksLikePhone,
-            error: "" // Clear error on input change
-        });
-
-        // If input no longer looks like phone, maybe reset OTP state? Optional.
-        // if (!looksLikePhone && this.state.showOtpInput) {
-        //     this.resetToPasswordMode();
-        // }
+        const looksLikePhone = PHONE_REGEX.test(value);
+        this.setState({ user: value, userInputLooksLikePhone: looksLikePhone, error: "" });
     };
 
-    // Handles changes in the 'password' input field
     handlePasswordChange = (e) => {
         this.setState({ password: e.target.value, error: "" });
     };
 
-    // Handles changes in the 'otpCode' input field
     handleOtpCodeChange = (e) => {
-        const value = e.target.value.replace(/[^0-9]/g, ''); // Allow only digits
-        if (value.length <= 5) { // Assuming 5 digit OTP
+        const value = e.target.value.replace(/[^0-9]/g, '');
+        if (value.length <= 5) {
              this.setState({ otpCode: value, error: "" });
         }
     };
 
-    // --- API Call Handlers ---
-
-    // Attempt password login
     handlePasswordLogin = async () => {
         const { user, password } = this.state;
-
         if (!user || !password) {
             this.setState({ error: "Username/Email and Password are required." });
             return;
         }
-
         this.setState({ isLoading: true, error: "" });
-
         try {
-            const res = await axios.post(`${API}/auth/login`, {
-                user,
-                password,
-            });
-
-            const { token, data: userData } = res.data; // Assuming 'user' instead of 'data' based on mobile code
-
-            if (!token || !userData) {
-               throw new Error("Invalid response from server during login.");
-            }
-
-            this.handleLoginSuccess(token,  userData);
-
+            const res = await axios.post(`${API}/auth/login`, { user, password });
+            const { token, data: userData } = res.data;
+            if (!token || !userData) throw new Error("Invalid response from server.");
+            this.handleLoginSuccess(token, userData);
         } catch (err) {
-            console.error("Password Login Error:", err);
-            const errorMsg = err.response?.data?.message || err.message || "Login failed. Please check your credentials.";
+            const errorMsg = err.response?.data?.message || err.message || "Login failed. Check credentials.";
             this.setState({ error: errorMsg, isLoading: false });
-            toastr.error("Login Failed", errorMsg);
-
-             // OPTIONAL: Check if error suggests OTP is required for this user type
-             // Example: if (err.response?.data?.code === 'OTP_REQUIRED_FOR_USER') {
-             //    // Automatically switch to OTP mode? Or just guide the user?
-             //    // For now, just show the error and let them click "Send OTP" if available.
-             // }
+            toastr && toastr.error("Login Failed", errorMsg);
         }
     };
 
-    // Request OTP code to be sent
     handleSendOtp = async () => {
         const { user } = this.state;
-
         if (!user || !PHONE_REGEX.test(user)) {
-            this.setState({ error: "Please enter a valid phone number to receive an OTP." });
-            toastr.warning("Invalid Input", "Please enter a valid phone number.");
+            this.setState({ error: "Please enter a valid phone number for OTP." });
+            toastr && toastr.warning("Invalid Input", "Please enter a valid phone number.");
             return;
         }
-
         this.setState({ isLoading: true, error: "" });
-
         try {
-            // Use the endpoint matching the mobile app
-            const res = await axios.post(`${API}/auth/otp/send`, {
-                user: user // Server expects 'user' field with the phone number
-            });
-
-            // Check for a success indicator from the server
-            // Adjust based on your actual API response structure
-            if (res.data && (res.data.success || res.status === 200 || res.status === 201) ) {
-                toastr.success("OTP Sent", "Verification code has been sent to your phone.");
-                this.setState({
-                    showOtpInput: true, // Show the OTP input field
-                    isOtpSent: true,    // Mark OTP as sent
-                    isLoading: false,
-                    password: "",       // Clear password field if user switches mode
-                    otpCode: "",        // Clear any previous OTP code
-                });
-                // Focus OTP input after a short delay
+            const res = await axios.post(`${API}/auth/otp/send`, { user });
+            if (res.data && (res.data.success || res.status < 300)) {
+                toastr && toastr.success("OTP Sent", "Verification code sent to your phone.");
+                this.setState({ showOtpInput: true, isOtpSent: true, isLoading: false, password: "", otpCode: "" });
                 setTimeout(() => {
                     const otpInput = document.getElementById("otpCodeInput");
                     if (otpInput) otpInput.focus();
@@ -246,243 +179,337 @@ class Login extends React.Component {
             } else {
                 throw new Error(res.data?.message || "Failed to send OTP code.");
             }
-
         } catch (err) {
-            console.error("Send OTP Error:", err);
-            const errorMsg = err.response?.data?.message || err.message || "Could not send OTP. Please try again.";
-            this.setState({
-                error: errorMsg,
-                isLoading: false,
-                isOtpSent: false,
-                showOtpInput: false // Stay in password mode or reset if send failed
-            });
-            toastr.error("OTP Send Failed", errorMsg);
+            const errorMsg = err.response?.data?.message || err.message || "Could not send OTP.";
+            this.setState({ error: errorMsg, isLoading: false, isOtpSent: false, showOtpInput: false });
+            toastr && toastr.error("OTP Send Failed", errorMsg);
         }
     };
 
-    // Verify the entered OTP code
     handleVerifyOtp = async () => {
         const { user, otpCode } = this.state;
-
-        if (!user || !otpCode || otpCode.length !== 5) { // Assuming 5 digits
+        if (!user || !otpCode || otpCode.length !== 5) {
             this.setState({ error: "Please enter the 5-digit OTP code." });
-             toastr.warning("Invalid OTP", "Please enter the 5-digit OTP code.");
+            toastr && toastr.warning("Invalid OTP", "Please enter the 5-digit OTP code.");
             return;
         }
-
         this.setState({ isLoading: true, error: "" });
-
         try {
-            // Use the endpoint matching the mobile app
-            const res = await axios.post(`${API}/auth/verify/sms`, {
-                user: user,       // Phone number
-                password: otpCode // Server expects OTP in 'password' field for this endpoint
-            });
-
-            const { token, user: userData } = res.data; // Adjust if structure is different
-
-            if (!token || !userData) {
-                 throw new Error("Invalid response from server during OTP verification.");
-            }
-
-            toastr.success("Verification Successful", "You are now logged in.");
-            // Delay login success slightly to let user see the success message
-            setTimeout(() => {
-                 this.handleLoginSuccess(token, userData);
-            }, 1500);
-
-
+            const res = await axios.post(`${API}/auth/verify/sms`, { user, password: otpCode });
+            const { token, user: userData } = res.data;
+            if (!token || !userData) throw new Error("Invalid response from server.");
+            toastr && toastr.success("Verification Successful!", "You are now logged in.");
+            setTimeout(() => this.handleLoginSuccess(token, userData), 1000);
         } catch (err) {
-            console.error("OTP Verification Error:", err);
-            const errorMsg = err.response?.data?.message || err.message || "OTP verification failed. Invalid code or expired.";
+            const errorMsg = err.response?.data?.message || err.message || "OTP verification failed.";
             this.setState({ error: errorMsg, isLoading: false });
-             toastr.error("OTP Verification Failed", errorMsg);
-             // Keep OTP input visible for retry
-             // Optionally add a Resend OTP button/logic here
+            toastr && toastr.error("OTP Verification Failed", errorMsg);
         }
     };
 
-    // Common logic after successful login (Password or OTP)
     handleLoginSuccess = (token, userData) => {
-        console.log(token, userData)
         localStorage.setItem("authorization", token);
         localStorage.setItem("user", JSON.stringify(userData));
-
-        Data.init(); // Initialize any app data needed after login
-
-        // Navigate to the dashboard/main page
-        this.props.history.push({
-            pathname: '/trips/all' // Adjust redirect path if necessary
-        });
-
-        // Reset state in case component isn't unmounted immediately (though redirect should handle it)
-        this.setState({
-            user: "", password: "", otpCode: "", showOtpInput: false,
-            isOtpSent: false, userInputLooksLikePhone: false, isLoading: false, error: ""
-        });
+        Data.init();
+        this.props.history.push({ pathname: '/trips/all' });
+        this.setState({ user: "", password: "", otpCode: "", showOtpInput: false, isOtpSent: false, userInputLooksLikePhone: false, isLoading: false, error: "" });
     };
 
-    // Helper to reset state back to password mode if needed
     resetToPasswordMode = () => {
-        this.setState({
-            showOtpInput: false,
-            isOtpSent: false,
-            otpCode: "",
-            error: "" // Clear specific OTP errors
-        });
+        this.setState({ showOtpInput: false, isOtpSent: false, otpCode: "", error: "" });
     }
+
+    // CSS for branding and layout enhancements
+    CustomStyles = () => {
+        const brandColor = "rgb(238, 158, 61)";
+        return (
+        <style>{`
+            :root {
+                --brand-color: ${brandColor};
+                --brand-color-darker: rgb(218, 138, 41);
+                --brand-color-lighter: rgb(242, 178, 81);
+                --info-text-color: #fff;
+                --info-text-opacity: 0.9;
+            }
+            body {
+                background-color: #eef1f5;
+                font-family: 'Roboto', 'Segoe UI', sans-serif;
+                line-height: 1.6;
+            }
+            .login-page-container { /* Changed class name */
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 1.5rem;
+            }
+            .login-card { /* Changed class name */
+                background-color: #fff;
+                border-radius: 12px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column-reverse; /* Info panel on top on mobile */
+                width: 100%;
+                max-width: 900px; /* Adjusted max width for login */
+            }
+            .login-form-panel { /* Changed class name */
+                padding: 2rem; 
+            }
+            .login-info-panel { /* Changed class name */
+                background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-darker) 100%);
+                color: var(--info-text-color);
+                padding: 2.5rem;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                min-height: 300px; /* Ensure some height on mobile */
+            }
+            .text-logo {
+                font-family: 'Poppins', 'Segoe UI', sans-serif;
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: var(--brand-color);
+                margin-bottom: 0;
+            }
+            .login-info-panel .text-logo {
+                 color: var(--info-text-color);
+                 margin-bottom: 1.5rem;
+                 text-align: left;
+            }
+            .login-info-panel h1 {
+                font-size: 2rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                line-height: 1.3;
+                color: var(--info-text-color);
+            }
+            .login-info-panel p {
+                font-size: 1rem;
+                line-height: 1.7;
+                opacity: var(--info-text-opacity);
+                color: var(--info-text-color);
+            }
+            .login-form-title { /* Changed class name */
+                color: var(--brand-color);
+                font-weight: 600;
+                font-size: 1.8rem;
+                padding-bottom: 0.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .btn-brand {
+                background-color: var(--brand-color);
+                border-color: var(--brand-color);
+                color: white;
+                font-weight: 500;
+                padding: 0.65rem 1.25rem;
+                transition: background-color 0.2s ease-in-out;
+            }
+            .btn-brand:hover, .btn-brand:focus {
+                background-color: var(--brand-color-darker);
+                border-color: var(--brand-color-darker);
+                color: white;
+            }
+            .kt-link { /* Keep kt-link for consistency if used elsewhere */
+                color: var(--brand-color);
+                font-weight: 500;
+            }
+            .kt-link:hover {
+                color: var(--brand-color-darker);
+                text-decoration: underline;
+            }
+            .form-control:focus {
+                border-color: var(--brand-color);
+                box-shadow: 0 0 0 0.2rem rgba(238, 158, 61, 0.25);
+            }
+            .login-info-footer { /* Changed class name */
+                margin-top: auto;
+                padding-top: 1.5rem; 
+                font-size: 0.85rem; 
+                opacity: 0.8;
+                text-align: center;
+            }
+            .login-info-footer a {
+                color: var(--info-text-color);
+                font-weight: bold;
+                text-decoration: none;
+            }
+            .btn-otp-send {
+                border-left: none;
+                border-color: #ced4da; /* Match default bootstrap input border */
+                background-color: #e9ecef; /* Light grey for distinction */
+                color: #495057;
+                font-size: 0.875rem;
+            }
+            .btn-otp-send:hover {
+                background-color: #dde2e6;
+            }
+            .input-group > .form-control:not(:last-child) { /* Ensure no rounded corners on left for OTP button */
+                 border-top-right-radius: 0;
+                 border-bottom-right-radius: 0;
+            }
+            .input-group > .input-group-append > .btn {
+                 border-top-left-radius: 0;
+                 border-bottom-left-radius: 0;
+            }
+
+            /* Mobile specific adjustments */
+            @media (max-width: 991.98px) {
+                .login-info-panel { padding: 2rem 1.5rem; text-align: center; }
+                .login-info-panel .text-logo { text-align: center; font-size: 2rem; }
+                .login-info-panel h1 { font-size: 1.8rem; }
+                .login-form-panel { padding: 1.5rem; }
+                .login-form-title { font-size: 1.6rem; }
+                 .login-card { flex-direction: column; }
+            }
+            @media (min-width: 992px) { /* lg and up */
+                .login-card { flex-direction: row; }
+            }
+        `}</style>
+        );
+    }
+
 
     render() {
         const { user, password, otpCode, showOtpInput, userInputLooksLikePhone, isLoading, error } = this.state;
 
         return (
-            <div>
-                {/* Outer structure remains the same */}
-                <div className="kt-grid kt-grid--ver kt-grid--root">
-                    <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor kt-login-v2" id="kt_login_v2">
-                        <div className="kt-grid__item kt-grid  kt-grid--ver  kt-grid__item--fluid">
-                            <div className="kt-login-v2__body">
-                                <div className="kt-login-v2__wrapper">
-                                    <div className="kt-login-v2__container" style={{ "marginTop": "15vh" }}> {/* Adjusted margin slightly */}
-                                        <img
-                                            className="text-center row mx-auto justify-content-center align-items-center flex-column"
-                                            src="designs/bus_logo.png" // Make sure this path is correct relative to public/ folder
-                                            style={{ "marginTop": "5vh", marginBottom: '2rem' }} // Added bottom margin
-                                            width="25%" // Adjusted width
-                                            alt="Logo"
+            <>
+                <this.CustomStyles />
+                <div className="login-page-container">
+                    <div className="login-card">
+                        <div className="col-lg-7 login-form-panel order-lg-2"> {/* Form on Right on Desktop */}
+                            <div className="text-center mb-4">
+                                <Link to="/" className="text-decoration-none">
+                                    <h1 className="text-logo">Shule Plus</h1>
+                                </Link>
+                            </div>
+                            <h3 className="login-form-title text-center">Sign In To Your Account</h3>
+                            
+                            <form id="loginForm" onSubmit={(e) => e.preventDefault()} autoComplete="off">
+                                {error && (
+                                    <div className="alert alert-danger text-center" role="alert">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <div className="form-group">
+                                    <label htmlFor="username">Username, Email, or Phone</label>
+                                    <div className="input-group">
+                                        <input
+                                            value={user}
+                                            onChange={this.handleUserInputChange}
+                                            className="form-control"
+                                            type="text"
+                                            id="username"
+                                            placeholder="Enter here"
+                                            name="username"
+                                            autoComplete="username"
+                                            required
+                                            disabled={isLoading}
                                         />
-
-                                        <div className="kt-login-v2__title">
-                                            <h3>Sign in to your account</h3>
-                                        </div>
-
-                                        {/* Use React's onSubmit, let jQuery validator handle prevention */}
-                                        <form id="login" className="kt-login-v2__form kt-form" onSubmit={(e) => e.preventDefault()} autoComplete="off">
-                                            {error ? (
-                                                <div className="alert alert-danger" role="alert"> {/* Added role */}
-                                                    <div className="alert-text">{error}</div>
-                                                </div>
-                                            ) : null}
-
-                                            {/* User Input (Username/Email/Phone) */}
-                                            <div className="form-group">
-                                                <div className="input-group">
-                                                    <input
-                                                        value={user}
-                                                        onChange={this.handleUserInputChange}
-                                                        className="form-control"
-                                                        type="text"
-                                                        placeholder="Username, Email, or Phone Number"
-                                                        name="username" // Name required by jQuery Validate
-                                                        autoComplete="off"
-                                                        required={true} // HTML5 required
-                                                        disabled={isLoading}
-                                                        aria-label="Username, Email, or Phone Number" // Accessibility
-                                                        style={{paddingRight:"10px"}}
-                                                    />
-                                                    {/* Conditionally show "Send OTP" button */}
-                                                    {userInputLooksLikePhone && !showOtpInput && (
-                                                        <div className="input-group-append">
-                                                            <button
-                                                                type="button"
-                                                                onClick={this.handleSendOtp}
-                                                                className="btn btn-outline-secondary btn-sm" // Adjusted style
-                                                                disabled={isLoading || !user} // Disable if loading or no user input
-                                                                style={{ lineHeight: 'normal', height: 'calc(2.25rem + 2px)' }} // Align height
-                                                            >
-                                                                {isLoading ? 'Sending...' : 'Send OTP'}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {/* Let validator handle error display */}
-                                            </div>
-
-                                            {/* Password Input OR OTP Input */}
-                                            {!showOtpInput ? (
-                                                <div className="form-group">
-                                                    <input
-                                                        value={password}
-                                                        onChange={this.handlePasswordChange}
-                                                        className="form-control"
-                                                        type="password"
-                                                        placeholder="Password"
-                                                        name="password" // Name required by jQuery Validate
-                                                        autoComplete="current-password"
-                                                        required={true} // HTML5 required
-                                                        disabled={isLoading}
-                                                        aria-label="Password" // Accessibility
-                                                    />
-                                                     {/* Let validator handle error display */}
-                                                </div>
-                                            ) : (
-                                                <div className="form-group">
-                                                    <input
-                                                        id="otpCodeInput" // Added ID for focus()
-                                                        value={otpCode}
-                                                        onChange={this.handleOtpCodeChange}
-                                                        className="form-control"
-                                                        type="text" // Use text to allow seeing input, or "tel"
-                                                        placeholder="Enter 5-Digit OTP Code"
-                                                        name="otpCode" // Name required by jQuery Validate
-                                                        autoComplete="one-time-code"
-                                                        required={true} // HTML5 required
-                                                        disabled={isLoading}
-                                                        maxLength={5} // Limit input length
-                                                        pattern="\d{5}" // Basic pattern validation
-                                                        inputMode="numeric" // Hint for numeric keyboard
-                                                        aria-label="OTP Verification Code" // Accessibility
-                                                    />
-                                                     {/* Let validator handle error display */}
-                                                </div>
-                                            )}
-
-                                            {/* Action Buttons */}
-                                            <div className="kt-login-v2__actions">
-                                                {!showOtpInput && (
-                                                    <Link to="/recover" className="kt-link kt-link--brand">
-                                                        Forgot Password?
-                                                    </Link>
-                                                )}
-                                                {/* Back to password mode button (optional) */}
-                                                {showOtpInput && (
-                                                     <button
-                                                        type="button"
-                                                        onClick={this.resetToPasswordMode}
-                                                        className="kt-link kt-link--brand" // Style as a link
-                                                        disabled={isLoading}
-                                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                                                    >
-                                                        Use Password Instead?
-                                                    </button>
-                                                )}
-
-                                                {/* Main Submit Button (handled by validator's submitHandler) */}
+                                        {userInputLooksLikePhone && !showOtpInput && (
+                                            <div className="input-group-append">
                                                 <button
-                                                    type="submit" // Let validator trigger submitHandler
-                                                    className="btn btn-brand btn-elevate btn-pill btn-sm"
-                                                    disabled={isLoading}
+                                                    type="button"
+                                                    onClick={this.handleSendOtp}
+                                                    className="btn btn-otp-send"
+                                                    disabled={isLoading || !user}
                                                 >
-                                                    {isLoading ? (
-                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                    ) : (
-                                                        showOtpInput ? 'Verify OTP' : 'Sign In'
-                                                    )}
+                                                    {isLoading && this.state.user === user ? 'Sending...' : 'Send OTP'}
                                                 </button>
                                             </div>
-                                        </form>
-                                        {/* Social logins removed as per focus */}
+                                        )}
                                     </div>
+                                </div>
+
+                                {!showOtpInput ? (
+                                    <div className="form-group">
+                                        <label htmlFor="password">Password</label>
+                                        <input
+                                            value={password}
+                                            onChange={this.handlePasswordChange}
+                                            className="form-control"
+                                            type="password"
+                                            id="password"
+                                            placeholder="Enter your password"
+                                            name="password"
+                                            autoComplete="current-password"
+                                            required={!showOtpInput}
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="form-group">
+                                        <label htmlFor="otpCodeInput">Enter 5-Digit OTP Code</label>
+                                        <input
+                                            id="otpCodeInput"
+                                            value={otpCode}
+                                            onChange={this.handleOtpCodeChange}
+                                            className="form-control"
+                                            type="text"
+                                            placeholder="XXXXX"
+                                            name="otpCode"
+                                            autoComplete="one-time-code"
+                                            required={showOtpInput}
+                                            disabled={isLoading}
+                                            maxLength={5}
+                                            pattern="\d{5}"
+                                            inputMode="numeric"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="d-flex justify-content-between align-items-center mt-3 mb-4">
+                                    {!showOtpInput ? (
+                                        <Link to="/recover" className="kt-link">Forgot Password?</Link>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={this.resetToPasswordMode}
+                                            className="btn btn-link kt-link p-0"
+                                            disabled={isLoading}
+                                        >
+                                            Use Password Instead?
+                                        </button>
+                                    )}
+                                </div>
+                                
+                                <button
+                                    type="submit"
+                                    className="btn btn-brand btn-block btn-lg"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    ) : (showOtpInput ? 'Verify OTP' : 'Sign In')}
+                                </button>
+                                 <div className="mt-4 text-center">
+                                    Don't have an account? <Link to="/register" className="kt-link">Register Here</Link>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="col-lg-5 login-info-panel order-lg-1"> {/* Info on Left on Desktop */}
+                            <div>
+                                <h1 className="text-logo">Shule Plus</h1>
+                                <h1>Welcome Back!</h1>
+                                <p className="mb-4">
+                                    Access your school's dashboard to manage learning, transportation, and communication seamlessly.
+                                </p>
+                                <p>
+                                    Shule Plus empowers educators and administrators with the tools they need for a smarter, more efficient school environment.
+                                </p>
+                                 <div className="login-info-footer">
+                                    © {new Date().getFullYear()} Shule Plus. All Rights Reserved.
+                                    <br/>
+                                    Need help? <a href="mailto:shuleplusadmin@gmail.com">Contact Support</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {/* Sidebar remains the same */}
-                <div className="kt-aside kt-aside--fixed " id="kt_aside">
-                    {/* ... (keep existing sidebar structure) ... */}
-                </div>
-            </div>
+            </>
         );
     }
 }
