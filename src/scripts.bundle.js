@@ -9858,6 +9858,6 @@ window.KTOffcanvasPanel = KTOffcanvasPanel
 window.KTOffcanvas = KTOffcanvas
 
 // Init on page load completed
-// KTUtil.ready(function () {
-//     KTLayout.init();
-// });
+KTUtil.ready(function () {
+    KTLayout.init();
+});
