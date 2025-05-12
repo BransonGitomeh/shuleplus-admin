@@ -391,9 +391,9 @@ class Navbar extends React.Component {
                                 )}
                             </li>
                             <li className="kt-menu__item kt-menu__item--rel">
-                                <Link to="/home" className="kt-menu__link">
+                                <a href="#/home" className="kt-menu__link">
                                     <span className="kt-menu__link-text">Reports</span>
-                                </Link>
+                                </a>
                             </li>
                             <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                                 <a href="#" onClick={(e) => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
@@ -412,19 +412,19 @@ class Navbar extends React.Component {
                                             { path: "/parents", label: "Parents" }, { path: "/settings/school", label: "School Details" },
                                         ].map(item => (
                                             <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                                                <Link to={item.path} className="kt-menu__link">
+                                                <a href={`#${item.path}`} className="kt-menu__link">
                                                     <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
                                                     <span className="kt-menu__link-text">{item.label}</span>
-                                                </Link>
+                                                </a>
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
                             </li>
                              <li className="kt-menu__item kt-menu__item--rel">
-                                <Link to="/comms" className="kt-menu__link">
+                                <a href="#/comms" className="kt-menu__link">
                                     <span className="kt-menu__link-text">SMS & Email</span>
-                                </Link>
+                                </a>
                             </li>
                              <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                                 <a href="#" onClick={(e) => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
@@ -439,30 +439,30 @@ class Navbar extends React.Component {
                                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                                      <ul className="kt-menu__subnav">
                                          <li className="kt-menu__item" aria-haspopup="true">
-                                            <Link to="/finance/topup" className="kt-menu__link">
+                                            <a href="#/finance/topup" className="kt-menu__link">
                                                 <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
                                                 <span className="kt-menu__link-text">Top Up</span>
-                                            </Link>
+                                            </a>
                                         </li>
                                         <li className="kt-menu__item" aria-haspopup="true">
-                                            <Link to="/finance/charges" className="kt-menu__link">
+                                            <a href="#/finance/charges" className="kt-menu__link">
                                                 <i className="kt-menu__link-bullet kt-menu__link-bullet--dot"><span /></i>
                                                 <span className="kt-menu__link-text">Your Charges</span>
-                                            </Link>
+                                            </a>
                                         </li>
                                     </ul>
                                 </div>
                             </li>
                              <li className="kt-menu__item kt-menu__item--rel">
-                                <Link to="/learning" className="kt-menu__link">
+                                <a href="#/learning" className="kt-menu__link">
                                     <span className="kt-menu__link-text">Learning</span>
-                                </Link>
+                                </a>
                             </li>
 
 
                             {/* PWA Install Button */}
                             {showInstallButton && (
-                                <li className="kt-menu__item kt-menu__item--rel">
+                                <li className="kt-menu__item kt-menu__item--rel" style={{ visibility: showInstallButton ? 'visible' : 'hidden' }}>
                                     <button
                                         ref={this.installButtonRef}
                                         onClick={this.handleInstallClick}
@@ -471,6 +471,7 @@ class Navbar extends React.Component {
                                         title="Install ShulePlus Console App"
                                     >
                                         {/* Icon example: <i className="flaticon2-download-1 kt-font-success" style={{ marginRight: '5px' }}></i> */}
+                                        <i className="flaticon2-download-1 kt-font-success" style={{ marginRight: '5px' }}></i>
                                         <span className="kt-menu__link-text">Install App</span>
                                     </button>
                                 </li>
