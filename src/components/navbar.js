@@ -25,35 +25,42 @@ class Navbar extends React.Component {
     Data.schools.subscribe(({ schools }) => {
       this.setState({ updated: true });
       this.setState({
-        selectedSchool: schools[0],
+        selectedSchool: schools.length > 0 ? schools[0] : {}, // Ensure schools[0] exists
         availableSchools: schools
       }, () => {
-        // console.log(this.state.selectedSchool.id)
-        // console.log("set", { selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] })
-        localStorage.setItem("school", Data.schools.getSelected().id)
-        document.title = `${Data.schools.getSelected().name} | Shule Plus`;
-        this.setState({ selectedSchool: schools.filter(s => s.id == Data.schools.getSelected().id ? true : false)[0] });
+        const currentSelectedSchool = Data.schools.getSelected();
+        if (currentSelectedSchool) {
+            localStorage.setItem("school", currentSelectedSchool.id)
+            document.title = `${currentSelectedSchool.name} | Shule Plus`;
+            this.setState({ selectedSchool: schools.find(s => s.id === currentSelectedSchool.id) || (schools.length > 0 ? schools[0] : {}) });
+        }
       });
     });
 
-    this.setState({ selectedSchool: school, userRole: Object.keys(userData)[0] });
+    // Initialize userRole safely
+    let role = "";
+    if (userData && typeof userData === 'object' && Object.keys(userData).length > 0) {
+        role = Object.keys(userData)[0];
+    }
+    this.setState({ selectedSchool: school, userRole: role });
+
 
     // window.KTLayout.init();
     app.init()
 
     var profilePanel = KTUtil.get('kt_offcanvas_toolbar_profile');
-    if (profilePanel) { // Add a check to ensure profilePanel exists
+    if (profilePanel) { 
       var head = KTUtil.find(profilePanel, '.kt-offcanvas-panel__head');
       var body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
 
-      new KTOffcanvas(profilePanel, { // KTOffcanvas instance might not need to be stored if not used elsewhere
+      new KTOffcanvas(profilePanel, { 
         overlay: true,
         baseClass: 'kt-offcanvas-panel',
         closeBy: 'kt_offcanvas_toolbar_profile_close',
         toggleBy: 'kt_offcanvas_toolbar_profile_toggler_btn'
       });
 
-      if (body) { // Add a check for body
+      if (body) { 
         KTUtil.scrollInit(body, {
           disableForMobile: true,
           resetHeightOnDestroy: true,
@@ -65,10 +72,10 @@ class Navbar extends React.Component {
               height = height - parseInt(KTUtil.actualHeight(head));
               height = height - parseInt(KTUtil.css(head, 'marginBottom'));
             }
-
-            height = height - parseInt(KTUtil.css(profilePanel, 'paddingTop'));
-            height = height - parseInt(KTUtil.css(profilePanel, 'paddingBottom'));
-
+            if (profilePanel) { // Check profilePanel again inside this function scope
+                height = height - parseInt(KTUtil.css(profilePanel, 'paddingTop'));
+                height = height - parseInt(KTUtil.css(profilePanel, 'paddingBottom'));
+            }
             return height;
           }
         });
@@ -81,24 +88,40 @@ class Navbar extends React.Component {
     updated: false,
     selectedSchool: {},
     availableSchools: Data.schools.list(),
-    userRole: "" // Initialize userRole
+    userRole: "" 
   };
 
   async switchSchools(justSelectedSchool) {
     localStorage.setItem("school", justSelectedSchool.id)
     this.setState({ selectedSchool: justSelectedSchool })
-    // Data.schools.list(); // This line doesn't seem to do anything with its return value
     window.location.reload();
   }
 
+  handleInstallApp = () => {
+    // Placeholder for PWA installation logic
+    // You would typically check for a stored `beforeinstallprompt` event and call `prompt()`
+    alert("Install App clicked! Implement PWA installation logic here.");
+    console.log("Attempting to trigger app installation...");
+  }
+
   render() {
-    // Ensure user data exists and is structured as expected before destructuring
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    let user = "Guest"; // Default user name
-    if (storedUser && typeof storedUser === 'object' && Object.keys(storedUser).length > 0) {
-        user = storedUser.names;
+    let user = "Guest"; 
+    let userEmail = ""; // Or some default email
+    
+    if (storedUser && typeof storedUser === 'object') {
+        user = storedUser.names || "User"; // Fallback if names is not present
+        // Assuming the first key in storedUser might contain more details or it's flat
+        if (Object.keys(storedUser).length > 0) {
+            const userRoleKey = Object.keys(storedUser)[0];
+            if (storedUser[userRoleKey] && storedUser[userRoleKey].user && typeof storedUser[userRoleKey].user === 'string') {
+                // This was the structure in the original "old" navbar example for user email
+                userEmail = storedUser[userRoleKey].user; 
+            } else if (storedUser.email) { // Check for a direct email property
+                userEmail = storedUser.email;
+            }
+        }
     }
-    // console.log(this.state) // Avoid excessive console.logs in production
     
     return (
       <div
@@ -157,9 +180,8 @@ class Navbar extends React.Component {
               ) : ""}
 
               <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
+                className="kt-menu__item" // Removed submenu classes as it's a direct link
+                aria-haspopup="false" // No popup
               >
                 <Link to="/home" className="kt-menu__link">
                   <span className="kt-menu__link-text">Reports</span>
@@ -174,12 +196,11 @@ class Navbar extends React.Component {
                 </a>
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
-                    {/* Data Submenu Items */}
                     {[
                         { path: "/schools", label: "Schools" },
                         { path: "/admins", label: "Admins" },
-                        { path: "/teams", label: "Teams" },
-                        { path: "/members", label: "Team Members" },
+                        // { path: "/teams", label: "Teams" }, // As per your previous code
+                        // { path: "/members", label: "Team Members" }, // As per your previous code
                         { path: "/invitations", label: "Invitations" },
                         { path: "/drivers", label: "Drivers" },
                         { path: "/buses", label: "Buses" },
@@ -207,9 +228,8 @@ class Navbar extends React.Component {
               </li>
 
               <li
-                className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel"
-                data-ktmenu-submenu-toggle="click"
-                aria-haspopup="true"
+                className="kt-menu__item"
+                aria-haspopup="false"
               >
                 <Link to="/comms" className="kt-menu__link">
                   <span className="kt-menu__link-text">SMS & Email</span>
@@ -244,6 +264,17 @@ class Navbar extends React.Component {
                   </ul>
                 </div>
               </li>
+              
+              {/* Re-added Learning Link */}
+              <li
+                className="kt-menu__item"
+                aria-haspopup="false"
+              >
+                <Link to="/learning" className="kt-menu__link">
+                  <span className="kt-menu__link-text">Learning</span>
+                </Link>
+              </li>
+
             </ul>
           </div>
         </div>
@@ -251,7 +282,6 @@ class Navbar extends React.Component {
 
         {/* begin:: Header Topbar */}
         <div className="kt-header__topbar kt-grid__item kt-grid__item--fluid">
-          {/*begin: User bar */}
           <div
             className="kt-header__topbar-item kt-header__topbar-item--user"
             id="kt_offcanvas_toolbar_profile_toggler_btn"
@@ -259,20 +289,19 @@ class Navbar extends React.Component {
             <div className="kt-header__topbar-welcome">Hi,</div>
             <div className="kt-header__topbar-username">{user}</div>
             <div className="kt-header__topbar-wrapper">
-              <img alt="Pic" src="https://picsum.photos/512/512" /> {/* Consider a more permanent placeholder or user-specific avatar */}
+              <img alt="Pic" src={storedUser?.avatar || "https://picsum.photos/140/140"} />
             </div>
           </div>
-          {/*end: User bar */}
         </div>
         {/* end:: Header Topbar */}
 
         {/* Mobile Header */}
         <div id="kt_header_mobile" className="kt-header-mobile  kt-header-mobile--fixed ">
           <div className="kt-header-mobile__logo">
-            <Link to="/home"> {/* Usually mobile logo links to home/dashboard */}
+            <Link to="/home"> 
               <img
                 alt="Logo"
-                style={{ width: 150, filter: 'invert(100%)' }} /* Invert might not be ideal for all logos */
+                style={{ width: 150, filter: 'invert(100%)' }} 
                 src="/assets/media/logos/logo-v6.png"
               />
             </Link>
@@ -285,33 +314,39 @@ class Navbar extends React.Component {
 
         {/* Profile Panel */}
         <div id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel">
-          <div className="kt-offcanvas-panel__head" style={{}}> {/* kt-hidden-height={89} might be handled by KT scripts */}
+          <div className="kt-offcanvas-panel__head" >
             <h3 className="kt-offcanvas-panel__title">
               Profile
             </h3>
             <a href="#" className="kt-offcanvas-panel__close" id="kt_offcanvas_toolbar_profile_close"><i className="flaticon2-delete" /></a>
           </div>
-          <div className="kt-offcanvas-panel__body kt-scroll"> {/* Removed ps classes, KTUtil.scrollInit handles this */}
+          <div className="kt-offcanvas-panel__body kt-scroll"> 
             <div className="kt-user-card-v3 kt-margin-b-30">
               <div className="kt-user-card-v3__avatar">
-                <img src="https://placeimg.com/140/140/any" alt="" />
+                <img src={storedUser?.avatar || "https://placeimg.com/140/140/any"} alt="User Avatar" />
               </div>
               <div className="kt-user-card-v3__detalis">
-                <a href="#" className="kt-user-card-v3__name"> {/* Consider not making name a link if it goes nowhere */}
+                <a href="#" className="kt-user-card-v3__name">
                   {user}
                 </a>
                 <div className="kt-user-card-v3__desc">
-                  {/* Role or title can go here e.g., this.state.userRole */}
+                  {this.state.userRole ? this.state.userRole.charAt(0).toUpperCase() + this.state.userRole.slice(1) : ''}
                 </div>
                 <div className="kt-user-card-v3__info">
-                  {/* Example items - customize as needed */}
+                  {userEmail && (
+                    <a href={`mailto:${userEmail}`} className="kt-user-card-v3__item">
+                        <i className="flaticon-email-black-circular-button kt-font-brand" />
+                        <span className="kt-user-card-v3__tag">{userEmail}</span>
+                    </a>
+                  )}
                   {/* <a href="#" className="kt-user-card-v3__item">
-                    <i className="flaticon-email-black-circular-button kt-font-brand" />
-                    <span className="kt-user-card-v3__tag">{user}</span>
+                    <i className="flaticon-twitter-logo-button kt-font-success" />
+                    <span className="kt-user-card-v3__tag">{user}</span> 
                   </a> */}
-                  <span className="kt-user-card-v3__tag" style={{paddingRight:10}}>
+
+                  <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
                     <button
-                      className="btn btn-outline-brand btn-sm" // Added btn-sm for consistency
+                      className="btn btn-outline-brand btn-sm" 
                       type="button"
                       onClick={() => this.props.history.push({
                         pathname: "/settings/user"
@@ -320,13 +355,25 @@ class Navbar extends React.Component {
                       My User Details
                     </button>
                   </span>
-                  <span className="kt-user-card-v3__tag">
+
+                  {/* Install App Button */}
+                  <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
                     <button
-                      className="btn btn-outline-danger btn-sm" // Added btn-sm and danger color
+                      className="btn btn-outline-success btn-sm" 
+                      type="button"
+                      onClick={this.handleInstallApp}
+                    >
+                      Install App
+                    </button>
+                  </span>
+
+                  <span className="kt-user-card-v3__tag" style={{marginBottom: '5px'}}>
+                    <button
+                      className="btn btn-outline-danger btn-sm" 
                       type="button"
                       onClick={() => {
                         localStorage.clear();
-                        window.location.href = '/login'; // Redirect to login page
+                        window.location.href = '/login'; 
                       }}
                     >
                       Log Out
