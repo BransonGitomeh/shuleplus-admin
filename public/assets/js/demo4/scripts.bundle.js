@@ -9874,3 +9874,9 @@ if (typeof module !== 'undefined') {
 KTUtil.ready(function() {
     KTLayout.init();
 });
+
+window.KTUtil = KTUtil;
+window.KTOffcanvas = KTOffcanvas;
+window.KTMenu = KTMenu;
+window.KTLayout = KTLayout; // Expected to be available from your KTLayout.js
+window.KTHeader = KTHeader; // 

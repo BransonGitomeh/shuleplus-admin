@@ -341,7 +341,9 @@ var Data = (function () {
         }
     }
   }`).then(response => {
-    console.log(response)
+      console.log(response)
+    
+      
       // done(response)
       schoolsData.push(...response.schools)
 
@@ -484,6 +486,12 @@ var Data = (function () {
 
       invitations = school.invitations;
       subs.invitations({ invitations });
+    }).catch(err => {
+      console.log(err);
+      localStorage.clear()
+      // if (err && err.response && err.response.status === 401) {
+        window.location.href = '/#/';
+      // }
     });
   }
 
