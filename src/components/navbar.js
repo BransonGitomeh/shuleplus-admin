@@ -155,6 +155,12 @@ class Navbar extends React.Component {
           >
             <ul className="kt-menu__nav ">
               {(this.state.availableSchools.length === 1 || this.state.userRole === "admin") && this.state.selectedSchool && this.state.selectedSchool.name ? (
+                <li className="kt-menu__item  kt-menu__item--active" aria-haspopup="false">
+                  <a href="javascript:;" className="kt-menu__link">
+                    <span className="kt-menu__link-text">{this.state.selectedSchool.name}</span>
+                  </a>
+                </li>
+              ) : (
                 <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                   <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
                     <span className="kt-menu__link-text">{this.state.selectedSchool.name}</span>
@@ -180,7 +186,7 @@ class Navbar extends React.Component {
                     </ul>
                   </div>
                 </li>
-              ) : ""}
+              )}
 
               <li
                 className="kt-menu__item"
@@ -193,7 +199,7 @@ class Navbar extends React.Component {
 
               <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                 <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
-                  <span className="kt-menu__link-text">Data</span>
+                  <span className="kt-menu__link-text">Manage Data</span>
                   <i className="kt-menu__hor-arrow la la-angle-down" />
                   <i className="kt-menu__ver-arrow la la-angle-right" />
                 </a>
@@ -207,15 +213,15 @@ class Navbar extends React.Component {
                         { path: "/buses", label: "Buses", icon: "las la-bus" },
                         { path: "/routes", label: "Routes", icon: "las la-route" },
                         { path: "/schedules", label: "Schedules", icon: "las la-calendar" },
-                        { path: "/classes", label: "Classes", icon: "las la-blackboard" },
-                        { path: "/teachers", label: "Teachers", icon: "las la-chalkboard-teacher" },
+                        { path: "/classes", label: "Classes", icon: "las la-book" },
+                        { path: "/teachers", label: "Teachers", icon: "las la-address-card" },
                         { path: "/students", label: "Students", icon: "las la-user-graduate" },
-                        { path: "/parents", label: "Parents", icon: "las la-user-friends" },
+                        { path: "/parents", label: "Parents", icon: "las la-users" },
                         { path: "/settings/school", label: "School Details", icon: "las la-cog" },
                     ].map(item => (
                         <li key={item.path} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                         <Link to={item.path} className="kt-menu__link">
-                            {/* <i className={`kt-menu__link-icon kt-menu__link-icon--lg ${item.icon}`} /> */}
+                            <i className={`kt-menu__link-icon kt-menu__link-icon--lg la ${item.icon}`} />
                             <span className="kt-menu__link-text">
                             <span className="kt-menu__link-text">{item.label}</span>
                             </span>
