@@ -488,7 +488,7 @@ var Data = (function () {
       subs.invitations({ invitations });
     }).catch(err => {
       console.log(err);
-      localStorage.clear()
+      // localStorage.clear()
       if (err && err.response && err.response.status === 401) {
         window.location.href = '/#/';
       }
