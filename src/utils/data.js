@@ -489,9 +489,9 @@ var Data = (function () {
     }).catch(err => {
       console.log(err);
       localStorage.clear()
-      // if (err && err.response && err.response.status === 401) {
+      if (err && err.response && err.response.status === 401) {
         window.location.href = '/#/';
-      // }
+      }
     });
   }
 

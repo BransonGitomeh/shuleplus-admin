@@ -2,10 +2,10 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import app from "../scripts.bundle"
+import app from "../scripts.bundle" // Assuming this is Metronic's app bundle
 import Data from "../utils/data";
 import { withRouter } from "react-router";
-import Pace from 'react-pace-progress'
+// import Pace from 'react-pace-progress' // 1. Removed Pace
 
 
 const KTUtil = window.KTUtil
@@ -15,17 +15,15 @@ class Navbar extends React.Component {
   componentDidMount() {
     const userData = JSON.parse(localStorage.getItem("user"))
 
-    // Data.onReady(() => {
     const schools = Data.schools.list();
     const school = Data.schools.getSelected();
 
-    // console.log("before", { schools })
     this.setState({ schools, school });
 
     Data.schools.subscribe(({ schools }) => {
-      this.setState({ updated: true });
+      // this.setState({ updated: true }); // 1. Removed state update for Pace
       this.setState({
-        selectedSchool: schools.length > 0 ? schools[0] : {}, // Ensure schools[0] exists
+        selectedSchool: schools.length > 0 ? schools[0] : {},
         availableSchools: schools
       }, () => {
         const currentSelectedSchool = Data.schools.getSelected();
@@ -37,46 +35,43 @@ class Navbar extends React.Component {
       });
     });
 
-    // Initialize userRole safely
     let role = "";
     if (userData && typeof userData === 'object' && Object.keys(userData).length > 0) {
         role = Object.keys(userData)[0];
     }
     this.setState({ selectedSchool: school, userRole: role });
 
-
-    // window.KTLayout.init();
-    app.init()
+    app.init(); // Initialize Metronic theme scripts
 
     var profilePanel = KTUtil.get('kt_offcanvas_toolbar_profile');
-    if (profilePanel) { 
+    if (profilePanel) {
       var head = KTUtil.find(profilePanel, '.kt-offcanvas-panel__head');
       var body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
 
-      new KTOffcanvas(profilePanel, { 
+      new KTOffcanvas(profilePanel, {
         overlay: true,
         baseClass: 'kt-offcanvas-panel',
         closeBy: 'kt_offcanvas_toolbar_profile_close',
         toggleBy: 'kt_offcanvas_toolbar_profile_toggler_btn'
       });
 
-      if (body) { 
+      if (body) {
         KTUtil.scrollInit(body, {
           disableForMobile: true,
           resetHeightOnDestroy: true,
           handleWindowResize: true,
           height: function () {
-            var height = parseInt(KTUtil.getViewPort().height);
+            // 3. Adjusted height calculation for mobile drawer
+            var panelClientHeight = profilePanel.clientHeight; // Height of the panel content area (includes padding)
+            var currentHeight = panelClientHeight;
 
             if (head) {
-              height = height - parseInt(KTUtil.actualHeight(head));
-              height = height - parseInt(KTUtil.css(head, 'marginBottom'));
+              currentHeight = currentHeight - parseInt(KTUtil.actualHeight(head)); // Subtract head's full height (content + padding + border)
+              currentHeight = currentHeight - parseInt(KTUtil.css(head, 'marginBottom')); // Subtract head's bottom margin
             }
-            if (profilePanel) { // Check profilePanel again inside this function scope
-                height = height - parseInt(KTUtil.css(profilePanel, 'paddingTop'));
-                height = height - parseInt(KTUtil.css(profilePanel, 'paddingBottom'));
-            }
-            return height;
+            // The body is inside the panel. Its height is panel's clientHeight - head's outerHeight.
+            // Panel's own padding is already accounted for in clientHeight.
+            return currentHeight;
           }
         });
       }
@@ -85,10 +80,10 @@ class Navbar extends React.Component {
 
   state = {
     profileShowing: false,
-    updated: false,
+    // updated: false, // 1. Removed state for Pace
     selectedSchool: {},
     availableSchools: Data.schools.list(),
-    userRole: "" 
+    userRole: ""
   };
 
   async switchSchools(justSelectedSchool) {
@@ -98,37 +93,35 @@ class Navbar extends React.Component {
   }
 
   handleInstallApp = () => {
-    // Placeholder for PWA installation logic
-    // You would typically check for a stored `beforeinstallprompt` event and call `prompt()`
     alert("Install App clicked! Implement PWA installation logic here.");
     console.log("Attempting to trigger app installation...");
   }
 
   render() {
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    let user = "Guest"; 
-    let userEmail = ""; // Or some default email
-    
+    let user = "Guest";
+    let userEmail = "";
+
     if (storedUser && typeof storedUser === 'object') {
-        user = storedUser.names || "User"; // Fallback if names is not present
-        // Assuming the first key in storedUser might contain more details or it's flat
+        user = storedUser.names || "User";
         if (Object.keys(storedUser).length > 0) {
             const userRoleKey = Object.keys(storedUser)[0];
             if (storedUser[userRoleKey] && storedUser[userRoleKey].user && typeof storedUser[userRoleKey].user === 'string') {
-                // This was the structure in the original "old" navbar example for user email
-                userEmail = storedUser[userRoleKey].user; 
-            } else if (storedUser.email) { // Check for a direct email property
+                userEmail = storedUser[userRoleKey].user;
+            } else if (storedUser.email) {
                 userEmail = storedUser.email;
             }
         }
     }
-    
+
     return (
       <div
         id="kt_header"
         className="kt-header kt-grid__item kt-grid kt-grid--ver  kt-header--fixed "
       >
-        {this.state.updated !== true ? <Pace color="#ffffff" height={3}/>: undefined}
+        {/* 1. Removed Pace component */}
+        {/* {this.state.updated !== true ? <Pace color="#ffffff" height={3}/>: undefined} */}
+
         {/* begin:: Brand */}
         <div className="kt-header__brand   kt-grid__item" id="kt_header_brand">
           <Link to="/home">
@@ -180,8 +173,8 @@ class Navbar extends React.Component {
               ) : ""}
 
               <li
-                className="kt-menu__item" // Removed submenu classes as it's a direct link
-                aria-haspopup="false" // No popup
+                className="kt-menu__item"
+                aria-haspopup="false"
               >
                 <Link to="/home" className="kt-menu__link">
                   <span className="kt-menu__link-text">Reports</span>
@@ -199,8 +192,6 @@ class Navbar extends React.Component {
                     {[
                         { path: "/schools", label: "Schools" },
                         { path: "/admins", label: "Admins" },
-                        // { path: "/teams", label: "Teams" }, // As per your previous code
-                        // { path: "/members", label: "Team Members" }, // As per your previous code
                         { path: "/invitations", label: "Invitations" },
                         { path: "/drivers", label: "Drivers" },
                         { path: "/buses", label: "Buses" },
@@ -264,8 +255,7 @@ class Navbar extends React.Component {
                   </ul>
                 </div>
               </li>
-              
-              {/* Re-added Learning Link */}
+
               <li
                 className="kt-menu__item"
                 aria-haspopup="false"
@@ -298,29 +288,49 @@ class Navbar extends React.Component {
         {/* Mobile Header */}
         <div id="kt_header_mobile" className="kt-header-mobile  kt-header-mobile--fixed ">
           <div className="kt-header-mobile__logo">
-            <Link to="/home"> 
-              <img
-                alt="Logo"
-                style={{ width: 150, filter: 'invert(100%)' }} 
-                src="/assets/media/logos/logo-v6.png"
-              />
-            </Link>
+          <div style={{ display: 'flex', alignItems: 'center', color: 'white', marginRight: '10px', textAlign: 'right' }}>
+                {this.state.selectedSchool?.name && (
+                    <span style={{ fontSize: '0.8rem', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+                        {this.state.selectedSchool.name}
+                    </span>
+                )}
+                {this.state.selectedSchool?.name && user !== "Guest" && <span style={{ margin: '0 5px', fontSize: '0.8rem' }}>|</span>}
+                {user !== "Guest" && (
+                    <span style={{ fontSize: '0.8rem', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70px' }}>
+                        {user}
+                    </span>
+                )}
+            </div>
           </div>
           <div className="kt-header-mobile__toolbar">
+            {/* 2. Mobile nav user and school name */}
+            
             <button className="kt-header-mobile__toolbar-toggler" id="kt_header_mobile_toggler"><span /></button>
             <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler"><i className="flaticon-more" /></button>
           </div>
         </div>
 
-        {/* Profile Panel */}
-        <div id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel">
+        {/* Profile Panel (Mobile Drawer) */}
+        <div
+            id="kt_offcanvas_toolbar_profile"
+            className="kt-offcanvas-panel"
+            style={{
+                // 3. Style for floating mobile drawer
+                margin: '15px', // Margin around the drawer
+                borderRadius: '10px', // Rounded edges
+                boxShadow: '0 5px 15px rgba(0,0,0,0.2)', // Floating effect
+                height: 'calc(100% - 30px)', // Adjust height to account for top/bottom margins
+                // KTOffcanvas will handle width and actual positioning (e.g. right: 0 when open)
+                // The margin will then create the space from the edge.
+            }}
+        >
           <div className="kt-offcanvas-panel__head" >
             <h3 className="kt-offcanvas-panel__title">
               Profile
             </h3>
             <a href="#" className="kt-offcanvas-panel__close" id="kt_offcanvas_toolbar_profile_close"><i className="flaticon2-delete" /></a>
           </div>
-          <div className="kt-offcanvas-panel__body kt-scroll"> 
+          <div className="kt-offcanvas-panel__body kt-scroll"> {/* kt-scroll class is important for KTUtil.scrollInit */}
             <div className="kt-user-card-v3 kt-margin-b-30">
               <div className="kt-user-card-v3__avatar">
                 <img src={storedUser?.avatar || "https://placeimg.com/140/140/any"} alt="User Avatar" />
@@ -339,14 +349,9 @@ class Navbar extends React.Component {
                         <span className="kt-user-card-v3__tag">{userEmail}</span>
                     </a>
                   )}
-                  {/* <a href="#" className="kt-user-card-v3__item">
-                    <i className="flaticon-twitter-logo-button kt-font-success" />
-                    <span className="kt-user-card-v3__tag">{user}</span> 
-                  </a> */}
-
                   <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
                     <button
-                      className="btn btn-outline-brand btn-sm" 
+                      className="btn btn-outline-brand btn-sm"
                       type="button"
                       onClick={() => this.props.history.push({
                         pathname: "/settings/user"
@@ -355,25 +360,22 @@ class Navbar extends React.Component {
                       My User Details
                     </button>
                   </span>
-
-                  {/* Install App Button */}
                   <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
                     <button
-                      className="btn btn-outline-success btn-sm" 
+                      className="btn btn-outline-success btn-sm"
                       type="button"
                       onClick={this.handleInstallApp}
                     >
                       Install App
                     </button>
                   </span>
-
                   <span className="kt-user-card-v3__tag" style={{marginBottom: '5px'}}>
                     <button
-                      className="btn btn-outline-danger btn-sm" 
+                      className="btn btn-outline-danger btn-sm"
                       type="button"
                       onClick={() => {
                         localStorage.clear();
-                        window.location.href = '/login'; 
+                        window.location.href = '/login';
                       }}
                     >
                       Log Out

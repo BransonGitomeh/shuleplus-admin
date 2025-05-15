@@ -4,15 +4,16 @@ import axios from "axios";
 import { API } from "../../utils/requests"; // Ensure this path is correct
 import Data from "../../utils/data"; // Ensure this path is correct
 
-// --- Helper Components for Staff Invitation (Step 2) ---
-const StaffForm = ({ type, onAddStaff, tempStaff, setTempStaff, error }) => {
+const StaffForm = ({ type, onAddStaff, tempStaff, setTempStaff, error, schoolId }) => { // Accept schoolId
     const handleChange = (e) => {
-        setTempStaff(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        // Extract the necessary properties from the event object synchronously
+        const { name, value } = e.target;
+        setTempStaff(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onAddStaff(type);
+        onAddStaff(type, schoolId); // Pass schoolId to onAddStaff
     };
 
     return (
@@ -39,6 +40,7 @@ const StaffForm = ({ type, onAddStaff, tempStaff, setTempStaff, error }) => {
         </form>
     );
 };
+
 
 const StaffTable = ({ type, staffList, onRemoveStaff }) => (
     <div className="table-responsive mb-4" style={{maxHeight: '200px', overflowY: 'auto'}}>
@@ -96,6 +98,10 @@ const Register = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [createdSchoolId, setCreatedSchoolId] = useState(null);
+    
+    // State to hold registration response data (token, user, schoolId) temporarily
+    const [registrationData, setRegistrationData] = useState(null);
+
 
     // CSS for branding and layout enhancements
     const brandColor = "rgb(238, 158, 61)";
@@ -300,20 +306,24 @@ const Register = () => {
 
         setLoading(true);
         try {
-            const payload = { schoolName, schoolAddress, adminName, adminEmail, adminPhone, adminPassword };
+            const payload = { name: schoolName, phone: adminPhone, email: adminEmail, address: schoolAddress };
+            // This initial registration call usually doesn't require an auth token
             const res = await axios.post(`${API}/auth/register`, payload);
-            const { token, user, school } = res.data;
+            const { token, data } = res.data;
 
-            if (!token || !user || !school || !school.id) {
+            if (!token || !data || !data.admin || !data.admin.school || !data.admin.user) {
                 throw new Error("Registration response was incomplete. Please contact support.");
             }
 
-            localStorage.setItem("authorization", token);
-            localStorage.setItem("user", JSON.stringify(user));
-            localStorage.setItem("school", school.id);
-            setCreatedSchoolId(school.id);
+            // Store token and user data in component state, NOT localStorage yet
+            setRegistrationData({
+                token,
+                user: data.admin.user,
+                schoolId: data.admin.school // Assuming data.admin.school is the school ID
+            });
+            setCreatedSchoolId(data.admin.school); // For display purposes in Step 2
 
-            await Data.init();
+            // DO NOT call Data.init() or set localStorage here
             setCurrentStep(2);
             setError("");
         } catch (err) {
@@ -325,7 +335,7 @@ const Register = () => {
         }
     };
 
-    const handleAddStaffMember = (type) => {
+    const handleAddStaffMember = (type, schoolId) => { // Accept schoolId
         setStaffFormError('');
         const { name, phone, email } = tempStaffMember;
 
@@ -342,7 +352,7 @@ const Register = () => {
             return;
         }
 
-        const newStaff = { names: name, name, phone, email: email || null };
+        const newStaff = { names: name, name, phone, email: email || null, school: schoolId }; // Add schoolId
 
         if (type === 'Driver') setDriversToInvite(prev => [...prev, newStaff]);
         else if (type === 'Teacher') setTeachersToInvite(prev => [...prev, newStaff]);
@@ -361,17 +371,53 @@ const Register = () => {
         setLoading(true);
         setError("");
 
+        if (!registrationData || !registrationData.token) {
+            setError("Critical registration data is missing. Please try registering again from Step 1.");
+            setLoading(false);
+            setCurrentStep(1); // Force back to step 1
+            return;
+        }
+
         try {
-            if (inviteStaff) {
-                for (const driver of driversToInvite) await Data.drivers.create(driver);
-                for (const teacher of teachersToInvite) await Data.teachers.create(teacher);
-                for (const admin of adminsToInvite) await Data.admins.create(admin);
+            console.log("Set localStorage items NOW, just before needing them")
+            localStorage.setItem("authorization", registrationData.token);
+            localStorage.setItem("user", JSON.stringify(registrationData.user));
+            localStorage.setItem("school", registrationData.schoolId); // Ensure this is the correct value/format
+
+            // Delay briefly to allow localStorage to be written
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Check that local storage has been set successfully
+            if (!localStorage.getItem("authorization") || !localStorage.getItem("user") || !localStorage.getItem("school")) {
+                setError("Failed to set local storage items. Please try registering again from Step 1.");
+                setLoading(false);
+                setCurrentStep(1); // Force back to step 1
+                return;
             }
-            await Data.init();
+
+            // 2. Initialize Data (which should pick up the token from localStorage to configure API calls)
+            await Data.init(); 
+
+            // 3. If inviting staff, make the API calls
+            // These Data.create methods will now use the token via the initialized Data module
+            if (inviteStaff) {
+                const schoolId = registrationData.schoolId; // Get schoolId
+                for (const driver of driversToInvite) await Data.drivers.create({...driver, school: schoolId}); // Pass schoolId
+                for (const teacher of teachersToInvite) await Data.teachers.create({...teacher, school: schoolId}); // Pass schoolId
+                for (const admin of adminsToInvite) await Data.admins.create({...admin, school: schoolId}); // Pass schoolId
+            }
+            
+            // 4. Navigate to the dashboard
             history.push('/trips/all');
+
         } catch (err) {
             console.error("Error proceeding to dashboard:", err);
-            const errorMessage = err.response?.data?.message || err.message || "An error occurred while inviting staff or loading data.";
+            // Clear localStorage if final step failed? Or allow retry?
+            // For now, just show error. User might be partially logged in.
+            // localStorage.removeItem("authorization");
+            // localStorage.removeItem("user");
+            // localStorage.removeItem("school");
+            const errorMessage = err.response?.data?.message || err.message || "An error occurred while inviting staff or finalizing setup.";
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -433,7 +479,11 @@ const Register = () => {
                 </Link>
             </div>
             <h3 className="form-title">Step 2: Invite Your Team (Optional)</h3>
-            <p className="text-muted mb-3">Add key personnel for School ID: <strong>{createdSchoolId}</strong>. You can skip this and add them later.</p>
+            <p className="text-muted mb-3">
+                Add key personnel for your school.
+                {createdSchoolId && <span> School ID: <strong>{createdSchoolId}</strong>.</span>}
+                You can skip this and add them later.
+            </p>
 
             {error && <div className="alert alert-danger">{error}</div>}
 
@@ -451,33 +501,43 @@ const Register = () => {
 
             {activeStaffTab === 'drivers' && (
                 <>
-                    <StaffForm type="Driver" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} />
+                    <StaffForm type="Driver" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} schoolId={createdSchoolId} /> {/* Pass createdSchoolId here */}
                     <StaffTable type="Driver" staffList={driversToInvite} onRemoveStaff={handleRemoveStaffMember} />
                 </>
             )}
              {activeStaffTab === 'teachers' && (
                 <>
-                    <StaffForm type="Teacher" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} />
+                    <StaffForm type="Teacher" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} schoolId={createdSchoolId} /> {/* Pass createdSchoolId here */}
                     <StaffTable type="Teacher" staffList={teachersToInvite} onRemoveStaff={handleRemoveStaffMember} />
                 </>
             )}
              {activeStaffTab === 'admins' && (
                 <>
-                    <StaffForm type="Admin" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} />
+                    <StaffForm type="Admin" onAddStaff={handleAddStaffMember} tempStaff={tempStaffMember} setTempStaff={setTempStaffMember} error={staffFormError} schoolId={createdSchoolId} /> {/* Pass createdSchoolId here */}
                     <StaffTable type="Admin" staffList={adminsToInvite} onRemoveStaff={handleRemoveStaffMember} />
                 </>
             )}
 
             <div className="d-flex flex-column flex-sm-row justify-content-between mt-4">
                 <button className="btn btn-outline-secondary mb-2 mb-sm-0" onClick={() => proceedToDashboard(false)} disabled={loading}>
-                    {loading ? "Processing..." : "Skip & Go to Dashboard"}
+                    {loading && !driversToInvite.length && !teachersToInvite.length && !adminsToInvite.length ? "Processing..." : "Skip & Go to Dashboard"}
                 </button>
-                <button className="btn btn-brand" onClick={() => proceedToDashboard(true)} disabled={loading}>
-                    {loading ? "Inviting..." : "Invite & Go to Dashboard"}
+                <button 
+                    className="btn btn-brand" 
+                    onClick={() => proceedToDashboard(true)} 
+                    disabled={loading || (driversToInvite.length === 0 && teachersToInvite.length === 0 && adminsToInvite.length === 0)}
+                >
+                    {loading && (driversToInvite.length > 0 || teachersToInvite.length > 0 || adminsToInvite.length > 0) ? "Inviting..." : "Invite & Go to Dashboard"}
                 </button>
             </div>
             <div className="mt-3">
-                <button className="btn btn-link pl-0 kt-link" onClick={() => setCurrentStep(1)}>
+                <button className="btn btn-link pl-0 kt-link" onClick={() => {
+                    setError(''); // Clear any errors from step 2 when going back
+                    setCurrentStep(1);
+                    // Note: registrationData will persist, but user has to re-submit step 1 if they went back.
+                    // Or, clear registrationData if you want them to fully restart.
+                    // setRegistrationData(null); 
+                }}>
                     ← Back to School Registration
                 </button>
             </div>
@@ -489,13 +549,12 @@ const Register = () => {
             <CustomStyles />
             <div className="register-container">
                 <div className="register-card">
-                    {/* Order of panels is now controlled by flex-direction in CSS for mobile */}
-                    <div className="col-lg-7 form-panel order-lg-1"> {/* Form Panel (Left on Desktop) */}
+                    <div className="col-lg-7 form-panel order-lg-1">
                         {currentStep === 1 ? renderStep1() : renderStep2()}
                     </div>
-                    <div className="col-lg-5 info-panel order-lg-2" style={{color: 'black'}}> {/* Info Panel (Right on Desktop) */}
+                    <div className="col-lg-5 info-panel order-lg-2"> {/* Removed inline style for color */}
                         <div>
-                             <h1 className="text-logo">Shule Plus</h1>
+                             <h1 className="text-logo" style={{color: 'var(--info-text-color)'}}>Shule Plus</h1> {/* Ensured logo uses info text color */}
                             <h1>The Ultimate Platform for Learning & Learner Management.</h1>
                             <p className="mb-4">Join Shule Plus today and transform your school's operations. Get started instantly—it's free, with no payment required upfront!</p>
                             <ul className="mb-4">
@@ -506,7 +565,7 @@ const Register = () => {
                                 <li>Powerful Reporting & Analytics</li>
                             </ul>
                             <p><strong>Ready to elevate your school?</strong> Complete the simple steps to gain immediate access to your powerful Shule Plus dashboard.</p>
-                            <div className="info-footer" style={{color: 'black'}}>
+                            <div className="info-footer"> {/* Removed inline style for color */}
                                 © {new Date().getFullYear()} Shule Plus. All Rights Reserved.
                                 <br/>
                                 Need help? <a href="mailto:shuleplusadmin@gmail.com">Contact Support</a>
