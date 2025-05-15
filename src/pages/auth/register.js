@@ -381,7 +381,13 @@ const Register = () => {
         try {
             console.log("Set localStorage items NOW, just before needing them")
             localStorage.setItem("authorization", registrationData.token);
-            localStorage.setItem("user", JSON.stringify(registrationData.user));
+            localStorage.setItem("user", JSON.stringify({
+                id: `sAdmin_${adminEmail.split('@')[0]}`,
+                names: adminName,
+                email: adminEmail,
+                phone: adminPhone,
+                userType: 'sAdmin',
+            }));
             localStorage.setItem("school", registrationData.schoolId); // Ensure this is the correct value/format
 
             // Delay briefly to allow localStorage to be written
