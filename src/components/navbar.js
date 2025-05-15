@@ -217,6 +217,7 @@ class Navbar extends React.Component {
                         { path: "/teachers", label: "Teachers", icon: "las la-address-card" },
                         { path: "/students", label: "Students", icon: "las la-user-graduate" },
                         { path: "/parents", label: "Parents", icon: "las la-users" },
+                        { path: "/teams", label: "Teams", icon: "las la-users" },
                         { path: "/settings/school", label: "School Details", icon: "las la-cog" },
                     ].map(item => (
                         <li key={item.path} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
@@ -374,22 +375,29 @@ class Navbar extends React.Component {
                       Profile
                     </button>
                   </span>
-                  <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
-                    <button
-                      className="btn btn-outline-success btn-sm"
-                      type="button"
-                      onClick={this.handleInstallApp}
-                    >
-                      Install App
-                    </button>
-                  </span>
+                  {typeof window.matchMedia !== 'function' || !window.matchMedia('(display-mode: standalone)').matches && (
+                    <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
+                      <button
+                        className="btn btn-outline-success btn-sm"
+                        type="button"
+                        onClick={() => {
+                          window.addEventListener("beforeinstallprompt", (e) => {
+                            e.prompt();
+                            localStorage.setItem('appInstalled', 'yes');
+                          });
+                        }}
+                      >
+                        Install App
+                      </button>
+                    </span>
+                  )}
                   <span className="kt-user-card-v3__tag" style={{marginBottom: '5px'}}>
                     <button
                       className="btn btn-outline-danger btn-sm"
                       type="button"
                       onClick={() => {
                         localStorage.clear();
-                        window.location.href = '/login';
+                        window.location.href = '/';
                       }}
                     >
                       Log Out
