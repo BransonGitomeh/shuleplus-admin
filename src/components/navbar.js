@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import app from "../scripts.bundle" // Assuming this is Metronic's app bundle
 import Data from "../utils/data";
 import { withRouter } from "react-router";
-// import Pace from 'react-pace-progress' // 1. Removed Pace
+import Pace from 'react-pace-progress'
 
 
 const KTUtil = window.KTUtil
@@ -120,7 +120,7 @@ class Navbar extends React.Component {
         className="kt-header kt-grid__item kt-grid kt-grid--ver  kt-header--fixed "
       >
         {/* 1. Removed Pace component */}
-        {/* {this.state.updated !== true ? <Pace color="#ffffff" height={3}/>: undefined} */}
+        {this.state.availableSchools.length === 0 ? <Pace color="#ffffff" height={3}/>: undefined}
 
         {/* begin:: Brand */}
         <div className="kt-header__brand   kt-grid__item" id="kt_header_brand">
@@ -138,13 +138,23 @@ class Navbar extends React.Component {
         <div
           className="kt-header-menu-wrapper kt-grid__item"
           id="kt_header_menu_wrapper"
+          style={{
+            // 3. Style for floating mobile drawer
+            margin: '15px', // Margin around the drawer
+            borderRadius: '10px', // Rounded edges
+            boxShadow: '0 5px 15px rgba(0,0,0,0.2)', // Floating effect
+            height: 'calc(100% - 30px)', // Adjust height to account for top/bottom margins
+            // KTOffcanvas will handle width and actual positioning (e.g. right: 0 when open)
+            // The margin will then create the space from the edge.
+        }}
         >
           <div
             id="kt_header_menu"
             className="kt-header-menu kt-header-menu-mobile "
+            
           >
             <ul className="kt-menu__nav ">
-              {(this.state.availableSchools.length !== 1 || this.state.userRole === "admin") && this.state.selectedSchool && this.state.selectedSchool.name ? (
+              {(this.state.availableSchools.length === 1 || this.state.userRole === "admin") && this.state.selectedSchool && this.state.selectedSchool.name ? (
                 <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                   <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
                     <span className="kt-menu__link-text">{this.state.selectedSchool.name}</span>
@@ -190,24 +200,22 @@ class Navbar extends React.Component {
                 <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                   <ul className="kt-menu__subnav">
                     {[
-                        { path: "/schools", label: "Schools" },
-                        { path: "/admins", label: "Admins" },
-                        { path: "/invitations", label: "Invitations" },
-                        { path: "/drivers", label: "Drivers" },
-                        { path: "/buses", label: "Buses" },
-                        { path: "/routes", label: "Routes" },
-                        { path: "/schedules", label: "Schedules" },
-                        { path: "/classes", label: "Classes" },
-                        { path: "/teachers", label: "Teachers" },
-                        { path: "/students", label: "Students" },
-                        { path: "/parents", label: "Parents" },
-                        { path: "/settings/school", label: "School Details" },
+                        { path: "/schools", label: "Schools", icon: "las la-building" },
+                        { path: "/admins", label: "Admins", icon: "las la-user-tie" },
+                        { path: "/invitations", label: "Invitations", icon: "las la-envelope" },
+                        { path: "/drivers", label: "Drivers", icon: "las la-truck" },
+                        { path: "/buses", label: "Buses", icon: "las la-bus" },
+                        { path: "/routes", label: "Routes", icon: "las la-route" },
+                        { path: "/schedules", label: "Schedules", icon: "las la-calendar" },
+                        { path: "/classes", label: "Classes", icon: "las la-blackboard" },
+                        { path: "/teachers", label: "Teachers", icon: "las la-chalkboard-teacher" },
+                        { path: "/students", label: "Students", icon: "las la-user-graduate" },
+                        { path: "/parents", label: "Parents", icon: "las la-user-friends" },
+                        { path: "/settings/school", label: "School Details", icon: "las la-cog" },
                     ].map(item => (
                         <li key={item.path} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                         <Link to={item.path} className="kt-menu__link">
-                            <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
-                            <span />
-                            </i>
+                            {/* <i className={`kt-menu__link-icon kt-menu__link-icon--lg ${item.icon}`} /> */}
                             <span className="kt-menu__link-text">
                             <span className="kt-menu__link-text">{item.label}</span>
                             </span>
@@ -333,20 +341,20 @@ class Navbar extends React.Component {
           <div className="kt-offcanvas-panel__body kt-scroll"> {/* kt-scroll class is important for KTUtil.scrollInit */}
             <div className="kt-user-card-v3 kt-margin-b-30">
               <div className="kt-user-card-v3__avatar">
-                <img src={storedUser?.avatar || "https://placeimg.com/140/140/any"} alt="User Avatar" />
+              <img alt="Pic" src={storedUser?.avatar || "https://picsum.photos/140/140"} />
               </div>
               <div className="kt-user-card-v3__detalis">
                 <a href="#" className="kt-user-card-v3__name">
-                  {user}
+                  {storedUser?.names || user}
                 </a>
                 <div className="kt-user-card-v3__desc">
-                  {this.state.userRole ? this.state.userRole.charAt(0).toUpperCase() + this.state.userRole.slice(1) : ''}
+                  {storedUser?.userType ? storedUser.userType.charAt(0).toUpperCase() + storedUser.userType.slice(1) : ''}
                 </div>
                 <div className="kt-user-card-v3__info">
-                  {userEmail && (
-                    <a href={`mailto:${userEmail}`} className="kt-user-card-v3__item">
+                  {storedUser?.email && (
+                    <a href={`mailto:${storedUser.email}`} className="kt-user-card-v3__item">
                         <i className="flaticon-email-black-circular-button kt-font-brand" />
-                        <span className="kt-user-card-v3__tag">{userEmail}</span>
+                        <span className="kt-user-card-v3__tag">{storedUser.email}</span>
                     </a>
                   )}
                   <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
@@ -357,7 +365,7 @@ class Navbar extends React.Component {
                         pathname: "/settings/user"
                       })}
                     >
-                      My User Details
+                      Profile
                     </button>
                   </span>
                   <span className="kt-user-card-v3__tag" style={{paddingRight:5, marginBottom: '5px'}}>
@@ -392,3 +400,8 @@ class Navbar extends React.Component {
 }
 
 export default withRouter(Navbar);
+
+
+
+
+
