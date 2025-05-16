@@ -495,13 +495,13 @@ const Register = () => {
 
             <ul className="nav nav-tabs mb-3">
                 <li className="nav-item">
-                    <a className={`nav-link ${activeStaffTab === 'drivers' ? 'active' : ''}`} href="#!" onClick={() => {setActiveStaffTab('drivers'); setStaffFormError('');}}>Drivers</a>
+                    <a className={`nav-link ${activeStaffTab === 'drivers' ? 'active' : ''}`} onClick={() => {setActiveStaffTab('drivers'); setStaffFormError('');}}>Drivers</a>
                 </li>
                 <li className="nav-item">
-                    <a className={`nav-link ${activeStaffTab === 'teachers' ? 'active' : ''}`} href="#!" onClick={() => {setActiveStaffTab('teachers'); setStaffFormError('');}}>Teachers</a>
+                    <a className={`nav-link ${activeStaffTab === 'teachers' ? 'active' : ''}`} onClick={() => {setActiveStaffTab('teachers'); setStaffFormError('');}}>Teachers</a>
                 </li>
                 <li className="nav-item">
-                    <a className={`nav-link ${activeStaffTab === 'admins' ? 'active' : ''}`} href="#!" onClick={() => {setActiveStaffTab('admins'); setStaffFormError('');}}>More Admins</a>
+                    <a className={`nav-link ${activeStaffTab === 'admins' ? 'active' : ''}`} onClick={() => {setActiveStaffTab('admins'); setStaffFormError('');}}>More Admins</a>
                 </li>
             </ul>
 
