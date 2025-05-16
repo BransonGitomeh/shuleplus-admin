@@ -123,11 +123,17 @@ class Navbar extends React.Component {
         {this.state.availableSchools.length === 0 ? <Pace color="#ffffff" height={3}/>: undefined}
 
         {/* begin:: Brand */}
-        <div className="kt-header__brand   kt-grid__item" id="kt_header_brand">
+        <div
+          className="kt-header__brand   kt-grid__item"
+          id="kt_header_brand"
+          style={{
+            backgroundColor: this.state.selectedSchool.themeColor || '#ee9e3dff',
+          }}
+        >
           <Link to="/home">
             <img
               alt="Logo"
-              style={{ width: 150, /*backgroundColor: this.state.selectedSchool.themeColor || '#2E9348' */}}
+              style={{ width: 150 }}
               src={this.state.selectedSchool.logo || '/assets/media/logos/logo-v5.png'}
             />
           </Link>
@@ -334,7 +340,7 @@ class Navbar extends React.Component {
                 margin: '15px', // Margin around the drawer
                 borderRadius: '10px', // Rounded edges
                 boxShadow: '0 5px 15px rgba(0,0,0,0.2)', // Floating effect
-                height: 'calc(100% - 30px)', // Adjust height to account for top/bottom margins
+                height: 'calc(40% - 30px)', // Adjust height to account for top/bottom margins
                 // KTOffcanvas will handle width and actual positioning (e.g. right: 0 when open)
                 // The margin will then create the space from the edge.
             }}
