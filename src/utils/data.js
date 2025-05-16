@@ -100,7 +100,8 @@ var Data = (function () {
         phone,
         email,
         address,
-        id
+        logo
+        themeColor
         grades {
           id
           name

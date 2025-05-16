@@ -127,8 +127,8 @@ class Navbar extends React.Component {
           <Link to="/home">
             <img
               alt="Logo"
-              style={{ width: 150 }}
-              src="/assets/media/logos/logo-v5.png"
+              style={{ width: 150, /*backgroundColor: this.state.selectedSchool.themeColor || '#2E9348' */}}
+              src={this.state.selectedSchool.logo || '/assets/media/logos/logo-v5.png'}
             />
           </Link>
         </div>
@@ -217,7 +217,7 @@ class Navbar extends React.Component {
                         { path: "/teachers", label: "Teachers", icon: "las la-address-card" },
                         { path: "/students", label: "Students", icon: "las la-user-graduate" },
                         { path: "/parents", label: "Parents", icon: "las la-users" },
-                        { path: "/teams", label: "Teams", icon: "las la-users" },
+                        // { path: "/teams", label: "Teams", icon: "las la-users" },
                         { path: "/settings/school", label: "School Details", icon: "las la-cog" },
                     ].map(item => (
                         <li key={item.path} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">

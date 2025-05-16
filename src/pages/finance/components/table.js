@@ -1,202 +1,196 @@
 import React from "react";
 
-// --- Styles Adjusted ---
+// A simple spinner component (you can replace this with a more sophisticated one)
+const Spinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '150px', // Ensure spinner has some space
+                border: '1px solid #dee2e6', borderRadius: '0.25rem', padding: '20px' }}>
+    <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+      <span className="visually-hidden">Loading...</span> {/* For accessibility */}
+    </div>
+  </div>
+);
 
-const tableWrapperStyle = {
-  display: "block",         // Allows overflow control
-  width: "100%",            // *** IMPORTANT: Wrapper MUST take full width to know when content overflows ***
-  overflowX: "auto",        // Enable horizontal scrolling ONLY when content overflows
-  WebkitOverflowScrolling: "touch",
-  // border: "1px solid #e9ecef", // --- REMOVED BORDER ---
-  borderRadius: "0.25rem",     // Keep subtle rounding if desired (often invisible without border/background)
-  marginBottom: "1rem",
-};
-
-const tableStyle = {
-  // *** ENSURE NO width: '100%' here ***
-  borderCollapse: "collapse",
-  fontSize: "0.9rem",
-  backgroundColor: "#ffffff", // Keep or remove background as desired
-  // If the table STILL seems too wide, it might be due to wide content (long text, many columns)
-  // or CSS from external stylesheets targeting 'table' or '.table'.
-};
-
-// ... (Keep other styles: thStyle, tdStyle, actionsCellStyle, etc., as they were)
-const thStyle = {
-  backgroundColor: "#f8f9fa",
-  fontWeight: "500",
-  padding: "0.65rem 0.9rem",
-  textAlign: "left",
-  borderBottom: "1px solid #dee2e6", // Keep header bottom border for structure
-  whiteSpace: "nowrap",
-  color: "#495057",
-};
-
-const tdStyle = {
-  padding: "0.65rem 0.9rem",
-  borderBottom: "1px solid #e9ecef", // Keep row separator border
-  verticalAlign: "middle",
-  whiteSpace: "nowrap",
-  color: '#343a40',
-};
-
-const actionsCellStyle = {
-  ...tdStyle,
-  textAlign: "right",
-};
-
-const actionsContainerStyle = {
-  display: "flex",
-  justifyContent: "flex-end",
-  alignItems: "center",
-  gap: "0.5rem",
-};
-
-const iconButtonStyle = {
-  background: "none",
-  border: "none",
-  padding: "0.25rem",
-  cursor: "pointer",
-  lineHeight: 1,
-  color: '#6c757d',
-};
-
-const editIconStyle = {
-  color: "#17a2b8",
-  fontSize: "1.1rem",
-};
-
-const deleteIconStyle = {
-  color: "#dc3545",
-  fontSize: "1.1rem",
-};
-
-const textButtonStyle = {
-    padding: '0.2rem 0.5rem',
-    fontSize: '0.8rem',
-    lineHeight: '1.5',
-    borderRadius: '0.2rem',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-};
+// A simple "No Documents" icon (you can use an SVG or an icon font class)
+const NoDocumentsIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="64"
+    height="64"
+    fill="currentColor"
+    className="bi bi-folder-x" // Changed icon to something more generic for "no documents"
+    viewBox="0 0 16 16"
+    style={{ color: '#6c757d', marginBottom: '15px' }}
+  >
+    <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181L15.546 8H14.54l.265-2.917A1 1 0 0 0 13.828 4H9.828a1 1 0 0 1-.707-.293L8.414 3H4.172a1 1 0 0 0-.999.817L2.54 8H1.546l-.992-4.13zM10.146 11.854a.5.5 0 1 0-.708.708L10.293 13.5l-.853.854a.5.5 0 1 0 .707.707L11 14.207l.854.853a.5.5 0 1 0 .707-.707L11.707 13.5l.853-.854a.5.5 0 1 0-.708-.708L11 12.793l-.854-.853zM15 10.5a.5.5 0 0 0-.5-.5h-10a.5.5 0 0 0 0 1h10a.5.5 0 0 0 .5-.5" />
+  </svg>
+);
 
 
-// Functional Component
 export default props => {
-  // --- Input Validation ---
-  if (!props.headers || !props.data) {
-    console.warn("Table component requires 'headers' and 'data' props.");
-    return null;
+  const {
+    headers,
+    data,
+    loading,             // True if data is being fetched
+    options: propOptions,
+    onCreateNew,
+    edit,
+    delete: deleteItem,
+    invite,
+    transfer
+  } = props;
+
+  const defaultOptions = {
+    deleteable: true,
+    editable: true,
+    adminable: false,
+  };
+  const options = { ...defaultOptions, ...propOptions };
+
+  // Essential check: headers are required to build the table structure
+  if (!headers || !Array.isArray(headers) || headers.length === 0) {
+    console.warn("Table component requires a non-empty 'headers' array prop.");
+    // You might want to render a specific error UI here if headers are missing
+    return (
+        <div className="alert alert-danger" role="alert">
+            Table configuration error: Valid 'headers' prop is required.
+        </div>
+    );
   }
-  if (!Array.isArray(props.headers) || !Array.isArray(props.data)) {
-     console.warn("'headers' and 'data' props must be arrays.");
-     return null;
+
+  // 1. LOADING STATE:
+  // "when we have subscribed for data but haven't got it we are loading"
+  // This state takes precedence. If `loading` is true, we show the spinner
+  // regardless of the current content of `data` (it might be null, empty, or stale).
+  if (loading === true) {
+    return (
+      <div className="table-loading-state" style={{ textAlign: 'center', padding: '20px 0' }}>
+        <Spinner />
+        <p style={{marginTop: '10px', color: '#6c757d'}}>Loading data, please wait...</p>
+      </div>
+    );
   }
 
-  // --- Options Destructuring with Defaults ---
-  const defaultOptions = { deleteable: true, editable: true, adminable: false, inviteable: true };
-  const options = { ...defaultOptions, ...props.options };
+  // At this point, `loading` is `false`. Data fetching has (presumably) completed or hasn't started.
 
-  // Calculate if actions column is needed
-  const showActionsColumn = options.editable || options.deleteable || options.inviteable || options.adminable;
+  // 2. EMPTY STATE:
+  // "if we get an empty data we are saying no data found here"
+  // This means `loading` is `false`, and `data` is either not provided (null/undefined)
+  // or is an empty array.
+  if (!data || data.length === 0) {
+    return (
+      <div className="table-empty-state" style={{
+        textAlign: 'center',
+        padding: '50px 20px',
+        border: '1px solid #dee2e6', // Standard Bootstrap table border color
+        borderRadius: '0.25rem', // Standard Bootstrap border radius
+        backgroundColor: '#f8f9fa' // Light background
+      }}>
+        <NoDocumentsIcon />
+        <h4>No Data Found</h4>
+        <p>There are currently no items to display.</p>
+        {onCreateNew && typeof onCreateNew === 'function' && (
+          <button
+            type="button"
+            className="btn btn-primary mt-3"
+            onClick={onCreateNew}
+          >
+            <i className="la la-plus" /> Create New Item
+          </button>
+        )}
+      </div>
+    );
+  }
 
-  // --- Rendering ---
+  // 3. DATA AVAILABLE STATE:
+  // "if we get data we render it"
+  // This means `loading` is `false`, and `data` is an array with items.
+  const hasActions = options.editable || options.deleteable || options.adminable || props.invite || props.transfer;
+
   return (
-    // The wrapper div takes full width to manage scrolling correctly.
-    // The table *inside* sizes to its content due to lack of width: 100% and white-space: nowrap.
-    <div style={tableWrapperStyle}>
-      <table style={tableStyle}>
-        <thead>
+    <div style={{ display: "block", overflowX: "auto", whiteSpace: "nowrap" }}> {/* Wrapper for overflow */}
+      <table
+        className="table table-hover table-bordered" // Added table-bordered for clarity
+      >
+        <thead className="thead-light"> {/* Added a light theme for header */}
           <tr>
-            {props.headers.map(header => (
-              <th key={header.key} style={thStyle} title={header.label}>
+            {headers.map(header => (
+              <th key={header.key || header.label} title={header.tooltip || header.label}>
                 {header.label}
               </th>
             ))}
-            {showActionsColumn && (
-               <th style={{...thStyle, textAlign: 'right', paddingRight: '0.9rem'}}>Actions</th>
-            )}
+            {hasActions && <th key="actions-header" style={{minWidth: '150px'}}>Actions</th>}
           </tr>
         </thead>
         <tbody>
-          {props.data.length === 0 ? (
-            <tr>
-              <td
-                 colSpan={props.headers.length + (showActionsColumn ? 1 : 0)}
-                 style={{...tdStyle, textAlign: 'center', fontStyle: 'italic', color: '#6c757d', padding: '1rem'}}
-              >
-                No data available.
-              </td>
+          {data.map((row, rowIndex) => (
+            <tr key={row.id || `row-${rowIndex}`}> {/* Ensure row.id is unique if possible */}
+              {headers.map(header => (
+                <td key={`${header.key || header.label}-${row.id || rowIndex}`}>
+                  {row[header.key]}
+                </td>
+              ))}
+
+              {hasActions && (
+                <td
+                  data-field="Actions"
+                  data-autohide-disabled="false"
+                  className="kt-datatable__cell" // Keep if this class is relevant for your styling
+                >
+                  <span
+                    style={{
+                      overflow: "visible",
+                      position: "relative",
+                      display: "inline-flex",
+                      gap: "0.5rem" // Consistent spacing for buttons
+                    }}
+                  >
+                    {options.editable === true && typeof edit === 'function' && (
+                      <button
+                        title="Edit details"
+                        type="button"
+                        className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                        onClick={() => edit(row)}
+                      >
+                        <i style={{ color: "#1dc9b7" }} className="la la-edit" />
+                      </button>
+                    )}
+                    {options.deleteable === true && typeof deleteItem === 'function' && (
+                      <button
+                        title="Delete"
+                        type="button"
+                        className="btn btn-sm btn-clean btn-icon btn-icon-md"
+                        onClick={() => deleteItem(row)}
+                      >
+                        <i style={{ color: "#fd397a" }} className="la la-trash" />
+                      </button>
+                    )}
+                    {typeof invite === 'function' && (
+                       <button
+                          title="Invite"
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => invite(row)}
+                        >
+                          <i className="la la-envelope" />
+                          <strong>Invite</strong>
+                        </button>
+                    )}
+                    {options.adminable === true && typeof transfer === 'function' && (
+                      <button
+                        title="Transfer Ownership"
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => transfer(row)}
+                      >
+                        <i className="la la-random" />
+                        <strong>Transfer</strong>
+                      </button>
+                    )}
+                  </span>
+                </td>
+              )}
             </tr>
-          ) : (
-            props.data.map((row, index) => {
-               const rowKey = row.id || `row-${index}`;
-
-               return (
-                <tr key={rowKey}> {/* Removed hover style for cleaner example */}
-                  {props.headers.map(header => (
-                    <td key={`${rowKey}-${header.key}`} style={tdStyle}>
-                      {row[header.key] !== undefined && row[header.key] !== null ? String(row[header.key]) : <span style={{color: '#adb5bd'}}>-</span>}
-                    </td>
-                  ))}
-
-                  {showActionsColumn && (
-                     <td style={actionsCellStyle}>
-                       <div style={actionsContainerStyle}>
-                          {options.editable && props.edit && (
-                            <button
-                              title="Edit details"
-                              type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md"
-                              style={iconButtonStyle}
-                              onClick={() => props.edit(row)}
-                            >
-                              <i style={editIconStyle} className="la la-edit" />
-                            </button>
-                          )}
-                          {options.deleteable && props.delete && (
-                            <button
-                              title="Delete"
-                              type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md"
-                              style={iconButtonStyle}
-                              onClick={() => props.delete(row)}
-                            >
-                              <i style={deleteIconStyle} className="la la-trash" />
-                            </button>
-                          )}
-                          {options.inviteable && props.invite && (
-                            <button
-                              title="Invite User"
-                              type="button"
-                              className="btn btn-sm btn-outline-primary"
-                              style={textButtonStyle}
-                              onClick={() => props.invite(row)}
-                            >
-                              <i className="la la-envelope" />
-                              <span>Invite</span>
-                            </button>
-                          )}
-                           {options.adminable && props.transfer && (
-                            <button
-                              title="Transfer Ownership"
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              style={textButtonStyle}
-                              onClick={() => props.transfer(row)}
-                            >
-                              <i className="la la-random" />
-                              <span>Transfer</span>
-                            </button>
-                          )}
-                       </div>
-                     </td>
-                   )}
-                </tr>
-              );
-            })
-           )}
+          ))}
         </tbody>
       </table>
     </div>

@@ -16,6 +16,65 @@ const styles = {
   portletBody: {
     padding: '25px', // Standard portlet padding
   },
+  // NEW: Container for logo, name, and theme color
+  schoolHeaderSection: {
+    display: 'flex',
+    alignItems: 'center', // Align items vertically
+    gap: '20px', // Space between logo and info
+    marginBottom: '1.5rem', // Space below this header section
+    paddingBottom: '1.5rem', // Space before the border
+    borderBottom: '1px solid #ebedf2', // Subtle separator
+  },
+  logoContainer: {
+    flexShrink: 0, // Prevent logo container from shrinking
+  },
+  logoImage: {
+    width: '80px', // Fixed width for the logo
+    height: '80px', // Fixed height for the logo
+    objectFit: 'contain', // Ensures logo isn't stretched, maintains aspect ratio
+    borderRadius: '8px', // Slightly rounded corners for the logo
+    border: '1px solid #eee', // Light border around the logo
+  },
+  logoPlaceholder: {
+    width: '80px',
+    height: '80px',
+    backgroundColor: '#f8f9fa', // Light gray background
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.8rem',
+    color: '#adb5bd', // Muted text color
+    border: '1px solid #dee2e6',
+    textAlign: 'center',
+  },
+  schoolInfoMain: {
+    flexGrow: 1, // Allow this section to take remaining space
+  },
+  schoolNameDisplay: {
+    fontSize: '1.75rem', // Larger font size for school name
+    fontWeight: '600', // Bold
+    color: '#343a40', // Darker color for prominence
+    marginBottom: '0.5rem',
+    lineHeight: 1.3,
+  },
+  themeColorDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px', // Space between label, swatch, and value
+    fontSize: '0.9rem', // Slightly smaller font for this detail
+    color: '#595d6e',
+  },
+  themeColorSwatch: {
+    width: '20px',
+    height: '20px',
+    borderRadius: '4px',
+    border: '1px solid #ced4da', // Border for the swatch
+    display: 'inline-block',
+  },
+  themeColorLabel: {
+    fontWeight: '600', // Bold label
+  },
   detailsContainer: {
     marginBottom: '2rem', // Space below details before buttons
   },
@@ -26,7 +85,7 @@ const styles = {
   },
   label: {
     fontWeight: '600', // Make label bold
-    color: '#595d6e', // Standard label color (adjust if needed)
+    color: '#595d6e', // Standard label color
     width: '140px', // Fixed width for alignment
     flexShrink: 0, // Prevent label from shrinking
     marginRight: '10px',
@@ -38,8 +97,7 @@ const styles = {
   buttonContainer: {
     display: 'flex', // Align buttons horizontally
     gap: '10px', // Space between buttons
-    marginTop: '1.5rem', // Space above buttons if detailsContainer margin isn't enough
-    // justifyContent: 'flex-end', // Optional: Align buttons to the right
+    marginTop: '1.5rem', // Space above buttons
   },
   editButton: {
     // Using Bootstrap classes mostly, but can add overrides
@@ -52,12 +110,9 @@ const styles = {
 
 export default class SchoolDetails extends React.Component {
   state = {
-    school: null, // Initialize with null or empty object
-    // Add loading state if async operations need feedback
-    // loading: false,
+    school: null,
   };
 
-  // Use _isMounted to prevent state updates after unmounting
   _isMounted = false;
 
   componentDidMount() {
@@ -67,11 +122,9 @@ export default class SchoolDetails extends React.Component {
       this.setState({ school });
     }
 
-    // Subscribe and update state only if component is still mounted
     Data.schools.subscribe(({ schools }) => {
       if (this._isMounted) {
         const currentSelected = Data.schools.getSelected();
-        // Avoid unnecessary re-renders if the selected school hasn't changed
         if (currentSelected?.id !== this.state.school?.id) {
             this.setState({ school: currentSelected });
         }
@@ -81,33 +134,46 @@ export default class SchoolDetails extends React.Component {
 
   componentWillUnmount() {
     this._isMounted = false;
-    // Consider unsubscribing here if the Data utility provides a way
-    // Data.schools.unsubscribe(this.handleSchoolUpdate); // Example
+    // Data.schools.unsubscribe(this.handleSchoolUpdate); // Example if needed
   }
 
-  // Simplified save handler - assumes modal gets data and passes it to save
-  // Or, if the modal updates the Data store directly, this might not be needed
-  async saveSchoolDetails() {
-    // Logic might be handled within the EditSchoolModal or the Data utility
-    // If this component needs to trigger the save based on modal interaction,
-    // the modal's `save` prop might need to pass data back.
-    console.log("Triggering save (logic might be in modal/Data store)");
-    // Example if Data.schools.update needs explicit data from this component's state:
-    // const { id, name, phone, email, address, inviteSmsText } = this.state.school;
-    // if (id) {
-    //   Data.schools.update({ id, name, phone, email, address, inviteSmsText });
-    // }
+  async saveSchoolDetails(data) {
+    console.log("Triggering save for school details. Data received:", data);
+    const { id, name, phone, email, address, inviteSmsText, logo, themeColor } = data;
+
+    if (id) {
+      try {
+        const schoolDataPayload = {
+          id, name, phone, email, address, inviteSmsText, logo, themeColor
+        };
+        console.log("Updating school with payload:", schoolDataPayload);
+        await Data.schools.update(schoolDataPayload);
+        console.log(`School with ID ${id} updated successfully.`);
+        // Optionally, update local state if Data.schools.update doesn't trigger subscription immediately
+        // or if you want to reflect changes before subscription fires
+        // if (this._isMounted) {
+        //   this.setState({ school: { ...this.state.school, ...schoolDataPayload } });
+        // }
+      } catch (error) {
+        console.error(`Error updating school with ID ${id}:`, error);
+      }
+    } else {
+      console.warn("Cannot save school details: School ID is missing.");
+    }
   }
 
   async archiveSchool() {
     console.log("Triggering archive");
-    Data.schools.archive(); // Assumes this archives the currently selected school
+    if (this.state.school && this.state.school.id) {
+      Data.schools.archive(this.state.school.id); // Assuming archive might take an ID
+    } else {
+      Data.schools.archive(); // Fallback to archive selected if no ID passed
+    }
   }
 
   render() {
     const { school } = this.state;
 
-    // Display a loading state or placeholder if school data isn't available yet
     if (!school) {
       return (
         <div className="kt-portlet">
@@ -124,29 +190,42 @@ export default class SchoolDetails extends React.Component {
     }
 
     return (
-      // Assuming kt-portlet is the main container structure you want
       <div className="kt-portlet kt-portlet--height-fluid">
-        {/* Modals can usually be rendered anywhere, they position themselves */}
-        {/* Pass the currently loaded school data to the modals */}
         <DeleteSchoolModal save={this.archiveSchool} schoolToDelete={school} />
-        <EditSchoolModal save={this.saveSchoolDetails} schoolToEdit={school} />
+        <EditSchoolModal save={data => this.saveSchoolDetails(data)} edit={school} />
 
-        <div className="kt-portlet__head">
+        <div className="kt-portlet__head">  
           <div className="kt-portlet__head-label">
-            <h3 className="kt-portlet__head-title">School Information</h3>
+            {/* Title of the portlet */}
+            <h3 className="kt-portlet__head-title">School Details</h3>
           </div>
-          {/* Optional: Add head tools/actions here if needed */}
         </div>
 
-        {/* Use Portlet Body for consistent padding */}
         <div className="kt-portlet__body" style={styles.portletBody}>
+          {/* School Header: Logo, Name, Theme Color */}
+          <div style={styles.schoolHeaderSection}>
+            <div style={styles.logoContainer}>
+              {school.logo ? (
+                <img src={school.logo} alt={`${school.name || 'School'} Logo`} style={styles.logoImage} />
+              ) : (
+                <div style={styles.logoPlaceholder}><span>No Logo</span></div>
+              )}
+            </div>
+            <div style={styles.schoolInfoMain}>
+              <h4 style={styles.schoolNameDisplay}>{school.name || 'N/A'}</h4>
+              {school.themeColor && (
+                <div style={styles.themeColorDisplay}>
+                  <span style={styles.themeColorLabel}>Theme:</span>
+                  <div style={{ ...styles.themeColorSwatch, backgroundColor: school.themeColor }} title={`Theme Color: ${school.themeColor}`} />
+                  <span style={styles.value}>{school.themeColor}</span>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Structured Details */}
           <div style={styles.detailsContainer}>
-            <div style={styles.detailItem}>
-              <span style={styles.label}>School Name:</span>
-              <span style={styles.value}>{school.name || 'N/A'}</span>
-            </div>
+            {/* School Name is now in the header, so we can remove it from here if it was present */}
             <div style={styles.detailItem}>
               <span style={styles.label}>Phone:</span>
               <span style={styles.value}>{school.phone || 'N/A'}</span>
@@ -159,31 +238,29 @@ export default class SchoolDetails extends React.Component {
               <span style={styles.label}>Address:</span>
               <span style={styles.value}>{school.address || 'N/A'}</span>
             </div>
-             {/* Add other fields like inviteSmsText if needed */}
-             {/*
+            {school.inviteSmsText && ( // Conditionally render Invite SMS if present
              <div style={styles.detailItem}>
                <span style={styles.label}>Invite SMS:</span>
-               <span style={styles.value}>{school.inviteSmsText || 'N/A'}</span>
+               <span style={styles.value}>{school.inviteSmsText}</span>
              </div>
-             */}
+            )}
           </div>
 
           {/* Buttons Container */}
           <div style={styles.buttonContainer}>
             <button
-              type="button" // Use type="button" for non-submitting buttons
-              className="btn btn-outline-brand" // Keep existing Bootstrap class
+              type="button"
+              className="btn btn-outline-brand"
               style={styles.editButton}
-              onClick={() => editSchoolModalInstance.show()} // Consider managing modal visibility via state instead
+              onClick={() => editSchoolModalInstance.show()}
             >
               Edit Details
             </button>
-
             <button
-              type="button" // Use type="button"
-              className="btn btn-danger" // Keep existing Bootstrap class
+              type="button"
+              className="btn btn-danger"
               style={styles.archiveButton}
-              onClick={() => deleteSchoolModalInstance.show()} // Consider managing modal visibility via state instead
+              onClick={() => deleteSchoolModalInstance.show()}
             >
               Archive School
             </button>
