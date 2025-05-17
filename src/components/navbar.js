@@ -177,16 +177,23 @@ class Navbar extends React.Component {
             
           >
             <ul className="kt-menu__nav ">
+              {!this.state.availableSchools.length && (
+                <li className="kt-menu__item  kt-menu__item--active" aria-haspopup="false">
+                  <a href="javascript:;" className="kt-menu__link">
+                    <span className="kt-menu__link-text" style={{fontSize: '1.5rem', fontWeight: 'bold'}}>Fetching...</span>
+                  </a>
+                </li>
+              )}
               {(this.state.availableSchools.length === 1 || this.state.userRole === "admin") && this.state.selectedSchool && this.state.selectedSchool.name ? (
                 <li className="kt-menu__item  kt-menu__item--active" aria-haspopup="false">
                   <a href="javascript:;" className="kt-menu__link">
-                    <span className="kt-menu__link-text" style={{fontSize: '1.5rem', fontWeight: 'bold'}}>{this.state.selectedSchool.name}</span>
+                    <span className="kt-menu__link-text" style={{ fontWeight: 'bold'}}>{this.state.selectedSchool.name}</span>
                   </a>
                 </li>
               ) : (
                 <li className="kt-menu__item  kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                   <a href="javascript:;" className="kt-menu__link kt-menu__toggle">
-                    <span className="kt-menu__link-text">{this.state.selectedSchool.name}</span>
+                    <span className="kt-menu__link-text" style={{ fontWeight: 'bold'}}>{this.state.selectedSchool.name}</span>
                     <i className="kt-menu__hor-arrow la la-angle-down" />
                     <i className="kt-menu__ver-arrow la la-angle-right" />
                   </a>
@@ -196,12 +203,23 @@ class Navbar extends React.Component {
                         this.state.availableSchools.map(school => (
                           <li key={school.id} onClick={() => this.switchSchools(school)} className="kt-menu__item  kt-menu__item--submenu" data-ktmenu-submenu-toggle="hover" aria-haspopup="true">
                             <a href="javascript:void(0);" className="kt-menu__link">
-                              <i className="kt-menu__link-bullet kt-menu__link-bullet--line">
-                                <span />
+                              <i className="kt-menu__link-icon">
+                                {school.logo ? (
+                                  <img
+                                    src={`${school.logo}`}
+                                    style={{
+                                      width: '25px',
+                                      height: 'auto',
+                                      borderRadius: '50%',
+                                      transition: 'all 0.3s ease',
+                                      ':hover': {
+                                        transform: 'scale(1.1)',
+                                      },
+                                    }}
+                                  />
+                                ) : <i className="la la-building" />}
                               </i>
-                              <span className="kt-menu__link-text">
-                                <span className="kt-menu__link-text">{school.name}</span>
-                              </span>
+                              <span className="kt-menu__link-text" style={{ fontWeight: 'bold'}}>{school.name}</span>
                             </a>
                           </li>
                         ))
