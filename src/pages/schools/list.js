@@ -3,7 +3,7 @@ import React from "react";
 import Table from "./components/table";
 import AddModal from "./add";
 import UploadModal from "./upload";
-import EditModal from "./edit";
+import EditModal from "../settings/school/components/edit_school_details";
 import DeleteModal from "./delete";
 import InviteModal from "./invite";
 import Data from "../../utils/data";
