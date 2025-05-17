@@ -120,6 +120,8 @@ class Navbar extends React.Component {
         className="kt-header kt-grid__item kt-grid kt-grid--ver  kt-header--fixed "
         style={{
           backgroundColor: this.state.selectedSchool.themeColor || '#2f2e38',
+          display: 'flex',
+          justifyContent: 'space-between',
         }}
       >
         {/* 1. Removed Pace component */}
@@ -155,7 +157,7 @@ class Navbar extends React.Component {
             // 3. Style for floating mobile drawer
             margin: '15px', // Margin around the drawer
             borderRadius: '10px', // Rounded edges
-            boxShadow: '0 5px 15px rgba(0,0,0,0.2)', // Floating effect
+            // boxShadow: '0 5px 15px rgba(0,0,0,0.2)', // Floating effect
             height: 'calc(100% - 30px)', // Adjust height to account for top/bottom margins
             // KTOffcanvas will handle width and actual positioning (e.g. right: 0 when open)
             // The margin will then create the space from the edge.
@@ -169,13 +171,16 @@ class Navbar extends React.Component {
           <div
             id="kt_header_menu"
             className="kt-header-menu kt-header-menu-mobile "
+            style={{
+              paddingLeft: '0px !important',
+            }}
             
           >
             <ul className="kt-menu__nav ">
               {(this.state.availableSchools.length === 1 || this.state.userRole === "admin") && this.state.selectedSchool && this.state.selectedSchool.name ? (
                 <li className="kt-menu__item  kt-menu__item--active" aria-haspopup="false">
                   <a href="javascript:;" className="kt-menu__link">
-                    <span className="kt-menu__link-text">{this.state.selectedSchool.name}</span>
+                    <span className="kt-menu__link-text" style={{fontSize: '1.5rem', fontWeight: 'bold'}}>{this.state.selectedSchool.name}</span>
                   </a>
                 </li>
               ) : (

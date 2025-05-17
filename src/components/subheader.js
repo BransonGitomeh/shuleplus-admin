@@ -102,83 +102,40 @@ class Subheader extends React.Component {
         );
     }
 
-    renderLowBalanceWarning = () => {
-        const { selectedSchool } = this.state;
-        // Check selectedSchool and financial property before accessing balance
-        // if (!selectedSchool || !selectedSchool.financial || selectedSchool.financial.balance >= MIN_BALANCE) {
-        //     return null;
-        // }
-
-        return (
-            <div
-                className="kt-subheader__low-balance-warning" // Use a more specific class
-                style={{
-                    backgroundColor: "rgb(130 86 33)", // Consider SCSS variables for colors
-                    color: "white",
-                    padding: "10px 0", // Add some padding
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    width: "100%", // Ensure it takes full width of its container
-                }}
-            >
-                <div style={{ marginLeft: "25px", marginRight: "10px" }} className="kt-subheader__title"> {/* Match subheader padding */}
-                    <div className="kt-subheader__breadcrumbs"> {/* Re-use breadcrumbs styling for consistency */}
-                        Your balance is below KSH {MIN_BALANCE}.
-                    </div>
-                </div>
-                <div className="kt-subheader__toolbar">
-                    <div className="kt-subheader__toolbar-wrapper" style={{ marginRight: "25px" }}> {/* Match subheader padding */}
-                        <button
-                            className="btn btn-primary btn-sm btn-bold btn-upper"
-                            style={{
-                                backgroundColor: "#4CB050",
-                                borderColor: "#4CB050",
-                                // float: "right", // flexbox handles alignment
-                            }}
-                            onClick={() =>
-                                this.props.history.push({
-                                    pathname: "/finance/topup",
-                                    search: "?" + new URLSearchParams({ popup: true }).toString(),
-                                })
-                            }
-                        >
-                            <i className="la la-mobile" style={{ marginRight: 5 }}></i>Top Up
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    
 
     render() {
-        const lowBalanceWarning = this.renderLowBalanceWarning();
-
+        
         return (
-            // Use a wrapper div if you need to stack the subheader and the warning
-            // Or, if the warning should be part of the subheader itself, place it inside
-            <div className="subheader-wrapper"> {/* Optional wrapper */}
-                <div id="kt_subheader" className="kt-subheader kt-grid__item">
-                    <div className="kt-container kt-container--fluid">
-                        {/* Main Subheader Content */}
-                        <div className="kt-subheader__main"> {/* Added for potential flex structure */}
-                            <div className="kt-subheader__title">
-                                <div className="kt-subheader__breadcrumbs">
-                                    {this.renderBreadcrumbs()}
-                                </div>
+            <div id="kt_subheader" className="kt-subheader kt-grid__item">
+                <div className="kt-container kt-container--fluid">
+                    <div className="kt-subheader__main d-flex justify-content-between">
+                        <div className="kt-subheader__title">
+                            <div className="kt-subheader__breadcrumbs">
+                                {this.renderBreadcrumbs()}
                             </div>
-                            {/* Toolbar can go here if needed for the main subheader */}
-                            {/* <div className="kt-subheader__toolbar"> ... </div> */}
                         </div>
-
-                        {/* Conditionally render the warning below the main content,
-                            but still within the kt_container if you want consistent padding */}
-                        {/* Or, if it's truly a separate banner, it can be outside kt_container
-                            but then you'd manage its full-width styling separately */}
+                        <div className="kt-subheader__subtitle">
+                            <div className="kt-subheader__low-balance">
+                                <button
+                                    className="btn btn-primary btn-sm btn-bold btn-upper"
+                                    style={{
+                                        backgroundColor: "#4CB050",
+                                        borderColor: "#4CB050",
+                                    }}
+                                    onClick={() =>
+                                        this.props.history.push({
+                                            pathname: "/finance/topup",
+                                            search: "?" + new URLSearchParams({ popup: true }).toString(),
+                                        })
+                                    }
+                                >
+                                    <i className="la la-mobile" style={{ marginRight: 5 }}></i>{`Balance is < 300, Top Up`}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {/* Render the low balance warning. It will be a full-width bar below the main subheader */}
-                {lowBalanceWarning}
             </div>
         );
     }
