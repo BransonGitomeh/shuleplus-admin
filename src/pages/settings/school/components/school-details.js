@@ -11,6 +11,8 @@ import Data from "../../../../utils/data";
 const editSchoolModalInstance = new EditSchoolModal();
 const deleteSchoolModalInstance = new DeleteSchoolModal();
 
+var toastr = window.toastr;
+
 // --- Inline Styles ---
 const styles = {
   portletBody: {
@@ -245,6 +247,61 @@ export default class SchoolDetails extends React.Component {
              </div>
             )}
           </div>
+
+          {/* Login and Register URLs */}
+          <div style={styles.detailsContainer}>
+            <div style={styles.detailItem}>
+              <span style={styles.label}>Login URL:</span>
+              <span style={styles.value}>
+                
+                <button
+                  type="button"
+                  className="btn btn-outline-brand"
+                  style={styles.copyButton}
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/?school=${school.id}#/`)
+                      .then(() => toastr.success('Copied to clipboard'))
+                      .catch(err => toastr.error(`Error copying to clipboard: ${err.message}`));
+                  }}
+                >
+                  Copy
+                </button>
+                <a
+                  href={`${window.location.origin}/?school=${school.id}#/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {`${window.location.origin}/?school=${school.id}#/`}
+                </a>
+              </span>
+            </div>
+            <div style={styles.detailItem}>
+              <span style={styles.label}>Register URL:</span>
+              <span style={styles.value}>
+                
+                <button
+                  type="button"
+                  className="btn btn-outline-brand"
+                  style={styles.copyButton}
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/#/register?school=${school.id}`)
+                      .then(() => toastr.success('Copied to clipboard'))
+                      .catch(err => toastr.error(`Error copying to clipboard: ${err.message}`));
+                  }}
+                >
+                  Copy
+                </button>
+                <a
+                  href={`${window.location.origin}/#/register?school=${school.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {`${window.location.origin}/#/register?school=${school.id}`}
+                </a>
+              </span>
+            </div>
+          </div>
+
 
           {/* Buttons Container */}
           <div style={styles.buttonContainer}>
