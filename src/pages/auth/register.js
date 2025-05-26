@@ -439,7 +439,7 @@ const Register = () => {
                 <div className="form-group"><input onChange={(e) => setAdminPassword(e.target.value)} value={adminPassword} className="form-control" type="password" placeholder="Create Password (min. 6 characters)" name="adminPassword" required /></div>
                 <button type="submit" className="btn btn-brand btn-block btn-lg mt-4" disabled={loading}>{loading ? "Registering..." : "Register & Proceed"}</button>
             </form>
-            <div className="mt-4 text-center"><Link to="/login" className="kt-link">Already have an account? Login</Link></div>
+            <div className="mt-4 text-center"><Link to="/" className="kt-link">Already have an account? Login</Link></div>
         </>
     );
 
@@ -505,7 +505,7 @@ const Register = () => {
                 </button>
             </form>
              <div className="mt-4 text-center">
-                <Link to={`/login${schoolIdFromUrl ? `?schoolId=${schoolIdFromUrl}` : ''}`} className="kt-link">Already registered for {currentSchoolDisplayName}? Login</Link>
+                <Link to={`/${schoolIdFromUrl ? `?schoolId=${schoolIdFromUrl}` : ''}`} className="kt-link">Already registered for {currentSchoolDisplayName}? Login</Link>
             </div>
         </>
     );
