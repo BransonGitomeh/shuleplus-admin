@@ -9,17 +9,29 @@ if (window.location.href.includes('localhost')) {
    API = `https://cloud.shuleplus.co.ke/api`
 }
 
+const queryCache = {}
+
 const query = (query, params) => {
     // make request to the server
     return new Promise(async (resolve, reject) => {
+        const cacheKey = `${query}${JSON.stringify(params)}`
+
+        if (queryCache[cacheKey]) {
+            return resolve(queryCache[cacheKey])
+        }
+
         try {
             const { data: { data } } = await axios.post(`${API}/graph`, {
-                query
+                query,
+                ...params
             }, {
                 headers: {
                     authorization: localStorage.getItem("authorization")
                 }
             })
+
+            localStorage.setItem(cacheKey, JSON.stringify(data))
+            queryCache[cacheKey] = data
 
             resolve(data)
         } catch (error) {
