@@ -12354,7 +12354,7 @@ code {
 
 @media (min-width: 1439px) {
   .kt-container {
-    width: 1380px;
+    /* width: 1380px; */
     margin: 0 auto; }
     .kt-container.kt-container--fluid {
       width: 100%;

@@ -266,13 +266,13 @@ export default class SchoolDetails extends React.Component {
                 >
                   Copy
                 </button>
-                <a
+                {/* <a
                   href={`${window.location.origin}/?school=${school.id}#/`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {`${window.location.origin}/?school=${school.id}#/`}
-                </a>
+                </a> */}
               </span>
             </div>
             <div style={styles.detailItem}>
@@ -291,13 +291,13 @@ export default class SchoolDetails extends React.Component {
                 >
                   Copy
                 </button>
-                <a
+                {/* <a
                   href={`${window.location.origin}/#/register?school=${school.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   {`${window.location.origin}/#/register?school=${school.id}`}
-                </a>
+                </a> */}
               </span>
             </div>
           </div>

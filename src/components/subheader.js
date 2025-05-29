@@ -3,179 +3,163 @@ import { withRouter } from "react-router";
 import Data from "../utils/data";
 
 const MIN_BALANCE = 300;
+// These heights are for the elements themselves, not for fixed positioning calculations here.
+const BREADCRUMB_SUBHEADER_HEIGHT = 50; // Approx. height for Metronic subheader
+const NOTIFICATION_BAR_HEIGHT = 45;    // Height for the notification bar
 
 class Subheader extends React.Component {
-    constructor(props) {
-        super(props);
-        const initialSchools = Data.schools.list() || [];
-        // Ensure getSelected is called after list if it depends on it, or handle undefined
-        let initialSelectedSchool = Data.schools.getSelected();
-        if (!initialSelectedSchool && initialSchools.length > 0) {
-            initialSelectedSchool = initialSchools[0];
-        } else if (!initialSelectedSchool) {
-            initialSelectedSchool = {}; // Default to empty object if no schools
-        }
+  state = {
+    selectedSchool: {},
+  };
 
+  componentDidMount() {
+    const school = Data.schools.getSelected();
+    this.setState({ selectedSchool: school || {} });
 
-        this.state = {
-            selectedSchool: initialSelectedSchool,
-            availableSchools: initialSchools,
-        };
-        this.schoolUpdateSubscription = null;
+    Data.schools.subscribe(({ selectedSchool: newSelectedSchool, schools }) => {
+      // Ensure selectedSchool is always an object, even if null/undefined from subscribe
+      this.setState({
+        selectedSchool: newSelectedSchool || (schools && schools.length > 0 ? schools[0] : {}),
+      });
+    });
+  }
+
+  render() {
+    const { links } = this.props;
+    const { selectedSchool } = this.state;
+
+    const showBreadcrumbs = links && links.length > 0;
+    // Ensure selectedSchool and selectedSchool.financial exist before accessing balance
+    const showLowBalanceNotification =
+      selectedSchool &&
+      selectedSchool.financial &&
+      typeof selectedSchool.financial.balance === 'number' && // Make sure balance is a number
+      selectedSchool.financial.balance < MIN_BALANCE;
+
+    if (!showBreadcrumbs && !showLowBalanceNotification) {
+      return null; // Render nothing if there's nothing to show
     }
 
-    componentDidMount() {
-        this.loadInitialData(); // Load initial data first
-        this.subscribeToSchoolUpdates(); // Then subscribe
-    }
-
-    // componentWillUnmount() {
-    //     if (this.schoolUpdateSubscription) {
-    //         // Assuming Data.schools.subscribe returns an unsubscribe function
-    //         this.schoolUpdateSubscription();
-    //     }
-    // }
-
-    loadInitialData = () => {
-        const schools = Data.schools.list() || [];
-        const selectedSchoolIdFromStorage = localStorage.getItem("school");
-        let school = Data.schools.getSelected(); // Try to get from Data service first
-
-        if (!school || !school.id) { // If not found or invalid from Data.schools.getSelected()
-            if (selectedSchoolIdFromStorage) {
-                school = schools.find(s => String(s.id) === String(selectedSchoolIdFromStorage));
-            }
-            if (!school || !school.id) { // If still not found, or not in storage, pick first
-                 school = schools.length > 0 ? schools[0] : {};
-            }
-        }
-        
-        this.setState({
-            availableSchools: schools,
-            selectedSchool: school,
-        });
-    };
-
-    handleSchoolUpdate = ({ schools: updatedSchoolsList }) => { // Destructure and rename for clarity
-        const currentSelectedSchoolId = this.state.selectedSchool?.id || localStorage.getItem("school");
-        let newSelectedSchool = updatedSchoolsList.find(s => String(s.id) === String(currentSelectedSchoolId));
-
-        if (!newSelectedSchool && updatedSchoolsList.length > 0) {
-            newSelectedSchool = updatedSchoolsList[0]; // Fallback to first school if current selection disappears
-        } else if (!newSelectedSchool) {
-            newSelectedSchool = {}; // Fallback to empty object
-        }
-
-        this.setState({
-            availableSchools: updatedSchoolsList || [],
-            selectedSchool: newSelectedSchool,
-        });
-    };
-
-    subscribeToSchoolUpdates = () => {
-        this.schoolUpdateSubscription = Data.schools.subscribe(this.handleSchoolUpdate);
-    };
-
-    renderBreadcrumbs = () => {
-        const { links } = this.props;
-        if (!links || !Array.isArray(links) || links.length === 0) {
-            // Return a non-breaking space or an empty span to maintain structure if needed, or null
-            return <span className="kt-subheader__separator kt-subheader__separator--v"></span>;
-        }
-
-        const [firstLink, ...remainingLinks] = links;
-
-        return (
-            <>
-                {firstLink && (
-                    <span className="kt-subheader__breadcrumbs-link kt-subheader__breadcrumbs-link--home">
-                        <a className="kt-link kt-link--white">{firstLink}</a>
-                    </span>
-                )}
-                {remainingLinks.map((link, index) => (
-                    link && (
-                        <React.Fragment key={`${link}-${index}`}>
-                            <span className="kt-subheader__breadcrumbs-separator" />
-                            <span className="kt-subheader__breadcrumbs-link">
-                                <a className="kt-link kt-link--white">{link}</a>
-                            </span>
-                        </React.Fragment>
-                    )
-                ))}
-            </>
-        );
-    }
-
-    renderTopUpSection = () => {
-        const { selectedSchool } = this.state;
-        const balance = selectedSchool?.financial?.balance; // raw numerical balance
-        const balanceFormated = selectedSchool?.financial?.balanceFormated; // "KES X.XX"
-
-        if (balance === undefined && !balanceFormated) { // Still loading or no financial data
-            return (
-                <button
-                    className="btn btn-secondary btn-sm btn-bold btn-upper"
-                    disabled
-                    style={{cursor: 'default'}}
+    return (
+      // This wrapper div is part of the normal document flow.
+      // It will appear after the padding applied by MainLayout for the fixed navbars.
+      <div
+        style={{
+          paddingLeft: "25px", // Standard Metronic container horizontal padding
+          paddingRight: "25px",
+          marginTop: "20px", // This creates the space "slightly below" the fixed nav area
+        }}
+      >
+        {/* Low Balance Notification - Rendered first for prominence */}
+        {showLowBalanceNotification && (
+          <div
+            id="kt_subheader_notification" // Unique ID
+            // Re-using kt-subheader for some very basic grid/item structure if Metronic CSS provides it.
+            // Otherwise, it's mostly custom styled.
+            className="kt-subheader kt-grid__item"
+            style={{
+              height: `${NOTIFICATION_BAR_HEIGHT}px`,
+              backgroundColor: "#FA064B", // Vibrant red
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              borderRadius: "8px", // Rounded corners
+              padding: "0 20px", // Internal horizontal padding
+              marginBottom: showBreadcrumbs ? "20px" : "0", // Space below if breadcrumbs follow
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)", // Subtle shadow
+            }}
+          >
+            {/*
+              Using kt-container--fluid ensures the content within respects Metronic's fluid width.
+              Removed explicit padding from here as the bar itself has padding.
+            */}
+            <div className="kt-container kt-container--fluid" style={{padding: 0}}>
+              <div
+                // Using kt-subheader__main for potential Metronic flex alignment,
+                // but overriding to ensure space-between works well.
+                className="kt-subheader__main"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <div
+                  className="kt-subheader__title" // Using for semantic grouping
+                  style={{ color: "white", fontSize: "0.9rem", flexGrow: 1, marginRight: '15px' }}
                 >
-                    Checking Balance...
-                </button>
-            );
-        }
-
-        const isLowBalance = typeof balance === 'number' && balance < MIN_BALANCE;
-
-        if (isLowBalance) {
-            return (
-                <button
-                    className="btn btn-secondary btn-sm btn-bold btn-upper"
-                    disabled
-                    style={{cursor: 'default'}}
-                    onClick={() =>
-                        this.props.history.push({
-                            pathname: "/finance/topup",
-                            search: "?" + new URLSearchParams({ popup: true }).toString(),
-                        })
-                    }
-                >
-                    {/* Text as per screenshot, MIN_BALANCE makes it dynamic if that value changes */}
-                    {`BALANCE IS < ${MIN_BALANCE}, TOP UP`}
-                </button>
-            );
-        } else {
-            // Display current balance if not low
-            return (
-                 <div className="kt-subheader__balance-display" style={{color: 'white', fontSize: '0.9rem', fontWeight: '500'}}>
-                    <span className="kt-link kt-link--white">
-                        Balance: {balanceFormated || (typeof balance === 'number' ? `KES ${balance.toFixed(2)}` : 'N/A')}
-                    </span>
-                 </div>
-            );
-        }
-    }
-
-    render() {
-        return (
-            <div id="kt_subheader" className="kt-subheader kt-grid__item">
-                <div className="kt-container kt-container--fluid">
-                    {/* Added align-items-center for vertical alignment */}
-                    <div className="kt-subheader__main d-flex justify-content-between align-items-center">
-                        <div className="kt-subheader__title">
-                            <div className="kt-subheader__breadcrumbs">
-                                {this.renderBreadcrumbs()}
-                            </div>
-                        </div>
-                        <div className="kt-subheader__toolbar"> {/* Changed class to kt-subheader__toolbar for semantic correctness (actions/buttons) */}
-                            {/* Kept kt-subheader__low-balance if it has specific styling, otherwise it can be removed */}
-                            <div className="kt-subheader__low-balance"> 
-                                {this.renderTopUpSection()}
-                            </div>
-                        </div>
-                    </div>
+                  Your account balance is currently below KSH {MIN_BALANCE},
+                  please top up your account to avoid service disruption.
                 </div>
+                <div className="kt-subheader__toolbar"> {/* For button alignment */}
+                  <button
+                    onClick={() =>
+                      this.props.history.push({
+                        pathname: "/finance/topup",
+                        // search: "?" + new URLSearchParams({ popup: true }).toString(),
+                      })
+                    }
+                    className="btn btn-sm btn-light" // Light button for contrast on red
+                    style={{ fontWeight: "bold", whiteSpace: 'nowrap' }}
+                  >
+                    Top Up Using Mpesa
+                  </button>
+                </div>
+              </div>
             </div>
-        );
-    }
+          </div>
+        )}
+
+        {/* Breadcrumb Subheader */}
+        {showBreadcrumbs && (
+          <div
+            id="kt_subheader" // Standard Metronic ID
+            className="kt-subheader kt-grid__item"
+            style={{ backgroundColor: "#fff", borderRadius: "8px", padding: "15px 0" }}
+          >
+            <div className="kt-container kt-container--fluid">
+              <div className="kt-subheader__main d-flex justify-content-between align-items-center">
+                <div className="kt-subheader__title">
+                  <div className="kt-subheader__breadcrumbs">
+                    {links.map((link, index) => (
+                      <React.Fragment key={link + index}>
+                        <span className="kt-subheader__breadcrumbs-separator">
+                          {index !== 0 && (
+                            <i className="flaticon2-arrow-head1" />
+                          )}
+                        </span>
+                        <span className="kt-subheader__breadcrumbs-link">
+                          <a
+                            href="#" // Should be real links or router Links
+                            onClick={(e) => e.preventDefault()} // Prevent default for placeholder
+                            className={`kt-link kt-link--white ${
+                              index === 0
+                                ? "kt-subheader__breadcrumbs-link--home"
+                                : ""
+                            }`}
+                          >
+                            {link}
+                          </a>
+                        </span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+                {/* <div className="kt-subheader__toolbar">
+                  <div className="kt-subheader__low-balance">
+                    <div className="kt-subheader__balance-display" style={{ color: "white", fontSize: "0.9rem", fontWeight: 500 }}>
+                      Balance: KSH&nbsp;{accountBalance}
+                    </div>
+                  </div>
+                </div> */}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 }
 
 export default withRouter(Subheader);
