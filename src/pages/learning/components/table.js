@@ -1,155 +1,187 @@
 import React from 'react';
 
-// Define styles directly within the component file
 const tableStyles = `
   .enhanced-table-wrapper {
-    overflow-x: auto; /* Enable horizontal scroll ONLY if the table content exceeds the wrapper */
+    overflow-x: auto;
     width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   }
   .enhanced-table {
-    width: 100%; /* Make table try to take full width */
-    border-collapse: collapse;
-    table-layout: auto; /* Let browser decide column widths initially */
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    font-size: 0.9rem;
   }
   .enhanced-table th,
   .enhanced-table td {
-    padding: 10px 15px; /* Adjust padding as needed */
-    border: 1px solid #eee; /* Lighter borders */
-    white-space: nowrap; /* Prevent text wrapping in data cells */
-    vertical-align: middle; /* Align content vertically */
-    text-align: left; /* Default text alignment */
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+    text-align: left;
+  }
+  .enhanced-table td {
+    white-space: normal; /* Allow HTML content to wrap by default */
   }
   .enhanced-table th {
-    background-color: #f8f9fa; /* Slight background for headers */
-    font-weight: 600; /* Make headers bolder */
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    text-transform: capitalize; /* Retained, but HTML content might override */
+    white-space: normal; /* Allow HTML headers to wrap if needed */
+  }
+  .enhanced-table thead tr:first-child th:first-child {
+    border-top-left-radius: 8px;
+  }
+  .enhanced-table thead tr:first-child th:last-child {
+    border-top-right-radius: 8px;
+  }
+  .enhanced-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+  .enhanced-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+  }
+   .enhanced-table tbody tr:last-child td {
+    border-bottom: none;
   }
   .enhanced-table tbody tr {
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; /* Added box-shadow transition */
   }
-  /* Style for selectable rows */
   .enhanced-table tbody tr.selectable-row:hover {
-    background-color: #f5f5f5; /* Hover effect only if selectable */
+    background-color: #f1f3f5;
     cursor: pointer;
   }
   .enhanced-table tbody tr.selected-row {
-    background-color: #e8f0fe; /* Highlight selected row (light blue) */
-    /* font-weight: bold; */ /* Optional: make text bold */
+    background-color: #e6f7ff; /* Light blue background */
+    font-weight: 500;        /* Slightly bolder text */
+    /* Optional: Add a more distinct left border for selection */
+    /* box-shadow: inset 4px 0 0px #007bff; */
   }
-  /* --- Action Cell Styling --- */
+  .enhanced-table tbody tr.selected-row td {
+    /* Optional: Change text color for selected row cells if needed */
+    /* color: #0056b3; */
+  }
   .enhanced-table .action-cell {
-    text-align: right; /* Align content (the span) to the right */
-    width: 1%; /* Make the cell itself as narrow as possible */
-    white-space: nowrap; /* Ensure actions don't wrap */
-    padding-right: 10px; /* Add some padding to the right edge */
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+    padding-right: 10px;
   }
-  /* Span containing the action buttons */
   .enhanced-table .action-buttons-container {
-    display: inline-flex; /* Align buttons in a row */
-    gap: 5px; /* Space between buttons */
-    justify-content: flex-end; /* Push buttons to the end of the flex container (span) */
+    display: inline-flex;
+    gap: 8px;
+    justify-content: flex-end;
   }
   .enhanced-table .action-button {
-    /* Resetting some potential overrides if needed */
     margin: 0;
-    padding: 5px;
+    padding: 6px;
     line-height: 1;
-    /* Ensure buttons don't prevent row selection unless clicked directly */
-    /* pointer-events: auto; */ /* Buttons should always be clickable */
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+  .enhanced-table .action-button:hover {
+    background-color: #e9ecef;
   }
   .enhanced-table .action-button i {
-     font-size: 1.2rem; /* Slightly larger icons */
+     font-size: 1.1rem;
+  }
+  .enhanced-table .html-content-cell p:last-child,
+  .enhanced-table .html-content-cell div:last-child,
+  .enhanced-table .html-content-cell span:last-child,
+  .enhanced-table th p:last-child, /* Apply to headers as well */
+  .enhanced-table th div:last-child,
+  .enhanced-table th span:last-child {
+    margin-bottom: 0;
+  }
+  .enhanced-table .no-data-cell {
+    text-align: center;
+    white-space: normal;
+    padding: 30px 15px;
+    color: #6c757d;
+    font-style: italic;
   }
 `;
 
-// The Component (using original export style)
-export default props => {
+const EnhancedTable = props => {
   const {
-    headers,
+    headers, // Array of { key: string, label: string (can be HTML) }
     data,
-    options: rawOptions, // Rename to avoid conflict with internal 'options' variable
-    show, // Used for selection/viewing
+    options: rawOptions,
+    show,
     edit,
-    delete: deleteItem, // Rename 'delete' as it's a reserved keyword
-    selectedId, // <<< ADDED: New optional prop to indicate the ID of the selected row
+    delete: deleteItem,
+    selectedId,
   } = props;
 
-  // --- Default Options ---
-  // We assume 'linkable' corresponds to making the row "selectable" via the 'show' prop
   const options = {
     deleteable: true,
     editable: true,
-    linkable: true, // If true, rows are selectable via click, and eye icon is shown
-    ...rawOptions, // Allow user options to override defaults
+    linkable: true,
+    ...rawOptions,
   };
 
-  // --- Basic Validation ---
   if (!headers || !Array.isArray(headers) || !data || !Array.isArray(data)) {
-    console.warn("Table component requires 'headers' and 'data' arrays.");
-    return null; // Render nothing if essential props are missing
+    console.warn("EnhancedTable: 'headers' and 'data' arrays are required.");
+    return null;
   }
-   // Check if data items have an 'id'. Needed for keys and selection.
    if (data.length > 0 && typeof data[0]?.id === 'undefined') {
-       console.warn("Table data items should have a unique 'id' property for stable keys and selection handling.");
+       console.warn("EnhancedTable: Data items should have a unique 'id' property for stable keys and selection handling.");
    }
 
-  // --- Handlers ---
   const handleRowClick = (e, row) => {
-    // Only trigger 'show' (select) if 'linkable' is true and the click wasn't directly on an action button/icon
     if (options.linkable && typeof show === 'function') {
-      // Check if the click originated from within the action cell's button container
       if (!e.target.closest('.action-buttons-container')) {
-         show(row); // Trigger the selection/show action passed from parent
+         show(row);
       }
     }
   };
 
   const handleActionClick = (e, actionFn, row) => {
-    e.stopPropagation(); // IMPORTANT: Prevent the row's onClick from firing
+    e.stopPropagation();
     if (typeof actionFn === 'function') {
       actionFn(row);
     }
   };
 
-  // --- Render Logic ---
-  const hasActions = options.editable || options.deleteable || options.linkable;
-  const totalColumns = headers.length + (hasActions ? 1 : 0); // Calculate total columns for colspan
+  const hasActions = options.editable || options.deleteable;
+  const totalColumns = headers.length + (hasActions ? 1 : 0);
 
   return (
     <>
-      {/* Inject styles into the document head (or wherever appropriate in your setup) */}
       <style>{tableStyles}</style>
-
-      {/* Wrapper div helps control overflow if needed, though parent might handle it */}
       <div className="enhanced-table-wrapper">
         <table className="enhanced-table">
           <thead>
             <tr>
               {headers.map(header => (
-                // Use header key or label for the key
-                <th key={header.key || header.label}>{header.label}</th>
+                <th key={header.key || header.label}>
+                  {/* Render header label as HTML */}
+                  <span dangerouslySetInnerHTML={{ __html: String(header.label || '') }} />
+                </th>
               ))}
-              {/* Add a header for the actions column ONLY if actions exist */}
-              {/* {hasActions && (
-                <th key="actions-header" className="action-cell">Actions</th>
-              )} */}
+              {hasActions && (
+                <th key="actions-header" className="action-cell"></th>
+              )}
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={totalColumns} style={{ textAlign: 'center', whiteSpace: 'normal', padding: '20px' }}>
+                <td colSpan={totalColumns} className="no-data-cell">
                   No data available.
                 </td>
               </tr>
             ) : (
-              data.map(row => {
-                // Use row.id if available, otherwise fall back (though ID is preferred)
-                const rowId = row.id !== undefined && row.id !== null ? row.id : Math.random().toString();
-                const isSelected = options.linkable && selectedId !== null && selectedId !== undefined && rowId === selectedId;
+              data.map((row, index) => {
+                const rowId = row.id !== undefined && row.id !== null ? row.id : `row-${index}`;
+                // Ensure selectedId is also treated as a string for comparison if rowId is stringified
+                const isSelected = options.linkable && selectedId !== null && selectedId !== undefined && String(rowId) === String(selectedId);
                 const rowClasses = [
-                    options.linkable ? 'selectable-row' : '', // Add class if rows can be selected
-                    isSelected ? 'selected-row' : ''      // Add class if *this* row is selected
-                ].filter(Boolean).join(' '); // Filter out empty strings and join
+                    options.linkable ? 'selectable-row' : '',
+                    isSelected ? 'selected-row' : ''
+                ].filter(Boolean).join(' ');
 
                 return (
                   <tr
@@ -157,47 +189,28 @@ export default props => {
                     className={rowClasses}
                     onClick={(e) => handleRowClick(e, row)}
                   >
-                    {/* Data Cells */}
                     {headers.map(header => (
-                      <td key={`${rowId}-${header.key}`}>{row[header.key]}</td>
+                      <td
+                        key={`${rowId}-${header.key}`}
+                        className="html-content-cell"
+                      >
+                        <span dangerouslySetInnerHTML={{ __html: String(row[header.key] || '') }} />
+                      </td>
                     ))}
 
-                    {/* Action Cell - Render only if any action is enabled */}
                     {hasActions && (
                       <td className="action-cell">
-                        {/* Container for buttons - helps with alignment and click handling */}
                         <span className="action-buttons-container">
-                          {options.editable && typeof edit === 'function' ? (
-                            <button
-                              title="Edit details"
-                              type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md action-button"
-                              onClick={(e) => handleActionClick(e, edit, row)}
-                            >
+                          {options.editable && typeof edit === 'function' && (
+                            <button title="Edit details" type="button" className="btn btn-sm btn-clean btn-icon btn-icon-md action-button" onClick={(e) => handleActionClick(e, edit, row)}>
                               <i style={{ color: "#5867dd" }} className="la la-edit" />
                             </button>
-                          ) : null}
-                          {options.deleteable && typeof deleteItem === 'function' ? (
-                            <button
-                              title="Delete"
-                              type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md action-button"
-                              onClick={(e) => handleActionClick(e, deleteItem, row)}
-                            >
+                          )}
+                          {options.deleteable && typeof deleteItem === 'function' && (
+                            <button title="Delete" type="button" className="btn btn-sm btn-clean btn-icon btn-icon-md action-button" onClick={(e) => handleActionClick(e, deleteItem, row)}>
                               <i style={{ color: "#fd397a" }} className="la la-trash" />
                             </button>
-                          ) : null}
-                          {/* Eye icon also uses the 'show' prop, but doesn't trigger selection itself */}
-                          {options.linkable && typeof show === 'function' ? (
-                            <button
-                              title="View Details" // Title clarifies it's not just selection
-                              type="button"
-                              className="btn btn-sm btn-clean btn-icon btn-icon-md action-button"
-                              onClick={(e) => handleActionClick(e, show, row)} // Still uses show, but stops propagation
-                            >
-                              <i style={{ color: "#1dc9b7" }} className="la la-eye" />
-                            </button>
-                          ) : null}
+                          )}
                         </span>
                       </td>
                     )}
@@ -211,3 +224,5 @@ export default props => {
     </>
   );
 };
+
+export default EnhancedTable;

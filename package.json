@@ -13,6 +13,7 @@
     "jquery-validation": "^1.19.1",
     "moment": "^2.24.0",
     "react": "^16.9.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-collapsing-table": "^1.0.0",
     "react-dom": "^16.9.0",
     "react-draft-wysiwyg": "^1.15.0",

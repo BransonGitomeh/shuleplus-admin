@@ -106,7 +106,7 @@ class Modal extends React.Component {
           const data = {};
           Object.assign(data, {
             name: _this.state.name,
-            topic: _this.state.topic,
+            topic: _this.props.topic,
           });
           await _this.props.save(data);
           _this.hide();

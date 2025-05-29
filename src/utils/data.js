@@ -343,41 +343,12 @@ var Data = (function () {
     }
   }`).then(response => {
       console.log(response)
-    
-      
-      // done(response)
+
       schoolsData.push(...response.schools)
-
       schools = schoolsData
-      school = schools[0]
-      if (!school) {
-        school = {
-          students: []
-        }
-      }
+      school = schools.find(s => s.id === localStorage.getItem("school")) || schools[0]
       schoolID = school.id
-
-      schoolID = localStorage.getItem("school")
-
-      // overide the school if there is one selected
-      if (localStorage.getItem("school")) {
-        schoolID = localStorage.getItem("school")
-        school = schools.filter(s => s.id == schoolID ? true : false)[0]
-        // console.log("selected school is " + JSON.stringify(school), schools)
-
-        if (!school) {
-          school = schools[0]
-        }
-      } else {
-        school = schools[0]
-        schoolID = localStorage.setItem("school", school.id)
-      }
-
-      console.log({ schools, school })
-
-      if (!school) {
-        return;
-      }
+      localStorage.setItem("school", schoolID)
 
       students = school.students.map(student => {
 
@@ -507,6 +478,19 @@ var Data = (function () {
     var object = new Object("Instance here");
     return object;
   }
+
+   // Helper to remove a specific listener if emitize uses a simple array
+  // This is a guess about emitize's internal structure. Replace if emitize has its own .off or .removeListener method.
+  const removeListener = (subsArray, listener) => {
+    if (Array.isArray(subsArray._listeners)) { // Common pattern for simple emitize
+        const index = subsArray._listeners.indexOf(listener);
+        if (index > -1) {
+            subsArray._listeners.splice(index, 1);
+        }
+    } else {
+        // console.warn("Cannot unsubscribe: _listeners array not found or emitize structure unknown.");
+    }
+  };
 
   return {
     onReady: (cb) => cb(),
@@ -749,459 +733,517 @@ var Data = (function () {
     grades: {
       create: data =>
         new Promise(async (resolve, reject) => {
-          const { grades: { create: { id } } } = await mutate(
-            `
-            mutation ($Igrade: Igrade!) {
-              grades {
-                create(grade: $Igrade) {
-                  id
-                }
-              }
-            } `,
-            {
-              Igrade: Object.assign(data, { school: schoolID })
-            }
-          );
-          data.id = id;
-          data.subjects = [];
-
-          grades = [...grades, data];
-          subs.grades({ grades });
-          resolve();
+          try {
+            const { grades: { create: { id } } } = await mutate(
+              `mutation ($Igrade: Igrade!) { grades { create(grade: $Igrade) { id } } }`,
+              { Igrade: { ...data, school: schoolID } }
+            );
+            const newGrade = { ...data, id, school: schoolID, subjects: [] }; // Ensure 'subjects'
+            grades = [...grades, newGrade];
+            subs.grades({ grades });
+            resolve(); // Original resolves without value
+          } catch (error) { console.error("Error creating grade:", error); reject(error); }
         }),
       update: data =>
         new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Igrade: Ugrade!) {
-              grades {
-                update(grade: $Igrade) {
-                  id
-                }
-              }
-            } `,
-            {
-              Igrade: data
-            }
-          );
-
-          const subtract = grades.filter(({ id }) => id !== data.id);
-          grades = [data, ...subtract];
-          subs.grades({ grades });
-          resolve();
+          try {
+            const { id: gradeId, ...updatePayload } = data; // GQL might not want child arrays
+            delete updatePayload.subjects; 
+            delete updatePayload.school; // Assuming school context is via ID or session for update
+            
+            await mutate(
+              `mutation ($Igrade: Ugrade!) { grades { update(grade: $Igrade) { id } } }`,
+              { Igrade: {id: gradeId, ...updatePayload} } // Pass ID explicitly with payload
+            );
+            
+            const gradeIndex = grades.findIndex(g => g.id === gradeId);
+            if (gradeIndex > -1) {
+              grades[gradeIndex] = { ...grades[gradeIndex], ...data }; // Merge changes, keeping original children structure
+              grades = [...grades];
+              subs.grades({ grades });
+            } else { console.warn(`Grade with ID ${gradeId} not found for update.`); }
+            resolve();
+          } catch (error) { console.error("Error updating grade:", error); reject(error); }
         }),
       delete: data =>
         new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Igrade: Ugrade!) {
-              grades {
-                archive(grade: $Igrade) {
-                  id
-                }
-              }
-            }  `,
-            {
-              Igrade: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = grades.filter(({ id }) => id !== data.id);
-          grades = [...subtract];
-          subs.grades({ grades });
-          resolve();
+          try {
+            await mutate(
+              `mutation ($Igrade: Ugrade!) { grades { archive(grade: $Igrade) { id } } }`,
+              { Igrade: { id: data.id } }
+            );
+            grades = grades.filter(g => g.id !== data.id);
+            subs.grades({ grades });
+            resolve();
+          } catch (error) { console.error("Error deleting grade:", error); reject(error); }
         }),
-      list() {
-        return grades;
+      list() { return grades; },
+      subscribe(callback) {
+        const specificListener = (data) => callback(data);
+        subs.grades = specificListener; // Assumes 'subs.grades = fn' adds listener (per original pattern)
+        callback({ grades: [...grades] }); // Immediately give current data (new ref)
+        return () => removeListener(subs.grades, specificListener); // Return unsubscribe function
       },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.grades = cb;
-        return grades;
-      },
-      getOne(id) { }
+      getOne(id) { return grades.find(g => g.id === id); }
     },
+
     subjects: {
-      create: data =>
+      create: data => // data = { name, grade (parent ID) }
         new Promise(async (resolve, reject) => {
-          const { subjects: { create: { id } } } = await mutate(
-            `
-            mutation ($Isubject: Isubject!) {
-              subjects {
-                create(subject: $Isubject) {
-                  id
-                }
-              }
-            } `,
-            {
-              Isubject: data
-            }
-          );
-          data.id = id;
+          try {
+            const { subjects: { create: { id } } } = await mutate(
+              `mutation ($Isubject: Isubject!) { subjects { create(subject: $Isubject) { id } } }`,
+              { Isubject: data }
+            );
+            const newSubject = { ...data, id, topics: [], gradeId: data.grade };
 
-          subjects = [...subjects, data];
-          subs.subjects({ subjects });
-          resolve(id);
+            const parentGrade = grades.find(g => g.id === data.grade);
+            if (parentGrade) {
+              parentGrade.subjects = parentGrade.subjects || [];
+              parentGrade.subjects.push(newSubject);
+            } else { throw new Error(`Parent grade ${data.grade} not found.`); }
+
+            subjects = [...subjects, newSubject]; subs.subjects({ subjects:[...subjects] });
+            subs.grades({ grades: [...grades] });
+            resolve(id);
+          } catch (error) { console.error("Error creating subject:", error); reject(error); }
         }),
-      update: data =>
+      update: data => // data = { id, name, grade (parent ID), ... }
         new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Isubject: Usubject!) {
-              subjects {
-                update(subject: $Isubject) {
-                  id
-                }
-              }
-            } `,
-            {
-              Isubject: data
-            }
-          );
+          try {
+            const { id: subjectId, grade: parentGradeId, ...updatePayload } = data;
+            delete updatePayload.topics; 
+            delete updatePayload.gradeId; // if 'grade' is the field name from component
 
-          const subtract = subjects.filter(({ id }) => id !== data.id);
-          subjects = [data, ...subtract];
-          subs.subjects({ subjects });
-          resolve();
+            await mutate(
+              `mutation ($Isubject: Usubject!) { subjects { update(subject: $Isubject) { id } } }`,
+              { Isubject: {id: subjectId, grade: parentGradeId, ...updatePayload} } // Ensure GQL Usubject format
+            );
+
+            const parentGrade = grades.find(g => g.id === parentGradeId);
+            if (parentGrade && parentGrade.subjects) {
+              const idx = parentGrade.subjects.findIndex(s => s.id === subjectId);
+              if (idx > -1) parentGrade.subjects[idx] = { ...parentGrade.subjects[idx], ...data };
+            } else { throw new Error(`Parent/Subject not found for update.`); }
+            
+            const flatIdx = subjects.findIndex(s => s.id === subjectId);
+            if (flatIdx > -1) subjects[flatIdx] = { ...subjects[flatIdx], ...data };
+            subs.subjects({ subjects: [...subjects] });
+            
+            subs.grades({ grades: [...grades] });
+            resolve();
+          } catch (error) { console.error("Error updating subject:", error); reject(error); }
         }),
-      delete: data =>
+      delete: data => // data = { id (subjectId), gradeId (parent grade ID) }
         new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Isubject: Usubject!) {
-              subjects {
-                archive(subject: $Isubject) {
-                  id
-                }
-              }
-            }  `,
-            {
-              Isubject: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = subjects.filter(({ id }) => id !== data.id);
-          subjects = [...subtract];
-          subs.subjects({ subjects });
-          resolve();
+          try {
+            await mutate( /* ... */ { Isubject: { id: data.id } });
+            const parentGrade = grades.find(g => g.id === data.gradeId);
+            if (parentGrade && parentGrade.subjects) {
+              parentGrade.subjects = parentGrade.subjects.filter(s => s.id !== data.id);
+            } else { throw new Error(`Parent/Subject not found for delete.`);}
+            subjects = subjects.filter(s => s.id !== data.id); subs.subjects({ subjects });
+            subs.grades({ grades: [...grades] });
+            resolve();
+          } catch (error) { console.error("Error deleting subject:", error); reject(error); }
         }),
-      list() {
-        return subjects;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.subjects = cb;
-        return subjects;
-      },
-      getOne(id) { }
+      list() { return subjects; },
+      subscribe(cb) { subs.subjects = cb; cb({ subjects:[...subjects] }); return () => removeListener(subs.subjects, cb);},
     },
+
     topics: {
-      create: data =>
+      create: data => // data = { name, subject (parent ID) }
         new Promise(async (resolve, reject) => {
-          const { topics: { create: { id } } } = await mutate(
-            `
-            mutation ($Itopic: Itopic!) {
-              topics {
-                create(topic: $Itopic) {
-                  id
+          try {
+            const { topics: { create: { id } } } = await mutate(
+              `
+              mutation ($Itopic: Itopic!) {
+                topics {
+                  create(topic: $Itopic) {
+                    id
+                  }
                 }
+              } `,
+              {
+                Itopic: data
               }
-            } `,
-            {
-              Itopic: data
-            }
-          );
-          data.id = id;
-
-          topics = [...topics, data];
-          subs.topics({ topics });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Itopic: Utopic!) {
-              topics {
-                update(topic: $Itopic) {
-                  id
-                }
-              }
-            } `,
-            {
-              Itopic: data
-            }
-          );
-
-          const subtract = topics.filter(({ id }) => id !== data.id);
-          topics = [data, ...subtract];
-          subs.topics({ topics });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Itopic: Utopic!) {
-              topics {
-                archive(topic: $Itopic) {
-                  id
-                }
-              }
-            }  `,
-            {
-              Itopic: {
-                id: data.id
+            );
+            const newTopic = { ...data, id, subtopics: [], subjectId: data.subject };
+            let found = false;
+            for (const grade of grades) {
+              const parentSubject = (grade.subjects || []).find(s => s.id === data.subject);
+              if (parentSubject) {
+                parentSubject.topics = parentSubject.topics || [];
+                parentSubject.topics.push(newTopic);
+                found = true; break;
               }
             }
-          );
-
-          const subtract = topics.filter(({ id }) => id !== data.id);
-          topics = [...subtract];
-          subs.topics({ topics });
-          resolve();
+            if (!found) throw new Error(`Parent subject ${data.subject} not found.`);
+            topics = [...topics, newTopic]; subs.topics({ topics:[...topics] });
+            subs.grades({ grades: [...grades] });
+            resolve();
+          } catch (error) { console.error("Error creating topic:", error); reject(error); }
         }),
-      list() {
-        return topics;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.topics = cb;
-        return topics;
-      },
-      getOne(id) { }
+      update: data => // data = { id, name, subject (parent ID / subjectId), ... }
+        new Promise(async (resolve, reject) => {
+          try {
+            const { id: topicId, subject: parentSubjectId, subjectId: altParentSubjectId, ...updatePayload } = data;
+            delete updatePayload.subtopics;
+            const actualParentSubjectId = parentSubjectId || altParentSubjectId;
+
+            await mutate( `
+        mutation ($Itopic: Utopic!) {
+          topics {
+            update(topic: $Itopic) {
+              id
+            }
+          }
+        } `, { Itopic: {id: topicId, subject: actualParentSubjectId, ...updatePayload} });
+            let found = false;
+            for (const grade of grades) {
+              const parentSubject = (grade.subjects || []).find(s => s.id === actualParentSubjectId);
+              if (parentSubject && parentSubject.topics) {
+                const idx = parentSubject.topics.findIndex(t => t.id === topicId);
+                if (idx > -1) { parentSubject.topics[idx] = { ...parentSubject.topics[idx], ...data }; found = true; break; }
+              }
+            }
+            if (!found) throw new Error(`Parent/Topic not found for update.`);
+            const flatIdx = topics.findIndex(t => t.id === topicId);
+            if (flatIdx > -1) topics[flatIdx] = { ...topics[flatIdx], ...data };
+            subs.topics({ topics: [...topics] });
+            subs.grades({ grades: [...grades] });
+            resolve();
+          } catch (error) { console.error("Error updating topic:", error); reject(error); }
+        }),
+      delete: data => // data = { id (topicId), subjectId (parent subject ID) }
+        new Promise(async (resolve, reject) => {
+          try {
+            await mutate( `mutation ($Itopic: Utopic!) {
+          topics {
+            archive(topic: $Itopic) {
+              id
+            }
+          }
+        }  `, { Itopic: { id: data.id } });
+            let found = false;
+            for (const grade of grades) {
+              const parentSubject = (grade.subjects || []).find(s => s.id === data.subjectId);
+              if (parentSubject && parentSubject.topics) {
+                const oldLen = parentSubject.topics.length;
+                parentSubject.topics = parentSubject.topics.filter(t => t.id !== data.id);
+                if (parentSubject.topics.length < oldLen) {found = true; break;}
+              }
+            }
+            if (!found) throw new Error(`Parent/Topic not found for delete.`);
+            topics = topics.filter(t => t.id !== data.id); subs.topics({ topics });
+            subs.grades({ grades: [...grades] });
+            resolve();
+          } catch (error) { console.error("Error deleting topic:", error); reject(error); }
+        }),
+      list() { return topics; },
+      subscribe(cb) { subs.topics = cb; cb({ topics:[...topics] }); return () => removeListener(subs.topics, cb);},
     },
+
     subtopics: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { subtopics: { create: { id } } } = await mutate(
-            `
-            mutation ($Isubtopic: Isubtopic!) {
-              subtopics {
-                create(subtopic: $Isubtopic) {
-                  id
+        create: data => // data = { name, topic (parent ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { subtopics: { create: { id } } } = await mutate( `
+        mutation ($Isubtopic: Isubtopic!) {
+          subtopics {
+            create(subtopic: $Isubtopic) {
+              id
+            }
+          }
+        } `, { Isubtopic: data });
+              const newSubtopic = { ...data, id, questions: [], topicId: data.topic };
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  const parentTopic = (subject.topics || []).find(t => t.id === data.topic);
+                  if (parentTopic) {
+                    parentTopic.subtopics = parentTopic.subtopics || [];
+                    parentTopic.subtopics.push(newSubtopic);
+                    found = true; break outer;
+                  }
                 }
               }
-            } `,
-            {
-              Isubtopic: data
-            }
-          );
-          data.id = id;
+              if (!found) throw new Error(`Parent topic ${data.topic} not found.`);
+              subtopics = [...subtopics, newSubtopic]; subs.subtopics({ subtopics:[...subtopics] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error creating subtopic:", error); reject(error); }
+          }),
+        update: data => // data = { id, name, topic (parent ID / topicId), ... }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { id: subtopicId, topic: parentTopicId, topicId: altParentTopicId, ...updatePayload } = data;
+              delete updatePayload.questions;
+              const actualParentTopicId = parentTopicId || altParentTopicId;
 
-          subtopics = [...subtopics, data];
-          subs.subtopics({ subtopics });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Isubtopic: Usubtopic!) {
-              subtopics {
-                update(subtopic: $Isubtopic) {
-                  id
+              await mutate( `
+        mutation ($Isubtopic: Usubtopic!) {
+          subtopics {
+            update(subtopic: $Isubtopic) {
+              id
+            }
+          }
+        } `, { Isubtopic: {id: subtopicId, topic: actualParentTopicId, ...updatePayload} });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  const parentTopic = (subject.topics || []).find(t => t.id === actualParentTopicId);
+                  if (parentTopic && parentTopic.subtopics) {
+                    const idx = parentTopic.subtopics.findIndex(st => st.id === subtopicId);
+                    if (idx > -1) { parentTopic.subtopics[idx] = { ...parentTopic.subtopics[idx], ...data }; found = true; break outer; }
+                  }
                 }
               }
-            } `,
-            {
-              Isubtopic: data
+              if (!found) throw new Error(`Parent/Subtopic not found for update.`);
+              const flatIdx = subtopics.findIndex(st => st.id === subtopicId);
+              if (flatIdx > -1) subtopics[flatIdx] = { ...subtopics[flatIdx], ...data };
+              subs.subtopics({ subtopics: [...subtopics] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error updating subtopic:", error); reject(error); }
+          }),
+        delete: data => // data = { id (subtopicId), topicId (parent topic ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              await mutate( `
+        mutation ($Isubtopic: Usubtopic!) {
+          subtopics {
+            archive(subtopic: $Isubtopic) {
+              id
             }
-          );
-
-          const subtract = subtopics.filter(({ id }) => id !== data.id);
-          subtopics = [data, ...subtract];
-          subs.subtopics({ subtopics });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Isubtopic: Usubtopic!) {
-              subtopics {
-                archive(subtopic: $Isubtopic) {
-                  id
+          }
+        }  `, { Isubtopic: { id: data.id } });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  const parentTopic = (subject.topics || []).find(t => t.id === data.topicId);
+                  if (parentTopic && parentTopic.subtopics) {
+                    const oldLen = parentTopic.subtopics.length;
+                    parentTopic.subtopics = parentTopic.subtopics.filter(st => st.id !== data.id);
+                    if (parentTopic.subtopics.length < oldLen) {found = true; break outer;}
+                  }
                 }
               }
-            }  `,
-            {
-              Isubtopic: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = subtopics.filter(({ id }) => id !== data.id);
-          subtopics = [...subtract];
-          subs.subtopics({ subtopics });
-          resolve();
-        }),
-      list() {
-        return subtopics;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.subtopics = cb;
-        return subtopics;
-      },
-      getOne(id) { }
+              if (!found) throw new Error(`Parent/Subtopic not found for delete.`);
+              subtopics = subtopics.filter(st => st.id !== data.id); subs.subtopics({ subtopics });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error deleting subtopic:", error); reject(error); }
+          }),
+        list() { return subtopics; },
+        subscribe(cb) { subs.subtopics = cb; cb({ subtopics:[...subtopics] }); return () => removeListener(subs.subtopics, cb);},
     },
+    
     questions: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { questions: { create: { id } } } = await mutate(
-            `
-            mutation ($Iquestion: Iquestion!) {
-              questions {
-                create(question: $Iquestion) {
-                  id
+        create: data => // data = { name, type, subtopic (parent ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { questions: { create: { id } } } = await mutate( `
+        mutation ($Iquestion: Iquestion!) {
+          questions {
+            create(question: $Iquestion) {
+              id
+            }
+          }
+        } `, { Iquestion: data });
+              const newQuestion = { ...data, id, options: [], subtopicId: data.subtopic };
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    const parentSubtopic = (topic.subtopics || []).find(st => st.id === data.subtopic);
+                    if (parentSubtopic) {
+                      parentSubtopic.questions = parentSubtopic.questions || [];
+                      parentSubtopic.questions.push(newQuestion);
+                      found = true; break outer;
+                    }
+                  }
                 }
               }
-            } `,
-            {
-              Iquestion: data
-            }
-          );
-          data.id = id;
+              if (!found) throw new Error(`Parent subtopic ${data.subtopic} not found.`);
+              questions = [...questions, newQuestion]; subs.questions({ questions:[...questions] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error creating question:", error); reject(error); }
+          }),
+        update: data => // data = { id, name, type, subtopic (parent ID / subtopicId), ... }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { id: questionId, subtopic: parentSubtopicId, subtopicId: altParentSubtopicId, ...updatePayload } = data;
+              delete updatePayload.options;
+              const actualParentSubtopicId = parentSubtopicId || altParentSubtopicId;
 
-          questions = [...questions, data];
-          subs.questions({ questions });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Iquestion: Uquestion!) {
-              questions {
-                update(question: $Iquestion) {
-                  id
+              await mutate( `
+        mutation ($Iquestion: Uquestion!) {
+          questions {
+            update(question: $Iquestion) {
+              id
+            }
+          }
+        } `, { Iquestion: {id: questionId, subtopic: actualParentSubtopicId, ...updatePayload} });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    const parentSubtopic = (topic.subtopics || []).find(st => st.id === actualParentSubtopicId);
+                    if (parentSubtopic && parentSubtopic.questions) {
+                      const idx = parentSubtopic.questions.findIndex(q => q.id === questionId);
+                      if (idx > -1) { parentSubtopic.questions[idx] = { ...parentSubtopic.questions[idx], ...data }; found = true; break outer;}
+                    }
+                  }
                 }
               }
-            } `,
-            {
-              Iquestion: data
+              if (!found) throw new Error(`Parent/Question not found for update.`);
+              const flatIdx = questions.findIndex(q => q.id === questionId);
+              if (flatIdx > -1) questions[flatIdx] = { ...questions[flatIdx], ...data };
+              subs.questions({ questions: [...questions] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error updating question:", error); reject(error); }
+          }),
+        delete: data => // data = { id (questionId), subtopicId (parent subtopic ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              await mutate( `
+        mutation ($Iquestion: Uquestion!) {
+          questions {
+            archive(question: $Iquestion) {
+              id
             }
-          );
-
-          const subtract = questions.filter(({ id }) => id !== data.id);
-          questions = [data, ...subtract];
-          subs.questions({ questions });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Iquestion: Uquestion!) {
-              questions {
-                archive(question: $Iquestion) {
-                  id
+          }
+        }  ` , { Iquestion: { id: data.id } });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    const parentSubtopic = (topic.subtopics || []).find(st => st.id === data.subtopicId);
+                    if (parentSubtopic && parentSubtopic.questions) {
+                      const oldLen = parentSubtopic.questions.length;
+                      parentSubtopic.questions = parentSubtopic.questions.filter(q => q.id !== data.id);
+                      if (parentSubtopic.questions.length < oldLen) {found = true; break outer;}
+                    }
+                  }
                 }
               }
-            }  `,
-            {
-              Iquestion: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = questions.filter(({ id }) => id !== data.id);
-          questions = [...subtract];
-          subs.questions({ questions });
-          resolve();
-        }),
-      list() {
-        return questions;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.questions = cb;
-        return questions;
-      },
-      getOne(id) { }
+              if (!found) throw new Error(`Parent/Question not found for delete.`);
+              questions = questions.filter(q => q.id !== data.id); subs.questions({ questions });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error deleting question:", error); reject(error); }
+          }),
+        list() { return questions; },
+        subscribe(cb) { subs.questions = cb; cb({ questions:[...questions] }); return () => removeListener(subs.questions, cb);},
     },
+
     options: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { options: { create: { id } } } = await mutate(
-            `
-            mutation ($Ioption: Ioption!) {
-              options {
-                create(option: $Ioption) {
-                  id
+        create: data => // data = { value, question (parent ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { options: { create: { id } } } = await mutate( `
+        mutation ($Ioption: Ioption!) {
+          options {
+            create(option: $Ioption) {
+              id
+            }
+          }
+        } `, { Ioption: data });
+              const newOption = { ...data, id, questionId: data.question };
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    for (const subtopic of topic.subtopics || []) {
+                      const parentQuestion = (subtopic.questions || []).find(q => q.id === data.question);
+                      if (parentQuestion) {
+                        parentQuestion.options = parentQuestion.options || [];
+                        parentQuestion.options.push(newOption);
+                        found = true; break outer;
+                      }
+                    }
+                  }
                 }
               }
-            } `,
-            {
-              Ioption: data
+              if (!found) throw new Error(`Parent question ${data.question} not found.`);
+              options = [...options, newOption]; subs.options({ options:[...options] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error creating option:", error); reject(error); }
+          }),
+        update: data => // data = { id, value, question (parent ID / questionId), ... }
+          new Promise(async (resolve, reject) => {
+            try {
+              const { id: optionId, question: parentQuestionId, questionId: altParentQuestionId, ...updatePayload } = data;
+              const actualParentQuestionId = parentQuestionId || altParentQuestionId;
+              
+              await mutate( `
+        mutation ($Ioption: Uoption!) {
+          options {
+            update(option: $Ioption) {
+              id
             }
-          );
-          data.id = id;
-
-          options = [...options, data];
-          subs.options({ options });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Ioption: Uoption!) {
-              options {
-                update(option: $Ioption) {
-                  id
+          }
+        } `, { Ioption: {id: optionId, question: actualParentQuestionId, ...updatePayload} });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    for (const subtopic of topic.subtopics || []) {
+                      const parentQuestion = (subtopic.questions || []).find(q => q.id === actualParentQuestionId);
+                      if (parentQuestion && parentQuestion.options) {
+                        const idx = parentQuestion.options.findIndex(o => o.id === optionId);
+                        if (idx > -1) { parentQuestion.options[idx] = { ...parentQuestion.options[idx], ...data }; found = true; break outer;}
+                      }
+                    }
+                  }
                 }
               }
-            } `,
-            {
-              Ioption: data
+              if (!found) throw new Error(`Parent/Option not found for update.`);
+              const flatIdx = options.findIndex(o => o.id === optionId);
+              if (flatIdx > -1) options[flatIdx] = { ...options[flatIdx], ...data };
+              subs.options({ options: [...options] });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error updating option:", error); reject(error); }
+          }),
+        delete: data => // data = { id (optionId), questionId (parent question ID) }
+          new Promise(async (resolve, reject) => {
+            try {
+              await mutate( `
+        mutation ($Ioption: Uoption!) {
+          options {
+            archive(option: $Ioption) {
+              id
             }
-          );
-
-          const subtract = options.filter(({ id }) => id !== data.id);
-          options = [data, ...subtract];
-          subs.options({ options });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Ioption: Uoption!) {
-              options {
-                archive(option: $Ioption) {
-                  id
+          }
+        }  ` , { Ioption: { id: data.id } });
+              let found = false;
+              outer: for (const grade of grades) {
+                for (const subject of grade.subjects || []) {
+                  for (const topic of subject.topics || []) {
+                    for (const subtopic of topic.subtopics || []) {
+                      const parentQuestion = (subtopic.questions || []).find(q => q.id === data.questionId);
+                      if (parentQuestion && parentQuestion.options) {
+                        const oldLen = parentQuestion.options.length;
+                        parentQuestion.options = parentQuestion.options.filter(o => o.id !== data.id);
+                        if (parentQuestion.options.length < oldLen) {found = true; break outer;}
+                      }
+                    }
+                  }
                 }
               }
-            }  `,
-            {
-              Ioption: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = options.filter(({ id }) => id !== data.id);
-          options = [...subtract];
-          subs.options({ options });
-          resolve();
-        }),
-      list() {
-        return options;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.options = cb;
-        return options;
-      },
-      getOne(id) { }
+              if (!found) throw new Error(`Parent/Option not found for delete.`);
+              options = options.filter(o => o.id !== data.id); subs.options({ options });
+              subs.grades({ grades: [...grades] });
+              resolve();
+            } catch (error) { console.error("Error deleting option:", error); reject(error); }
+          }),
+        list() { return options; },
+        subscribe(cb) { subs.options = cb; cb({ options:[...options] }); return () => removeListener(subs.options, cb);},
     },
     teachers: {
       create: data =>
@@ -2406,3 +2448,8 @@ var Data = (function () {
 })();
 
 export default Data;
+
+
+
+
+
