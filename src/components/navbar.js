@@ -358,6 +358,30 @@ class Navbar extends React.Component {
                     </ul>
                   </div>
                 </li>
+                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
+                  <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                    <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>
+                      {(selectedSchool && selectedSchool.financial && selectedSchool.financial.balanceFormated) || "N/A"}, Finance
+                    </span>
+                    <i className="kt-menu__hor-arrow la la-angle-down" style={bottomNavCommonIconStyle} />
+                    <i className="kt-menu__ver-arrow la la-angle-right" style={bottomNavCommonIconStyle} />
+                  </a>
+                  <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                    <ul className="kt-menu__subnav">
+                      {[
+                        { path: "/finance/topup", label: "Mpesa Top Up" },
+                        { path: "/finance/charges", label: "Your Charges" },
+                      ].map(item => (
+                        <li key={item.path} className="kt-menu__item" aria-haspopup="true">
+                          <Link to={item.path} className="kt-menu__link">
+                            <i className="kt-menu__link-bullet kt-menu__link-bullet--dot" style={{ color: BOTTOM_NAV_ICON_COLOR }}><span /></i>
+                            <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>{item.label}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </li>
               </ul>
             </div>
           </div>
@@ -437,30 +461,7 @@ class Navbar extends React.Component {
                     <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>SMS & Email</span>
                   </Link>
                 </li>
-                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                  <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                    <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>
-                      {(selectedSchool && selectedSchool.financial && selectedSchool.financial.balanceFormated) || "N/A"}, Finance
-                    </span>
-                    <i className="kt-menu__hor-arrow la la-angle-down" style={bottomNavCommonIconStyle} />
-                    <i className="kt-menu__ver-arrow la la-angle-right" style={bottomNavCommonIconStyle} />
-                  </a>
-                  <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                    <ul className="kt-menu__subnav">
-                      {[
-                        { path: "/finance/topup", label: "Mpesa Top Up" },
-                        { path: "/finance/charges", label: "Your Charges" },
-                      ].map(item => (
-                        <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                          <Link to={item.path} className="kt-menu__link">
-                            <i className="kt-menu__link-bullet kt-menu__link-bullet--dot" style={{ color: BOTTOM_NAV_ICON_COLOR }}><span /></i>
-                            <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>{item.label}</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
+                
                 <li className="kt-menu__item" aria-haspopup="false">
                   <Link to="/learning" className="kt-menu__link">
                     <span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Learning</span>
