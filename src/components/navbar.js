@@ -196,12 +196,19 @@ class Navbar extends React.Component {
     }
   }
 
+  
+  switchSchools = (newSchool) => {
+    this.setState({ selectedSchool: newSchool });
+    localStorage.setItem("school", newSchool.id);
+    window.location.reload();
+  }
+
   state = {
     selectedSchool: {},
     availableSchools: Data.schools.list(),
     userRole: "",
     // Navbar dimensions - these are now the source of truth
-    topNavbarHeight: 60,
+    topNavbarHeight: 80,
     secondaryNavbarEffectiveHeight: 70,
     gapBetweenNavbars: 15, // This is the gap between navbars AND the top margin for the first navbar
     secondaryNavbarHorizontalMargin: 25,
@@ -246,7 +253,7 @@ class Navbar extends React.Component {
 
     return (
       <>
-        {availableSchools.length === 0 && <Pace color={paceLoaderColor} height={3} style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1031 }} />} {/* Increased zIndex for Pace */}
+        {availableSchools.length === 0 && <Pace color={paceLoaderColor} height={5} style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1031 }} />} {/* Increased zIndex for Pace */}
         {/* TOP NAVBAR */}
         <div
           id="kt_header"
@@ -295,7 +302,7 @@ class Navbar extends React.Component {
                           <li key={schoolItem.id} onClick={() => this.switchSchools(schoolItem)} className="kt-menu__item" aria-haspopup="true">
                             <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link">
                               <i className="kt-menu__link-icon" style={topNavIconStyle}>
-                                {schoolItem.logo ? <img src={`${schoolItem.logo}`} style={{ width: '20px', height: '20px', borderRadius: '50%' }} alt={schoolItem.name}/> : <i className="la la-building" />}
+                                {schoolItem.logo ? <img src={`${schoolItem.logo}`} style={{ width: '20px', height: 'auto', borderRadius: '50%', aspectRatio: '1/1' }} alt={schoolItem.name}/> : <i className="la la-building" />}
                               </i>
                               <span className="kt-menu__link-text" style={topNavlinkStyle}>{schoolItem.name}</span>
                             </a>

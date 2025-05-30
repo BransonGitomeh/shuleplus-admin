@@ -411,7 +411,7 @@ class BasicTable extends React.Component {
                     </div>
                     <div style={{ paddingTop: 10 }}>
                       <button type="button" className="btn btn-primary pull-right" onClick={() => addGradeModalInstance.show()}>
-                        <i className="la la-plus-circle"></i> Add
+                        <i className="la la-plus-circle"></i>
                       </button>
                     </div>
                   </div>
@@ -437,7 +437,7 @@ class BasicTable extends React.Component {
                       </div>
                       <div style={{ paddingTop: 10 }}>
                         <button type="button" className="btn btn-primary pull-right" onClick={() => addSubjectModalInstance.show()}>
-                          <i className="la la-plus-circle"></i> Add
+                          <i className="la la-plus-circle"></i>
                         </button>
                       </div>
                     </div>
@@ -464,7 +464,7 @@ class BasicTable extends React.Component {
                       </div>
                       <div style={{ paddingTop: 10 }}>
                         <button type="button" className="btn btn-primary pull-right" onClick={() => addTopicModalInstance.show()}>
-                          <i className="la la-plus-circle"></i> Add
+                          <i className="la la-plus-circle"></i>
                         </button>
                       </div>
                     </div>
@@ -491,7 +491,7 @@ class BasicTable extends React.Component {
                       </div>
                       <div style={{ paddingTop: 10 }}>
                         <button type="button" className="btn btn-primary pull-right" onClick={() => addSubtopicModalInstance.show()}>
-                          <i className="la la-plus-circle"></i> Add
+                          <i className="la la-plus-circle"></i>
                         </button>
                       </div>
                     </div>
@@ -518,7 +518,7 @@ class BasicTable extends React.Component {
                       </div>
                       <div style={{ paddingTop: 10 }}>
                         <button type="button" className="btn btn-primary pull-right" onClick={() => addQuestionModalInstance.show()}>
-                          <i className="la la-plus-circle"></i> Add
+                          <i className="la la-plus-circle"></i>
                         </button>
                       </div>
                     </div>
@@ -572,7 +572,7 @@ class BasicTable extends React.Component {
                       </div>
                       <div style={{ paddingTop: 10 }}>
                         <button type="button" className="btn btn-primary pull-right" onClick={() => addOptionModalInstance.show()}>
-                          <i className="la la-plus-circle"></i> Add
+                          <i className="la la-plus-circle"></i>
                         </button>
                       </div>
                     </div>

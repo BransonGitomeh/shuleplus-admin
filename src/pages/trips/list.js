@@ -162,7 +162,7 @@ class BasicTable extends React.Component {
                   {
                     label: "Trip / Route",
                     component: (row) => (<td>
-                      <i style={{ color: "green" }} className="fas fa-wave-square"></i> {row.schedule ? row.schedule.route.name : ''}
+                      <i style={{ color: "green" }} className="fas fa-wave-square"></i> {row.schedule ? row?.schedule?.route?.name : ''}
                       <br></br>
                       <i className="fas fa-user-tie"></i> {row.driver ? `${row.driver.names}` : '-'}
                     </td>)
@@ -204,7 +204,7 @@ class BasicTable extends React.Component {
                         </td>)
 
                       return (<td style={{ 'font-size': "23px", color: "red" }}>
-                        <i className="fas fa-bus-alt"></i> {row.schedule.route.students.length}
+                        <i className="fas fa-bus-alt"></i> {row.schedule?.route?.students?.length}
                       </td>)
                     }
                   },
