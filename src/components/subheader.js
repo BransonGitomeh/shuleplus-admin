@@ -83,11 +83,18 @@ class Subheader extends React.Component {
                   justifyContent: "space-between",
                   alignItems: "center",
                   width: "100%",
+                  flexWrap: "wrap", // Allow wrapping for mobile
                 }}
               >
                 <div
                   className="kt-subheader__title" // Using for semantic grouping
-                  style={{ color: "white", fontSize: "0.9rem", flexGrow: 1, marginRight: '15px' }}
+                  style={{
+                    color: "white",
+                    fontSize: "0.9rem",
+                    flexGrow: 1,
+                    marginRight: '15px',
+                    marginBottom: '15px', // Add margin below for mobile
+                  }}
                 >
                   Your account balance is currently below KSH {MIN_BALANCE},
                   please top up your account to avoid service disruption.
@@ -101,7 +108,11 @@ class Subheader extends React.Component {
                       })
                     }
                     className="btn btn-sm btn-light" // Light button for contrast on red
-                    style={{ fontWeight: "bold", whiteSpace: 'nowrap' }}
+                    style={{
+                      fontWeight: "bold",
+                      whiteSpace: 'nowrap',
+                      width: '100%', // Take full width for mobile
+                    }}
                   >
                     Top Up Using Mpesa
                   </button>

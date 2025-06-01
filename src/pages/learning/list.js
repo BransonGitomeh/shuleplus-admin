@@ -420,6 +420,7 @@ class BasicTable extends React.Component {
                     <Table
                       headers={[{ label: "Name", key: "name" }]}
                       data={this.state.grades} 
+                      options={{ reorderable: true }}
                       show={(grade) => this.handleGradeSelect(grade)}
                       edit={grade => this.setState({ gradeToEdit: grade }, () => editGradeModalInstance.show())}
                       delete={grade => this.setState({ gradeToDelete: grade }, () => deleteGradeModalInstance.show())}
@@ -446,6 +447,7 @@ class BasicTable extends React.Component {
                       <Table
                         headers={[{ label: "Name", key: "name" }]}
                         data={filteredSubjects}
+                        options={{ reorderable: true }}
                         show={(subject) => this.handleSubjectSelect(subject)}
                         edit={subject => this.setState({ subjectToEdit: subject }, () => editSubjectModalInstance.show())}
                         delete={subject => this.setState({ subjectToDelete: subject }, () => deleteSubjectModalInstance.show())}
@@ -473,6 +475,7 @@ class BasicTable extends React.Component {
                       <Table
                         headers={[{ label: "Name", key: "name" }]}
                         data={filteredTopics}
+                        options={{ reorderable: true }}
                         show={(topic) => this.handleTopicSelect(topic)}
                         edit={topic => this.setState({ topicToEdit: topic }, () => editTopicModalInstance.show())}
                         delete={topic => this.setState({ topicToDelete: topic }, () => deleteTopicModalInstance.show())}
@@ -499,7 +502,8 @@ class BasicTable extends React.Component {
                       {(this.state.subtopics || []).length > 0 && <Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm}/>}
                       <Table
                         headers={[{ label: "Name", key: "name" }]}
-                        data={filteredSubtopics}
+                        data={filteredSubtopics}  
+                        options={{ reorderable: true }}
                         show={(subtopic) => this.handleSubtopicSelect(subtopic)}
                         edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => editSubtopicModalInstance.show())}
                         delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => deleteSubtopicModalInstance.show())}
@@ -540,6 +544,7 @@ class BasicTable extends React.Component {
                                 return { ...question, name: question.name };
                             }
                         })}
+                        options={{ reorderable: true }}
                         show={(question) => {
                           console.log('show question', question);
                           this.handleQuestionSelect(question);
@@ -580,7 +585,7 @@ class BasicTable extends React.Component {
                       {(this.state.options || []).length > 0 && <Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm}/>}
                       <Table
                         headers={[{ label: "Answer", key: "value" }]}
-                        options={{ linkable: false, editable: true, deleteable: true }}
+                        options={{ reorderable: true }}
                         data={filteredOptions}
                         edit={option => this.setState({ optionToEdit: option }, () => editOptionModalInstance.show())}
                         delete={option => this.setState({ optionToDelete: option }, () => deleteOptionModalInstance.show())}
