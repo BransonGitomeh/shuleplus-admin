@@ -7,23 +7,19 @@ import PropTypes from 'prop-types';
 const RichListItemType = 'GENERIC_RICH_LIST_ITEM';
 
 // --- STYLES (These are crucial for the "beautiful rich list" look) ---
-// (These are adapted from the previous richListStyles, renamed for clarity within this component)
 const genericRichListStyles = `
   .generic-rich-list-wrapper {
-    background-color: #fff; /* Or a very light contextual background */
+    background-color: #fff;
     border-radius: 8px;
-    /* box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03); */
-    /* No shadow for a cleaner look, parent container might have shadow */
-    padding: 0; /* Wrapper itself has no padding, list inside will */
+    padding: 0;
   }
 
   .generic-list-items-container {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Space between list items */
-    max-height: 60vh; /* Adjust as needed, or make it a prop */
+    gap: 8px;
     overflow-y: auto;
-    padding: 4px; /* Small padding around the items */
+    padding: 4px;
   }
   
   .generic-list-items-container::-webkit-scrollbar { width: 5px; }
@@ -39,20 +35,18 @@ const genericRichListStyles = `
     cursor: default; 
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
     display: flex;
-    align-items: center; /* Vertically align handle, content, actions */
+    align-items: center;
     gap: 10px;
   }
   
   .draggable-generic-list-item.selectable:hover {
     border-color: #93c5fd; /* Blue 300 */
     background-color: #f7faff; 
-    /* box-shadow: 0 1px 2px rgba(0,0,0,0.05); */
   }
 
   .draggable-generic-list-item.selected {
     border-color: #6366f1 !important; /* Indigo 500 */
-    background-color: #eef2ff !important; /* Lighter Indigo */
-    /* box-shadow: 0 0 0 1px #6366f1 inset; */
+    background-color: #eef2ff !important;
   }
 
   .draggable-generic-list-item.dragging-item {
@@ -74,7 +68,7 @@ const genericRichListStyles = `
     color: #94a3b8; /* Slate 400 */
     cursor: grab;
     flex-shrink: 0;
-    padding: 2px 0; /* Align better with text */
+    padding: 2px 0;
   }
   .list-item-drag-handle:active { cursor: grabbing; }
   .list-item-drag-handle svg { width: 16px; height: 16px; display: block; }
@@ -83,8 +77,8 @@ const genericRichListStyles = `
     flex-grow: 1;
     min-width: 0; 
     display: flex;
-    flex-direction: column; /* Allow primary text and media previews to stack */
-    gap: 6px; /* Space between primary text and media */
+    flex-direction: column;
+    gap: 6px;
   }
 
   .list-item-primary-text {
@@ -94,8 +88,7 @@ const genericRichListStyles = `
     line-height: 1.4;
     word-break: break-word; 
   }
-  /* Styling for HTML content if 'name' contains it */
-  .list-item-primary-text img { max-width: 100%; height: auto; border-radius: 3px; margin: 4px 0; }
+  .list-item-primary-text img { height: auto; border-radius: 3px; margin: 4px 0; }
   .list-item-primary-text h1, .list-item-primary-text h2, .list-item-primary-text h3, 
   .list-item-primary-text h4, .list-item-primary-text h5, .list-item-primary-text h6 {
     font-size: 1em; 
@@ -104,7 +97,6 @@ const genericRichListStyles = `
   }
   .list-item-primary-text p { margin-bottom: 0.25em; font-weight: 400; color: #334155; }
   .list-item-primary-text ul, .list-item-primary-text ol { margin-left: 15px; margin-bottom: 0.25em; padding-left: 0;}
-
 
   .list-item-media-previews {
     display: flex;
@@ -133,7 +125,7 @@ const genericRichListStyles = `
   }
   .list-item-media-previews .attachment-link .icon { font-size: 0.85em; }
   .list-item-media-previews .attachment-link span {
-    max-width: 70px; white-space: nowrap;
+     white-space: nowrap;
     overflow: hidden; text-overflow: ellipsis;
   }
 
@@ -150,7 +142,7 @@ const genericRichListStyles = `
     display: flex; align-items: center; justify-content: center;
   }
   .list-item-action-btn:hover { background-color: #f1f5f9; color: #6366f1; }
-  .list-item-action-btn i { font-size: 0.9rem; /* Requires icon font */ }
+  .list-item-action-btn svg { width: 14px; height: 14px; /* Adjust icon size */ }
 
   .list-view-no-items-message {
     text-align: center; padding: 20px 15px; color: #64748b; 
@@ -164,79 +156,83 @@ const DraggableListItem = ({
   index,
   listId,
   onMoveItem,
-  onShowItem, // Renamed from onSelectItem for clarity, aligns with 'show' prop
-  onEditItem,
-  onDeleteItem,
+  onShowItem,
+  edit:onEditItem,
+  delete:onDeleteItem,
   isSelected,
   isSelectable,
-  primaryDisplayKey, // Key for the main text display (e.g., 'name' or 'value')
-  options, // Pass down table options
+  primaryDisplayKey,
+  options,
 }) => {
   const ref = useRef(null);
-  const { id, name, videos, images, attachments } = item;
+  const { id, name, videos, images, attachments } = item; // Ensure item has an id
 
-  const [{ handlerId, isOverCurrent }, drop] = useDrop({
+  const [{ handlerId, isOverCurrent, currentOffset }, drop] = useDrop({ // Added currentOffset
     accept: RichListItemType,
     collect: (monitor) => ({
       handlerId: monitor.getHandlerId(),
       isOverCurrent: monitor.isOver({ shallow: true }),
+      currentOffset: monitor.getClientOffset(), // Collect clientOffset
     }),
     hover: (draggedItemInfo, monitor) => {
-      if (!ref.current || !onMoveItem || draggedItemInfo.id === id || draggedItemInfo.listId !== listId) return;
+      if (!ref.current || !onMoveItem || !options?.reorderable) return;
+      if (draggedItemInfo.id === id || (draggedItemInfo.listId && draggedItemInfo.listId !== listId)) return;
+
       const dragIndex = draggedItemInfo.index;
       const hoverIndex = index;
       if (dragIndex === hoverIndex) return;
+
       const hoverBoundingRect = ref.current.getBoundingClientRect();
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
       const clientOffset = monitor.getClientOffset();
-      if (!clientOffset) return;
+      if (!clientOffset) return; // Should always be available in hover
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-      if ((dragIndex < hoverIndex && hoverClientY < hoverMiddleY) || (dragIndex > hoverIndex && hoverClientY > hoverMiddleY)) {
-        // No action
-      } else {
-        onMoveItem(dragIndex, hoverIndex, listId);
-        draggedItemInfo.index = hoverIndex;
-      }
+
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
+      
+      onMoveItem(dragIndex, hoverIndex, listId);
+      draggedItemInfo.index = hoverIndex; // Mutate for dnd's internal state
     },
-    canDrop: (draggedItemInfo) => draggedItemInfo.listId === listId,
+    canDrop: (draggedItemInfo) => !draggedItemInfo.listId || draggedItemInfo.listId === listId,
   });
 
   const [{ isDragging, draggedItemData }, drag, preview] = useDrag({
     type: RichListItemType,
-    item: () => ({ id, index, listId, itemData: item }),
-    canDrag: () => options?.reorderable === true && typeof onMoveItem === 'function', // Only draggable if reorderable
+    item: () => ({ id, index, listId, itemData: item }), // Ensure id, index, listId are present
+    canDrag: () => options?.reorderable === true && typeof onMoveItem === 'function',
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
       draggedItemData: monitor.getItem(),
     }),
   });
 
+  // Connect refs
   if (options?.reorderable) {
-    preview(drop(ref)); // Item is drop target and preview
+    preview(drop(ref)); 
   } else {
-    drop(ref); // Item is only drop target (though won't accept if not reorderable globally)
+    drop(ref); 
   }
-
 
   const handleItemClick = (e) => {
     if (!isSelectable || !onShowItem) return;
-    if (e.target.closest('.list-item-actions-panel button, .list-item-primary-text a, .list-item-primary-text iframe, .list-item-drag-handle, .list-item-media-previews a')) {
+    // Check if click was on an interactive element within the item
+    if (e.target.closest('.list-item-actions-panel button, .list-item-primary-text a, .list-item-primary-text iframe, .list-item-drag-handle, .list-item-media-previews a, .list-item-media-previews iframe')) {
       return;
     }
-    onShowItem(item); // Call the 'show' callback
+    onShowItem(item);
   };
 
   let itemClasses = "draggable-generic-list-item";
-  if (isSelectable && options?.linkable !== false) itemClasses += " selectable"; // linkable from options
+  if (isSelectable && options?.linkable !== false) itemClasses += " selectable";
   if (isSelected) itemClasses += " selected";
   if (isDragging && draggedItemData?.id === id) itemClasses += " dragging-item";
 
-  if (isOverCurrent && draggedItemData && draggedItemData.id !== id && draggedItemData.listId === listId) {
+  if (isOverCurrent && currentOffset && draggedItemData && draggedItemData.id !== id && (!draggedItemData.listId || draggedItemData.listId === listId) ) { // Use currentOffset
     const hoverBoundingRect = ref.current?.getBoundingClientRect();
-    const clientOffset = drop.monitor.getClientOffset();
-    if (hoverBoundingRect && clientOffset) {
+    if (hoverBoundingRect) { // clientOffset (currentOffset) is already checked
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      const hoverClientY = currentOffset.y - hoverBoundingRect.top;
       if (hoverClientY < hoverMiddleY) itemClasses += " drop-target-top";
       else itemClasses += " drop-target-bottom";
     }
@@ -246,14 +242,12 @@ const DraggableListItem = ({
   const safeImages = Array.isArray(images) ? images : [];
   const safeAttachments = Array.isArray(attachments) ? attachments : [];
   
-  // Use primaryDisplayKey for the main text, fallback to 'name', then 'id'
-  const mainTextContent = item[primaryDisplayKey] || item.name || `Item ${id}`;
-  // Check if mainTextContent is likely HTML
+  const mainTextContent = item[primaryDisplayKey] || item.name || `Item ${item.id !== undefined ? item.id : index}`;
   const isHTML = typeof mainTextContent === 'string' && (mainTextContent.includes('<') && mainTextContent.includes('>'));
 
   return (
     <div ref={ref} className={itemClasses} onClick={handleItemClick} data-handler-id={handlerId}>
-      {options?.reorderable && (
+      {options?.reorderable && typeof onMoveItem === 'function' && ( // Ensure onMoveItem is function for handle to appear
         <div ref={drag} className="list-item-drag-handle" title="Drag to reorder">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M10 6a2 2 0 11-4 0 2 2 0 014 0zm0 8a2 2 0 11-4 0 2 2 0 014 0zm0 8a2 2 0 11-4 0 2 2 0 014 0zm8-16a2 2 0 11-4 0 2 2 0 014 0zm0 8a2 2 0 11-4 0 2 2 0 014 0zm0 8a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -269,49 +263,58 @@ const DraggableListItem = ({
         )}
         
         {(safeVideos.length > 0 || safeImages.length > 0 || safeAttachments.length > 0) && (
-            <div className="list-item-media-previews">
-            {safeVideos.slice(0, 1).map((videoUrl, i) => videoUrl && (
-                <div key={`vid-${id}-${i}`} className="list-item-media-item">
-                <iframe src={videoUrl} title="Video Preview" frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ width: '120%', height: 'auto' }}></iframe>
-                </div>
-            ))}
-            {safeImages.slice(0, 3).map((imageUrl, i) => imageUrl && (
-                <div key={`img-${id}-${i}`} className="list-item-media-item">
-                <a href={imageUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} title="View image">
-                    <img src={imageUrl} alt={`Preview ${i+1}`} />
-                </a>
-                </div>
-            ))}
-            {safeAttachments.slice(0, 2).map((fileUrl, i) => fileUrl && (
-                 <a href={fileUrl} target="_blank" rel="noopener noreferrer" download onClick={e => e.stopPropagation()} key={`att-${id}-${i}`} className="attachment-link" title={fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'Attachment'}>
-                    <span className="icon">📎</span>
-                    <span>{(fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'File').substring(0,10)}</span>
-                 </a>
-            ))}
-            </div>
+          <div className="list-item-media-previews">
+          {safeVideos.slice(0, 1).map((videoUrl, i) => videoUrl && (
+              <div key={`vid-${item.id}-${i}`} className="list-item-media-item">
+              {/* Removed inline style from iframe, let CSS handle it */}
+              <iframe src={videoUrl} title="Video Preview" style={{ width: 'auto', height: "22vh", aspectRatio: '16 / 9' }} frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+              </div>
+          ))}
+          {safeImages.slice(0, 3).map((imageUrl, i) => imageUrl && (
+              <div key={`img-${item.id}-${i}`} className="list-item-media-item">
+              <a href={imageUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} title="View image">
+                  <img src={imageUrl} alt={`Preview ${i+1}`} />
+              </a>
+              </div>
+          ))}
+          {safeAttachments.slice(0, 2).map((fileUrl, i) => fileUrl && (
+               <a href={fileUrl} target="_blank" rel="noopener noreferrer" download onClick={e => e.stopPropagation()} key={`att-${item.id}-${i}`} className="attachment-link" title={fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'Attachment'}>
+                  <span className="icon">📎</span>
+                  <span>{(fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'File').substring(0,10)}</span>
+               </a>
+          ))}
+          </div>
         )}
       </div>
 
-      {(options?.editable || options?.deleteable) && (
-        <div className="list-item-actions-panel">
-            {options?.editable && typeof onEditItem === 'function' && (
+      <div className="list-item-actions-panel">
+            {(
             <button className="list-item-action-btn" onClick={(e) => { e.stopPropagation(); onEditItem(item); }} title="Edit">
-                <i className="la la-edit" /> {/* Placeholder icon */}
+                {/* SVG Edit Icon */}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"></path>
+                </svg>
             </button>
             )}
-            {options?.deleteable && typeof onDeleteItem === 'function' && (
+            {(
             <button className="list-item-action-btn" onClick={(e) => { e.stopPropagation(); onDeleteItem(item); }} title="Delete">
-                <i className="la la-trash" /> {/* Placeholder icon */}
+                {/* SVG Trash Icon */}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
             </button>
             )}
         </div>
-      )}
     </div>
   );
 };
 
 DraggableListItem.propTypes = {
-  item: PropTypes.object.isRequired,
+  item: PropTypes.object.isRequired, // Should have a unique 'id' property
   index: PropTypes.number.isRequired,
   listId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onMoveItem: PropTypes.func,
@@ -326,66 +329,71 @@ DraggableListItem.propTypes = {
 
 // --- "Table" Component (New Rich List View) ---
 const Table = ({
-  // Props from your original Table usage
-  headers, // Expected: [{ label: "Name", key: "name" }] or similar for primary display
-  data = [], // The array of items to display
-  options = { reorderable: false, linkable: true, editable: true, deleteable: true }, // Default options
-  show,    // Callback when an item is clicked/selected (if linkable)
-  edit,    // Callback for edit action
-  delete: deleteItemProp, // Callback for delete action (renamed from 'delete')
-  
-  // New Props for this component
-  listId = 'single-rich-list', // Unique ID for D&D context if multiple lists on page
-  onOrderChange, // Callback: (newOrderedItems, listId) => {} - for drag and drop reordering
-  selectedItemId, // ID of the currently selected item for highlighting
-  className = "",   // Custom class for the wrapper
+  headers,
+  data = [],
+  options = { reorderable: false, linkable: true, editable: true, deleteable: true },
+  show,
+  edit,
+  delete: deleteItemProp, // Renamed prop
+  listId = 'single-rich-list',
+  onOrderChange,
+  selectedItemId,
+  className = "",
   noItemsText = "No items to display.",
-  isItemSelectable = () => true, // By default, all items can trigger 'show'
+  isItemSelectable = () => true,
 }) => {
   const [internalItems, setInternalItems] = useState(data);
 
   useEffect(() => {
+    // Ensure data items have unique IDs, or add them if necessary.
+    // For this example, we assume `data` items have unique `id` properties.
     setInternalItems(data);
   }, [data]);
 
-  const handleMoveItem = useCallback((dragIndex, hoverIndex) => {
-    if (!options.reorderable || !onOrderChange) return; // Check if reordering is enabled
+  const handleMoveItem = useCallback((dragIndex, hoverIndex, LId) => { // Renamed listId param to avoid conflict
+    if (!options.reorderable || !onOrderChange) return;
 
-    const newItems = [...internalItems];
-    const [draggedItem] = newItems.splice(dragIndex, 1);
-    newItems.splice(hoverIndex, 0, draggedItem);
-    setInternalItems(newItems); // Optimistic update
-    onOrderChange(newItems, listId);
-  }, [internalItems, onOrderChange, listId, options.reorderable]);
+    setInternalItems(prevItems => {
+        const newItems = [...prevItems];
+        const [draggedItem] = newItems.splice(dragIndex, 1);
+        newItems.splice(hoverIndex, 0, draggedItem);
+        onOrderChange(newItems, LId); // Call onOrderChange *before* local state update if it's preferred source of truth
+                                      // or after for optimistic update. Current is optimistic.
+        return newItems;
+    });
+  }, [onOrderChange, options.reorderable /* removed listId as it's passed as arg, internalItems removed as using functional update */]);
 
-  // Determine the primary display key from the first header, fallback to 'name'
-  const primaryDisplayKey = headers && headers.length > 0 ? headers[0].key : 'name';
 
-  // Note: DndProvider should be at a higher level if multiple "Table" instances
-  // that need to interact via D&D are on the same page.
-  // For a single list, or lists that don't interact, this is fine.
+  const primaryDisplayKey = headers && headers.length > 0 && headers[0].key ? headers[0].key : 'name';
+
   return (
     <DndProvider backend={HTML5Backend}>
       <style>{genericRichListStyles}</style>
       <div className={`generic-rich-list-wrapper ${className}`}>
         <div className="generic-list-items-container">
           {internalItems && internalItems.length > 0 ? (
-            internalItems.map((item, index) => (
-              <DraggableListItem
-                key={item.id || `item-${index}-${listId}`} // Ensure unique key
-                item={item}
-                index={index}
-                listId={listId}
-                onMoveItem={options.reorderable ? handleMoveItem : undefined}
-                onShowItem={options.linkable !== false ? show : undefined} // Use 'show' prop
-                onEditItem={options.editable ? edit : undefined}
-                onDeleteItem={options.deleteable ? deleteItemProp : undefined}
-                isSelected={selectedItemId === item.id}
-                isSelectable={options.linkable !== false && isItemSelectable(item)}
-                primaryDisplayKey={primaryDisplayKey}
-                options={options}
-              />
-            ))
+            internalItems.map((item, index) => {
+              // Critical: Ensure item.id exists and is unique for D&D and selection to work reliably.
+              if (item.id === undefined) {
+                console.warn("Table item is missing an 'id' property. D&D and selection may not work correctly.", item);
+              }
+              return (
+                <DraggableListItem
+                  key={item.id || `item-${index}-${listId}`}
+                  item={item}
+                  index={index}
+                  listId={listId}
+                  onMoveItem={options.reorderable && typeof onOrderChange === 'function' ? handleMoveItem : undefined}
+                  onShowItem={options.linkable !== false ? show : undefined}
+                  onEditItem={options.editable ? edit : undefined}
+                  onDeleteItem={options.deleteable ? deleteItemProp : undefined}
+                  isSelected={selectedItemId === item.id}
+                  isSelectable={options.linkable !== false && isItemSelectable(item)}
+                  primaryDisplayKey={primaryDisplayKey}
+                  options={options}
+                />
+              );
+            })
           ) : (
             <p className="list-view-no-items-message">{noItemsText}</p>
           )}
@@ -400,7 +408,7 @@ Table.propTypes = {
     label: PropTypes.string.isRequired,
     key: PropTypes.string.isRequired,
   })),
-  data: PropTypes.arrayOf(PropTypes.object),
+  data: PropTypes.arrayOf(PropTypes.object), // Each object should have a unique 'id'
   options: PropTypes.shape({
     reorderable: PropTypes.bool,
     linkable: PropTypes.bool,
@@ -409,7 +417,7 @@ Table.propTypes = {
   }),
   show: PropTypes.func,
   edit: PropTypes.func,
-  delete: PropTypes.func,
+  deleteItemProp: PropTypes.func, // Corrected prop name for delete callback
   listId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onOrderChange: PropTypes.func,
   selectedItemId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -418,4 +426,14 @@ Table.propTypes = {
   isItemSelectable: PropTypes.func,
 };
 
-export default Table; // Export the new Table component
+// Renaming delete prop in Table.propTypes
+Table.propTypes.delete = function(props, propName, componentName) {
+  if (props[propName] !== undefined) {
+    return new Error(
+      `The prop \`${propName}\` is deprecated for \`${componentName}\`. Please use \`deleteItemProp\` instead.`
+    );
+  }
+};
+
+
+export default Table;

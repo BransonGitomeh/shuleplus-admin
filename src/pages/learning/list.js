@@ -404,13 +404,13 @@ class BasicTable extends React.Component {
                 overflowX: 'auto',
                 whiteSpace: 'nowrap'
               }} className="row scrolling-wrapper flex-row flex-nowrap mt-4 pb-4">
-                <div className="col-md-4">
+                <div className="col-md-2">
                   <div className="kt-portlet__head">
                     <div className="kt-portlet__head-label">
                       <h3 className="kt-portlet__head-title">Grades</h3>
                     </div>
                     <div style={{ paddingTop: 10 }}>
-                      <button type="button" className="btn btn-primary pull-right" onClick={() => addGradeModalInstance.show()}>
+                      <button type="button" className="btn btn-icon btn-sm  pull-right" onClick={() => addGradeModalInstance.show()}>
                         <i className="la la-plus-circle"></i>
                       </button>
                     </div>
@@ -429,7 +429,7 @@ class BasicTable extends React.Component {
                 </div>
 
                 {selectedGrade && (
-                  <div className="col-md-4">
+                  <div className="col-md-2">
                     <div className="kt-portlet__head">
                       <div className="kt-portlet__head-label">
                         <h3 className="kt-portlet__head-title">
@@ -437,7 +437,7 @@ class BasicTable extends React.Component {
                         </h3>
                       </div>
                       <div style={{ paddingTop: 10 }}>
-                        <button type="button" className="btn btn-primary pull-right" onClick={() => addSubjectModalInstance.show()}>
+                        <button type="button" className="btn btn-icon btn-sm  pull-right" onClick={() => addSubjectModalInstance.show()}>
                           <i className="la la-plus-circle"></i>
                         </button>
                       </div>
@@ -457,7 +457,7 @@ class BasicTable extends React.Component {
                 )}
 
                 {selectedSubject && (
-                  <div className="col-md-4">
+                  <div className="col-md-2">
                     <div className="kt-portlet__head">
                       <div className="kt-portlet__head-label">
                         <h3 className="kt-portlet__head-title">
@@ -465,7 +465,7 @@ class BasicTable extends React.Component {
                         </h3>
                       </div>
                       <div style={{ paddingTop: 10 }}>
-                        <button type="button" className="btn btn-primary pull-right" onClick={() => addTopicModalInstance.show()}>
+                        <button type="button" className="btn btn-icon btn-sm  pull-right" onClick={() => addTopicModalInstance.show()}>
                           <i className="la la-plus-circle"></i>
                         </button>
                       </div>
@@ -485,16 +485,16 @@ class BasicTable extends React.Component {
                 )}
 
                 {selectedTopic && (
-                  <div className="col-md-4">
+                  <div className="col-md-2">
                     <div className="kt-portlet__head">
                       <div className="kt-portlet__head-label">
                         <h3 className="kt-portlet__head-title">
                           {(selectedTopicObj?.name) || '...'} Subtopics
                         </h3>
                       </div>
-                      <div style={{ paddingTop: 10 }}>
-                        <button type="button" className="btn btn-primary pull-right" onClick={() => addSubtopicModalInstance.show()}>
-                          <i className="la la-plus-circle"></i>
+                      <div style={{ paddingTop: 10, display: 'flex', justifyContent: 'space-between' }}>
+                        <button type="button" className="btn btn-icon btn-sm  pull-right" onClick={() => addSubtopicModalInstance.show()}>
+                          <i className="la la-plus"></i>
                         </button>
                       </div>
                     </div>
@@ -521,7 +521,7 @@ class BasicTable extends React.Component {
                         </h3>
                       </div>
                       <div style={{ paddingTop: 10 }}>
-                        <button type="button" className="btn btn-primary pull-right" onClick={() => addQuestionModalInstance.show()}>
+                        <button type="button" className="btn btn-icon btn-sm   pull-right" onClick={() => addQuestionModalInstance.show()}>
                           <i className="la la-plus-circle"></i>
                         </button>
                       </div>
@@ -550,20 +550,20 @@ class BasicTable extends React.Component {
                 )}
 
                 {selectedQuestion && (
-                  <div className="col-md-4">
+                  <div className="col-md-2">
                     <div className="kt-portlet__head">
                       <div className="kt-portlet__head-label">
                         <div className="kt-portlet__head-title">
-                          <div
+                          {/* <div
                             dangerouslySetInnerHTML={{
                               __html: (selectedQuestionObj?.name) || '...'
                             }}
-                          />
-                          Answers
+                          /> */}
+                          Responses
                         </div>
                       </div>
                       <div style={{ paddingTop: 10 }}>
-                        <button type="button" className="btn btn-primary pull-right" onClick={() => addOptionModalInstance.show()}>
+                        <button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => addOptionModalInstance.show()}>
                           <i className="la la-plus-circle"></i>
                         </button>
                       </div>
