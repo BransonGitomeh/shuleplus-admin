@@ -119,6 +119,9 @@ var Data = (function () {
                   id
                   name
                   type
+                  videos
+                  images
+                  attachments
                   answers {
                     id
                     value

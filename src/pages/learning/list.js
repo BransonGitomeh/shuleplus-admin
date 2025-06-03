@@ -530,20 +530,7 @@ class BasicTable extends React.Component {
                       {(this.state.questions || []).length > 0 && <Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm}/>}
                       <Table
                         headers={[{ label: "Name", key: "name" }]}
-                        data={filteredQuestions.map(question => {
-                            try {
-                                const contentState = ContentState.createFromBlockArray(
-                                    JSON.parse(question.name).blocks,
-                                    JSON.parse(question.name).entityMap
-                                );
-                                const contentStateWithKeys = contentState.getBlockMap().map(block => block.set('key', `question-${question.id}-${block.getKey()}`));
-                                const html = stateToHTML(contentStateWithKeys);
-                                return { ...question, name: html };
-                            } catch (e) {
-                                console.log('Error parsing question name', e);
-                                return { ...question, name: question.name };
-                            }
-                        })}
+                        data={filteredQuestions}
                         options={{ reorderable: true }}
                         show={(question) => {
                           console.log('show question', question);
