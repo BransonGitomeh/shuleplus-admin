@@ -304,13 +304,7 @@ class Navbar extends React.Component {
             {/* and its content will be used by kt_header_mobile for the mobile off-canvas/drawer menu */}
             <div id="kt_header_menu" className="kt-header-menu kt-header-menu-mobile ">
               <ul className="kt-menu__nav">
-                {fetchingSchools ? (
-                  <li className="kt-menu__item kt-menu__item--active" aria-haspopup="false">
-                    <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link">
-                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontSize: '1.2rem', fontWeight: 'bold' }}>Fetching...</span>
-                    </a>
-                  </li>
-                ) : (
+                {availableSchools.length > 1 ? (
                   <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                     <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                       <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>{selectedSchool.name || "Select School"}</span>
@@ -329,15 +323,14 @@ class Navbar extends React.Component {
                             </a>
                           </li>
                         ))}
-                        {availableSchools.length === 0 && !fetchingSchools && (
-                          <li className="kt-menu__item kt-menu__item--active" aria-haspopup="false">
-                            <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link">
-                              <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontSize: '1rem' }}>No schools available</span>
-                            </a>
-                          </li>
-                        )}
                       </ul>
                     </div>
+                  </li>
+                ) : (
+                  <li className="kt-menu__item" aria-haspopup="false">
+                    <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link">
+                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontSize: '1.2rem', fontWeight: 'bold' }}>{selectedSchool.name || "Select School"}</span>
+                    </a>
                   </li>
                 )}
                 <li className="kt-menu__item" aria-haspopup="false">
