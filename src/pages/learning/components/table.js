@@ -427,13 +427,13 @@ Table.propTypes = {
 };
 
 // Renaming delete prop in Table.propTypes
-Table.propTypes.delete = function(props, propName, componentName) {
-  if (props[propName] !== undefined) {
-    return new Error(
-      `The prop \`${propName}\` is deprecated for \`${componentName}\`. Please use \`deleteItemProp\` instead.`
-    );
-  }
-};
+// Table.propTypes.delete = function(props, propName, componentName) {
+//   if (props[propName] !== undefined) {
+//     return new Error(
+//       `The prop \`${propName}\` is deprecated for \`${componentName}\`. Please use \`deleteItemProp\` instead.`
+//     );
+//   }
+// };
 
 
 export default Table;
