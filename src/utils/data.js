@@ -1432,10 +1432,15 @@ var Data = (function () {
         return schools;
       },
       getSelected() {
-        if (school)
-          return school
+        const schoolId = localStorage.getItem("school");
+        if (schoolId) {
+          const school = schools.find(school => school.id === schoolId);
+          console.log("data.js: getSelected: Found school:", school);
+          return school || {};
+        }
 
-        return {}
+        console.log("data.js: getSelected: No school selected");
+        return {};
       },
       async archive() {
         if (school)
