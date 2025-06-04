@@ -79,12 +79,14 @@ const SvgSettingsIcon = ({ style }) => (
 // --- End SVG Icon Components ---
 
 const DEFAULT_TOP_NAV_BG_COLOR = '#FFFFFF';
-const DEFAULT_TOP_NAV_TEXT_COLOR = '#212529';
-const DEFAULT_TOP_NAV_ICON_COLOR = '#212529';
+const DEFAULT_TOP_NAV_TEXT_COLOR = '#212529'; // Dark color for text
+const DEFAULT_TOP_NAV_ICON_COLOR = '#212529'; // Dark color for icons
 
 const BOTTOM_NAV_BG_COLOR = '#ffffff';
 const BOTTOM_NAV_TEXT_COLOR = '#212529';
 const BOTTOM_NAV_ICON_COLOR = '#212529';
+
+const LIGHT_GREY_HOVER_BG = '#f0f0f0'; // Example light grey
 
 class Navbar extends React.Component {
   state = {
@@ -92,39 +94,32 @@ class Navbar extends React.Component {
     availableSchools: Data.schools.list(),
     userRole: "",
     fetchingSchools: false,
-    // Navbar dimensions
-    topNavbarHeight: 80, // For desktop kt_header
-    mobileTopBarHeight: 60, // For kt_header_mobile
+    topNavbarHeight: 80, 
+    mobileTopBarHeight: 60,
     secondaryNavbarEffectiveHeight: 70,
     gapBetweenNavbars: 15,
-    secondaryNavbarHorizontalMargin: 25, // Used for all floating navs
+    secondaryNavbarHorizontalMargin: 25,
     isMobile: window.innerWidth < 992,
   };
 
   componentDidMount() {
-    console.log("Navbar: componentDidMount");
     const userData = JSON.parse(localStorage.getItem("user"));
-    console.log('Navbar: user data from local storage', userData);
     const school = Data.schools.getSelected();
-    console.log('Navbar: selected school from data context', school);
     const schools = Data.schools.list();
-    console.log('Navbar: schools from data context', schools);
 
     this.setState({ schools, selectedSchool: school, fetchingSchools: schools.length === 0 });
 
     Data.schools.subscribe(({ schools, status }) => {
       const currentSelectedSchool = Data.schools.getSelected();
       let newSelectedSchool = currentSelectedSchool || (schools.length > 0 ? schools[0] : {});
-      console.log('Navbar: schools subscription triggered', { schools, status, currentSelectedSchool, newSelectedSchool });
       this.setState({
         availableSchools: schools,
+        selectedSchool: newSelectedSchool,
         fetchingSchools: status === 'loading' || (status === 'idle' && schools.length === 0),
       }, () => {
-        if (newSelectedSchool.id && !this.state.selectedSchool.id) {
-          console.log('Navbar: setting school to local storage', newSelectedSchool.id);
+        if (newSelectedSchool.id) {
           localStorage.setItem("school", newSelectedSchool.id);
           document.title = `${newSelectedSchool.name} | Shule Plus`;
-          this.setState({ selectedSchool: newSelectedSchool });
         }
       });
     });
@@ -135,10 +130,8 @@ class Navbar extends React.Component {
     }
     this.setState({ userRole: role });
 
-    app.init(); // General Metronic init, should include KTHeaderMobile and KTMenu
-
+    app.init(); 
     this.initProfileOffcanvas();
-
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -147,7 +140,6 @@ class Navbar extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-     // Re-initialize KTMenu for desktop menus if schools data changes
     if (!this.state.isMobile && (prevState.availableSchools !== this.state.availableSchools || prevState.selectedSchool !== this.state.selectedSchool)) {
         const desktopTopMenu = KTUtil.get('kt_header_menu');
         if (desktopTopMenu) new KTMenu(desktopTopMenu, {});
@@ -158,9 +150,6 @@ class Navbar extends React.Component {
             if (desktopBottomMenu) new KTMenu(desktopBottomMenu, {});
         }
     }
-    // Note: Metronic's KTHeaderMobile typically handles the kt_header_menu for mobile view
-    // when kt_header_mobile_toggler is used. If issues arise with dynamic content in the mobile
-    // off-canvas menu, explicit re-init for KTMenu on #kt_header_menu in mobile context might be needed.
   }
 
   handleResize = () => {
@@ -173,17 +162,13 @@ class Navbar extends React.Component {
       profilePanel.setAttribute('data-kt-initialized', 'true');
       const head = KTUtil.find(profilePanel, '.kt-offcanvas-panel__head');
       const body = KTUtil.find(profilePanel, '.kt-offcanvas-panel__body');
-
       new KTOffcanvas(profilePanel, {
-        overlay: true,
-        baseClass: 'kt-offcanvas-panel',
-        closeBy: 'kt_offcanvas_toolbar_profile_close',
-        toggleBy: [ // Array of togglers
-          { target: 'kt_offcanvas_toolbar_profile_toggler_btn', state: 'kt-header__topbar-toggler--active' }, // Desktop
-          { target: 'kt_header_mobile_topbar_toggler', state: 'kt-header-mobile__toolbar-topbar-toggler--active' } // Mobile
+        overlay: true, baseClass: 'kt-offcanvas-panel', closeBy: 'kt_offcanvas_toolbar_profile_close',
+        toggleBy: [
+          { target: 'kt_offcanvas_toolbar_profile_toggler_btn', state: 'kt-header__topbar-toggler--active' },
+          { target: 'kt_header_mobile_topbar_toggler', state: 'kt-header-mobile__toolbar-topbar-toggler--active' }
         ]
       });
-
       if (body) {
         KTUtil.scrollInit(body, {
           disableForMobile: true, resetHeightOnDestroy: true, handleWindowResize: true,
@@ -210,11 +195,6 @@ class Navbar extends React.Component {
     if (window.deferredInstallPrompt) {
       window.deferredInstallPrompt.prompt();
       window.deferredInstallPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the A2HS prompt');
-        } else {
-          console.log('User dismissed the A2HS prompt');
-        }
         window.deferredInstallPrompt = null;
         this.forceUpdate(); 
       });
@@ -229,8 +209,8 @@ class Navbar extends React.Component {
         selectedSchool,
         availableSchools,
         fetchingSchools,
-        topNavbarHeight, // Desktop top nav height
-        mobileTopBarHeight, // Mobile top nav height
+        topNavbarHeight,
+        mobileTopBarHeight,
         secondaryNavbarEffectiveHeight,
         gapBetweenNavbars,
         secondaryNavbarHorizontalMargin,
@@ -247,12 +227,9 @@ class Navbar extends React.Component {
 
     const firstBarHeight = isMobile ? mobileTopBarHeight : topNavbarHeight;
     const secondaryNavbarTopPosition = gapBetweenNavbars + firstBarHeight + gapBetweenNavbars;
-    
     const totalFixedElementsHeight = secondaryNavbarTopPosition + secondaryNavbarEffectiveHeight;
 
     const bottomNavCommonLinkStyle = { color: BOTTOM_NAV_TEXT_COLOR };
-    // const bottomNavCommonIconStyle = { color: BOTTOM_NAV_ICON_COLOR }; // Not currently used but defined for future use
-    
     const paceLoaderColor = effectiveTopBarTextColor;
 
     const manageDataItems = [
@@ -275,10 +252,52 @@ class Navbar extends React.Component {
       { path: "/finance/charges", label: "Your Charges" },
     ];
 
-    console.log({selectedSchool})
+    // CSS for hover effects
+    const customHoverStyle = `
+      /* TOP NAVBAR - Main Items Hover color override */
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item > .kt-menu__link:hover,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--hover > .kt-menu__link,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--active > .kt-menu__link {
+        background-color: ${LIGHT_GREY_HOVER_BG} !important;
+      }
+
+      /* TOP NAVBAR - Main Items Text & Icon color on hover */
+      /* Text color for main links on hover */
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item > .kt-menu__link:hover .kt-menu__link-text,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--hover > .kt-menu__link .kt-menu__link-text,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--active > .kt-menu__link .kt-menu__link-text {
+        color: ${DEFAULT_TOP_NAV_TEXT_COLOR} !important;
+      }
+      /* Icon (arrows) color for main links on hover */
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item > .kt-menu__link:hover .kt-menu__hor-arrow,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--hover > .kt-menu__link .kt-menu__hor-arrow,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--active > .kt-menu__link .kt-menu__hor-arrow,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item > .kt-menu__link:hover .kt-menu__ver-arrow,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--hover > .kt-menu__link .kt-menu__ver-arrow,
+      #kt_header_menu > .kt-menu__nav > .kt-menu__item.kt-menu__item--active > .kt-menu__link .kt-menu__ver-arrow {
+        color: ${DEFAULT_TOP_NAV_ICON_COLOR} !important;
+      }
+
+      /* TOP NAVBAR - Submenu Items Hover color override */
+      #kt_header_menu .kt-menu__subnav .kt-menu__item:hover > .kt-menu__link,
+      #kt_header_menu .kt-menu__subnav .kt-menu__item.kt-menu__item--hover > .kt-menu__link,
+      #kt_header_menu .kt-menu__subnav .kt-menu__item.kt-menu__item--active > .kt-menu__link {
+        background-color: ${LIGHT_GREY_HOVER_BG} !important;
+        /* Text and icon colors in submenus are already dark by default (corrected below), so they should be fine on light grey hover. */
+      }
+      
+      /* BOTTOM NAVBAR - Items Hover color override */
+      #kt_bottom_nav_menu_container .kt-menu__nav > .kt-menu__item:hover > .kt-menu__link,
+      #kt_bottom_nav_menu_container .kt-menu__nav > .kt-menu__item.kt-menu__item--hover > .kt-menu__link,
+      #kt_bottom_nav_menu_container .kt-menu__nav > .kt-menu__item.kt-menu__item--active > .kt-menu__link {
+        background-color: ${LIGHT_GREY_HOVER_BG} !important;
+        /* Text color is already BOTTOM_NAV_TEXT_COLOR (dark), so it's fine. */
+      }
+    `;
 
     return (
       <>
+        <style>{customHoverStyle}</style>
         {fetchingSchools && <Pace color={paceLoaderColor} height={5} style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 2000 }} />}
 
         {/* DESKTOP TOP NAVBAR (kt_header) */}
@@ -287,23 +306,14 @@ class Navbar extends React.Component {
           className="kt-header kt-grid__item kt-grid kt-grid--ver d-none d-lg-flex" 
           style={{
             backgroundColor: effectiveTopBarBgColor,
-            alignItems: 'center',
-            height: `${topNavbarHeight}px`,
-            zIndex: 1002,
-            position: 'fixed',
-            top: `${gapBetweenNavbars}px`,
-            left: `${secondaryNavbarHorizontalMargin}px`,
-            right: `${secondaryNavbarHorizontalMargin}px`,
-            borderRadius: '12px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)',
+            alignItems: 'center', height: `${topNavbarHeight}px`, zIndex: 1002, position: 'fixed',
+            top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`,
+            borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)',
           }}
         >
-          <div style={{ position: 'absolute', left: '25px', top: '50%', transform: 'translateY(-50%)' }}>
-            {/* Optional brand icon */}
-          </div>
+          <div style={{ position: 'absolute', left: '25px', top: '50%', transform: 'translateY(-50%)' }}></div>
           <div
-            className="kt-header-menu-wrapper kt-grid__item"
-            id="kt_header_menu_wrapper" 
+            className="kt-header-menu-wrapper kt-grid__item" id="kt_header_menu_wrapper" 
             style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
           >
             <div id="kt_header_menu" className="kt-header-menu kt-header-menu-mobile ">
@@ -320,10 +330,10 @@ class Navbar extends React.Component {
                         {availableSchools.map(schoolItem => (
                           <li key={schoolItem.id} onClick={() => this.switchSchools(schoolItem)} className="kt-menu__item" aria-haspopup="true">
                             <a href="#!" onClick={e => e.preventDefault()} className="kt-menu__link">
-                              <i className="kt-menu__link-icon" style={topNavIconStyle}> {/* Style applied here for potential icon like la-building */}
-                                {schoolItem.logo ? <img src={`${schoolItem.logo}`} style={{ width: '20px', height: 'auto', borderRadius: '50%', aspectRatio: '1/1' }} alt={schoolItem.name}/> : <i className="la la-building" />}
+                              <i className="kt-menu__link-icon" style={{ color: DEFAULT_TOP_NAV_ICON_COLOR, display: 'flex', alignItems: 'center' }}>
+                                {schoolItem.logo ? <img src={`${schoolItem.logo}`} style={{ width: '20px', height: '20px', borderRadius: '50%' }} alt={schoolItem.name}/> : <i className="la la-building" />}
                               </i>
-                              <span className="kt-menu__link-text" style={topNavlinkStyle}>{schoolItem.name}</span>
+                              <span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{schoolItem.name}</span>
                             </a>
                           </li>
                         ))}
@@ -358,9 +368,9 @@ class Navbar extends React.Component {
                         <li key={item.path} className="kt-menu__item" aria-haspopup="true">
                           <Link to={item.path} className="kt-menu__link">
                             <span className="kt-menu__link-icon kt-menu__link-icon--md" style={{ marginRight: '8px' }}>
-                              <item.IconComponent style={{ width: '18px', height: '18px', color: effectiveTopBarIconColor }} />
+                              <item.IconComponent style={{ width: '18px', height: '18px', color: DEFAULT_TOP_NAV_ICON_COLOR }} />
                             </span>
-                            <span className="kt-menu__link-text" style={topNavlinkStyle}>{item.label}</span>
+                            <span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{item.label}</span>
                           </Link>
                         </li>
                       ))}
@@ -380,8 +390,8 @@ class Navbar extends React.Component {
                         {financeItems.map(item => (
                             <li key={item.path} className="kt-menu__item" aria-haspopup="true">
                             <Link to={item.path} className="kt-menu__link">
-                                <i className="kt-menu__link-bullet kt-menu__link-bullet--dot" style={{ color: effectiveTopBarIconColor }}><span /></i>
-                                <span className="kt-menu__link-text" style={topNavlinkStyle}>{item.label}</span>
+                                <i className="kt-menu__link-bullet kt-menu__link-bullet--dot" style={{ color: DEFAULT_TOP_NAV_ICON_COLOR }}><span /></i>
+                                <span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{item.label}</span>
                             </Link>
                             </li>
                         ))}
@@ -407,20 +417,14 @@ class Navbar extends React.Component {
           id="kt_header_mobile"
           className="kt-header-mobile kt-header-mobile--fixed d-lg-none"
           style={{
-            backgroundColor: effectiveTopBarBgColor,
-            height: `${mobileTopBarHeight}px`,
-            top: `${gapBetweenNavbars}px`,
-            left: `${secondaryNavbarHorizontalMargin}px`,
-            right: `${secondaryNavbarHorizontalMargin}px`,
-            borderRadius: '12px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)',
-            zIndex: 1002, 
+            backgroundColor: effectiveTopBarBgColor, height: `${mobileTopBarHeight}px`,
+            top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`,
+            borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)', zIndex: 1002, 
           }}
         >
           <div className="kt-header-mobile__toolbar" style={{ paddingLeft: '15px' }}>
             <button className="kt-header-mobile__toolbar-toggler kt-header-mobile__toolbar-toggler--left" id="kt_header_mobile_toggler"><span style={{backgroundColor: effectiveTopBarIconColor}} /></button>
           </div>
-
           <div className="kt-header-mobile__logo" style={{ flexGrow: 1, textAlign: 'center', overflow: 'hidden', padding: '0 5px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {selectedSchool?.name && (
@@ -439,7 +443,6 @@ class Navbar extends React.Component {
                )}
             </div>
           </div>
-
           <div className="kt-header-mobile__toolbar" style={{ paddingRight: '15px' }}>
             <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler">
               <img alt="User" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '30px', height: '30px', borderRadius: '50%' }}/>
@@ -447,38 +450,23 @@ class Navbar extends React.Component {
           </div>
         </div>
 
-
-        {/* BOTTOM "FLOATING CARD" NAVBAR (kt_header_secondary) - Visible on ALL screen sizes */}
+        {/* BOTTOM "FLOATING CARD" NAVBAR (kt_header_secondary) */}
         <div
           id="kt_header_secondary"
           style={{
-            backgroundColor: BOTTOM_NAV_BG_COLOR,
-            display: 'flex',
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            height: `${secondaryNavbarEffectiveHeight}px`,
-            position: 'fixed',
-            top: `${secondaryNavbarTopPosition}px`, 
-            left: `${secondaryNavbarHorizontalMargin}px`,
-            right: `${secondaryNavbarHorizontalMargin}px`,
-            zIndex: 1001, 
-            borderRadius: '12px',
-            boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)',
-            padding: '0 25px',
+            backgroundColor: BOTTOM_NAV_BG_COLOR, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            height: `${secondaryNavbarEffectiveHeight}px`, position: 'fixed', top: `${secondaryNavbarTopPosition}px`, 
+            left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`,
+            zIndex: 1001, borderRadius: '12px', boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)', padding: '0 25px',
           }}
         >
           <div className="kt-header__brand kt-grid__item" style={{ backgroundColor: 'transparent' }}>
             {!selectedSchool || Object.keys(selectedSchool).length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="kt-spinner kt-spinner--sm kt-spinner--brand" />
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="kt-spinner kt-spinner--sm kt-spinner--brand" /></div>
             ) : (
               <Link to="/home">
-                <img
-                  alt="School Logo"
-                  style={{ maxHeight: '40px', width: 'auto', borderRadius: '6px' }}
-                  src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'}
-                />
+                <img alt="School Logo" style={{ maxHeight: '40px', width: 'auto', borderRadius: '6px' }}
+                  src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'} />
               </Link>
             )}
           </div>
@@ -500,16 +488,12 @@ class Navbar extends React.Component {
           </div>
         </div>
 
-        {/* PROFILE PANEL (Common for Desktop & Mobile) */}
+        {/* PROFILE PANEL */}
          <div
-          id="kt_offcanvas_toolbar_profile"
-          className="kt-offcanvas-panel"
+          id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel"
           style={{
-            margin: '15px', borderRadius: '10px',
-            boxShadow: '0 5px 15px rgba(0,0,0,0.2)', 
-            maxHeight: 'calc(100vh - 30px)', 
-            width: '300px', 
-            overflowY: 'hidden', 
+            margin: '15px', borderRadius: '10px', boxShadow: '0 5px 15px rgba(0,0,0,0.2)', 
+            maxHeight: 'calc(100vh - 30px)', width: '300px', overflowY: 'hidden', 
           }}
         >
           <div className="kt-offcanvas-panel__head">
@@ -533,24 +517,15 @@ class Navbar extends React.Component {
                   )}
                   <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <button
-                      className="btn btn-label-brand btn-sm btn-bold btn-block"
-                      type="button"
+                      className="btn btn-label-brand btn-sm btn-bold btn-block" type="button"
                       onClick={() => this.props.history.push({ pathname: "/settings/user" })}
                     >Profile Settings</button>
-
                     {typeof window.matchMedia === 'function' && !window.matchMedia('(display-mode: standalone)').matches &&
                       typeof window.deferredInstallPrompt !== 'undefined' &&
-                      (
-                        <button
-                          className="btn btn-label-success btn-sm btn-bold btn-block"
-                          type="button"
-                          onClick={this.handleInstallApp}
-                        >Install App</button>
-                      )
+                      ( <button className="btn btn-label-success btn-sm btn-bold btn-block" type="button" onClick={this.handleInstallApp}>Install App</button> )
                     }
                     <button
-                      className="btn btn-label-danger btn-sm btn-bold btn-block"
-                      type="button"
+                      className="btn btn-label-danger btn-sm btn-bold btn-block" type="button"
                       onClick={() => { localStorage.clear(); window.location.href = '/'; }}
                     >Log Out</button>
                   </div>
@@ -560,10 +535,8 @@ class Navbar extends React.Component {
           </div>
         </div>
 
-        {/* Spacer Div - Pushes content below the fixed navbars */}
-        <div style={{
-            height: isMobile ? `${(totalFixedElementsHeight-65)}px` : `${totalFixedElementsHeight - 65}px`
-        }} />
+        {/* Spacer Div */}
+        <div style={{ height: isMobile ? `${(totalFixedElementsHeight-65)}px` : `${totalFixedElementsHeight - 65}px` }} />
       </>
     );
   }
