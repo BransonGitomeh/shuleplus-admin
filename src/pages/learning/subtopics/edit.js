@@ -1,227 +1,294 @@
 import React from "react";
-import ErrorMessage from "../components/error-toast";
+import ErrorMessage from "../components/error-toast"; // Ensure this path is correct
 
 const IErrorMessage = new ErrorMessage();
+const $ = window.$; // Assuming jQuery is available globally via a script tag or similar
 
-const $ = window.$;
+// Generate a unique modal ID once per component instance, not on every render
+const modalIdPrefix = "editSubtopicModal_";
 
-let selectedGrade = null;
-let selectedSubject = null;
-let selectedTopic = null;
+class EditSubtopicModal extends React.Component {
+  modalId = modalIdPrefix + Math.random().toString(36).substr(2, 9);
 
-const modalNumber = Math.random()
-  .toString()
-  .split(".")[1];
+  constructor(props) {
+    super(props);
+    this.state = this.getInitialState(props);
+  }
 
-class Modal extends React.Component {
-  state = {
-    loading: false,
-    name: "",
-    topic: "",
-    grade: "",
-    subject: "",
-    subjects: [],
-    topics: [],
+  getInitialState = (props={}) => {
+    const { subtopic, topic, subject, grade } = props;
+    return {
+      loading: false,
+      id: subtopic?.id || null,
+      name: subtopic?.name || "",
+      selectedTopicId: subtopic?.topic || topic || "",
+      selectedSubjectId: subject || "",
+      selectedGradeId: grade || "",
+      availableSubjects: [],
+      availableTopics: [],
+    };
   };
 
-  show() {
-    $("#" + modalNumber).modal({
-      show: true,
-      backdrop: "static",
-      keyboard: false
-    });
-  }
+  initializeAndShow = (subtopicToEdit) => {
+    const { grades, grade: currentGradeId, subject: currentSubjectId, topic: currentTopicId } = this.props;
 
-  hide() {
-    $("#" + modalNumber).modal("hide");
-  }
+    let gradeForSubtopic = currentGradeId;
+    let subjectForSubtopic = currentSubjectId;
+    let topicForSubtopic = subtopicToEdit?.topic || currentTopicId;
 
-  setSubjects(id) {
-    const grade = this.props.grades.filter(grade => {
-      return grade.id == id;
-    });
-    if (grade.length) {
-      this.setState({
-        subject: "",
-        subjects: grade[0].subjects,
-        topics: []
-      });
-      this.setState({ topic: "" });
-    }
-  }
+    let availableSubjects = [];
+    let availableTopics = [];
 
-  setTopics(id) {
-    const subject = this.state.subjects.filter(subject => {
-      return subject.id == id;
-    });
-    if (subject.length) {
-      this.setState({
-        topics: subject[0].topics
-      });
-      this.setState({ topic: "" });
-    }
-  }
-
-  componentDidUpdate() {
-    const _this = this;
-    if (_this.props.grade != selectedGrade) {
-      selectedGrade = _this.props.grade;
-      _this.setState({ grade: _this.props.grade });
-      let subjects = [];
-      _this.props.grades.forEach(grade => {
-        if (grade.id == selectedGrade) {
-          _this.setState({ subjects: grade.subjects });
+    if (subtopicToEdit && subtopicToEdit.topic) {
+        for (const g of grades || []) {
+            for (const s of g.subjects || []) {
+                const t = (s.topics || []).find(top => top.id === subtopicToEdit.topic);
+                if (t) {
+                    topicForSubtopic = t.id;
+                    subjectForSubtopic = s.id;
+                    gradeForSubtopic = g.id;
+                    availableSubjects = g.subjects || []; // Pre-populate subjects for this grade
+                    availableTopics = s.topics || []; // Pre-populate topics for this subject
+                    break;
+                }
+            }
+            if (gradeForSubtopic && subjectForSubtopic && topicForSubtopic) break; // Found all, no need to continue outer loops
         }
-      });
-    }
-    if (_this.props.subject != selectedSubject) {
-      selectedSubject = _this.props.subject;
-      _this.setState({ subject: _this.props.subject });
-      let topics = [];
-      _this.state.subjects.forEach(subject => {
-        if (subject.id == selectedSubject) {
-          _this.setState({ topics: subject.topics });
+    } else { // If no subtopicToEdit.topic, rely on current selections from props
+        if (gradeForSubtopic) {
+            const selectedGradeObj = (grades || []).find(g => g.id === gradeForSubtopic);
+            availableSubjects = selectedGradeObj?.subjects || [];
         }
+        if (subjectForSubtopic) {
+            const selectedSubjectObj = availableSubjects.find(s => s.id === subjectForSubtopic);
+            availableTopics = selectedSubjectObj?.topics || [];
+        }
+    }
+    
+    this.setState({
+      loading: false,
+      id: subtopicToEdit?.id || null,
+      name: subtopicToEdit?.name || "",
+      selectedTopicId: topicForSubtopic || "",
+      selectedSubjectId: subjectForSubtopic || "",
+      selectedGradeId: gradeForSubtopic || "",
+      availableSubjects: availableSubjects,
+      availableTopics: availableTopics,
+    }, () => {
+      $("#" + this.modalId).modal({
+        show: true,
+        backdrop: "static",
+        keyboard: false
       });
-    }
-    if (_this.props.topic != selectedTopic) {
-      selectedTopic = _this.props.topic;
-      _this.setState({ topic: _this.props.topic });
-    }
+    });
+  }
+  
+  show = (subtopicData) => {
+    this.initializeAndShow(subtopicData);
   }
 
-  static getDerivedStateFromProps(props, state) {
-    if (props.subtopic)
-      if (props.subtopic.id !== state.id) {
-        return {
-          id: props.subtopic.id,
-          name: props.subtopic.name,
-          topic: props.subtopic.topic
-        };
-      }
-    return null;
-  }
+  hide = () => {
+    $("#" + this.modalId).modal("hide");
+    this.setState(this.getInitialState({}));
+  };
+
+  handleInputChange = (event) => {
+    const { name, value } = event.target;
+    this.setState({ [name]: value });
+  };
+
+  handleGradeChange = (event) => {
+    const gradeId = event.target.value;
+    const { grades } = this.props;
+    const selectedGradeObj = (grades || []).find(g => g.id === gradeId);
+    this.setState({
+      selectedGradeId: gradeId,
+      availableSubjects: selectedGradeObj?.subjects || [],
+      selectedSubjectId: "", 
+      availableTopics: [],     
+      selectedTopicId: "",   
+    });
+  };
+
+  handleSubjectChange = (event) => {
+    const subjectId = event.target.value;
+    const selectedSubjectObj = this.state.availableSubjects.find(s => s.id === subjectId);
+    this.setState({
+      selectedSubjectId: subjectId,
+      availableTopics: selectedSubjectObj?.topics || [],
+      selectedTopicId: "", 
+    });
+  };
+  
+  handleTopicChange = (event) => {
+    this.setState({ selectedTopicId: event.target.value });
+  };
 
   componentDidMount() {
     const _this = this;
-    this.validator = $("#" + modalNumber + "form").validate({
+    this.validator = $("#" + this.modalId + "_form").validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
-
       highlight: function (element) {
         $(element).addClass("is-invalid");
       },
       unhighlight: function (element) {
         $(element).removeClass("is-invalid");
       },
-
+      rules: {
+        name: { required: true, minlength: 2 },
+        selectedTopicId: { required: true } 
+      },
+      messages: {
+        name: "Please enter a subtopic name (min. 2 characters).",
+        selectedTopicId: "Please select a topic."
+      },
       async submitHandler(form, event) {
         event.preventDefault();
+        if (!_this.state.selectedTopicId) {
+            IErrorMessage.show({ message: "A topic must be selected for the subtopic." });
+            return;
+        }
+        _this.setState({ loading: true });
         try {
-          _this.setState({ loading: true });
-          _this.state.loading = undefined;
-          const data = {};
-          Object.assign(data, {
-            id: _this.state.id,
-            name: _this.state.name,
-            topic: _this.state.topic,
-          });
-          await _this.props.edit(data);
-          _this.hide();
-          _this.setState({
-            loading: false,
-            grade: "",
-            subject: "",
-            topic: "",
-          });
-          selectedGrade = null;
-          selectedSubject = null;
-          selectedTopic = null;
-          _this.setState({ name: "" });
-          _this.setState({ topic: "" });
+          // Construct the data payload with only id, name, and topic
+          const dataToSave = {
+            id: _this.state.id,         // ID of the subtopic being edited
+            name: _this.state.name,     // New name for the subtopic
+            topic: _this.state.selectedTopicId, // ID of the parent topic
+          };
+
+          // console.log("Submitting subtopic data (id, name, topic only):", dataToSave);
+          await _this.props.edit(dataToSave); 
+          _this.hide(); 
         } catch (error) {
           _this.setState({ loading: false });
-          if (error) {
-            const { message } = error;
-            return IErrorMessage.show({ message });
-          }
-          IErrorMessage.show();
+          const message = error?.response?.data?.message || error?.message || "Error updating subtopic.";
+          IErrorMessage.show({ message });
         }
       }
     });
   }
+
   render() {
+    const { grades } = this.props;
+    const { loading, name, selectedGradeId, selectedSubjectId, selectedTopicId, availableSubjects, availableTopics } = this.state;
+
     return (
       <div>
         <div
-          className="modal"
-          id={modalNumber}
+          className="modal fade"
+          id={this.modalId}
           tabIndex={-1}
           role="dialog"
-          aria-labelledby="myLargeModalLabel"
+          aria-labelledby={`${this.modalId}Label`}
           aria-hidden="true"
         >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-              <form
-                id={modalNumber + "form"}
-                className="kt-form kt-form--label-right"
-              >
+              <form id={`${this.modalId}_form`} className="kt-form">
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit subtopic</h5>
+                  <h5 className="modal-title" id={`${this.modalId}Label`}>Edit Subtopic</h5>
                   <button
                     type="button"
                     className="close"
-                    data-dismiss="modal"
+                    onClick={this.hide}
                     aria-label="Close"
                   >
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body">
-                  <div className="kt-portlet__body">
-                    <div className="form-group row">
-                      <div className="col-lg-12">
-                        <label>Subtopic name:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="name"
-                          name="name"
-                          minLength="2"
-                          value={this.state.name}
-                          onChange={(e) => this.setState({
-                            name: e.target.value
-                          })}
-                          required
-                        />
-                      </div>
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor={`${this.modalId}_gradeSelect`}>Grade:</label>
+                    <select
+                      id={`${this.modalId}_gradeSelect`}
+                      name="selectedGradeId"
+                      className="form-control"
+                      value={selectedGradeId}
+                      onChange={this.handleGradeChange}
+                      disabled={loading}
+                    >
+                      <option value="">Select Grade</option>
+                      {(grades || []).map(grade => (
+                        <option key={grade.id} value={grade.id}>{grade.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor={`${this.modalId}_subjectSelect`}>Subject:</label>
+                    <select
+                      id={`${this.modalId}_subjectSelect`}
+                      name="selectedSubjectId"
+                      className="form-control"
+                      value={selectedSubjectId}
+                      onChange={this.handleSubjectChange}
+                      disabled={loading || !selectedGradeId || (availableSubjects || []).length === 0}
+                    >
+                      <option value="">Select Subject</option>
+                      {(availableSubjects || []).map(subject => (
+                        <option key={subject.id} value={subject.id}>{subject.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor={`${this.modalId}_topicSelect`}>Topic: <span className="text-danger">*</span></label>
+                    <select
+                      id={`${this.modalId}_topicSelect`}
+                      name="selectedTopicId"
+                      className="form-control"
+                      value={selectedTopicId}
+                      onChange={this.handleTopicChange}
+                      disabled={loading || !selectedSubjectId || (availableTopics || []).length === 0}
+                      required
+                    >
+                      <option value="">Select Topic</option>
+                      {(availableTopics || []).map(topic => (
+                        <option key={topic.id} value={topic.id}>{topic.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor={`${this.modalId}_name`}>Subtopic Name: <span className="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id={`${this.modalId}_name`}
+                      name="name"
+                      minLength="2"
+                      value={name}
+                      onChange={this.handleInputChange}
+                      required
+                      disabled={loading}
+                    />
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button
                     type="button"
                     className="btn btn-outline-brand"
-                    type="submit"
-                    disabled={this.state.loading}
+                    onClick={this.hide}
+                    disabled={loading}
                   >
-                    {this.state.loading ? (
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? (
                       <span
                         className="spinner-border spinner-border-sm"
                         role="status"
                         aria-hidden="true"
                       />
                     ) : (
-                        "Save"
+                        "Save Changes"
                       )}
-                  </button>
-                  <button
-                    data-dismiss="modal"
-                    type="button"
-                    className="btn btn-outline-brand"
-                  >
-                    Cancel
                   </button>
                 </div>
               </form>
@@ -233,4 +300,4 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+export default EditSubtopicModal;

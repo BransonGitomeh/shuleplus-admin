@@ -345,7 +345,6 @@ var Data = (function () {
         }
     }
   }`).then(response => {
-      console.log(response)
 
       schoolsData.push(...response.schools)
       schools = schoolsData
@@ -991,7 +990,7 @@ var Data = (function () {
               id
             }
           }
-        } `, { Isubtopic: {id: subtopicId, topic: actualParentTopicId, ...updatePayload} });
+        } `, { Isubtopic: data });
               let found = false;
               outer: for (const grade of grades) {
                 for (const subject of grade.subjects || []) {

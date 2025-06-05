@@ -104,8 +104,18 @@ class Modal extends React.Component {
       }
     });
 
-    $('#timepicker_start').timepicker();
-    $('#timepicker_end').timepicker();
+    $('#timepicker_start').timepicker({
+      icons: { // to change the icon
+        up: "fa fa-chevron-up",
+        down: "fa fa-chevron-down", 
+      }
+    });
+    $('#timepicker_end').timepicker({
+      icons: { // to change the icon
+        up: "fa fa-chevron-up",
+        down: "fa fa-chevron-down",
+      }
+    });
   }
   render() {
     return (

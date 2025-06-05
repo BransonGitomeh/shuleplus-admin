@@ -655,7 +655,7 @@ class BasicTable extends React.Component {
                             options={tableOptions}
                             selectedItemId={selectedQuestion}
                             show={this.handleQuestionSelect}
-                            edit={question => this.setState({ questionToEdit: question }, () => editQuestionModalInstance.show(question))}
+                            edit={question => this.setState({ questionToEdit: question }, () => editQuestionModalInstance.show())}
                             deleteItemProp={question => this.setState({ questionToDelete: question }, () => deleteQuestionModalInstance.show())}
                             onOrderChange={(newOrderedQuestions) => this._handleReorder('question', newOrderedQuestions, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic)}
                         />
