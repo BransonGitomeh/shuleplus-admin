@@ -1088,7 +1088,7 @@ var Data = (function () {
               id
             }
           }
-        } `, { Iquestion: {id: questionId, subtopic: actualParentSubtopicId, ...updatePayload} });
+        } `, { Iquestion: data });
               let found = false;
               outer: for (const grade of grades) {
                 for (const subject of grade.subjects || []) {

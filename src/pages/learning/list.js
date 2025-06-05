@@ -503,7 +503,7 @@ class BasicTable extends React.Component {
         // and make the API call.
         console.log("Data to send for edit:", dataToEdit);
         // Example: return Data.questions.update(dataToEdit.id, dataToEdit);
-        await Data.questions.update(dataToEdit.id, dataToEdit); // Make sure Data.questions.update can handle the new data structure
+        await Data.questions.update(dataToEdit); // Make sure Data.questions.update can handle the new data structure
     }}
 />            <DeleteQuestionModal question={this.state.questionToDelete} delete={question => Data.questions.delete(question.id, selectedSubtopic, selectedTopic, selectedSubject, selectedGrade).then(() => this.onEntityDeleted('Question'))} />
             
