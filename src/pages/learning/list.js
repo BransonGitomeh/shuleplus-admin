@@ -494,8 +494,18 @@ class BasicTable extends React.Component {
             <DeleteSubtopicModal subtopic={this.state.subtopicToDelete} delete={subtopic => Data.subtopics.delete(subtopic.id, selectedTopic, selectedSubject, selectedGrade).then(() => this.onEntityDeleted('Subtopic'))} />
 
             <AddQuestionModal subtopic={selectedSubtopic} save={question => Data.questions.create({...question, subtopicId: selectedSubtopic, topicId: selectedTopic, subjectId:selectedSubject, gradeId: selectedGrade}).then(() => this.onEntityCreated('Question'))} />
-            <EditQuestionModal subtopic={selectedSubtopic} question={this.state.questionToEdit} edit={question => Data.questions.update({...question, subtopicId: selectedSubtopic, topicId:selectedTopic, subjectId:selectedSubject, gradeId:selectedGrade}).then(() => this.onEntityUpdated('Question'))} />
-            <DeleteQuestionModal question={this.state.questionToDelete} delete={question => Data.questions.delete(question.id, selectedSubtopic, selectedTopic, selectedSubject, selectedGrade).then(() => this.onEntityDeleted('Question'))} />
+            <EditQuestionModal 
+    question={this.state.questionToEdit} // The selected question
+    subtopic={selectedSubtopic} // Current subtopic context
+    edit={async (dataToEdit) => { // The 'edit' prop for the modal
+        // Call your Data.questions.update or similar
+        // This function needs to handle the structured 'dataToEdit'
+        // and make the API call.
+        console.log("Data to send for edit:", dataToEdit);
+        // Example: return Data.questions.update(dataToEdit.id, dataToEdit);
+        await Data.questions.update(dataToEdit.id, dataToEdit); // Make sure Data.questions.update can handle the new data structure
+    }}
+/>            <DeleteQuestionModal question={this.state.questionToDelete} delete={question => Data.questions.delete(question.id, selectedSubtopic, selectedTopic, selectedSubject, selectedGrade).then(() => this.onEntityDeleted('Question'))} />
             
             <AddOptionModal question={selectedQuestion} save={option => Data.options.create({...option, questionId: selectedQuestion, subtopicId:selectedSubtopic, topicId:selectedTopic, subjectId:selectedSubject, gradeId:selectedGrade}).then(() => this.onEntityCreated('Option'))} />
             <EditOptionModal question={selectedQuestion} option={this.state.optionToEdit} edit={option => Data.options.update({...option, questionId: selectedQuestion, /* other parent ids */}).then(() => this.onEntityUpdated('Option'))} />
@@ -645,7 +655,7 @@ class BasicTable extends React.Component {
                             options={tableOptions}
                             selectedItemId={selectedQuestion}
                             show={this.handleQuestionSelect}
-                            edit={question => this.setState({ questionToEdit: question }, () => editQuestionModalInstance.show())}
+                            edit={question => this.setState({ questionToEdit: question }, () => editQuestionModalInstance.show(question))}
                             deleteItemProp={question => this.setState({ questionToDelete: question }, () => deleteQuestionModalInstance.show())}
                             onOrderChange={(newOrderedQuestions) => this._handleReorder('question', newOrderedQuestions, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic)}
                         />

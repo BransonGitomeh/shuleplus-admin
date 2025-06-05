@@ -501,7 +501,7 @@ class Modal extends React.Component {
                   <hr className="mt-3 mb-3"/>
                   
                   <h6 className="mb-2 text-center text-muted small">LIVE CONTENT PREVIEW</h6>
-                  <div className="border p-3 rounded" style={{ backgroundColor: '#fdfdfd', minHeight: '150px', fontSize:'0.9rem', maxHeight: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: livePreviewHTML }}></div>
+                  {/* <div className="border p-3 rounded" style={{ backgroundColor: '#fdfdfd', minHeight: '150px', fontSize:'0.9rem', maxHeight: '400px', overflowY: 'auto' }} dangerouslySetInnerHTML={{ __html: livePreviewHTML }}></div> */}
                 </div> {/* End of modal-body */}
               </form>
             </div>
