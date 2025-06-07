@@ -530,7 +530,7 @@ class BasicTable extends React.Component {
                   display: 'flex', // To make children (columns) align
                 }} className="scrolling-wrapper flex-row flex-nowrap pb-4">
                     {/* Column structure */}
-                    <div className="col-md-3 col-lg-2"> {/* Adjusted column size for better fit */}
+                    <div className="col-md-3 col-lg-3 col-xl-3 col-sm-12"> {/* Adjusted column size for better fit */}
                     <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Grades</h3></div>
                         <div style={{ paddingTop: 10 }}>
@@ -556,7 +556,7 @@ class BasicTable extends React.Component {
                     </div>
 
                     {selectedGrade && (
-                    <div className="col-md-3 col-lg-2">
+                    <div className="col-md-3 col-lg-3 col-xl-3 col-sm-12">
                         <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">{(selectedGradeObj?.name) || '...'} Subjects</h3></div>
                         <div style={{ paddingTop: 10 }}>
@@ -583,7 +583,7 @@ class BasicTable extends React.Component {
                     )}
 
                     {selectedSubject && (
-                    <div className="col-md-3 col-lg-2">
+                    <div className="col-md-4 col-lg-4 col-xl-4 col-sm-12">
                         <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">{(selectedSubjectObj?.name) || '...'} Topics</h3></div>
                         <div style={{ paddingTop: 10 }}>
@@ -610,7 +610,7 @@ class BasicTable extends React.Component {
                     )}
 
                     {selectedTopic && (
-                    <div className="col-md-3 col-lg-2">
+                    <div className="col-md-4 col-lg-4 col-xl-4 col-sm-12">
                         <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">{(selectedTopicObj?.name) || '...'} Subtopics</h3></div>
                         <div style={{ paddingTop: 10 }}>
@@ -637,7 +637,7 @@ class BasicTable extends React.Component {
                     )}
 
                     {selectedSubtopic && (
-                    <div className="col-md-4 col-lg-3"> {/* Content/Questions column can be wider */}
+                    <div className="col-md-4 col-lg-4 col-xl-4 col-sm-12"> {/* Content/Questions column can be wider */}
                         <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">{(selectedSubtopicObj?.name) || '...'} Content</h3></div>
                         <div style={{ paddingTop: 10 }}>
@@ -664,7 +664,7 @@ class BasicTable extends React.Component {
                     )}
 
                     {selectedQuestion && (
-                    <div className="col-md-3 col-lg-2">
+                    <div className="col-md-4 col-lg-4 col-xl-4 col-sm-12">
                         <div className="kt-portlet__head">
                         <div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div>
                         <div style={{ paddingTop: 10 }}>
