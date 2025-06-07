@@ -25,6 +25,7 @@ class Subheader extends React.Component {
   }
 
   render() {
+    return <></>
     const { links } = this.props;
     const { selectedSchool } = this.state;
 
