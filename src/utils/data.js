@@ -64,7 +64,7 @@ var Data = (function () {
   emitize(subs, "admins");
   emitize(subs, "buses");
   emitize(subs, "routes");
-  emitize(subs, "schedules");
+  emitize(subs, "schedules");x
   emitize(subs, "trips");
   emitize(subs, "complaints");
   emitize(subs, "classes");

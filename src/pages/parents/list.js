@@ -15,7 +15,7 @@ const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
 const ISuccessMessage = new SuccessMessage();
 
-const school = localStorage.getItem("school");
+
 
 class BasicTable extends React.Component {
   state = {
@@ -41,6 +41,7 @@ class BasicTable extends React.Component {
   sendInvite = async() => {
     try {
       const data = {};
+      const school = localStorage.getItem("school");
       Object.assign(data, {
         school,
         user: this.state.parentToInvite,
