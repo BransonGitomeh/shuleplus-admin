@@ -266,7 +266,7 @@ class Modal extends React.Component {
                         <label>Option value:</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control form-control-solid"
                           id="name"
                           name="name"
                           minLength="2"
@@ -276,6 +276,31 @@ class Modal extends React.Component {
                           })}
                           required
                         />
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="form-group form-check">
+                          <div className="input-group">
+                            <div className="input-group-prepend">
+                              <span className="input-group-text">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id="isCorrect"
+                                  checked={this.state.isCorrect}
+                                  onChange={(e) => this.setState({
+                                    isCorrect: e.target.checked
+                                  })}
+                                />
+                              </span>
+                            </div>
+                            <label
+                              className="form-check-label"
+                              htmlFor="isCorrect"
+                            >
+                              Is correct answer?
+                            </label>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

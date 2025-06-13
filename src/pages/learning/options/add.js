@@ -250,22 +250,39 @@ class Modal extends React.Component {
                   <div className="kt-portlet__body">
                     <div className="form-group row">
                       <div className="col-lg-12">
-                        <label>Option value:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="name"
-                          name="name"
-                          minLength="2"
-                          value={this.state.option.value}
-                          onChange={(e) => this.setState(Object.assign(this.state.option, {
-                            value: e.target.value
-                          }))}
-                          required
-                        />
+                        <label className="col-form-label">Option name:</label>
+                        <div className="col-lg-12">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="name"
+                            name="name"
+                            minLength="2"
+                            value={this.state.option.name}
+                            onChange={(e) => this.setState(Object.assign(this.state.option, {
+                              name: e.target.value
+                            }))}
+                            required
+                          />
+                        </div>
                       </div>
-                     
-                      
+                      <div className="col-lg-12">
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="correct"
+                            name="correct"
+                            checked={this.state.option.correct}
+                            onChange={(e) => this.setState(Object.assign(this.state.option, {
+                              correct: e.target.checked
+                            }))}
+                          />
+                          <label className="form-check-label" htmlFor="correct">
+                            Correct
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
