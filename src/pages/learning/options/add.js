@@ -4,6 +4,7 @@ import ErrorMessage from "../components/error-toast";
 const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
+const toastr = window.toastr
 
 let selectedGrade = null;
 let selectedSubject = null;
@@ -164,6 +165,9 @@ class Modal extends React.Component {
       }));
     }
   }
+
+  onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
+
 
   componentDidMount() {
     const _this = this;

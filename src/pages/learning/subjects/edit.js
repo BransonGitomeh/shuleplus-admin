@@ -51,10 +51,9 @@ class Modal extends React.Component {
           Object.assign(data, {
             id: _this.state.subject.id,
             name: _this.state.subject.name,
-            grade: _this.state.subject.grade,
           });
           await _this.props.edit(data);
-          _this.props.onUpdate(data);
+          // _this.props.onUpdate(data);
           _this.hide();
           _this.setState({ loading: false });
         } catch (error) {
@@ -78,7 +77,7 @@ class Modal extends React.Component {
     return null;
   }
   render() {
-    this.state.grade = this.props.grade ? this.props.grade : null;
+    this.state.grade = this.props.subject.grade ? this.props.subject.grade : null;
     return (
       <div>
         <div

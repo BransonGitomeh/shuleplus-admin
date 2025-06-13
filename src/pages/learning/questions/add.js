@@ -5,11 +5,18 @@ import ErrorMessage from "../components/error-toast"; // Assuming this path is c
 import { EditorState, ContentState } from 'draft-js'; // Removed convertToRaw as not used here directly for save
 import { Editor } from "react-draft-wysiwyg";
 import { stateToHTML } from 'draft-js-export-html';
+import Data from "../../../utils/data"; 
 import htmlToDraft from 'html-to-draftjs';
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 // --- Image Compression ---
 import imageCompression from 'browser-image-compression';
+
+import AddOptionModal from "../options/add";
+
+import Table from "../components/table";
+
+const toastr = window.toastr
 
 const IErrorMessage = new ErrorMessage();
 const $ = window.$; // Assuming jQuery is available globally
@@ -32,7 +39,38 @@ const getYoutubeEmbedUrl = (url) => {
     return null;
 };
 
+const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
+
+
+
+const Search = () => {
+  return (
+    <div className="kt-form kt-fork--label-right kt-margin-t-20">
+      <div className="row align-items-center">
+        <div className="col-sm-12 col-md-12 col-xl-12 order-2 order-xl-1">
+          <div className="form-group">
+            <div className="kt-input-icon kt-input-icon--left">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search..."
+                onChange={(e) => Data.search(e.target.value)}
+              />
+              <span className="kt-input-icon__icon kt-input-icon__icon--left">
+                <span>
+                  <i className="la la-search" />
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 class Modal extends React.Component {
+  addOptionModalRef = React.createRef(); editOptionModalRef = React.createRef(); deleteOptionModalRef = React.createRef();
   constructor(props) {
     super(props);
     this.state = this.getInitialState(props);
@@ -98,6 +136,13 @@ class Modal extends React.Component {
       }));
     } else if (!invalidUrlFound) { IErrorMessage.show({ message: "No new valid URLs or duplicates." }); }
   };
+
+  handleCreate = async (entity, data, parentId, parentKey) => {
+      const payload = parentId ? { ...data, [parentKey]: parentId } : data;
+      this.onEntityCreated(entity.slice(0, -1)); 
+      return Data[entity].create(payload);
+    }
+  onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
 
   removeVideo = (idToRemove) => this.setState(prevState => ({ question: { ...prevState.question, videos: (prevState.question.videos || []).filter(v => v.id !== idToRemove) } }));
 
@@ -174,7 +219,7 @@ class Modal extends React.Component {
         event.preventDefault();
         if (_this.state.isCompressingImages) { IErrorMessage.show({ message: "Please wait, images are being processed." }); return; }
         if (!_this.state.editorState.getCurrentContent().hasText() && _this.state.editorState.getCurrentContent().getBlockMap().first().getType() !== 'atomic') { IErrorMessage.show({ message: "Description empty." }); return; }
-        if (!_this.state.question.subtopic) { IErrorMessage.show({ message: "Subtopic missing." }); return; }
+        if (!_this.props.subtopic) { IErrorMessage.show({ message: "Subtopic missing." }); return; }
         if (!_this.state.question.type) { IErrorMessage.show({ message: "Select content type." }); return; } // Validation for type
 
         _this.setState({ loading: true });
@@ -188,14 +233,37 @@ class Modal extends React.Component {
             attachments: (_this.state.question.uploadedAttachments || []).map(att => att.file.name)
           };
           
-          await _this.props.save(data); 
-          _this.hide(); // Will also call resetState
+          console.log("Saving content with data:", data);
+          const { id } = await _this.props.save(data); 
+          console.log("Saved content with id:", id);
+          _this.setState({selectedQuestion:id,loading:false})
+          // _this.hide(); // Will also call resetState
         } catch (error) { 
           _this.setState({ loading: false }); 
           const errorMessage = error?.response?.data?.message || error?.message || "Error saving content.";
           IErrorMessage.show({ message: errorMessage }); 
         }
       }
+    });
+
+    const modalId = `#${this.props.modalId}`; // Assuming you pass a unique ID as a prop
+
+    $(modalId).on('shown.bs.modal', () => {
+        // Bootstrap's default z-index is 1050. The main content modal is likely there.
+        // We set this new modal higher.
+        $(modalId).css('z-index', '1060');
+
+        // Find the newly created backdrop for this modal and move it up too.
+        // The last backdrop in the body is the one for the newest modal.
+        $('.modal-backdrop').last().css('z-index', '1055');
+    });
+
+    $(modalId).on('hidden.bs.modal', () => {
+        // When this modal closes, check if another modal is still open.
+        // If so, re-apply the body class to prevent scrolling.
+        if ($('.modal.show').length) {
+            $('body').addClass('modal-open');
+        }
     });
   }
 
@@ -334,6 +402,7 @@ class Modal extends React.Component {
                       {isCompressingImages && <span className="spinner-border spinner-border-sm mr-1"/>}
                       {(loading || isCompressingImages) ? 'Processing...' : (this.props.editingContent ? "Update Content" : "Save Content")}
                     </button>
+                    <button type="button" className="btn btn-sm btn-primary" onClick={this.hide} disabled={isSaveDisabled}>Done</button>
                 </div>
 
                 <div className="modal-body pt-0"> {/* Removed top padding for modal-body */}
@@ -483,6 +552,38 @@ class Modal extends React.Component {
                             >
                             </div>
                         </div>
+
+                        {this.state.selectedQuestion && (
+                          <div className="col-md-12">
+                            <div className="kt-portlet__head">
+                              <div className="kt-portlet__head-label">
+                                <div className="kt-portlet__head-title">Responses</div>
+                              </div>
+                              <div style={{ paddingTop: 10 }}>
+                                <button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option">
+                                  <i className="la la-plus-circle"></i>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="kt-portlet__body">
+                              <Search title="answers" onSearch={this.onOptionSearch} value={""} />
+                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.props.filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} />
+                            </div>
+                          </div>
+                        )}
+                        {!this.state.selectedQuestion && (
+                          <div className="col-md-12">
+                            <div className="kt-portlet__head">
+                              <div className="kt-portlet__head-label">
+                                <div className="kt-portlet__head-title">Responses</div>
+                              </div>
+                            </div>
+                            <div className="kt-portlet__body" style={{ height: '250px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                              <p className="text-center small text-muted">Please save content first to be able to add responses.</p>
+                            </div>
+                          </div>
+                        )}
+
                     </div> {/* End Right Column (preview-column) */}
                   </div> {/* End Row */}
                 </div> {/* End modal-body */}
@@ -490,6 +591,12 @@ class Modal extends React.Component {
             </div>
           </div>
         </div>
+        
+        {/* --- Render all modals here to pass them props and refs --- */}
+        {/* Options */}
+        <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, this.state.selectedQuestion, 'question')} />
+        {/* <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} /> */}
+        {/* <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} /> */}
       </div>
     );
   }

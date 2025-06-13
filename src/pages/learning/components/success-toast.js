@@ -6,7 +6,7 @@ const toastNumber = Math.random()
   .split(".")[1];
 
 class Toast extends React.Component {
-  show({ message = "Grade updated successfuly!", header = "None" } = {}) {
+  show({ message, header } = {}) {
     toastr.options = {
       closeButton: true,
       debug: false,

@@ -350,6 +350,8 @@ const Table = ({
   //   setInternalItems(data);
   // }, [data]);
 
+  console.log({data})
+
   const handleMoveItem = useCallback((dragIndex, hoverIndex, LId) => {
     if (!options.reorderable || !onOrderChange) return;
 

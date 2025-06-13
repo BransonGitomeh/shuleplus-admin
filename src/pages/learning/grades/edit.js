@@ -47,7 +47,7 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
           const data = _this.state.grade;
-          delete data.subjects;
+          // delete data.subjects;
           await _this.props.edit(data);
           _this.hide();
           _this.setState({ loading: false });

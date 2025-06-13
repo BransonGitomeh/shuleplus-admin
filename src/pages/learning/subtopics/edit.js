@@ -29,50 +29,49 @@ class EditSubtopicModal extends React.Component {
     };
   };
 
-  initializeAndShow = (subtopicToEdit) => {
-    const { grades, grade: currentGradeId, subject: currentSubjectId, topic: currentTopicId } = this.props;
+  initializeAndShow = () => {
+    const { subtopic, grades } = this.props;
 
-    let gradeForSubtopic = currentGradeId;
-    let subjectForSubtopic = currentSubjectId;
-    let topicForSubtopic = subtopicToEdit?.topic || currentTopicId;
+    let gradeForSubtopic = subtopic?.grade || "";
+    let subjectForSubtopic = subtopic?.subject || "";
+    let topicForSubtopic = subtopic?.topic || "";
 
-    let availableSubjects = [];
     let availableTopics = [];
 
-    if (subtopicToEdit && subtopicToEdit.topic) {
-        for (const g of grades || []) {
-            for (const s of g.subjects || []) {
-                const t = (s.topics || []).find(top => top.id === subtopicToEdit.topic);
-                if (t) {
-                    topicForSubtopic = t.id;
-                    subjectForSubtopic = s.id;
-                    gradeForSubtopic = g.id;
-                    availableSubjects = g.subjects || []; // Pre-populate subjects for this grade
-                    availableTopics = s.topics || []; // Pre-populate topics for this subject
-                    break;
-                }
-            }
-            if (gradeForSubtopic && subjectForSubtopic && topicForSubtopic) break; // Found all, no need to continue outer loops
-        }
-    } else { // If no subtopicToEdit.topic, rely on current selections from props
-        if (gradeForSubtopic) {
-            const selectedGradeObj = (grades || []).find(g => g.id === gradeForSubtopic);
-            availableSubjects = selectedGradeObj?.subjects || [];
-        }
-        if (subjectForSubtopic) {
-            const selectedSubjectObj = availableSubjects.find(s => s.id === subjectForSubtopic);
-            availableTopics = selectedSubjectObj?.topics || [];
-        }
-    }
+    // if (subtopic && subtopic.topic) {
+    //     for (const g of grades || []) {
+    //         for (const s of g.subjects || []) {
+    //             const t = (s.topics || []).find(top => top.id === subtopic.topic);
+    //             if (t) {
+    //                 topicForSubtopic = t.id;
+    //                 subjectForSubtopic = s.id;
+    //                 gradeForSubtopic = g.id;
+    //                 availableSubjects = g.subjects || []; // Pre-populate subjects for this grade
+    //                 availableTopics = s.topics || []; // Pre-populate topics for this subject
+    //                 break;
+    //             }
+    //         }
+    //         if (gradeForSubtopic && subjectForSubtopic && topicForSubtopic) break; // Found all, no need to continue outer loops
+    //     }
+    // } else { // If no subtopic.topic, rely on current selections from props
+    //     if (gradeForSubtopic) {
+    //         const selectedGradeObj = (grades || []).find(g => g.id === gradeForSubtopic);
+    //         availableSubjects = selectedGradeObj?.subjects || [];
+    //     }
+    //     if (subjectForSubtopic) {
+    //         const selectedSubjectObj = availableSubjects.find(s => s.id === subjectForSubtopic);
+    //         availableTopics = selectedSubjectObj?.topics || [];
+    //     }
+    // }
     
     this.setState({
       loading: false,
-      id: subtopicToEdit?.id || null,
-      name: subtopicToEdit?.name || "",
+      id: subtopic?.id || null,
+      name: subtopic?.name || "",
       selectedTopicId: topicForSubtopic || "",
       selectedSubjectId: subjectForSubtopic || "",
       selectedGradeId: gradeForSubtopic || "",
-      availableSubjects: availableSubjects,
+      // availableSubjects: availableSubjects,
       availableTopics: availableTopics,
     }, () => {
       $("#" + this.modalId).modal({
@@ -83,8 +82,8 @@ class EditSubtopicModal extends React.Component {
     });
   }
   
-  show = (subtopicData) => {
-    this.initializeAndShow(subtopicData);
+  show = () => {
+    this.initializeAndShow();
   }
 
   hide = () => {
@@ -145,17 +144,17 @@ class EditSubtopicModal extends React.Component {
       },
       async submitHandler(form, event) {
         event.preventDefault();
-        if (!_this.state.selectedTopicId) {
-            IErrorMessage.show({ message: "A topic must be selected for the subtopic." });
-            return;
-        }
+        // if (!_this.state.selectedTopicId) {
+        //     IErrorMessage.show({ message: "A topic must be selected for the subtopic." });
+        //     return;
+        // }
         _this.setState({ loading: true });
         try {
           // Construct the data payload with only id, name, and topic
           const dataToSave = {
             id: _this.state.id,         // ID of the subtopic being edited
             name: _this.state.name,     // New name for the subtopic
-            topic: _this.state.selectedTopicId, // ID of the parent topic
+            // topic: _this.state.selectedTopicId, // ID of the parent topic
           };
 
           // console.log("Submitting subtopic data (id, name, topic only):", dataToSave);
@@ -172,7 +171,7 @@ class EditSubtopicModal extends React.Component {
 
   render() {
     const { grades } = this.props;
-    const { loading, name, selectedGradeId, selectedSubjectId, selectedTopicId, availableSubjects, availableTopics } = this.state;
+    const { loading, name, selectedTopicId, availableTopics } = this.state;
 
     return (
       <div>
@@ -199,7 +198,7 @@ class EditSubtopicModal extends React.Component {
                   </button>
                 </div>
                 <div className="modal-body">
-                  <div className="form-group">
+                  {/* <div className="form-group">
                     <label htmlFor={`${this.modalId}_gradeSelect`}>Grade:</label>
                     <select
                       id={`${this.modalId}_gradeSelect`}
@@ -214,9 +213,9 @@ class EditSubtopicModal extends React.Component {
                         <option key={grade.id} value={grade.id}>{grade.name}</option>
                       ))}
                     </select>
-                  </div>
+                  </div> */}
 
-                  <div className="form-group">
+                  {/* <div className="form-group">
                     <label htmlFor={`${this.modalId}_subjectSelect`}>Subject:</label>
                     <select
                       id={`${this.modalId}_subjectSelect`}
@@ -231,9 +230,9 @@ class EditSubtopicModal extends React.Component {
                         <option key={subject.id} value={subject.id}>{subject.name}</option>
                       ))}
                     </select>
-                  </div>
+                  </div> */}
                   
-                  <div className="form-group">
+                  {/* <div className="form-group">
                     <label htmlFor={`${this.modalId}_topicSelect`}>Topic: <span className="text-danger">*</span></label>
                     <select
                       id={`${this.modalId}_topicSelect`}
@@ -249,7 +248,7 @@ class EditSubtopicModal extends React.Component {
                         <option key={topic.id} value={topic.id}>{topic.name}</option>
                       ))}
                     </select>
-                  </div>
+                  </div> */}
 
                   <div className="form-group">
                     <label htmlFor={`${this.modalId}_name`}>Subtopic Name: <span className="text-danger">*</span></label>

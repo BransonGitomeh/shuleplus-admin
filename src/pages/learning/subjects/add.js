@@ -63,7 +63,7 @@ class Modal extends React.Component {
           });
           const id = await _this.props.save(data);
           data.id = id;
-          _this.props.onCreate(data);
+          // _this.props.onCreate(data);
           _this.hide();
           _this.setState({
             loading: false
