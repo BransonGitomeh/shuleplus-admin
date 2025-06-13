@@ -140,7 +140,11 @@ class Modal extends React.Component {
   handleCreate = async (entity, data, parentId, parentKey) => {
       const payload = parentId ? { ...data, [parentKey]: parentId } : data;
       this.onEntityCreated(entity.slice(0, -1)); 
-      return Data[entity].create(payload);
+      var createdOption =  await Data[entity].create(payload);
+      this.setState({
+        addedOptions:[...this.state.addedOptions, createdOption],
+        filteredOptions:[...this.state.filteredOptions, createdOption],
+      })
     }
   onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
 
@@ -209,6 +213,10 @@ class Modal extends React.Component {
   };
 
   componentDidMount() {
+    this.setState({
+      addedOptions:[],
+      filteredOptions:[],
+    })
     const _this = this;
     $("#" + modalNumber + " form").validate({
       errorClass: "invalid-feedback", errorElement: "div",
@@ -567,7 +575,7 @@ class Modal extends React.Component {
                             </div>
                             <div className="kt-portlet__body">
                               <Search title="answers" onSearch={this.onOptionSearch} value={""} />
-                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.props.filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} />
+                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.state.addedOptions || []} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} />
                             </div>
                           </div>
                         )}

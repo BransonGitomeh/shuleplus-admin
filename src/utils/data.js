@@ -1261,7 +1261,7 @@ var Data = (function () {
               if (!found) throw new Error(`Parent question ${data.question} not found.`);
               options = [...options, newOption]; subs.options({ options:[...options] });
               subs.grades({ grades: [...grades] });
-              resolve();
+              resolve(newOption);
             } catch (error) { console.error("Error creating option:", error); reject(error); }
           }),
         update: data => // data = { id, value, question (parent ID / questionId), ... }
