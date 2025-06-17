@@ -337,7 +337,7 @@ const Table = ({
   options = { reorderable: false, linkable: true, editable: true, deleteable: true },
   show,
   edit, // Will be mapped to onEditItem
-  deleteItemProp, // Will be mapped to onDeleteItem
+  delete :deleteItemProp, // Will be mapped to onDeleteItem
   listId = 'single-rich-list',
   onOrderChange,
   selectedItemId,
@@ -350,7 +350,7 @@ const Table = ({
   //   setInternalItems(data);
   // }, [data]);
 
-  console.log({data})
+  // console.log({data})
 
   const handleMoveItem = useCallback((dragIndex, hoverIndex, LId) => {
     if (!options.reorderable || !onOrderChange) return;

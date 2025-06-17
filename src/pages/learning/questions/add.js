@@ -602,7 +602,7 @@ class Modal extends React.Component {
         
         {/* --- Render all modals here to pass them props and refs --- */}
         {/* Options */}
-        <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, this.state.selectedQuestion, 'question')} />
+        {this.state.selectedQuestion && <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, this.state.selectedQuestion, 'question')} question={this.state.selectedQuestion} />}
         {/* <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} /> */}
         {/* <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} /> */}
       </div>

@@ -1,318 +1,196 @@
 import React from "react";
+import PropTypes from "prop-types";
 import ErrorMessage from "../components/error-toast";
 
 const IErrorMessage = new ErrorMessage();
-
 const $ = window.$;
-const toastr = window.toastr
+const toastr = window.toastr;
 
-let selectedGrade = null;
-let selectedSubject = null;
-let selectedTopic = null;
-let selectedSubtopic = null;
-let selectedQuestion = null;
+const modalId = `modal-${Math.random().toString().split(".")[1]}`;
 
-const modalNumber = Math.random()
-  .toString()
-  .split(".")[1];
-
-class Modal extends React.Component {
+class OptionModal extends React.Component {
+  // State is simplified. We don't need to store the `question` prop in state.
   state = {
     loading: false,
     option: {
       value: "",
-      question: "",
+      correct: false,
     },
-    grade: "",
-    subject: "",
-    subjects: [],
-    topic: "",
-    topics: [],
-    subtopic: "",
-    subtopics: [],
-    questions: [],
   };
 
-  show() {
-    $("#" + modalNumber).modal({
-      show: true,
-      backdrop: "static",
-      keyboard: false
-    });
-  }
-  hide() {
-    $("#" + modalNumber).modal("hide");
-  }
-  
-  setSubjects(id){
-    const grade = this.props.grades.filter(grade => {
-      return grade.id == id;
-    });
-    if(grade.length){
-      this.setState({
-        subject: "",
-        subjects: grade[0].subjects,
-        topic: "",
-        topics: [],
-        subtopic: "",
-        subtopics: [],
-        questions: [],
-      });
-      this.setState(Object.assign(this.state.option, {
-          question: ""
-      }));
-    }
-  }
-  
-  setTopics(id){
-    const subject = this.state.subjects.filter(subject => {
-      return subject.id == id;
-    });
-    if(subject.length){
-      this.setState({
-        topic: "",
-        topics: subject[0].topics,
-        subtopic: "",
-        subtopics: [],
-        questions: [],
-      });
-      this.setState(Object.assign(this.state.option, {
-          question: ""
-      }));
-    }
-  }
-  
-  setSubtopics(id){
-    const topic = this.state.topics.filter(topic => {
-      return topic.id == id;
-    });
-    if(topic.length){
-      this.setState({
-        subtopic: "",
-        subtopics: topic[0].subtopics,
-        questions: [],
-      });
-      this.setState(Object.assign(this.state.option, {
-          question: ""
-      }));
-    }
-  }
-
-  setQuestions(id){
-    const subtopic = this.state.subtopics.filter(subtopic => {
-      return subtopic.id == id;
-    });
-    if(subtopic.length){
-      this.setState({
-        questions: subtopic[0].questions
-      });
-      this.setState(Object.assign(this.state.option, {
-          question: ""
-      }));
-    }
-  }
-
-  componentDidUpdate(){
-    const _this = this;
-    if(_this.props.grade != selectedGrade){
-      selectedGrade = _this.props.grade;
-      _this.setState({grade: _this.props.grade});
-      let subjects = [];
-      _this.props.grades.forEach(grade => {
-        if(grade.id == selectedGrade){
-          _this.setState({subjects: grade.subjects});
-        }
-      });
-    }
-
-    if(_this.props.subject != selectedSubject){
-      selectedSubject = _this.props.subject;
-      this.setState({subject: _this.props.subject});
-      let topics = [];
-      _this.state.subjects.forEach(subject => {
-        if(subject.id == selectedSubject){
-          _this.setState({topics: subject.topics}); 
-        }
-      });
-    }
-
-    if(_this.props.topic != selectedTopic){
-      selectedTopic = _this.props.topic;
-      this.setState({topic: _this.props.topic});
-      let subtopics = [];
-      _this.state.topics.forEach(topic => {
-        if(topic.id == selectedTopic){
-          _this.setState({subtopics: topic.subtopics});
-        }
-      }); 
-    }
-
-    if(_this.props.subtopic != selectedSubtopic){
-      selectedSubtopic = _this.props.subtopic;
-      this.setState({subtopic: _this.props.subtopic});
-      let questions = [];
-      _this.state.subtopics.forEach(subtopic => {
-        if(subtopic.id == selectedSubtopic){
-          _this.setState({questions: subtopic.questions}); 
-        }
-      });
-    }
-
-    if(_this.props.question != selectedQuestion){
-      selectedQuestion = _this.props.question;
-      _this.setState(Object.assign(_this.state.option, {
-          question: _this.props.question
-      }));
-    }
-  }
-
-  onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
-
+  formRef = React.createRef();
 
   componentDidMount() {
-    const _this = this;
-    this.validator = $("#" + modalNumber + "form").validate({
+    $(this.formRef.current).validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
-
-      highlight: function (element) {
-        $(element).addClass("is-invalid");
-      },
-      unhighlight: function (element) {
-        $(element).removeClass("is-invalid");
-      },
-
-      async submitHandler(form, event) {
-        event.preventDefault();
-        try {
-          _this.setState({ loading: true });
-          _this.state.loading = undefined;
-          delete _this.state.option.id;
-          await _this.props.save(_this.state.option);
-          _this.hide();
-          _this.setState({
-            loading: false,
-            grade: "",
-            subject: "",
-            subjects: [],
-            topic: "",
-            topics: [],
-            subtopic: "",
-            subtopics: [],
-            questions: [],
-          });
-          _this.setState(Object.assign(_this.state.option, {
-              value: ""
-          }));
-          _this.setState(Object.assign(_this.state.option, {
-              question: ""
-          }));
-        } catch (error) {
-          _this.setState({ loading: false });
-          if (error) {
-            const { message } = error;
-            return IErrorMessage.show({ message });
-          }
-          IErrorMessage.show();
-        }
-      }
+      highlight: (element) => $(element).addClass("is-invalid"),
+      unhighlight: (element) => $(element).removeClass("is-invalid"),
     });
+    // We no longer need to set state from props here.
   }
+
+  componentWillUnmount() {
+    if ($(this.formRef.current).data('validator')) {
+      $(this.formRef.current).data('validator').destroy();
+    }
+    this.hide();
+  }
+
+  // Public methods
+  show = () => {
+    $(`#${modalId}`).modal({
+      show: true,
+      backdrop: "static",
+      keyboard: false,
+    });
+  };
+
+  hide = () => {
+    $(`#${modalId}`).modal("hide");
+  };
+
+  // Uncommented and functional resetForm
+  resetForm = () => {
+    this.setState({
+      loading: false,
+      option: { value: "", correct: false },
+    });
+    if ($(this.formRef.current).data('validator')) {
+      $(this.formRef.current).data('validator').resetForm();
+      // Also clear invalid classes that resetForm might miss
+      $(this.formRef.current).find('.is-invalid').removeClass('is-invalid');
+    }
+  };
+
+  handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!$(this.formRef.current).valid()) {
+      return;
+    }
+
+    this.setState({ loading: true });
+
+    try {
+      // Read `question` directly from props. It's always up-to-date.
+      const { save, question } = this.props;
+      const { option } = this.state;
+      
+      const payload = {
+        value: option.value,
+        correct: option.correct,
+        question: question, // <-- Read from props
+      };
+
+      await save(payload);
+
+      this.hide();
+      toastr.success("Option has been created successfully!", "Option Created");
+      this.resetForm();
+    } catch (error) {
+      this.setState({ loading: false });
+      const message = error?.message || "An unexpected error occurred.";
+      IErrorMessage.show({ message });
+    }
+  };
+  
+  // FIXED: This now correctly preserves the other properties in the `option` state object.
+  handleInputChange = (e) => {
+    const { value, name } = e.target;
+    this.setState((prevState) => ({
+      option: {
+        ...prevState.option, // Preserve `correct` property
+        [name]: value,
+      },
+    }));
+    console.log(this.state);
+  };
+
+  // This one was already correct, but it's good to see the consistent pattern.
+  handleCheckboxChange = (e) => {
+    const { checked, name } = e.target;
+    this.setState((prevState) => ({
+      option: {
+        ...prevState.option, // Preserve `value` property
+        [name]: checked,
+      },
+    }));
+    console.log(this.state);
+  };
+
   render() {
+    const { loading, option } = this.state;
+    console.log(this.props);
+    console.log(this.state);
     return (
-      <div>
-        <div
-          className="modal"
-          id={modalNumber}
-          tabIndex={-1}
-          role="dialog"
-          aria-labelledby="myLargeModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <form
-                id={modalNumber + "form"}
-                className="kt-form kt-form--label-right"
-              >
-                <div className="modal-header">
-                  <h5 className="modal-title">Create new option</h5>
-                  <button
-                    type="button"
-                    className="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <div className="kt-portlet__body">
-                    <div className="form-group row">
-                      <div className="col-lg-12">
-                        <label className="col-form-label">Option name:</label>
-                        <div className="col-lg-12">
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="name"
-                            name="name"
-                            minLength="2"
-                            value={this.state.option.name}
-                            onChange={(e) => this.setState(Object.assign(this.state.option, {
-                              name: e.target.value
-                            }))}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="correct"
-                            name="correct"
-                            checked={this.state.option.correct}
-                            onChange={(e) => this.setState(Object.assign(this.state.option, {
-                              correct: e.target.checked
-                            }))}
-                          />
-                          <label className="form-check-label" htmlFor="correct">
-                            Correct
-                          </label>
-                        </div>
+      <div className="modal" id={modalId} tabIndex={-1} role="dialog">
+         <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <form ref={this.formRef} onSubmit={this.handleSubmit} className="kt-form kt-form--label-right">
+              <div className="modal-header">
+                <h5 className="modal-title">Create New Option</h5>
+                <button type="button" className="close" aria-label="Close" onClick={this.resetForm}>
+                  <span aria-hidden="true">×</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="kt-portlet__body">
+                  <div className="form-group row">
+                    <div className="col-lg-12 mb-3">
+                      <label htmlFor="value">Option Text:</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="value"
+                        // FIXED: The name attribute should match the state property key
+                        name="value" 
+                        minLength="2"
+                        value={option.value}
+                        onInput={this.handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-lg-12">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id="correct"
+                          name="correct"
+                          checked={option.correct}
+                          onInput={this.handleCheckboxChange}
+                        />
+                        <label className="form-check-label" htmlFor="correct">
+                          Is this the correct option?
+                        </label>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-outline-brand"
-                    type="submit"
-                    disabled={this.state.loading}
-                  >
-                    {this.state.loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                        "Save"
-                      )}
-                  </button>
-                  <button
-                    data-dismiss="modal"
-                    type="button"
-                    className="btn btn-outline-brand"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="submit"
+                  className="btn btn-brand"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"/>
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-brand"
+                  data-dismiss="modal"
+                  onClick={this.resetForm} // Also good to reset on cancel
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -320,4 +198,9 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+OptionModal.propTypes = {
+  question: PropTypes.string.isRequired,
+  save: PropTypes.func.isRequired,
+};
+
+export default OptionModal;

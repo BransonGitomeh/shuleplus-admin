@@ -1234,6 +1234,7 @@ var Data = (function () {
         create: data => // data = { value, question (parent ID) }
           new Promise(async (resolve, reject) => {
             try {
+              console.log(data);
               const { options: { create: { id } } } = await mutate( `
         mutation ($Ioption: Ioption!) {
           options {

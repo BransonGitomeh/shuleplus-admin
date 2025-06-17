@@ -1,337 +1,193 @@
 import React from "react";
+import PropTypes from "prop-types";
 import ErrorMessage from "../components/error-toast";
 
+// Assuming you are now using toastr directly as in your other components
+const toastr = window.toastr;
 const IErrorMessage = new ErrorMessage();
-
 const $ = window.$;
 
-let selectedGrade = null;
-let selectedSubject = null;
-let selectedTopic = null;
-let selectedSubtopic = null;
-let selectedQuestion = null;
+// Create a unique ID for this modal instance to avoid conflicts.
+const modalId = `modal-edit-option-${Math.random().toString().split(".")[1]}`;
 
-const modalNumber = Math.random()
-  .toString()
-  .split(".")[1];
-
-class Modal extends React.Component {
+class EditOptionModal extends React.Component {
+  // 1. State now reflects the structure of an 'option'
   state = {
     loading: false,
-    id: "",
-    value: "",
-    question: "",
-    grade: "",
-    subject: "",
-    subjects: [],
-    topic: "",
-    topics: [],
-    subtopic: "",
-    subtopics: [],
-    questions: [],
+    option: {
+      id: null,
+      value: "",
+      correct: false,
+    },
   };
 
-  show() {
-    $("#" + modalNumber).modal({
+  // 2. A ref to get a direct reference to the <form> DOM element for jQuery
+  formRef = React.createRef();
+
+  // Public methods to be called via ref from the parent
+  show = () => {
+    $(`#${modalId}`).modal({
       show: true,
       backdrop: "static",
-      keyboard: false
+      keyboard: false,
     });
-  }
-  hide() {
-    $("#" + modalNumber).modal("hide");
-  }
-  
-  setSubjects(id){
-    const grade = this.props.grades.filter(grade => {
-      return grade.id == id;
-    });
-    if(grade.length){
-      this.setState({
-        subject: "",
-        subjects: grade[0].subjects,
-        topic: "",
-        topics: [],
-        subtopic: "",
-        subtopics: [],
-        questions: [],
-      });
-      this.setState({
-        question: ""
-      });
-    }
-  }
-  
-  setTopics(id){
-    const subject = this.state.subjects.filter(subject => {
-      return subject.id == id;
-    });
-    if(subject.length){
-      this.setState({
-        topic: "",
-        topics: subject[0].topics,
-        subtopic: "",
-        subtopics: [],
-        questions: [],
-      });
-      this.setState({
-        question: ""
-      });
-    }
-  }
-  
-  setSubtopics(id){
-    const topic = this.state.topics.filter(topic => {
-      return topic.id == id;
-    });
-    if(topic.length){
-      this.setState({
-        subtopic: "",
-        subtopics: topic[0].subtopics,
-        questions: [],
-      });
-      this.setState({
-        question: ""
-      });
-    }
-  }
+  };
 
-  setQuestions(id){
-    const subtopic = this.state.subtopics.filter(subtopic => {
-      return subtopic.id == id;
-    });
-    if(subtopic.length){
-      this.setState({
-        questions: subtopic[0].questions
-      });
-      this.setState({
-        question: ""
-      });
-    }
-  }
-
-  componentDidUpdate(){
-    const _this = this;
-    if(_this.props.grade != selectedGrade){
-      selectedGrade = _this.props.grade;
-      _this.setState({grade: _this.props.grade});
-      let subjects = [];
-      _this.props.grades.forEach(grade => {
-        if(grade.id == selectedGrade){
-          _this.setState({subjects: grade.subjects});
-        }
-      });
-    }
-
-    if(_this.props.subject != selectedSubject){
-      selectedSubject = _this.props.subject;
-      this.setState({subject: _this.props.subject});
-      let topics = [];
-      _this.state.subjects.forEach(subject => {
-        if(subject.id == selectedSubject){
-          _this.setState({topics: subject.topics});
-        }
-      }); 
-    }
-
-    if(_this.props.topic != selectedTopic){
-      selectedTopic = _this.props.topic;
-      this.setState({topic: _this.props.topic});
-      let subtopics = [];
-      _this.state.topics.forEach(topic => {
-        if(topic.id == selectedTopic){
-          _this.setState({subtopics: topic.subtopics});
-        }
-      });
-    }
-
-    if(_this.props.subtopic != selectedSubtopic){
-      selectedSubtopic = _this.props.subtopic;
-      this.setState({subtopic: _this.props.subtopic});
-      let questions = [];
-      _this.state.subtopics.forEach(subtopic => {
-        if(subtopic.id == selectedSubtopic){
-          _this.setState({questions: subtopic.questions});
-        }
-      }); 
-    }
-
-    if(_this.props.question != selectedQuestion){
-      selectedQuestion = _this.props.question;
-      _this.setState({question: _this.props.question});
-    }
-  }
-
-  static getDerivedStateFromProps(props, state) {
-    if (props.option)
-      if (props.option.id !== state.id) {
-        return {
-          id: props.option.id,
-          value: props.option.value,
-          question: props.option.question
-        };
-      }
-    return null;
-  }
+  hide = () => {
+    $(`#${modalId}`).modal("hide");
+  };
 
   componentDidMount() {
-    if(this.props.grade){
-      this.setState({grade: this.props.grade});
-      this.setSubjects(this.props.grade);
-    }
-    if(this.props.subject){
-      this.setState({subject: this.props.subject});
-    }
-    const _this = this;
-    this.validator = $("#" + modalNumber + "form").validate({
+    // 3. Initialize the validator, but WITHOUT a submitHandler.
+    // We will trigger validation and submission ourselves.
+    $(this.formRef.current).validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
-
-      highlight: function (element) {
-        $(element).addClass("is-invalid");
-      },
-      unhighlight: function (element) {
-        $(element).removeClass("is-invalid");
-      },
-
-      async submitHandler(form, event) {
-        event.preventDefault();
-        try {
-          _this.setState({ loading: true });
-          _this.state.loading = undefined;
-          const data = {};
-          Object.assign(data, {
-            id: _this.state.id,
-            value: _this.state.value,
-            question: _this.state.question,
-          });
-          await _this.props.edit(data);
-          _this.hide();
-          _this.setState({
-            loading: false,
-            grade: "",
-            subject: "",
-            topic: "",
-            subtopic: "",
-            question: "",
-          });
-          selectedGrade = null;
-          selectedSubject = null;
-          selectedTopic = null;
-          selectedSubtopic = null;
-          selectedQuestion = null;
-        } catch (error) {
-          _this.setState({ loading: false });
-          if (error) {
-            const { message } = error;
-            return IErrorMessage.show({ message });
-          }
-          IErrorMessage.show();
-        }
-      }
+      highlight: (element) => $(element).addClass("is-invalid"),
+      unhighlight: (element) => $(element).removeClass("is-invalid"),
     });
   }
+
+  // 4. Use componentDidUpdate to safely sync props to state.
+  // This is clearer than getDerivedStateFromProps.
+  componentDidUpdate(prevProps) {
+    // If the parent passes a new `option` prop, update our state.
+    if (this.props.option && this.props.option.id !== prevProps.option?.id) {
+      this.setState({
+        option: { ...this.props.option }, // Copy the prop to state
+      });
+      // Also reset any validation errors from the previous item
+      if ($(this.formRef.current).data('validator')) {
+        $(this.formRef.current).data('validator').resetForm();
+      }
+    }
+  }
+
+  componentWillUnmount() {
+    // Clean up jQuery plugin to prevent memory leaks
+    if ($(this.formRef.current).data('validator')) {
+      $(this.formRef.current).data('validator').destroy();
+    }
+    this.hide();
+  }
+
+  // 5. This is now a standard React event handler. It's clean and predictable.
+  handleSubmit = async (event) => {
+    event.preventDefault();
+
+    // Manually check if the form is valid using the plugin's API.
+    if (!$(this.formRef.current).valid()) {
+      return; // If not valid, stop. The plugin has shown the errors.
+    }
+
+    this.setState({ loading: true });
+
+    try {
+      const { edit } = this.props;
+      const payload = { ...this.state.option }; // Send the complete option object from state
+
+      await edit(payload);
+
+      this.hide();
+      toastr.success("Option has been updated successfully!", "Option Updated");
+    } catch (error) {
+      const message = error?.message || "An unexpected error occurred.";
+      IErrorMessage.show({ message });
+    } finally {
+      this.setState({ loading: false });
+    }
+  };
+
+  // 6. Correct, IMMUTABLE state update for the text input.
+  handleInputChange = (e) => {
+    const { value, name } = e.target;
+    this.setState((prevState) => ({
+      option: {
+        ...prevState.option, // Keep other properties like 'id' and 'correct'
+        [name]: value,
+      },
+    }));
+  };
+
+  // 7. Correct, IMMUTABLE state update for the checkbox.
+  handleCheckboxChange = (e) => {
+    const { checked, name } = e.target;
+    this.setState((prevState) => ({
+      option: {
+        ...prevState.option, // Keep other properties like 'id' and 'value'
+        [name]: checked,
+      },
+    }));
+  };
+
   render() {
+    const { loading, option } = this.state;
+
     return (
-      <div>
-        <div
-          className="modal"
-          id={modalNumber}
-          tabIndex={-1}
-          role="dialog"
-          aria-labelledby="myLargeModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <form
-                id={modalNumber + "form"}
-                className="kt-form kt-form--label-right"
-              >
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit option</h5>
-                  <button
-                    type="button"
-                    className="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-                <div className="modal-body">
-                  <div className="kt-portlet__body">
-                    <div className="form-group row">
-                      <div className="col-lg-12">
-                        <label>Option value:</label>
+      <div className="modal" id={modalId} tabIndex={-1} role="dialog">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            {/* 8. Use the ref and React's onSubmit here */}
+            <form ref={this.formRef} onSubmit={this.handleSubmit} className="kt-form kt-form--label-right">
+              <div className="modal-header">
+                <h5 className="modal-title">Edit Option</h5>
+                <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">×</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="form-group row">
+                  <div className="col-lg-12 mb-3">
+                    <label htmlFor="option-value">Option Text:</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="option-value"
+                      name="value" // Matches state key: option.value
+                      minLength="2"
+                      required
+                      value={option.value}
+                      onChange={this.handleInputChange}
+                    />
+                  </div>
+                  <div className="col-lg-12">
+                      <div className="form-check">
                         <input
-                          type="text"
-                          className="form-control form-control-solid"
-                          id="name"
-                          name="name"
-                          minLength="2"
-                          value={this.state.value}
-                          onChange={(e) => this.setState({
-                            value: e.target.value
-                          })}
-                          required
+                          className="form-check-input"
+                          type="checkbox"
+                          id="option-correct"
+                          name="correct" // Matches state key: option.correct
+                          checked={option.correct}
+                          onChange={this.handleCheckboxChange}
                         />
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="form-group form-check">
-                          <div className="input-group">
-                            <div className="input-group-prepend">
-                              <span className="input-group-text">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  id="isCorrect"
-                                  checked={this.state.isCorrect}
-                                  onChange={(e) => this.setState({
-                                    isCorrect: e.target.checked
-                                  })}
-                                />
-                              </span>
-                            </div>
-                            <label
-                              className="form-check-label"
-                              htmlFor="isCorrect"
-                            >
-                              Is correct answer?
-                            </label>
-                          </div>
-                        </div>
+                        <label className="form-check-label" htmlFor="option-correct">
+                          Is this the correct option?
+                        </label>
                       </div>
                     </div>
-                  </div>
                 </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-outline-brand"
-                    type="submit"
-                    disabled={this.state.loading}
-                  >
-                    {this.state.loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                        "Save"
-                      )}
-                  </button>
-                  <button
-                    data-dismiss="modal"
-                    type="button"
-                    className="btn btn-outline-brand"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="submit"
+                  className="btn btn-brand" // Use primary color for main action
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"/>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-brand"
+                  data-dismiss="modal"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -339,4 +195,14 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+// 9. Define the props this component expects
+EditOptionModal.propTypes = {
+  option: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    value: PropTypes.string,
+    correct: PropTypes.bool,
+  }).isRequired,
+  edit: PropTypes.func.isRequired,
+};
+
+export default EditOptionModal;
