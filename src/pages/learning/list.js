@@ -72,6 +72,7 @@ const MockResponses = {
 
 class BasicTable extends React.Component {
   scrollContainerRef = React.createRef();
+  contentScrollContainerRef = React.createRef();
   _gradeSubscription = null;
   styleTag = null;
 
@@ -129,31 +130,43 @@ class BasicTable extends React.Component {
     `;
     const styleTag = document.createElement("style"); styleTag.innerHTML = customStyles; document.head.appendChild(styleTag); this.styleTag = styleTag;
 
+    let isInitialLoad = true;
+
     this._gradeSubscription = Data.grades.subscribe(({ grades: updatedMasterGradesTree }) => {
       const newMasterList = updatedMasterGradesTree || [];
+
+      // This logic runs only on the FIRST data load to restore state
+      if (isInitialLoad) {
+        isInitialLoad = false;
+        try {
+          const stateString = localStorage.getItem("learningState"); // Note: This is synchronous
+          if (stateString) {
+            const savedState = JSON.parse(stateString);
+            // Set master list AND saved selections at the same time
+            this.setState({
+              ...savedState, // Restore selections (selectedGrade, etc.)
+              _masterGradesList: newMasterList,
+            }, () => {
+              // Now that data and selections are in state, refresh the UI
+              this.refreshCurrentSelectionsAndFilters(false); // No scroll on load
+              if (this.state.selectedSubject) {
+                this.fetchAndSetResponses(this.state.selectedSubject);
+              }
+            });
+            return; // Exit to prevent the default refresh below
+          }
+        } catch (error) {
+          console.error("Failed to load state from localStorage:", error);
+          // If localStorage fails, fall through to a normal initial load.
+        }
+      }
+
+      // Default behavior for subsequent data updates
       this.setState({
         _masterGradesList: newMasterList,
         grades: this._applyFilter(newMasterList, this.state.gradeSearchTerm, 'name')
       }, () => this.refreshCurrentSelectionsAndFilters(true));
     });
-
-    try {
-      const stateString = await localStorage.getItem("learningState");
-      if (stateString) {
-        const savedState = JSON.parse(stateString);
-        this.setState({ ...savedState }, () => {
-          if (this.state.selectedSubject) { this.fetchAndSetResponses(this.state.selectedSubject); }
-          if (this.state.gradeSearchTerm) {
-            this.setState({ grades: this._applyFilter(this.state._masterGradesList, this.state.gradeSearchTerm, 'name') },
-              () => this.refreshCurrentSelectionsAndFilters(false));
-          } else {
-            this.refreshCurrentSelectionsAndFilters(false);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Failed to load state from localStorage:", error);
-    }
   }
 
   componentWillUnmount() {
@@ -237,15 +250,43 @@ class BasicTable extends React.Component {
     return newState;
   };
 
-  handleGradeSelect = (grade) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id, }), () => this.refreshCurrentSelectionsAndFilters()); }
+  handleGradeSelect = (grade) => {
+    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id }), () => {
+      this.refreshCurrentSelectionsAndFilters();
+      this.scrollBy(300); // Scroll main container
+    });
+  }
   handleSubjectSelect = (subject) => {
     this.fetchAndSetResponses(subject.id);
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => this.refreshCurrentSelectionsAndFilters());
+    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => {
+      this.refreshCurrentSelectionsAndFilters();
+      this.scrollBy(300); // Scroll main container
+    });
   }
-  handleTopicSelect = (topic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => this.refreshCurrentSelectionsAndFilters()); }
-  handleSubtopicSelect = (subtopic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => this.refreshCurrentSelectionsAndFilters()); }
-  handleQuestionSelect = (question) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => this.refreshCurrentSelectionsAndFilters()); }
-
+  handleTopicSelect = (topic) => {
+    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => {
+      this.refreshCurrentSelectionsAndFilters();
+      if (this.contentScrollContainerRef.current) { // Scroll INNER container
+        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+    });
+  }
+  handleSubtopicSelect = (subtopic) => {
+    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => {
+      this.refreshCurrentSelectionsAndFilters();
+      if (this.contentScrollContainerRef.current) { // Scroll INNER container
+        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+    });
+  }
+  handleQuestionSelect = (question) => {
+    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => {
+      this.refreshCurrentSelectionsAndFilters();
+      if (this.contentScrollContainerRef.current) { // Scroll INNER container
+        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+    });
+  }
   fetchAndSetResponses = (subjectId) => {
     const responses = MockResponses.getBySubject(subjectId);
     this.setState({ subjectResponses: responses }, () => { this.filterStudentsByDate(this.state.responsesStudyDate); });
@@ -380,16 +421,16 @@ class BasicTable extends React.Component {
                   </ul>
                   <div className="tab-content mt-5">
                     <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel">
-                      <div className="d-flex flex-row flex-nowrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                      <div ref={this.contentScrollContainerRef} className="d-flex flex-row flex-nowrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
                         {/* Topic Column */}
                         <div className="col-md-4 col-lg-3 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedSubjectObj?.name) || '...'} Topics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body">
                           <Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={() => this._handleReorder('topic')} /></div></div>
                         {/* Subtopic Column */}
                         {selectedTopic && <div className="col-md-4 col-lg-3 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedTopicObj?.name) || '...'} Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={() => this._handleReorder('subtopic')} /></div></div>}
                         {/* Question Column */}
-                        {selectedSubtopic && <div className="col-md-4 col-lg-3 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedSubtopicObj?.name) || '...'} Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={() => this._handleReorder('question')} /></div></div>}
+                        {selectedSubtopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedSubtopicObj?.name) || '...'} Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={() => this._handleReorder('question')} /></div></div>}
                         {/* Option Column */}
-                        {selectedQuestion && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} /></div></div>}
+                        {selectedQuestion && <div className="col-md-5 col-lg-5 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} /></div></div>}
                       </div>
                     </div>
                     {/* Response Tab Pane (Unchanged, uses mock) */}
