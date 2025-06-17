@@ -25,7 +25,7 @@ import DeleteOptionModal from "./options/delete";
 // Import supporting components (assuming they exist)
 import Table from "./components/table";
 
-const Search = () => {
+const Search = ({ onSearch, value, title }) => {
   return (
     <div className="kt-form kt-fork--label-right kt-margin-t-20">
       <div className="row align-items-center">
@@ -35,8 +35,9 @@ const Search = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search..."
-                onChange={(e) => Data.search(e.target.value)}
+                placeholder={`Search ${title}...`}
+                value={value || ''} // Use the value from state
+                onChange={onSearch} // Use the handler from props
               />
               <span className="kt-input-icon__icon kt-input-icon__icon--left">
                 <span>
@@ -123,6 +124,16 @@ class BasicTable extends React.Component {
   onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
   onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
 
+  jumpToLevel = (levelName) => {
+    // This function clears all selections *after* the specified level.
+    const levels = ['grade', 'subject', 'topic', 'subtopic', 'question', 'option'];
+    const levelIndex = levels.indexOf(levelName);
+    if (levelIndex > -1 && levelIndex + 1 < levels.length) {
+      const nextLevel = levels[levelIndex + 1];
+      this.setState(this.clearSelectionsAndDataFromLevel(nextLevel, true));
+    }
+  }
+
   // --- Lifecycle Methods (Unchanged from previous refactor) ---
   async componentDidMount() {
     const customStyles = `
@@ -132,47 +143,69 @@ class BasicTable extends React.Component {
 
     let isInitialLoad = true;
 
-    this._gradeSubscription = Data.grades.subscribe(({ grades: updatedMasterGradesTree }) => {
-      const newMasterList = updatedMasterGradesTree || [];
+    this._gradeSubscription = Data.grades.subscribe(({ grades: masterTree }) => {
+      const newMasterList = masterTree || [];
 
-      // This logic runs only on the FIRST data load to restore state
       if (isInitialLoad) {
         isInitialLoad = false;
         try {
-          const stateString = localStorage.getItem("learningState"); // Note: This is synchronous
+          const stateString = localStorage.getItem("learningState");
           if (stateString) {
             const savedState = JSON.parse(stateString);
-            // Set master list AND saved selections at the same time
+            
+            // --- SIMPLIFIED AND ROBUST STATE RESTORATION ---
+            // 1. Set the master data AND all saved selections/terms in a single operation.
             this.setState({
-              ...savedState, // Restore selections (selectedGrade, etc.)
               _masterGradesList: newMasterList,
+              ...savedState 
             }, () => {
-              // Now that data and selections are in state, refresh the UI
-              this.refreshCurrentSelectionsAndFilters(false); // No scroll on load
+              // 2. In the callback, after the state is fully updated,
+              //    let the main refresh function rebuild all the filtered lists.
+              this.refreshCurrentSelectionsAndFilters(false); // false = no scroll on initial load
+
+              // 3. Fetch any other data associated with the restored state.
               if (this.state.selectedSubject) {
                 this.fetchAndSetResponses(this.state.selectedSubject);
               }
             });
-            return; // Exit to prevent the default refresh below
+
+          } else {
+            // No saved state, just load the master list and apply default filter.
+            this.setState({
+              _masterGradesList: newMasterList,
+              grades: this._applyFilter(newMasterList, this.state.gradeSearchTerm, 'name'),
+            });
           }
         } catch (error) {
-          console.error("Failed to load state from localStorage:", error);
-          // If localStorage fails, fall through to a normal initial load.
+          console.error("Failed to restore state, loading fresh.", error);
+          this.setState({ _masterGradesList: newMasterList, grades: newMasterList });
         }
+      } else {
+        // This is for subsequent updates after the initial load (e.g., from another user).
+        this.setState({
+          _masterGradesList: newMasterList,
+        }, () => this.refreshCurrentSelectionsAndFilters(true)); // Refresh view with new data
       }
-
-      // Default behavior for subsequent data updates
-      this.setState({
-        _masterGradesList: newMasterList,
-        grades: this._applyFilter(newMasterList, this.state.gradeSearchTerm, 'name')
-      }, () => this.refreshCurrentSelectionsAndFilters(true));
     });
   }
 
-  componentWillUnmount() {
-    if (this._gradeSubscription) this._gradeSubscription();
-    if (this.styleTag) this.styleTag.remove();
+  componentDidUpdate(prevProps, prevState) {
+    // Define the keys that are part of the state we want to persist
+    const persistedStateKeys = [
+      'selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion',
+      'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm',
+      'activeTab'
+    ];
 
+    // Check if any of the important state keys have actually changed
+    const hasPersistedStateChanged = persistedStateKeys.some(key => prevState[key] !== this.state[key]);
+
+    if (hasPersistedStateChanged) {
+      this.saveStateToLocalStorage();
+    }
+  }
+
+  saveStateToLocalStorage = () => {
     const stateToSave = {
       selectedGrade: this.state.selectedGrade, 
       selectedSubject: this.state.selectedSubject, 
@@ -187,7 +220,17 @@ class BasicTable extends React.Component {
       optionSearchTerm: this.state.optionSearchTerm,
       activeTab: this.state.activeTab,
     };
-    try { localStorage.setItem("learningState", JSON.stringify(stateToSave)); } catch (error) { console.error("Failed to save state to localStorage:", error); }
+    try {
+      localStorage.setItem("learningState", JSON.stringify(stateToSave));
+    } catch (error) {
+      console.error("Failed to save state to localStorage:", error);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this._gradeSubscription) this._gradeSubscription();
+    if (this.styleTag) this.styleTag.remove();
+    this.saveStateToLocalStorage(); // Call the centralized save function
   }
 
   // --- All other methods remain unchanged from the previous refactor ---
@@ -266,25 +309,19 @@ class BasicTable extends React.Component {
   handleTopicSelect = (topic) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      if (this.contentScrollContainerRef.current) { // Scroll INNER container
-        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-      }
+      this.scrollBy(300); // Use the main scroll container
     });
   }
   handleSubtopicSelect = (subtopic) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      if (this.contentScrollContainerRef.current) { // Scroll INNER container
-        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-      }
+      this.scrollBy(300); // Use the main scroll container
     });
   }
   handleQuestionSelect = (question) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      if (this.contentScrollContainerRef.current) { // Scroll INNER container
-        this.contentScrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-      }
+      this.scrollBy(300); // Use the main scroll container
     });
   }
   fetchAndSetResponses = (subjectId) => {
@@ -366,17 +403,15 @@ class BasicTable extends React.Component {
 
     return (
       <div className="kt-portlet kt-portlet--mobile">
-        {/* The entire JSX structure remains the same as the previous refactor. */}
-        {/* I am omitting it for brevity as no lines inside the return() statement have changed. */}
-        {/* The only functional change was replacing ISuccessMessage with toastr, which happened in the class methods above. */}
         <div className="kt-portlet__head">
           <div className="kt-portlet__head-label">
             <h3 className="kt-portlet__head-title">Student Learning</h3>
           </div>
         </div>
+        
         <div className="kt-portlet__body">
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-            <button onClick={() => this.scrollBy(-300)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
+            <button onClick={() => this.scrollBy(-400)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
             <div ref={this.scrollContainerRef} className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)" }}>
               {/* Column 1: Grades */}
               <div className="col-md-3 col-sm-12 col-xs-12" style={{ marginBottom: '1rem' }}>
@@ -404,64 +439,76 @@ class BasicTable extends React.Component {
                 </div>
               )}
 
-              {/* Columns 3+: Tabs for Content/Responses */}
+              {/* --- NEW VISUALLY GROUPED CONTAINER FOR TABS (no inner scroll) --- */}
               {selectedSubject && (
-                <div className="col-md-9" style={{ whiteSpace: 'normal', overflowY: 'auto', height: 'calc(100vh - 170px)', padding: '15px' }}>
-                  <ul className="nav nav-tabs nav-tabs-line nav-tabs-line-info" role="tablist">
-                    <li className="nav-item">
-                      <a className={`nav-link ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')} role="tab">
-                        <i className="la la-list"></i> Content
-                      </a>
-                    </li>
-                    <li className="nav-item">
-                      <a className={`nav-link ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')} role="tab">
-                        <i className="la la-comments"></i> Responses
-                      </a>
-                    </li>
-                  </ul>
-                  <div className="tab-content mt-5">
-                    <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel">
-                      <div ref={this.contentScrollContainerRef} className="d-flex flex-row flex-nowrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
-                        {/* Topic Column */}
-                        <div className="col-md-4 col-lg-3 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedSubjectObj?.name) || '...'} Topics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body">
-                          <Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={() => this._handleReorder('topic')} /></div></div>
-                        {/* Subtopic Column */}
-                        {selectedTopic && <div className="col-md-4 col-lg-3 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedTopicObj?.name) || '...'} Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={() => this._handleReorder('subtopic')} /></div></div>}
-                        {/* Question Column */}
-                        {selectedSubtopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{(selectedSubtopicObj?.name) || '...'} Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={() => this._handleReorder('question')} /></div></div>}
-                        {/* Option Column */}
-                        {selectedQuestion && <div className="col-md-5 col-lg-5 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} /></div></div>}
+                <div className="col-md-9" style={{ whiteSpace: 'normal' }}>
+                  <div className="kt-portlet kt-portlet--tabs">
+                    <div className="kt-portlet__head">
+                      <div className="kt-portlet__head-toolbar">
+                        <ul className="nav nav-tabs nav-tabs-line nav-tabs-line-info" role="tablist">
+                          <li className="nav-item">
+                            <a className={`nav-link ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')} role="tab">
+                              <i className="la la-list"></i> Content
+                            </a>
+                          </li>
+                          <li className="nav-item">
+                            <a className={`nav-link ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')} role="tab">
+                              <i className="la la-comments"></i> Responses
+                            </a>
+                          </li>
+                        </ul>
                       </div>
                     </div>
-                    {/* Response Tab Pane (Unchanged, uses mock) */}
-                    <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} role="tabpanel">
-                      <div className="row">
-                        <div className="col-md-3">
-                          <h5>Filter by Study Date</h5>
-                          <input type="date" className="form-control mb-4" value={responsesStudyDate} onChange={this.handleStudyDateChange} />
-                          <h6>Student Submissions</h6>
-                          <div className="student-timeline" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                            {studentsForDate.length > 0 ? studentsForDate.map(student => (
-                              <div key={student.id} className={`student-timeline-item ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}>
-                                {student.name}
-                              </div>
-                            )) : <p className="text-muted">No submissions on this date.</p>}
+                    <div className="kt-portlet__body">
+                      <div className="tab-content">
+                        {/* Content Tab Pane with Horizontal Columns */}
+                        <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel">
+                          <div className="d-flex flex-row flex-nowrap">
+                            {/* Topic Column */}
+                            <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Topics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body">
+                              <Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={() => this._handleReorder('topic')} /></div></div>
+                            
+                            {/* Subtopic Column */}
+                            {selectedTopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={() => this._handleReorder('subtopic')} /></div></div>}
+                            
+                            {/* Question Column */}
+                            {selectedSubtopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={() => this._handleReorder('question')} /></div></div>}
+                            
+                            {/* Option Column */}
+                            {selectedQuestion && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} /></div></div>}
                           </div>
                         </div>
-                        <div className="col-md-6">
-                          <h5>{selectedStudentId ? `${studentsForDate.find(s => s.id === selectedStudentId)?.name || ''}'s Responses` : 'Select a Student'}</h5>
-                          <div className="responses-view" style={{ maxHeight: '65vh', overflowY: 'auto', background: '#f7f8fa', padding: '15px', borderRadius: '4px' }}>
-                            {selectedStudentId && selectedStudentResponses.length > 0 ? selectedStudentResponses.map(response => (
-                              <div key={response.id} className="response-card">
-                                <div className="response-card-breadcrumbs"><i className="la la-folder-open"></i> {this.findContentBreadcrumbs(response)}</div>
-                                <div className="response-card-content">
-                                  {response.type === 'text' && <p>{response.content}</p>}
-                                  {response.type === 'image' && <img src={response.content} alt="Student submission" />}
-                                  {response.type === 'video' && <video controls src={response.content} width="100%" />}
-                                </div>
-                                <div className="text-muted small mt-2 text-right">Submitted at {new Date(response.submissionDate).toLocaleTimeString()}</div>
+                        {/* Responses Tab Pane */}
+                        <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} role="tabpanel">
+                          <div className="row">
+                            <div className="col-md-4">
+                              <h5>Filter by Study Date</h5>
+                              <input type="date" className="form-control mb-4" value={responsesStudyDate} onChange={this.handleStudyDateChange} />
+                              <h6>Student Submissions</h6>
+                              <div className="student-timeline" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                                {studentsForDate.length > 0 ? studentsForDate.map(student => (
+                                  <div key={student.id} className={`student-timeline-item ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}>
+                                    {student.name}
+                                  </div>
+                                )) : <p className="text-muted">No submissions on this date.</p>}
                               </div>
-                            )) : (selectedStudentId ? <p>No responses found for this student on the selected date.</p> : <p className="text-muted">Select a date and a student to view responses.</p>)}
+                            </div>
+                            <div className="col-md-8">
+                              <h5>{selectedStudentId ? `${studentsForDate.find(s => s.id === selectedStudentId)?.name || ''}'s Responses` : 'Select a Student'}</h5>
+                              <div className="responses-view" style={{ maxHeight: '65vh', overflowY: 'auto', background: '#f7f8fa', padding: '15px', borderRadius: '4px' }}>
+                                {selectedStudentId && selectedStudentResponses.length > 0 ? selectedStudentResponses.map(response => (
+                                  <div key={response.id} className="response-card">
+                                    <div className="response-card-breadcrumbs"><i className="la la-folder-open"></i> {this.findContentBreadcrumbs(response)}</div>
+                                    <div className="response-card-content">
+                                      {response.type === 'text' && <p>{response.content}</p>}
+                                      {response.type === 'image' && <img src={response.content} alt="Student submission" />}
+                                      {response.type === 'video' && <video controls src={response.content} width="100%" />}
+                                    </div>
+                                    <div className="text-muted small mt-2 text-right">Submitted at {new Date(response.submissionDate).toLocaleTimeString()}</div>
+                                  </div>
+                                )) : (selectedStudentId ? <p>No responses found for this student on the selected date.</p> : <p className="text-muted">Select a date and a student to view responses.</p>)}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -470,43 +517,28 @@ class BasicTable extends React.Component {
                 </div>
               )}
             </div>
-            <button onClick={() => this.scrollBy(300)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
+            <button onClick={() => this.scrollBy(400)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
           </div>
         </div>
 
-        {/* --- Render all modals here to pass them props and refs --- */}
-        {/* Grades */}
+        {/* --- All Modals remain unchanged --- */}
         {grades && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', data)()} />}
         {gradeToEdit && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', data)()} />}
         {gradeToDelete && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={() => this.handleDelete('grades', gradeToDelete)()} />}
-
         {selectedGrade && <AddSubjectModal ref={this.addSubjectModalRef} save={(data) => this.handleCreate('subjects', data, selectedGrade, 'grade')} />}
         {subjectToEdit && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', data)} />}
         {subjectToDelete && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={() => this.handleDelete('subjects', subjectToDelete, selectedGrade, 'gradeId')} />}
-
         {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
         {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => this.handleUpdate('topics', data)} />}
         {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subjectId')} />}
-
         {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
         {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => this.handleUpdate('subtopics', data)()} />}
         {subtopicToDelete && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={() => this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topicId')()} />}
-
         {selectedSubtopic && <AddQuestionModal ref={this.addQuestionModalRef} save={(data) => this.handleCreate('questions', data, selectedSubtopic, 'subtopic')} subtopic={selectedSubtopic} filteredOptions={filteredOptions} />}
         {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} edit={(data) => this.handleUpdate('questions', data)()} />}
         {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopicId')()} />}
-
-        {selectedQuestion && (
-    <AddOptionModal 
-      ref={this.addOptionModalRef} 
-      save={(data) => this.handleCreate('options', data)} 
-      question={selectedQuestion} // This prop must be a valid object with an `id`
-    />
-  )}
-        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => {
-          console.log('Editing option with data:', data);
-          this.handleUpdate('options', { ...data, question: selectedQuestion});
-        }} question={selectedQuestion}/>}
+        {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data)} question={selectedQuestion} />)}
+        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => { console.log('Editing option with data:', data); this.handleUpdate('options', { ...data, question: selectedQuestion}); }} question={selectedQuestion}/>}
         {optionToDelete && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} />}
       </div>
     );

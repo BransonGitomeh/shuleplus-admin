@@ -272,7 +272,7 @@ const DraggableListItem = ({
           <div className="list-item-media-previews">
           {safeVideos.slice(0, 1).map((videoUrl, i) => videoUrl && (
               <div key={`vid-${item.id}-${i}`} className="list-item-media-item">
-              <iframe src={videoUrl} title="Video Preview" frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ height: '16vh', width: 'auto' }}></iframe>
+              <iframe src={videoUrl} title="Video Preview" frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ height: '10vh', width: 'auto' }}></iframe>
               </div>
           ))}
           {safeImages.slice(0, 3).map((imageUrl, i) => imageUrl && (
