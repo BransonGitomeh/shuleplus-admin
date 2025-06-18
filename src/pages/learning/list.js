@@ -144,25 +144,32 @@ class BasicTable extends React.Component {
     let isInitialLoad = true;
 
     this._gradeSubscription = Data.grades.subscribe(({ grades: masterTree }) => {
+      console.log("masterTree subscription updated. Received:", masterTree);
       const newMasterList = masterTree || [];
 
-      if (isInitialLoad) {
+      // if (isInitialLoad) {
+        console.log("Performing initial load. isInitialLoad:", isInitialLoad);
         isInitialLoad = false;
         try {
+          console.log("Attempting to retrieve saved state from localStorage.");
           const stateString = localStorage.getItem("learningState");
           if (stateString) {
+            console.log("Found saved state, parsing...");
             const savedState = JSON.parse(stateString);
             
+            console.log("Restoring state:", savedState);
             // --- SIMPLIFIED AND ROBUST STATE RESTORATION ---
             // 1. Set the master data AND all saved selections/terms in a single operation.
             this.setState({
               _masterGradesList: newMasterList,
               ...savedState 
             }, () => {
+              console.log("State fully updated. Refreshing filtered lists.");
               // 2. In the callback, after the state is fully updated,
               //    let the main refresh function rebuild all the filtered lists.
               this.refreshCurrentSelectionsAndFilters(false); // false = no scroll on initial load
 
+              console.log("Fetching associated data...");
               // 3. Fetch any other data associated with the restored state.
               if (this.state.selectedSubject) {
                 this.fetchAndSetResponses(this.state.selectedSubject);
@@ -170,6 +177,7 @@ class BasicTable extends React.Component {
             });
 
           } else {
+            console.log("No saved state found. Loading fresh data.");
             // No saved state, just load the master list and apply default filter.
             this.setState({
               _masterGradesList: newMasterList,
@@ -180,12 +188,13 @@ class BasicTable extends React.Component {
           console.error("Failed to restore state, loading fresh.", error);
           this.setState({ _masterGradesList: newMasterList, grades: newMasterList });
         }
-      } else {
-        // This is for subsequent updates after the initial load (e.g., from another user).
-        this.setState({
-          _masterGradesList: newMasterList,
-        }, () => this.refreshCurrentSelectionsAndFilters(true)); // Refresh view with new data
-      }
+      // } else {
+      //   console.log("Received subsequent update. Refreshing view.");
+      //   // This is for subsequent updates after the initial load (e.g., from another user).
+      //   this.setState({
+      //     _masterGradesList: newMasterList,
+      //   }, () => this.refreshCurrentSelectionsAndFilters(true)); // Refresh view with new data
+      // }
     });
   }
 
@@ -363,8 +372,11 @@ class BasicTable extends React.Component {
     return Data[entity].create(payload);
   }
   handleUpdate = (entity, data) => async () => {
-    console.log({ data });
+    console.log(`Updating ${entity}:`, data);
+    const startTime = performance.now();
     await Data[entity].update(data);
+    const endTime = performance.now();
+    console.log(`Update of ${entity} took ${endTime - startTime}ms`);
     this.onEntityUpdated(entity.slice(0, -1));
   }
   handleDelete = (entity, item, parentId, parentKey) => async () => {

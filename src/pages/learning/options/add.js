@@ -147,7 +147,7 @@ class OptionModal extends React.Component {
                         name="value" 
                         minLength="2"
                         value={option.value}
-                        onInput={this.handleInputChange}
+                        onChange={this.handleInputChange}
                         required
                       />
                     </div>
@@ -159,7 +159,7 @@ class OptionModal extends React.Component {
                           id="correct"
                           name="correct"
                           checked={option.correct}
-                          onInput={this.handleCheckboxChange}
+                          onChange={this.handleCheckboxChange}
                         />
                         <label className="form-check-label" htmlFor="correct">
                           Is this the correct option?

@@ -129,6 +129,7 @@ var Data = (function () {
                   options {
                     id
                     value
+                    correct
                   }
                 }
               }
