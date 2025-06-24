@@ -76,14 +76,15 @@ class EditOptionModal extends React.Component {
     event.preventDefault();
 
     // Manually check if the form is valid using the plugin's API.
-    if (!$(this.formRef.current).valid()) {
-      return; // If not valid, stop. The plugin has shown the errors.
-    }
+    // if (!$(this.formRef.current).valid()) {
+    //   return; // If not valid, stop. The plugin has shown the errors.
+    // }
 
     this.setState({ loading: true });
 
     try {
       const { edit } = this.props;
+      console.log({edit})
       const payload = { ...this.state.option }; // Send the complete option object from state
 
       await edit(payload);

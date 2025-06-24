@@ -374,8 +374,10 @@ class BasicTable extends React.Component {
   handleUpdate = (entity, data) => async () => {
     console.log(`Updating ${entity}:`, data);
     const startTime = performance.now();
+    console.log(`Started updating ${entity} at ${new Date(startTime).toLocaleString()}`);
     await Data[entity].update(data);
     const endTime = performance.now();
+    console.log(`Finished updating ${entity} at ${new Date(endTime).toLocaleString()}`);
     console.log(`Update of ${entity} took ${endTime - startTime}ms`);
     this.onEntityUpdated(entity.slice(0, -1));
   }
@@ -413,6 +415,10 @@ class BasicTable extends React.Component {
 
     const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
 
+    const correctOption = filteredOptions.find(o => o.correct && !o.value.includes(' (Correct)'));
+    if (correctOption) {
+      correctOption.value += ' (Correct)';
+    }
     return (
       <div className="kt-portlet kt-portlet--mobile">
         <div className="kt-portlet__head">
@@ -550,7 +556,7 @@ class BasicTable extends React.Component {
         {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} edit={(data) => this.handleUpdate('questions', data)()} />}
         {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopicId')()} />}
         {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data)} question={selectedQuestion} />)}
-        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => { console.log('Editing option with data:', data); this.handleUpdate('options', { ...data, question: selectedQuestion}); }} question={selectedQuestion}/>}
+        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => console.log(this.handleUpdate('options', {...data, question: selectedQuestion})())} question={selectedQuestion}/>}
         {optionToDelete && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} />}
       </div>
     );
