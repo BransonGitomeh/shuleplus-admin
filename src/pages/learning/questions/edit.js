@@ -222,7 +222,7 @@ class EditContentModal extends React.Component {
         event.preventDefault();
         if (_this.state.isCompressingImages) { IErrorMessage.show({ message: "Please wait, images are being processed." }); return; }
         if (!_this.state.editorState.getCurrentContent().hasText() && _this.state.editorState.getCurrentContent().getBlockMap().first().getType() !== 'atomic') { IErrorMessage.show({ message: "Description empty." }); return; }
-        if (!_this.state.question.subtopic) { IErrorMessage.show({ message: "Subtopic missing." }); return; }
+        if (!_this.props.subtopic) { IErrorMessage.show({ message: "Subtopic missing." }); return; }
         if (!_this.state.question.type) { IErrorMessage.show({ message: "Select content type." }); return; }
         if (!_this.state.question.id) { IErrorMessage.show({ message: "Content ID missing. Cannot update."}); return; }
 
@@ -231,7 +231,7 @@ class EditContentModal extends React.Component {
           const data = {
             id: _this.state.question.id,
             name: stateToHTML(_this.state.editorState.getCurrentContent()),
-            subtopic: _this.state.question.subtopic,
+            subtopic: _this.props.subtopic,
             type: _this.state.question.type,
             videos: (_this.state.question.videos || []).map(v => v.embedUrl),
             images: (_this.state.question.uploadedImages || []).map(img => img.data),

@@ -544,16 +544,16 @@ class BasicTable extends React.Component {
         {gradeToEdit && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', data)()} />}
         {gradeToDelete && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={() => this.handleDelete('grades', gradeToDelete)()} />}
         {selectedGrade && <AddSubjectModal ref={this.addSubjectModalRef} save={(data) => this.handleCreate('subjects', data, selectedGrade, 'grade')} />}
-        {subjectToEdit && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', data)} />}
-        {subjectToDelete && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={() => this.handleDelete('subjects', subjectToDelete, selectedGrade, 'gradeId')} />}
-        {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
-        {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => this.handleUpdate('topics', data)} />}
-        {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subjectId')} />}
-        {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
-        {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => this.handleUpdate('subtopics', data)()} />}
+        {subjectToEdit && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', {...data, grade: selectedGrade})()} />}
+        {subjectToDelete && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={() => this.handleDelete('subjects', subjectToDelete, selectedGrade, 'gradeId')()} />}
+        {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
+        {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => console.log(this.handleUpdate('topics', {...data, subject: selectedSubject})())} />}
+        {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subjectId')()} />}
+        {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
+        {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => console.log(this.handleUpdate('subtopics', {...data, topic: selectedTopic})())} />}
         {subtopicToDelete && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={() => this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topicId')()} />}
         {selectedSubtopic && <AddQuestionModal ref={this.addQuestionModalRef} save={(data) => this.handleCreate('questions', data, selectedSubtopic, 'subtopic')} subtopic={selectedSubtopic} filteredOptions={filteredOptions} />}
-        {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} edit={(data) => this.handleUpdate('questions', data)()} />}
+        {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} subtopic={selectedSubtopic} edit={(data) => console.log(this.handleUpdate('questions', {...data, subtopic: selectedSubtopic})())} />}
         {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopicId')()} />}
         {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data)} question={selectedQuestion} />)}
         {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => console.log(this.handleUpdate('options', {...data, question: selectedQuestion})())} question={selectedQuestion}/>}
