@@ -350,11 +350,13 @@ class Navbar extends React.Component {
 
     // Layout calculations
     const firstBarHeight = isMobile ? mobileTopBarHeight : topNavbarHeight;
-    const secondaryNavbarTopPosition = gapBetweenNavbars + firstBarHeight;
-    const totalFixedElementsHeight = secondaryNavbarTopPosition + secondaryNavbarEffectiveHeight + gapBetweenNavbars;
-
     const bottomNavCommonLinkStyle = { color: BOTTOM_NAV_TEXT_COLOR };
     const paceLoaderColor = effectiveTopBarTextColor;
+
+    // *** CHANGE 1: Correctly calculate spacer height to clear the fixed top bar ***
+    // This value represents the total vertical space occupied by the fixed top navbar.
+    const fixedContentSpacerHeight = firstBarHeight + gapBetweenNavbars;
+
 
     const manageDataItems = [
       { path: "/schools", label: "Schools", IconComponent: SvgSchoolsIcon },
@@ -413,7 +415,7 @@ class Navbar extends React.Component {
         {isMobile && this.renderMobileNav()}
         {fetchingSchools && <Pace color={paceLoaderColor} height={5} style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 2000 }} />}
 
-        {/* DESKTOP TOP NAVBAR */}
+        {/* DESKTOP TOP NAVBAR (Remains Fixed) */}
         <div
           id="kt_header"
           className="kt-header kt-grid__item d-none d-lg-flex"
@@ -513,7 +515,7 @@ class Navbar extends React.Component {
           </div>
         </div>
 
-        {/* MOBILE TOP NAVBAR */}
+        {/* MOBILE TOP NAVBAR (Remains Fixed) */}
         <div
           id="kt_header_mobile"
           className="kt-header-mobile kt-header-mobile--fixed d-lg-none"
@@ -546,16 +548,27 @@ class Navbar extends React.Component {
             </button>
           </div>
         </div>
-        
-        {/* BOTTOM FLOATING NAVBAR */}
+
+        {/* *** CHANGE 2: Spacer Div is moved here and uses the corrected height calculation *** */}
+        {/* This spacer pushes all subsequent content down to clear the fixed top navbar. */}
+        <div style={{ height: `${(fixedContentSpacerHeight-50)}px` }} />
+
+        {/* *** CHANGE 3: SECONDARY NAVBAR is now part of the scrolling content *** */}
         <div
             id="kt_header_secondary"
             className="d-none d-lg-flex"
             style={{
-                backgroundColor: BOTTOM_NAV_BG_COLOR, justifyContent: 'space-between', alignItems: 'center',
-                height: `${secondaryNavbarEffectiveHeight}px`, position: 'fixed', top: `${(secondaryNavbarTopPosition + 15)}px`,
-                left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`,
-                zIndex: 1001, borderRadius: '12px', boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)', padding: '0 25px',
+                backgroundColor: BOTTOM_NAV_BG_COLOR,
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                height: `${secondaryNavbarEffectiveHeight}px`,
+                position: 'relative', // Now part of the document flow
+                marginLeft: `${secondaryNavbarHorizontalMargin}px`,
+                marginRight: `${secondaryNavbarHorizontalMargin}px`,
+                marginBottom: `${gapBetweenNavbars}px`, // Add space below it
+                borderRadius: '12px',
+                boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)',
+                padding: '0 25px',
             }}
         >
             <div className="kt-header__brand">
@@ -599,8 +612,7 @@ class Navbar extends React.Component {
             </div>
         </div>
 
-        {/* Spacer Div to push content down */}
-        <div style={{ height: isMobile ? `${((mobileTopBarHeight + gapBetweenNavbars)-65)}px` : `${(totalFixedElementsHeight-65)}px` }} />
+        {/* The original spacer div is no longer needed here as it has been moved and repurposed above */}
       </>
     );
   }

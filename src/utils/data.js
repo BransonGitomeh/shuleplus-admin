@@ -1235,7 +1235,6 @@ var Data = (function () {
         create: data => // data = { value, question (parent ID) }
           new Promise(async (resolve, reject) => {
             try {
-              console.log(data);
               const { options: { create: { id } } } = await mutate( `
         mutation ($Ioption: Ioption!) {
           options {
@@ -1268,6 +1267,7 @@ var Data = (function () {
           }),
         update: data => // data = { id, value, question (parent ID / questionId), ... }
           new Promise(async (resolve, reject) => {
+            console.log({data});
             try {
               const { id: optionId, question: parentQuestionId, questionId: altParentQuestionId, ...updatePayload } = data;
               const actualParentQuestionId = parentQuestionId || altParentQuestionId;
