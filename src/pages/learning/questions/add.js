@@ -148,6 +148,23 @@ class Modal extends React.Component {
         filteredOptions:[...this.state.filteredOptions, createdOption],
       })
     }
+
+    handleUpdate = (entity, data) => async () => {
+      console.log(`Updating ${entity}:`, data);
+      const startTime = performance.now();
+      console.log(`Started updating ${entity} at ${new Date(startTime).toLocaleString()}`);
+      await Data[entity].update(data);
+      const endTime = performance.now();
+      console.log(`Finished updating ${entity} at ${new Date(endTime).toLocaleString()}`);
+      console.log(`Update of ${entity} took ${endTime - startTime}ms`);
+      this.onEntityUpdated(entity.slice(0, -1));
+    }
+    handleDelete = (entity, item, parentId, parentKey) => async () => {
+      const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id };
+      await Data[entity].delete(payload);
+      this.onEntityDeleted(entity.slice(0, -1));
+    }
+
   onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
 
   removeVideo = (idToRemove) => this.setState(prevState => ({ question: { ...prevState.question, videos: (prevState.question.videos || []).filter(v => v.id !== idToRemove) } }));
@@ -577,7 +594,7 @@ class Modal extends React.Component {
                             </div>
                             <div className="kt-portlet__body">
                               <Search title="answers" onSearch={this.onOptionSearch} value={""} />
-                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.state.addedOptions || []} options={{ ...tableOptions, linkable: false, editable: true }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef?.current?.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef?.current?.show())} onOrderChange={() => this._handleReorder('option')} />
+                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.state.addedOptions || []} options={{ ...tableOptions, linkable: false, editable: true, deleteable: true }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef?.current?.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef?.current?.show())} onOrderChange={() => this._handleReorder('option')} />
                             </div>
                           </div>
                         )}
@@ -605,8 +622,8 @@ class Modal extends React.Component {
         {/* --- Render all modals here to pass them props and refs --- */}
         {/* Options */}
         {this.state.selectedQuestion && <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, this.state.selectedQuestion, 'question')} question={this.state.selectedQuestion} />}
-        {this.state.selectedQuestion && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} />}
-        {this.state.selectedQuestion && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} />}
+        {this.state.selectedQuestion && <EditOptionModal ref={this.editOptionModalRef} option={this.state.optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} />}
+        {this.state.selectedQuestion && <DeleteOptionModal ref={this.deleteOptionModalRef} option={this.state.optionToDelete} delete={() => this.handleDelete('options', this.state.optionToDelete, this.state.selectedQuestion, 'questionId')()} />}
       </div>
     );
   }

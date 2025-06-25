@@ -65,7 +65,7 @@ class Modal extends React.Component {
                 </button>
               </div>
               <div className="modal-body">
-                <p>{`Are you sure you want to delete the: "${this.props.option.value}" option ?`}</p>
+                <p>{`Are you sure you want to delete the: "${this.props?.option?.value}" option ?`}</p>
               </div>
               <div className="modal-footer">
                 {!this.state.loading ? (

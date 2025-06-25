@@ -388,7 +388,79 @@ class BasicTable extends React.Component {
   }
 
   scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
-  _handleReorder = () => { console.log("Reorder triggered (mocked)."); }
+  
+  // --- MODIFIED: New reorder handler ---
+  _handleReorder = async (entityType, reorderedList) => {
+    const {
+        _masterGradesList,
+        selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion
+    } = this.state;
+
+    const findItem = (id, list) => list.find(item => item.id === id);
+
+    try {
+        switch (entityType) {
+            case 'grades': {
+                // Reordering the top-level list is a special case.
+                // We assume the data service has a specific method for this.
+                await Data.grades.reorder(reorderedList);
+                toastr.info(`Order updated for grades.`);
+                break;
+            }
+            case 'subjects': {
+                const parent = findItem(selectedGrade, _masterGradesList);
+                if (!parent) throw new Error("Parent grade not found for reordering subjects.");
+                const updatedParent = { ...parent, subjects: reorderedList };
+                this.handleUpdate('grades', updatedParent)();
+                break;
+            }
+            case 'topics': {
+                const grade = findItem(selectedGrade, _masterGradesList);
+                const parent = findItem(selectedSubject, grade?.subjects || []);
+                if (!parent) throw new Error("Parent subject not found for reordering topics.");
+                const updatedParent = { ...parent, topics: reorderedList };
+                this.handleUpdate('subjects', { ...updatedParent, grade: selectedGrade })();
+                break;
+            }
+            case 'subtopics': {
+                const grade = findItem(selectedGrade, _masterGradesList);
+                const subject = findItem(selectedSubject, grade?.subjects || []);
+                const parent = findItem(selectedTopic, subject?.topics || []);
+                if (!parent) throw new Error("Parent topic not found for reordering subtopics.");
+                const updatedParent = { ...parent, subtopics: reorderedList };
+                this.handleUpdate('topics', { ...updatedParent, subject: selectedSubject })();
+                break;
+            }
+            case 'questions': {
+                const grade = findItem(selectedGrade, _masterGradesList);
+                const subject = findItem(selectedSubject, grade?.subjects || []);
+                const topic = findItem(selectedTopic, subject?.topics || []);
+                const parent = findItem(selectedSubtopic, topic?.subtopics || []);
+                if (!parent) throw new Error("Parent subtopic not found for reordering questions.");
+                const updatedParent = { ...parent, questions: reorderedList };
+                this.handleUpdate('subtopics', { ...updatedParent, topic: selectedTopic })();
+                break;
+            }
+            case 'options': {
+                const grade = findItem(selectedGrade, _masterGradesList);
+                const subject = findItem(selectedSubject, grade?.subjects || []);
+                const topic = findItem(selectedTopic, subject?.topics || []);
+                const subtopic = findItem(selectedSubtopic, topic?.subtopics || []);
+                const parent = findItem(selectedQuestion, subtopic?.questions || []);
+                if (!parent) throw new Error("Parent question not found for reordering options.");
+                const updatedParent = { ...parent, options: reorderedList };
+                this.handleUpdate('questions', { ...updatedParent, subtopic: selectedSubtopic })();
+                break;
+            }
+            default:
+                console.warn(`Reorder handler not implemented for: ${entityType}`);
+                return;
+        }
+    } catch (error) {
+        console.error(`Error during reorder of ${entityType}:`, error);
+        toastr.error(`Failed to update order for ${entityType}.`);
+    }
+  };
 
   render() {
     const {
@@ -415,10 +487,9 @@ class BasicTable extends React.Component {
 
     const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
 
-    const correctOption = filteredOptions.find(o => o.correct && !o.value.includes(' (Correct)'));
-    if (correctOption) {
-      correctOption.value += ' (Correct)';
-    }
+    // --- MODIFIED: Instead of changing the text, get the IDs of correct options ---
+    const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
+    
     return (
       <div className="kt-portlet kt-portlet--mobile">
         <div className="kt-portlet__head">
@@ -439,7 +510,7 @@ class BasicTable extends React.Component {
                 </div>
                 <div className="kt-portlet__body">
                   <Search title="grades" onSearch={this.onGradeSearch} value={gradeSearchTerm} />
-                  <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={() => this._handleReorder('grade')} options={tableOptions} />
+                  <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} />
                 </div>
               </div>
 
@@ -452,7 +523,7 @@ class BasicTable extends React.Component {
                   </div>
                   <div className="kt-portlet__body">
                     <Search title="subjects" onSearch={this.onSubjectSearch} value={subjectSearchTerm} />
-                    <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={() => this._handleReorder('subject')} />
+                    <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} />
                   </div>
                 </div>
               )}
@@ -484,16 +555,27 @@ class BasicTable extends React.Component {
                           <div className="d-flex flex-row flex-nowrap">
                             {/* Topic Column */}
                             <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Topics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body">
-                              <Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={() => this._handleReorder('topic')} /></div></div>
+                              <Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>
                             
                             {/* Subtopic Column */}
-                            {selectedTopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={() => this._handleReorder('subtopic')} /></div></div>}
+                            {selectedTopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}
                             
                             {/* Question Column */}
-                            {selectedSubtopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={() => this._handleReorder('question')} /></div></div>}
+                            {selectedSubtopic && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}
                             
                             {/* Option Column */}
-                            {selectedQuestion && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} /></div></div>}
+                            {selectedQuestion && <div className="col-md-4 col-lg-4 col-sm-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} />
+                            {/* --- MODIFIED: Pass the correctOptionIds to the Table component --- */}
+                            <Table 
+                                listId={`options-list-${selectedQuestion}`} 
+                                headers={[{ label: "Answer", key: "value" }]} 
+                                data={filteredOptions} 
+                                options={{ ...tableOptions, linkable: false }} 
+                                edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} 
+                                delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} 
+                                onOrderChange={(list) => this._handleReorder('options', list)} 
+                                correctItemIds={correctOptionIds} // <-- New Prop
+                            /></div></div>}
                           </div>
                         </div>
                         {/* Responses Tab Pane */}
