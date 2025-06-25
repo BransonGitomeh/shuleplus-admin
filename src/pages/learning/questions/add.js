@@ -13,6 +13,8 @@ import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import imageCompression from 'browser-image-compression';
 
 import AddOptionModal from "../options/add";
+import EditOptionModal from "../options/edit";
+import DeleteOptionModal from "../options/delete";
 
 import Table from "../components/table";
 
@@ -575,7 +577,7 @@ class Modal extends React.Component {
                             </div>
                             <div className="kt-portlet__body">
                               <Search title="answers" onSearch={this.onOptionSearch} value={""} />
-                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.state.addedOptions || []} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={() => this._handleReorder('option')} />
+                              <Table listId={`options-list-${"selectedQuestion"}`} headers={[{ label: "Answer", key: "value" }]} data={this.state.addedOptions || []} options={{ ...tableOptions, linkable: false, editable: true }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef?.current?.show())} deleteItemProp={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef?.current?.show())} onOrderChange={() => this._handleReorder('option')} />
                             </div>
                           </div>
                         )}
@@ -603,8 +605,8 @@ class Modal extends React.Component {
         {/* --- Render all modals here to pass them props and refs --- */}
         {/* Options */}
         {this.state.selectedQuestion && <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, this.state.selectedQuestion, 'question')} question={this.state.selectedQuestion} />}
-        {/* <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} /> */}
-        {/* <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} /> */}
+        {this.state.selectedQuestion && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit}  edit={(data) => this.handleUpdate('options', data)()} />}
+        {this.state.selectedQuestion && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} />}
       </div>
     );
   }
