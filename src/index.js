@@ -1,118 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 
+// Bugsnag Imports
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
 import BugsnagPerformance from '@bugsnag/browser-performance';
-import { useState } from 'react';
-// import ErrorBoundary from 'react-error-boundary';
 
-// --- Bugsnag Setup ---
+// ========================================================================
+// --- 1. Production-Ready Bugsnag Initialization ---
+// Initialize Bugsnag and Performance monitoring once at the app's entry point.
+// ========================================================================
+
 Bugsnag.start({
-  apiKey: '05fe04ebc304ae56dcdc160914d06c1c',
-  plugins: [new BugsnagPluginReact()]
+  apiKey: '05fe04ebc304ae56dcdc160914d06c1c', // Your actual Bugsnag API key
+  plugins: [new BugsnagPluginReact()],
+  // You can add other configurations here, like releaseStage, appVersion, etc.
+  // releaseStage: process.env.NODE_ENV, 
 });
 
-BugsnagPerformance.start({ apiKey: '05fe04ebc304ae56dcdc160914d06c1c' });
+// Start performance monitoring separately
+BugsnagPerformance.start({ apiKey: '05fe04ebc304ae56dcdc160914d06c1c' }); // Your Bugsnag Performance API key
 
-// ========================================================================
-// --- 1. Bugsnag Setup (as provided in your original code) ---
-// ========================================================================
-Bugsnag.start({
-  apiKey: '05fe04ebc304ae56dcdc160914d06c1c', // Your actual API key
-  plugins: [new BugsnagPluginReact()]
-});
-
-BugsnagPerformance.start({ apiKey: '05fe04ebc304ae56dcdc160914d06c1c' }); // Your actual API key
-
+// Create a single, reusable ErrorBoundary component from the Bugsnag plugin.
+// This is the standard, recommended approach.
+const ErrorBoundary = Bugsnag.getPlugin('react').createErrorBoundary(React);
 
 
 // ========================================================================
-// --- 3. Custom ErrorBoundary Implementation (for improved design) ---
-// Custom error boundary component with support for error fallback component
-// ========================================================================
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    // You can also log the error to an error reporting service
-    Bugsnag.notify(error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback />;
-    }
-
-    return this.props.children;
-  }
-}
-
-
-// Create a reusable ErrorBoundary component from the Bugsnag plugin
-
-// ========================================================================
-// --- 2. Custom Error Fallback Component (with improved design) ---
-// This is the beautiful error page that will be displayed to the user.
+// --- 2. Professional Error Fallback UI ---
+// This component is displayed to the user when a crash occurs. It's clean,
+// user-friendly, and provides a clear action.
+// In a real application, this would typically live in its own file,
+// e.g., 'src/components/ErrorFallback.js'
 // ========================================================================
 const ErrorFallback = () => (
   <div style={{
-    // Full screen styles
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'sans-serif',
-    color: '#333',
     textAlign: 'center',
     minHeight: '100vh',
     backgroundColor: '#f0f2f5',
   }}>
     <div style={{
-      // Content card styles
       backgroundColor: '#ffffff',
       padding: '40px 50px',
       borderRadius: '12px',
       boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
       maxWidth: '500px',
     }}>
-      <h1 style={{
-        fontSize: '3rem',
-        color: '#d9534f',
-        margin: '0 0 10px 0',
-      }}>
+      <h1 style={{ fontSize: '3rem', color: '#d9534f', margin: '0 0 10px 0' }}>
         Oops!
       </h1>
-      <h2 style={{
-        fontSize: '1.5rem',
-        fontWeight: 'normal',
-        color: '#555',
-        margin: '0 0 25px 0',
-      }}>
-        Something went wrong.
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 'normal', color: '#555', margin: '0 0 25px 0' }}>
+        Something Went Wrong
       </h2>
-      <p style={{
-        fontSize: '1rem',
-        color: '#777',
-        lineHeight: '1.6',
-        marginBottom: '30px',
-      }}>
-        We're sorry for the inconvenience. Our team has been automatically
-        notified of this issue. Please reload the page to continue.
+      <p style={{ fontSize: '1rem', color: '#777', lineHeight: '1.6', marginBottom: '30px' }}>
+        We're sorry for the inconvenience. Our technical team has been automatically
+        notified. Please reload the page to continue.
       </p>
       <button
         onClick={() => window.location.reload()}
         style={{
-          // Button styles
           padding: '12px 30px',
           border: 'none',
           borderRadius: '8px',
@@ -123,7 +76,6 @@ const ErrorFallback = () => (
           fontWeight: 'bold',
           transition: 'background-color 0.2s ease-in-out',
         }}
-        // Basic hover effect without CSS classes
         onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0056b3'}
         onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#007bff'}
       >
@@ -133,50 +85,61 @@ const ErrorFallback = () => (
   </div>
 );
 
+
 // ========================================================================
-// --- 3. A Component that Intentionally Crashes ---
-// This component will throw an error when its state is updated.
+// --- 3. Development-Only Crashing Component ---
+// A tool for testing the Error Boundary during development.
+// It is crucial that this component is NOT included in production builds.
+// In a real application, this might live in 'src/components/dev/CrashingComponent.js'
 // ========================================================================
 const CrashingComponent = () => {
-
   const [shouldThrow, setShouldThrow] = useState(false);
 
   if (shouldThrow) {
-    throw new Error('I was told to crash!');
+    throw new Error('This is a test crash to verify the Error Boundary!');
   }
 
   return (
-    <button
-      onClick={() => setShouldThrow(true)}
-      style={{
-        padding: '10px 20px',
-        fontSize: '1.2rem',
-        cursor: 'pointer',
-        marginTop: '20px',
-      }}
-    >
-      Click to Trigger a Render Error
-    </button>
+    <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999 }}>
+        <button
+          onClick={() => setShouldThrow(true)}
+          style={{
+            padding: '10px 20px',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            border: '1px solid #d9534f',
+            backgroundColor: '#fbeeee',
+            color: '#d9534f',
+            borderRadius: '5px',
+          }}
+        >
+          Test Error Boundary
+        </button>
+    </div>
   );
 };
 
 
-
-
 // ========================================================================
-// --- 5. Render the App with the Error Boundary ---
-// We wrap our main App in the ErrorBoundary. If App (or any child) crashes,
-// the ErrorFallback component will be shown instead.
+// --- 4. Render the Application ---
+// The entire app is wrapped in the ErrorBoundary.
+// The CrashingComponent is only rendered if the environment is 'development'.
 // ========================================================================
 ReactDOM.render(
   <React.StrictMode>
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <App />
-      <CrashingComponent />
+      
+      {/* This ensures the crash-testing button only appears during development */}
+      {process.env.NODE_ENV === 'development' && <CrashingComponent />}
+
     </ErrorBoundary>
   </React.StrictMode>,
   document.getElementById('root')
 );
 
 
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://bit.ly/CRA-PWA
 serviceWorker.unregister();
