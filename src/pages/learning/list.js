@@ -73,24 +73,21 @@ const MockResponses = {
 
 class BasicTable extends React.Component {
   scrollContainerRef = React.createRef();
-  contentScrollContainerRef = React.createRef();
   _gradeSubscription = null;
   _schoolSubscription = null;
   styleTag = null;
 
-  // Create refs for all modals to call their .show() method
+  // Create refs for all modals
   addGradeModalRef = React.createRef(); editGradeModalRef = React.createRef(); deleteGradeModalRef = React.createRef();
   addSubjectModalRef = React.createRef(); editSubjectModalRef = React.createRef(); deleteSubjectModalRef = React.createRef();
   addTopicModalRef = React.createRef(); editTopicModalRef = React.createRef(); deleteTopicModalRef = React.createRef();
   addSubtopicModalRef = React.createRef(); editSubtopicModalRef = React.createRef(); deleteSubtopicModalRef = React.createRef();
-  addQuestionModalRef = React.createRef(); 
-  editQuestionModalRef = React.createRef(); 
-  deleteQuestionModalRef = React.createRef();
+  addQuestionModalRef = React.createRef(); editQuestionModalRef = React.createRef(); deleteQuestionModalRef = React.createRef();
   addOptionModalRef = React.createRef(); editOptionModalRef = React.createRef(); deleteOptionModalRef = React.createRef();
 
 
   state = {
-    // --- Existing State ---
+    // State properties...
     school: null,
     grades: [], _masterGradesList: [],
     gradeToEdit: {}, gradeToDelete: {}, selectedGrade: null, gradeSearchTerm: '',
@@ -99,8 +96,6 @@ class BasicTable extends React.Component {
     filteredSubtopics: [], subtopicToEdit: {}, subtopicToDelete: {}, selectedSubtopic: null, subtopicSearchTerm: '',
     filteredQuestions: [], questionToEdit: {}, questionToDelete: {}, selectedQuestion: null, questionSearchTerm: '',
     filteredOptions: [], optionToEdit: {}, optionToDelete: {}, selectedOption: null, optionSearchTerm: '',
-
-    // --- New State for Response Management (using mock) ---
     activeTab: 'content',
     subjectResponses: [],
     responsesStudyDate: new Date().toISOString().split('T')[0],
@@ -108,65 +103,26 @@ class BasicTable extends React.Component {
     selectedStudentId: null,
   };
 
-  _applyFilter = (list, term, key = 'name') => {
-    if (!list) return [];
-    const searchTerm = term.toLowerCase().trim();
-    if (!searchTerm) return list;
-    return list.filter(item => item && item[key] && String(item[key]).toLowerCase().includes(searchTerm));
-  };
-    
-  _sortListByOrderArray = (list, orderArray) => {
-    if (!list || !Array.isArray(list) || !orderArray || !Array.isArray(orderArray)) {
-        return list || [];
-    }
-    const orderMap = new Map(orderArray.map((id, index) => [id, index]));
-    return [...list].sort((a, b) => {
-        const posA = orderMap.get(a.id) ?? Infinity;
-        const posB = orderMap.get(b.id) ?? Infinity;
-        return posA - posB;
-    });
-  }
+  // --- LIFECYCLE & STATE MANAGEMENT ---
 
-  // --- Notification Handlers using Toastr ---
-  onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
-  onEntityUpdated = (entityName) => { toastr.success(`${entityName} has been UPDATED successfully!`, `Edit ${entityName}`); }
-  onEntityDeleted = (entityName) => { toastr.success(`${entityName} has been DELETED successfully!`, `Delete ${entityName}`); }
-
-  // --- Search Handlers (Unchanged) ---
-  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onSubjectSearch = e => { this.setState({ subjectSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onTopicSearch = e => { this.setState({ topicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-
-  jumpToLevel = (levelName) => {
-    // This function clears all selections *after* the specified level.
-    const levels = ['grade', 'subject', 'topic', 'subtopic', 'question', 'option'];
-    const levelIndex = levels.indexOf(levelName);
-    if (levelIndex > -1 && levelIndex + 1 < levels.length) {
-      const nextLevel = levels[levelIndex + 1];
-      this.setState(this.clearSelectionsAndDataFromLevel(nextLevel, true));
-    }
-  }
-
-  // --- Lifecycle Methods (Unchanged from previous refactor) ---
-  async componentDidMount() {
+  componentDidMount() {
     const customStyles = `
       .nav-tabs .nav-link { cursor: pointer; } .nav-tabs .nav-link.active { font-weight: bold; border-color: #dee2e6 #dee2e6 #fff; border-bottom: 2px solid #5867dd !important; color: #5867dd; } .student-timeline-item { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #ebedf2; } .student-timeline-item.active { background-color: #f7f8fa; border-left: 3px solid #5867dd; } .response-card { border: 1px solid #ebedf2; padding: 15px; margin-bottom: 15px; border-radius: 4px; background: #fff; } .response-card-breadcrumbs { font-size: 0.8rem; color: #a7abc3; margin-bottom: 10px; } .response-card-content img, .response-card-content video { max-width: 100%; height: auto; border-radius: 4px; } .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; } .scrolling-wrapper > .col-md-3, .scrolling-wrapper > .col-md-9, .scrolling-wrapper > .col-md-12 { flex: 0 0 auto; }
     `;
     const styleTag = document.createElement("style"); styleTag.innerHTML = customStyles; document.head.appendChild(styleTag); this.styleTag = styleTag;
+    
+    // --- FIX 1: Add event listener for saving state before page unloads ---
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
 
     this._schoolSubscription = Data.schools.subscribe(schools => {
       const selectedSchool = Data.schools.getSelected();
       this.setState({ school: selectedSchool });
     });
 
-
     this._gradeSubscription = Data.grades.subscribe(({ grades: masterTree }) => {
       const newMasterList = masterTree || [];
       const stateString = localStorage.getItem("learningState");
-      const school  = Data.schools.getSelected();
+      const school = Data.schools.getSelected();
       
       if (stateString) {
         const savedState = JSON.parse(stateString);
@@ -180,7 +136,8 @@ class BasicTable extends React.Component {
             this.fetchAndSetResponses(this.state.selectedSubject);
           }
         });
-        localStorage.removeItem("learningState");
+        // --- FIX 2: Do NOT remove the item from localStorage. Let it be overwritten. ---
+        // localStorage.removeItem("learningState"); 
       } else {
         this.setState({
           _masterGradesList: newMasterList,
@@ -202,20 +159,32 @@ class BasicTable extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    if (this._gradeSubscription) this._gradeSubscription();
+    if (this._schoolSubscription) this._schoolSubscription();
+    if (this.styleTag) this.styleTag.remove();
+    
+    // --- FIX 1 (cont.): Remove the event listener on cleanup ---
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+
+    // --- FIX 1 (cont.): DO NOT save state here anymore. It's unreliable. ---
+    // this.saveStateToLocalStorage();
+  }
+    
+  // --- FIX 1 (cont.): This is the new, reliable save handler for page reloads. ---
+  handleBeforeUnload = () => {
+    this.saveStateToLocalStorage();
+  }
+
   saveStateToLocalStorage = () => {
+    const { selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, 
+      gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, 
+      optionSearchTerm, activeTab } = this.state;
+    if (selectedGrade === null) return;
     const stateToSave = {
-      selectedGrade: this.state.selectedGrade, 
-      selectedSubject: this.state.selectedSubject, 
-      selectedTopic: this.state.selectedTopic, 
-      selectedSubtopic: this.state.selectedSubtopic, 
-      selectedQuestion: this.state.selectedQuestion,
-      gradeSearchTerm: this.state.gradeSearchTerm, 
-      subjectSearchTerm: this.state.subjectSearchTerm, 
-      topicSearchTerm: this.state.topicSearchTerm, 
-      subtopicSearchTerm: this.state.subtopicSearchTerm, 
-      questionSearchTerm: this.state.questionSearchTerm, 
-      optionSearchTerm: this.state.optionSearchTerm,
-      activeTab: this.state.activeTab,
+      selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion,
+      gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, 
+      optionSearchTerm, activeTab,
     };
     try {
       localStorage.setItem("learningState", JSON.stringify(stateToSave));
@@ -223,14 +192,28 @@ class BasicTable extends React.Component {
       console.error("Failed to save state to localStorage:", error);
     }
   }
-
-  componentWillUnmount() {
-    if (this._gradeSubscription) this._gradeSubscription();
-    // if (this._schoolSubscription) this._schoolSubscription();
-    if (this.styleTag) this.styleTag.remove();
-    this.saveStateToLocalStorage();
+  
+  // --- UTILITY & FILTERING FUNCTIONS (Unchanged) ---
+  _applyFilter = (list, term, key = 'name') => {
+    if (!list) return [];
+    const searchTerm = term.toLowerCase().trim();
+    if (!searchTerm) return list;
+    return list.filter(item => item && item[key] && String(item[key]).toLowerCase().includes(searchTerm));
+  };
+    
+  _sortListByOrderArray = (list, orderArray) => {
+    if (!list || !Array.isArray(list) || !orderArray || !Array.isArray(orderArray)) {
+        return list || [];
+    }
+    const orderMap = new Map(orderArray.map((id, index) => [id, index]));
+    return [...list].sort((a, b) => {
+        const posA = orderMap.get(a.id) ?? Infinity;
+        const posB = orderMap.get(b.id) ?? Infinity;
+        return posA - posB;
+    });
   }
 
+  // --- DATA REFRESH & NAVIGATION (Unchanged) ---
   refreshCurrentSelectionsAndFilters = (doScroll = true) => {
     const {
       _masterGradesList, school,
@@ -298,170 +281,37 @@ class BasicTable extends React.Component {
     }
     return newState;
   };
-
-  handleGradeSelect = (grade) => {
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id }), () => {
-      this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300);
-    });
-  }
-  handleSubjectSelect = (subject) => {
-    this.fetchAndSetResponses(subject.id);
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => {
-      this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300);
-    });
-  }
-  handleTopicSelect = (topic) => {
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => {
-      this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300);
-    });
-  }
-  handleSubtopicSelect = (subtopic) => {
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => {
-      this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300);
-    });
-  }
-  handleQuestionSelect = (question) => {
-    this.setState(prevState => ({ 
-        ...this.clearSelectionsAndDataFromLevel('option', true),
-        selectedQuestion: question.id,
-    }), () => {
-        this.refreshCurrentSelectionsAndFilters();
-        this.scrollBy(400);
-    });
-  }
-  fetchAndSetResponses = (subjectId) => {
-    const responses = MockResponses.getBySubject(subjectId);
-    this.setState({ subjectResponses: responses }, () => { this.filterStudentsByDate(this.state.responsesStudyDate); });
-  }
-  handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
-  handleStudyDateChange = (e) => {
-    const newDate = e.target.value;
-    this.setState({ responsesStudyDate: newDate, selectedStudentId: null }, () => this.filterStudentsByDate(newDate));
-  }
-  filterStudentsByDate = (dateString) => {
-    const { subjectResponses } = this.state;
-    if (!dateString || !subjectResponses) { this.setState({ studentsForDate: [] }); return; }
-    const responsesOnDate = subjectResponses.filter(r => r.submissionDate.startsWith(dateString));
-    const studentMap = new Map();
-    responsesOnDate.forEach(r => {
-      if (!studentMap.has(r.studentId)) { studentMap.set(r.studentId, { id: r.studentId, name: r.studentName }); }
-    });
-    this.setState({ studentsForDate: Array.from(studentMap.values()) });
-  }
-  handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId }); }
-  findContentBreadcrumbs = (response) => {
-    const { selectedGrade, _masterGradesList } = this.state;
-    const grade = _masterGradesList.find(g => g.id === selectedGrade);
-    if (!grade) return "Path not found";
-    const subject = (grade.subjects || []).find(s => s.id === response.subjectId);
-    const topic = (subject?.topics || []).find(t => t.id === response.topicId);
-    const subtopic = (topic?.subtopics || []).find(st => st.id === response.subtopicId);
-    const question = (subtopic?.questions || []).find(q => q.id === response.questionId);
-    if (question && subtopic && topic) { return `${topic.name} > ${subtopic.name} > ${question.name}`; }
-    return "Unknown Content Location";
-  }
-
-  handleCreate = async (entity, data, parentId, parentKey) => {
-    const payload = parentId ? { ...data, [parentKey]: parentId } : data;
-    this.onEntityCreated(entity.slice(0, -1));
-    return Data[entity].create(payload);
-  }
-  handleUpdate = (entity, data) => async () => {
-    await Data[entity].update(data);
-    this.onEntityUpdated(entity.slice(0, -1));
-  }
-  handleDelete = (entity, item, parentId, parentKey) => async () => {
-    const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id };
-    await Data[entity].delete(payload);
-    this.onEntityDeleted(entity.slice(0, -1));
-  }
-
-  scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
   
-  _handleReorder = async (entityType, reorderedList) => {
-    const {
-        _masterGradesList, school,
-        selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion
-    } = this.state;
+  // --- EVENT HANDLERS (Unchanged) ---
+  onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
+  onEntityUpdated = (entityName) => { toastr.success(`${entityName} has been UPDATED successfully!`, `Edit ${entityName}`); }
+  onEntityDeleted = (entityName) => { toastr.success(`${entityName} has been DELETED successfully!`, `Delete ${entityName}`); }
 
-    const findItem = (id, list) => list.find(item => item.id === id);
-    const revertUI = () => this.refreshCurrentSelectionsAndFilters();
+  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onSubjectSearch = e => { this.setState({ subjectSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onTopicSearch = e => { this.setState({ topicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
 
-    try {
-        const ids = reorderedList.map(item => item.id);
-        
-        switch (entityType) {
-            case 'grades':
-                this.setState({ grades: reorderedList });
-                if (!school) throw new Error("School not loaded, cannot reorder grades.");
-                const updatedSchool = { id: school.id, gradeOrder: ids };
-                this.handleUpdate('schools', updatedSchool)();
-                break;
+  handleGradeSelect = (grade) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
+  handleSubjectSelect = (subject) => { this.fetchAndSetResponses(subject.id); this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
+  handleTopicSelect = (topic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
+  handleSubtopicSelect = (subtopic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
+  handleQuestionSelect = (question) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }
+  fetchAndSetResponses = (subjectId) => { const responses = MockResponses.getBySubject(subjectId); this.setState({ subjectResponses: responses }, () => { this.filterStudentsByDate(this.state.responsesStudyDate); }); }
+  handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
+  handleStudyDateChange = (e) => { const newDate = e.target.value; this.setState({ responsesStudyDate: newDate, selectedStudentId: null }, () => this.filterStudentsByDate(newDate)); }
+  filterStudentsByDate = (dateString) => { const { subjectResponses } = this.state; if (!dateString || !subjectResponses) { this.setState({ studentsForDate: [] }); return; } const responsesOnDate = subjectResponses.filter(r => r.submissionDate.startsWith(dateString)); const studentMap = new Map(); responsesOnDate.forEach(r => { if (!studentMap.has(r.studentId)) { studentMap.set(r.studentId, { id: r.studentId, name: r.studentName }); } }); this.setState({ studentsForDate: Array.from(studentMap.values()) }); }
+  handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId }); }
+  findContentBreadcrumbs = (response) => { const { selectedGrade, _masterGradesList } = this.state; const grade = _masterGradesList.find(g => g.id === selectedGrade); if (!grade) return "Path not found"; const subject = (grade.subjects || []).find(s => s.id === response.subjectId); const topic = (subject?.topics || []).find(t => t.id === response.topicId); const subtopic = (topic?.subtopics || []).find(st => st.id === response.subtopicId); const question = (subtopic?.questions || []).find(q => q.id === response.questionId); if (question && subtopic && topic) { return `${topic.name} > ${subtopic.name} > ${question.name}`; } return "Unknown Content Location"; }
+  handleCreate = async (entity, data, parentId, parentKey) => { const payload = parentId ? { ...data, [parentKey]: parentId } : data; this.onEntityCreated(entity.slice(0, -1)); return Data[entity].create(payload); }
+  handleUpdate = (entity, data) => async () => { await Data[entity].update(data); this.onEntityUpdated(entity.slice(0, -1)); }
+  handleDelete = (entity, item, parentId, parentKey) => async () => { const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id }; await Data[entity].delete(payload); this.onEntityDeleted(entity.slice(0, -1)); }
+  scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
+  _handleReorder = async (entityType, reorderedList) => { const { _masterGradesList, school, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion } = this.state; const findItem = (id, list) => list.find(item => item.id === id); const revertUI = () => this.refreshCurrentSelectionsAndFilters(); try { const ids = reorderedList.map(item => item.id); switch (entityType) { case 'grades': this.setState({ grades: reorderedList }); if (!school) throw new Error("School not loaded, cannot reorder grades."); const updatedSchool = { id: school.id, gradeOrder: ids }; this.handleUpdate('schools', updatedSchool)(); break; case 'subjects': this.setState({ filteredSubjects: reorderedList }); const parentGrade = findItem(selectedGrade, _masterGradesList); if (!parentGrade) throw new Error("Parent grade not found."); const updatedGrade = { id: parentGrade.id, subjectsOrder: ids }; this.handleUpdate('grades', updatedGrade)(); break; case 'topics': this.setState({ filteredTopics: reorderedList }); const gradeForTopic = findItem(selectedGrade, _masterGradesList); const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []); if (!parentSubject) throw new Error("Parent subject not found."); const updatedSubject = { id: parentSubject.id, topicOrder: ids }; this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })(); break; case 'subtopics': this.setState({ filteredSubtopics: reorderedList }); const gradeForSubtopic = findItem(selectedGrade, _masterGradesList); const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []); const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []); if (!parentTopic) throw new Error("Parent topic not found."); const updatedTopic = { id: parentTopic.id, subtopicOrder: ids }; this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })(); break; case 'questions': this.setState({ filteredQuestions: reorderedList }); const gradeForQuestion = findItem(selectedGrade, _masterGradesList); const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []); const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []); const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []); if (!parentSubtopic) throw new Error("Parent subtopic not found."); const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids }; this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })(); break; case 'options': this.setState({ filteredOptions: reorderedList }); const gradeForOption = findItem(selectedGrade, _masterGradesList); const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []); const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []); const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []); const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []); if (!parentQuestion) throw new Error("Parent question not found."); const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids }; this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })(); break; default: console.warn(`Reorder handler not implemented for: ${entityType}`); return; } } catch (error) { console.error(`Error during reorder of ${entityType}:`, error); toastr.error(`Failed to update order for ${entityType}. Reverting.`); revertUI(); } };
 
-            case 'subjects':
-                this.setState({ filteredSubjects: reorderedList });
-                const parentGrade = findItem(selectedGrade, _masterGradesList);
-                if (!parentGrade) throw new Error("Parent grade not found.");
-                const updatedGrade = { id: parentGrade.id, subjectsOrder: ids };
-                this.handleUpdate('grades', updatedGrade)();
-                break;
-
-            case 'topics':
-                this.setState({ filteredTopics: reorderedList });
-                const gradeForTopic = findItem(selectedGrade, _masterGradesList);
-                const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []);
-                if (!parentSubject) throw new Error("Parent subject not found.");
-                const updatedSubject = { id: parentSubject.id, topicOrder: ids };
-                this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })();
-                break;
-
-            case 'subtopics':
-                this.setState({ filteredSubtopics: reorderedList });
-                const gradeForSubtopic = findItem(selectedGrade, _masterGradesList);
-                const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []);
-                const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []);
-                if (!parentTopic) throw new Error("Parent topic not found.");
-                const updatedTopic = { id: parentTopic.id, subtopicOrder: ids };
-                this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })();
-                break;
-
-            case 'questions':
-                this.setState({ filteredQuestions: reorderedList });
-                const gradeForQuestion = findItem(selectedGrade, _masterGradesList);
-                const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []);
-                const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []);
-                const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []);
-                if (!parentSubtopic) throw new Error("Parent subtopic not found.");
-                const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids };
-                this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })();
-                break;
-
-            case 'options':
-                this.setState({ filteredOptions: reorderedList });
-                const gradeForOption = findItem(selectedGrade, _masterGradesList);
-                const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []);
-                const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []);
-                const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []);
-                const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []);
-                if (!parentQuestion) throw new Error("Parent question not found.");
-                const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids };
-                this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })();
-                break;
-
-            default:
-                console.warn(`Reorder handler not implemented for: ${entityType}`);
-                return;
-        }
-    } catch (error) {
-        console.error(`Error during reorder of ${entityType}:`, error);
-        toastr.error(`Failed to update order for ${entityType}. Reverting.`);
-        revertUI();
-    }
-  };
+  // --- RENDER (Unchanged) ---
 
   render() {
     const {
@@ -570,7 +420,7 @@ class BasicTable extends React.Component {
                                 data={filteredQuestions} 
                                 options={tableOptions} 
                                 selectedItemId={selectedQuestion} 
-                                show={this.handleQuestionSelect} // --- FIX 1: Changed from handleQuestionEditor to handleQuestionSelect
+                                show={this.handleQuestionSelect}
                                 edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} 
                                 delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} 
                                 onOrderChange={(list) => this._handleReorder('questions', list)} 
@@ -581,7 +431,6 @@ class BasicTable extends React.Component {
                             {selectedQuestion &&
                              <div className="col-md-3 col-lg-3 col-sm-12 col-xl-3 col-xs-12">
                               <div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} />
-                              {/* --- FIX 2: Corrected the entire Table component to show Options, not Questions --- */}
                               <Table 
                                 listId={`options-list-${selectedQuestion}`} 
                                 headers={[{ label: "Answer", key: "value" }]} 
@@ -638,7 +487,7 @@ class BasicTable extends React.Component {
           </div>
         </div>
 
-        {/* --- All Modals remain unchanged --- */}
+        {/* --- All Modals --- */}
         {this.state.school && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', { ...data, school: this.state.school.id })()} />}
         {gradeToEdit && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', data)()} />}
         {gradeToDelete && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={() => this.handleDelete('grades', gradeToDelete)()} />}

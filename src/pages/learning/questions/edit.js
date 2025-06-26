@@ -478,7 +478,7 @@ class EditQuestionModal extends React.Component {
         </div>
         {/* Modals for Options */}
         <AddOptionModal ref={this.addOptionModalRef} save={(data) => Data.options.create({ ...data, question: questionState.id }).then(this.handleOptionCreated)} />
-        {optionToEdit.id && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => Data.options.update({ ...data, id: optionToEdit.id, question: questionState.id }).then(() => this.handleOptionUpdated({ ...data, id: optionToEdit.id }))} onClose={() => this.setState({ optionToEdit: {} })} />}
+        {optionToEdit.id && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => Data.options.update({ ...data, id: optionToEdit.id, question: questionState.id }).then(() => this.handleOptionUpdated({ ...data, id: optionToEdit.id }))} />}
         {optionToDelete.id && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => Data.options.delete({ id: optionToDelete.id, questionId: questionState.id }).then(() => this.handleOptionDeleted(optionToDelete.id))} onClose={() => this.setState({ optionToDelete: {} })} />}
       </div>
     );
