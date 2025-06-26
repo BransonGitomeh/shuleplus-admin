@@ -160,8 +160,8 @@ class BasicTable extends React.Component {
   }
 
   componentWillUnmount() {
-    if (this._gradeSubscription) this._gradeSubscription();
-    if (this._schoolSubscription) this._schoolSubscription();
+    // if (this._gradeSubscription) this._gradeSubscription();
+    // if (this._schoolSubscription) this._schoolSubscription();
     if (this.styleTag) this.styleTag.remove();
     
     // --- FIX 1 (cont.): Remove the event listener on cleanup ---
