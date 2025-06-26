@@ -58,7 +58,8 @@ const mutate = (query, variables) => {
 
             resolve(data)
         } catch (error) {
-            reject(error.response.data.errors)
+            console.log(error)
+            reject(error?.response?.data?.errors)
         }
     })
 }
