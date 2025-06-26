@@ -75,6 +75,7 @@ class BasicTable extends React.Component {
   scrollContainerRef = React.createRef();
   contentScrollContainerRef = React.createRef();
   _gradeSubscription = null;
+  _schoolSubscription = null;
   styleTag = null;
 
   // Create refs for all modals to call their .show() method
@@ -82,12 +83,15 @@ class BasicTable extends React.Component {
   addSubjectModalRef = React.createRef(); editSubjectModalRef = React.createRef(); deleteSubjectModalRef = React.createRef();
   addTopicModalRef = React.createRef(); editTopicModalRef = React.createRef(); deleteTopicModalRef = React.createRef();
   addSubtopicModalRef = React.createRef(); editSubtopicModalRef = React.createRef(); deleteSubtopicModalRef = React.createRef();
-  addQuestionModalRef = React.createRef(); editQuestionModalRef = React.createRef(); deleteQuestionModalRef = React.createRef();
+  addQuestionModalRef = React.createRef(); 
+  editQuestionModalRef = React.createRef(); 
+  deleteQuestionModalRef = React.createRef();
   addOptionModalRef = React.createRef(); editOptionModalRef = React.createRef(); deleteOptionModalRef = React.createRef();
 
 
   state = {
     // --- Existing State ---
+    school: null,
     grades: [], _masterGradesList: [],
     gradeToEdit: {}, gradeToDelete: {}, selectedGrade: null, gradeSearchTerm: '',
     filteredSubjects: [], subjectToEdit: {}, subjectToDelete: {}, selectedSubject: null, subjectSearchTerm: '',
@@ -110,6 +114,18 @@ class BasicTable extends React.Component {
     if (!searchTerm) return list;
     return list.filter(item => item && item[key] && String(item[key]).toLowerCase().includes(searchTerm));
   };
+    
+  _sortListByOrderArray = (list, orderArray) => {
+    if (!list || !Array.isArray(list) || !orderArray || !Array.isArray(orderArray)) {
+        return list || [];
+    }
+    const orderMap = new Map(orderArray.map((id, index) => [id, index]));
+    return [...list].sort((a, b) => {
+        const posA = orderMap.get(a.id) ?? Infinity;
+        const posB = orderMap.get(b.id) ?? Infinity;
+        return posA - posB;
+    });
+  }
 
   // --- Notification Handlers using Toastr ---
   onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
@@ -117,7 +133,7 @@ class BasicTable extends React.Component {
   onEntityDeleted = (entityName) => { toastr.success(`${entityName} has been DELETED successfully!`, `Delete ${entityName}`); }
 
   // --- Search Handlers (Unchanged) ---
-  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term, grades: this._applyFilter(this.state._masterGradesList, term, 'name') }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term }, () => this.refreshCurrentSelectionsAndFilters(false)); }
   onSubjectSearch = e => { this.setState({ subjectSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
   onTopicSearch = e => { this.setState({ topicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
   onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
@@ -141,74 +157,46 @@ class BasicTable extends React.Component {
     `;
     const styleTag = document.createElement("style"); styleTag.innerHTML = customStyles; document.head.appendChild(styleTag); this.styleTag = styleTag;
 
-    let isInitialLoad = true;
+    this._schoolSubscription = Data.schools.subscribe(schools => {
+      const selectedSchool = Data.schools.getSelected();
+      this.setState({ school: selectedSchool });
+    });
+
 
     this._gradeSubscription = Data.grades.subscribe(({ grades: masterTree }) => {
-      console.log("masterTree subscription updated. Received:", masterTree);
       const newMasterList = masterTree || [];
-
-      // if (isInitialLoad) {
-        console.log("Performing initial load. isInitialLoad:", isInitialLoad);
-        isInitialLoad = false;
-        try {
-          console.log("Attempting to retrieve saved state from localStorage.");
-          const stateString = localStorage.getItem("learningState");
-          if (stateString) {
-            console.log("Found saved state, parsing...");
-            const savedState = JSON.parse(stateString);
-            
-            console.log("Restoring state:", savedState);
-            // --- SIMPLIFIED AND ROBUST STATE RESTORATION ---
-            // 1. Set the master data AND all saved selections/terms in a single operation.
-            this.setState({
-              _masterGradesList: newMasterList,
-              ...savedState 
-            }, () => {
-              console.log("State fully updated. Refreshing filtered lists.");
-              // 2. In the callback, after the state is fully updated,
-              //    let the main refresh function rebuild all the filtered lists.
-              this.refreshCurrentSelectionsAndFilters(false); // false = no scroll on initial load
-
-              console.log("Fetching associated data...");
-              // 3. Fetch any other data associated with the restored state.
-              if (this.state.selectedSubject) {
-                this.fetchAndSetResponses(this.state.selectedSubject);
-              }
-            });
-
-          } else {
-            console.log("No saved state found. Loading fresh data.");
-            // No saved state, just load the master list and apply default filter.
-            this.setState({
-              _masterGradesList: newMasterList,
-              grades: this._applyFilter(newMasterList, this.state.gradeSearchTerm, 'name'),
-            });
+      const stateString = localStorage.getItem("learningState");
+      const school  = Data.schools.getSelected();
+      
+      if (stateString) {
+        const savedState = JSON.parse(stateString);
+        this.setState({
+          _masterGradesList: newMasterList,
+          school,
+          ...savedState,
+        }, () => {
+          this.refreshCurrentSelectionsAndFilters(false);
+          if (this.state.selectedSubject) {
+            this.fetchAndSetResponses(this.state.selectedSubject);
           }
-        } catch (error) {
-          console.error("Failed to restore state, loading fresh.", error);
-          this.setState({ _masterGradesList: newMasterList, grades: newMasterList });
-        }
-      // } else {
-      //   console.log("Received subsequent update. Refreshing view.");
-      //   // This is for subsequent updates after the initial load (e.g., from another user).
-      //   this.setState({
-      //     _masterGradesList: newMasterList,
-      //   }, () => this.refreshCurrentSelectionsAndFilters(true)); // Refresh view with new data
-      // }
+        });
+        localStorage.removeItem("learningState");
+      } else {
+        this.setState({
+          _masterGradesList: newMasterList,
+          school,
+        }, () => this.refreshCurrentSelectionsAndFilters(true));
+      }
     });
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // Define the keys that are part of the state we want to persist
     const persistedStateKeys = [
       'selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion',
       'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm',
       'activeTab'
     ];
-
-    // Check if any of the important state keys have actually changed
-    const hasPersistedStateChanged = persistedStateKeys.some(key => prevState[key] !== this.state[key]);
-
+    const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key]));
     if (hasPersistedStateChanged) {
       this.saveStateToLocalStorage();
     }
@@ -238,14 +226,14 @@ class BasicTable extends React.Component {
 
   componentWillUnmount() {
     if (this._gradeSubscription) this._gradeSubscription();
+    // if (this._schoolSubscription) this._schoolSubscription();
     if (this.styleTag) this.styleTag.remove();
-    this.saveStateToLocalStorage(); // Call the centralized save function
+    this.saveStateToLocalStorage();
   }
 
-  // --- All other methods remain unchanged from the previous refactor ---
   refreshCurrentSelectionsAndFilters = (doScroll = true) => {
     const {
-      _masterGradesList,
+      _masterGradesList, school,
       selectedGrade, gradeSearchTerm,
       selectedSubject, subjectSearchTerm,
       selectedTopic, topicSearchTerm,
@@ -255,32 +243,38 @@ class BasicTable extends React.Component {
     } = this.state;
 
     let newState = {};
-    const currentDisplayGrades = this._applyFilter(_masterGradesList, gradeSearchTerm, 'name');
-    newState.grades = currentDisplayGrades;
+
+    const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder);
+    newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name');
 
     const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
     if (selectedGrade && !currentGradeObj) { this.setState(this.clearSelectionsAndDataFromLevel('grade', true)); return; }
-    const subjectsList = currentGradeObj ? (currentGradeObj.subjects || []) : [];
+    
+    const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder);
     newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name');
 
     const currentSubjectObj = selectedSubject ? subjectsList.find(s => s.id === selectedSubject) : null;
     if (selectedSubject && !currentSubjectObj) { this.setState(this.clearSelectionsAndDataFromLevel('subject', true)); return; }
-    const topicsList = currentSubjectObj ? (currentSubjectObj.topics || []) : [];
+
+    const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicOrder);
     newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name');
 
     const currentTopicObj = selectedTopic ? topicsList.find(t => t.id === selectedTopic) : null;
     if (selectedTopic && !currentTopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('topic', true)); return; }
-    const subtopicsList = currentTopicObj ? (currentTopicObj.subtopics || []) : [];
+
+    const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder);
     newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name');
 
     const currentSubtopicObj = selectedSubtopic ? subtopicsList.find(st => st.id === selectedSubtopic) : null;
     if (selectedSubtopic && !currentSubtopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('subtopic', true)); return; }
-    const questionsList = currentSubtopicObj ? (currentSubtopicObj.questions || []) : [];
+
+    const questionsList = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder);
     newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name');
 
     const currentQuestionObj = selectedQuestion ? questionsList.find(q => q.id === selectedQuestion) : null;
     if (selectedQuestion && !currentQuestionObj) { this.setState(this.clearSelectionsAndDataFromLevel('question', true)); return; }
-    const optionsList = currentQuestionObj ? (currentQuestionObj.options || []) : [];
+
+    const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder);
     newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value');
 
     this.setState(newState);
@@ -297,7 +291,10 @@ class BasicTable extends React.Component {
       if (i === startIndex && !includeSelf) continue;
       newState[`selected${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}`] = null;
       newState[`filtered${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}s`] = [];
-      if (currentLevel === 'grade') newState.grades = this._applyFilter(this.state._masterGradesList, this.state.gradeSearchTerm, 'name');
+      if (currentLevel === 'grade') {
+         const gradesList = this._sortListByOrderArray(this.state._masterGradesList, this.state.school?.gradeOrder);
+         newState.grades = this._applyFilter(gradesList, this.state.gradeSearchTerm, 'name');
+      }
     }
     return newState;
   };
@@ -305,32 +302,35 @@ class BasicTable extends React.Component {
   handleGradeSelect = (grade) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300); // Scroll main container
+      this.scrollBy(300);
     });
   }
   handleSubjectSelect = (subject) => {
     this.fetchAndSetResponses(subject.id);
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300); // Scroll main container
+      this.scrollBy(300);
     });
   }
   handleTopicSelect = (topic) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300); // Use the main scroll container
+      this.scrollBy(300);
     });
   }
   handleSubtopicSelect = (subtopic) => {
     this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => {
       this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300); // Use the main scroll container
+      this.scrollBy(300);
     });
   }
   handleQuestionSelect = (question) => {
-    this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => {
-      this.refreshCurrentSelectionsAndFilters();
-      this.scrollBy(300); // Use the main scroll container
+    this.setState(prevState => ({ 
+        ...this.clearSelectionsAndDataFromLevel('option', true),
+        selectedQuestion: question.id,
+    }), () => {
+        this.refreshCurrentSelectionsAndFilters();
+        this.scrollBy(400);
     });
   }
   fetchAndSetResponses = (subjectId) => {
@@ -368,17 +368,10 @@ class BasicTable extends React.Component {
   handleCreate = async (entity, data, parentId, parentKey) => {
     const payload = parentId ? { ...data, [parentKey]: parentId } : data;
     this.onEntityCreated(entity.slice(0, -1));
-    console.log({ payload });
     return Data[entity].create(payload);
   }
   handleUpdate = (entity, data) => async () => {
-    console.log(`Updating ${entity}:`, data);
-    const startTime = performance.now();
-    console.log(`Started updating ${entity} at ${new Date(startTime).toLocaleString()}`);
     await Data[entity].update(data);
-    const endTime = performance.now();
-    console.log(`Finished updating ${entity} at ${new Date(endTime).toLocaleString()}`);
-    console.log(`Update of ${entity} took ${endTime - startTime}ms`);
     this.onEntityUpdated(entity.slice(0, -1));
   }
   handleDelete = (entity, item, parentId, parentKey) => async () => {
@@ -389,76 +382,84 @@ class BasicTable extends React.Component {
 
   scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
   
-  // --- MODIFIED: New reorder handler ---
   _handleReorder = async (entityType, reorderedList) => {
     const {
-        _masterGradesList,
+        _masterGradesList, school,
         selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion
     } = this.state;
 
     const findItem = (id, list) => list.find(item => item.id === id);
+    const revertUI = () => this.refreshCurrentSelectionsAndFilters();
 
     try {
+        const ids = reorderedList.map(item => item.id);
+        
         switch (entityType) {
-            case 'grades': {
-                // Reordering the top-level list is a special case.
-                // We assume the data service has a specific method for this.
-                await Data.grades.reorder(reorderedList);
-                toastr.info(`Order updated for grades.`);
+            case 'grades':
+                this.setState({ grades: reorderedList });
+                if (!school) throw new Error("School not loaded, cannot reorder grades.");
+                const updatedSchool = { id: school.id, gradeOrder: ids };
+                this.handleUpdate('schools', updatedSchool)();
                 break;
-            }
-            case 'subjects': {
-                const parent = findItem(selectedGrade, _masterGradesList);
-                if (!parent) throw new Error("Parent grade not found for reordering subjects.");
-                const updatedParent = { ...parent, subjects: reorderedList };
-                this.handleUpdate('grades', updatedParent)();
+
+            case 'subjects':
+                this.setState({ filteredSubjects: reorderedList });
+                const parentGrade = findItem(selectedGrade, _masterGradesList);
+                if (!parentGrade) throw new Error("Parent grade not found.");
+                const updatedGrade = { id: parentGrade.id, subjectsOrder: ids };
+                this.handleUpdate('grades', updatedGrade)();
                 break;
-            }
-            case 'topics': {
-                const grade = findItem(selectedGrade, _masterGradesList);
-                const parent = findItem(selectedSubject, grade?.subjects || []);
-                if (!parent) throw new Error("Parent subject not found for reordering topics.");
-                const updatedParent = { ...parent, topics: reorderedList };
-                this.handleUpdate('subjects', { ...updatedParent, grade: selectedGrade })();
+
+            case 'topics':
+                this.setState({ filteredTopics: reorderedList });
+                const gradeForTopic = findItem(selectedGrade, _masterGradesList);
+                const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []);
+                if (!parentSubject) throw new Error("Parent subject not found.");
+                const updatedSubject = { id: parentSubject.id, topicOrder: ids };
+                this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })();
                 break;
-            }
-            case 'subtopics': {
-                const grade = findItem(selectedGrade, _masterGradesList);
-                const subject = findItem(selectedSubject, grade?.subjects || []);
-                const parent = findItem(selectedTopic, subject?.topics || []);
-                if (!parent) throw new Error("Parent topic not found for reordering subtopics.");
-                const updatedParent = { ...parent, subtopics: reorderedList };
-                this.handleUpdate('topics', { ...updatedParent, subject: selectedSubject })();
+
+            case 'subtopics':
+                this.setState({ filteredSubtopics: reorderedList });
+                const gradeForSubtopic = findItem(selectedGrade, _masterGradesList);
+                const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []);
+                const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []);
+                if (!parentTopic) throw new Error("Parent topic not found.");
+                const updatedTopic = { id: parentTopic.id, subtopicOrder: ids };
+                this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })();
                 break;
-            }
-            case 'questions': {
-                const grade = findItem(selectedGrade, _masterGradesList);
-                const subject = findItem(selectedSubject, grade?.subjects || []);
-                const topic = findItem(selectedTopic, subject?.topics || []);
-                const parent = findItem(selectedSubtopic, topic?.subtopics || []);
-                if (!parent) throw new Error("Parent subtopic not found for reordering questions.");
-                const updatedParent = { ...parent, questions: reorderedList };
-                this.handleUpdate('subtopics', { ...updatedParent, topic: selectedTopic })();
+
+            case 'questions':
+                this.setState({ filteredQuestions: reorderedList });
+                const gradeForQuestion = findItem(selectedGrade, _masterGradesList);
+                const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []);
+                const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []);
+                const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []);
+                if (!parentSubtopic) throw new Error("Parent subtopic not found.");
+                const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids };
+                this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })();
                 break;
-            }
-            case 'options': {
-                const grade = findItem(selectedGrade, _masterGradesList);
-                const subject = findItem(selectedSubject, grade?.subjects || []);
-                const topic = findItem(selectedTopic, subject?.topics || []);
-                const subtopic = findItem(selectedSubtopic, topic?.subtopics || []);
-                const parent = findItem(selectedQuestion, subtopic?.questions || []);
-                if (!parent) throw new Error("Parent question not found for reordering options.");
-                const updatedParent = { ...parent, options: reorderedList };
-                this.handleUpdate('questions', { ...updatedParent, subtopic: selectedSubtopic })();
+
+            case 'options':
+                this.setState({ filteredOptions: reorderedList });
+                const gradeForOption = findItem(selectedGrade, _masterGradesList);
+                const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []);
+                const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []);
+                const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []);
+                const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []);
+                if (!parentQuestion) throw new Error("Parent question not found.");
+                const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids };
+                this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })();
                 break;
-            }
+
             default:
                 console.warn(`Reorder handler not implemented for: ${entityType}`);
                 return;
         }
     } catch (error) {
         console.error(`Error during reorder of ${entityType}:`, error);
-        toastr.error(`Failed to update order for ${entityType}.`);
+        toastr.error(`Failed to update order for ${entityType}. Reverting.`);
+        revertUI();
     }
   };
 
@@ -477,17 +478,13 @@ class BasicTable extends React.Component {
     } = this.state;
 
     const selectedGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
-    const selectedSubjectObj = selectedGradeObj && selectedSubject ? (selectedGradeObj.subjects || []).find(s => s.id === selectedSubject) : null;
-    const selectedTopicObj = selectedSubjectObj && selectedTopic ? (selectedSubjectObj.topics || []).find(t => t.id === selectedTopic) : null;
-    const selectedSubtopicObj = selectedTopicObj && selectedSubtopic ? (selectedTopicObj.subtopics || []).find(st => st.id === selectedSubtopic) : null;
-
+    
     const selectedStudentResponses = selectedStudentId
       ? this.state.subjectResponses.filter(r => r.studentId === selectedStudentId && r.submissionDate.startsWith(responsesStudyDate))
       : [];
 
     const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
 
-    // --- MODIFIED: Instead of changing the text, get the IDs of correct options ---
     const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
     
     return (
@@ -566,14 +563,26 @@ class BasicTable extends React.Component {
                             {/* Question Column */}
                             {selectedSubtopic && 
                             <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12">
-                              <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}
+                              <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} />
+                              <Table 
+                                listId={`questions-list-${selectedSubtopic}`} 
+                                headers={[{ label: "Name", key: "name" }]} 
+                                data={filteredQuestions} 
+                                options={tableOptions} 
+                                selectedItemId={selectedQuestion} 
+                                show={this.handleQuestionSelect} // --- FIX 1: Changed from handleQuestionEditor to handleQuestionSelect
+                                edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} 
+                                delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} 
+                                onOrderChange={(list) => this._handleReorder('questions', list)} 
+                              />
+                            </div></div>}
                             
                             {/* Option Column */}
                             {selectedQuestion &&
                              <div className="col-md-3 col-lg-3 col-sm-12 col-xl-3 col-xs-12">
                               <div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} />
-                            {/* --- MODIFIED: Pass the correctOptionIds to the Table component --- */}
-                            <Table 
+                              {/* --- FIX 2: Corrected the entire Table component to show Options, not Questions --- */}
+                              <Table 
                                 listId={`options-list-${selectedQuestion}`} 
                                 headers={[{ label: "Answer", key: "value" }]} 
                                 data={filteredOptions} 
@@ -581,8 +590,9 @@ class BasicTable extends React.Component {
                                 edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} 
                                 delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} 
                                 onOrderChange={(list) => this._handleReorder('options', list)} 
-                                correctItemIds={correctOptionIds} // <-- New Prop
-                            /></div></div>}
+                                correctItemIds={correctOptionIds}
+                              />
+                            </div></div>}
                           </div>
                         </div>
                         {/* Responses Tab Pane */}
@@ -629,24 +639,24 @@ class BasicTable extends React.Component {
         </div>
 
         {/* --- All Modals remain unchanged --- */}
-        {grades && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', data)()} />}
+        {this.state.school && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', { ...data, school: this.state.school.id })()} />}
         {gradeToEdit && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', data)()} />}
         {gradeToDelete && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={() => this.handleDelete('grades', gradeToDelete)()} />}
         {selectedGrade && <AddSubjectModal ref={this.addSubjectModalRef} save={(data) => this.handleCreate('subjects', data, selectedGrade, 'grade')} />}
         {subjectToEdit && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', {...data, grade: selectedGrade})()} />}
         {subjectToDelete && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={() => this.handleDelete('subjects', subjectToDelete, selectedGrade, 'gradeId')()} />}
         {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
-        {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => console.log(this.handleUpdate('topics', {...data, subject: selectedSubject})())} />}
-        {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subjectId')()} />}
+        {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => this.handleUpdate('topics', {...data, subject: selectedSubject})()} />}
+        {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subject')()} />}
         {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
-        {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => console.log(this.handleUpdate('subtopics', {...data, topic: selectedTopic})())} />}
-        {subtopicToDelete && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={() => this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topicId')()} />}
+        {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => this.handleUpdate('subtopics', {...data, topic: selectedTopic})()} />}
+        {subtopicToDelete && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={() => this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topic')()} />}
         {selectedSubtopic && <AddQuestionModal ref={this.addQuestionModalRef} save={(data) => this.handleCreate('questions', data, selectedSubtopic, 'subtopic')} subtopic={selectedSubtopic} filteredOptions={filteredOptions} />}
-        {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} subtopic={selectedSubtopic} edit={(data) => console.log(this.handleUpdate('questions', {...data, subtopic: selectedSubtopic})())} />}
-        {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopicId')()} />}
-        {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data)} question={selectedQuestion} />)}
-        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => console.log(this.handleUpdate('options', {...data, question: selectedQuestion})())} question={selectedQuestion}/>}
-        {optionToDelete && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'questionId')()} />}
+        {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} subtopic={selectedSubtopic} edit={(data) => this.handleUpdate('questions', {...data, subtopic: selectedSubtopic})()} />}
+        {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopic')()} />}
+        {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} question={selectedQuestion} save={(data) => this.handleCreate('options', data, selectedQuestion, 'question')} />)}
+        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => this.handleUpdate('options', {...data, question: selectedQuestion})()} question={selectedQuestion}/>}
+        {optionToDelete && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'question')()} />}
       </div>
     );
   }

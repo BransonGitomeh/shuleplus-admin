@@ -102,9 +102,11 @@ var Data = (function () {
         address,
         logo
         themeColor
+        gradeOrder
         grades {
           id
           name
+          subjectsOrder
           subjects {
             id
             name
@@ -112,9 +114,11 @@ var Data = (function () {
             topics {
               id
               name
+              subtopicOrder
               subtopics {
                 id
                 name
+                questionsOrder
                 questions {
                   id
                   name
@@ -126,6 +130,7 @@ var Data = (function () {
                     id
                     value
                   }
+                  optionsOrder
                   options {
                     id
                     value
@@ -1197,9 +1202,12 @@ var Data = (function () {
               resolve();
             } catch (error) { console.error("Error updating question:", error); reject(error); }
           }),
-        delete: data => // data = { id (questionId), subtopicId (parent subtopic ID) }
+        delete: data => // data = { id, subtopic (parent ID / subtopicId) }
           new Promise(async (resolve, reject) => {
             try {
+              const { id: questionId, subtopic: parentSubtopicId, subtopicId: altParentSubtopicId } = data;
+              const actualParentSubtopicId = parentSubtopicId || altParentSubtopicId;
+
               await mutate( `
         mutation ($Iquestion: Uquestion!) {
           questions {
@@ -1207,23 +1215,34 @@ var Data = (function () {
               id
             }
           }
-        }  ` , { Iquestion: { id: data.id } });
+        }  ` , { Iquestion: { id: questionId } });
+
+              // --- FIX STARTS HERE ---
               let found = false;
               outer: for (const grade of grades) {
                 for (const subject of grade.subjects || []) {
                   for (const topic of subject.topics || []) {
-                    const parentSubtopic = (topic.subtopics || []).find(st => st.id === data.subtopicId);
+                    const parentSubtopic = (topic.subtopics || []).find(st => st.id === actualParentSubtopicId);
                     if (parentSubtopic && parentSubtopic.questions) {
-                      const oldLen = parentSubtopic.questions.length;
-                      parentSubtopic.questions = parentSubtopic.questions.filter(q => q.id !== data.id);
-                      if (parentSubtopic.questions.length < oldLen) {found = true; break outer;}
+                      const idx = parentSubtopic.questions.findIndex(q => q.id === questionId);
+                      if (idx > -1) { 
+                          parentSubtopic.questions.splice(idx, 1);
+                          found = true; 
+                          break outer;
+                      }
                     }
                   }
                 }
               }
               if (!found) throw new Error(`Parent/Question not found for delete.`);
-              questions = questions.filter(q => q.id !== data.id); subs.questions({ questions });
+              
+              const flatIdx = questions.findIndex(q => q.id === questionId);
+              if (flatIdx > -1) questions.splice(flatIdx, 1);
+              
+              subs.questions({ questions: [...questions] });
               subs.grades({ grades: [...grades] });
+              // --- FIX ENDS HERE ---
+
               resolve();
             } catch (error) { console.error("Error deleting question:", error); reject(error); }
           }),
@@ -1305,7 +1324,7 @@ var Data = (function () {
               const flatIdx = options.findIndex(o => o.id === optionId);
               if (flatIdx > -1) options[flatIdx] = { ...options[flatIdx], ...data };
               
-              subs.options({ options: [...options] });
+              // subs.options({ options: [...options] });
               subs.grades({ grades: [...grades] });
               // --- FIX ENDS HERE ---
 
@@ -1324,23 +1343,34 @@ var Data = (function () {
           }
         }  ` , { Ioption: { id: data.id } });
               let found = false;
+              console.log(`Deleting option ${data.id} from question ${data.question}`);
               outer: for (const grade of grades) {
+                console.log(`Deleting option ${data.id} from question ${data.question} in grade ${grade.id}`);
                 for (const subject of grade.subjects || []) {
+                  console.log(`Deleting option ${data.id} from question ${data.question} in subject ${subject.id}`);
                   for (const topic of subject.topics || []) {
+                    console.log(`Deleting option ${data.id} from question ${data.question} in topic ${topic.id}`);
                     for (const subtopic of topic.subtopics || []) {
-                      const parentQuestion = (subtopic.questions || []).find(q => q.id === data.questionId);
+                      console.log(`Deleting option ${data.id} from question ${data.question} in subtopic ${subtopic.id}`);
+                      const parentQuestion = (subtopic.questions || []).find(q => q.id === data.question);
+                      
                       if (parentQuestion && parentQuestion.options) {
+                        console.log(`Parent question ${data.question} found:`, parentQuestion);
                         const oldLen = parentQuestion.options.length;
+                        console.log(`Deleting option ${data.id} from question ${data.question} in subtopic ${subtopic.id}`);
                         parentQuestion.options = parentQuestion.options.filter(o => o.id !== data.id);
-                        if (parentQuestion.options.length < oldLen) {found = true; break outer;}
+                        found = true; 
+                        break outer;
                       }
                     }
                   }
                 }
               }
               if (!found) throw new Error(`Parent/Option not found for delete.`);
-              options = options.filter(o => o.id !== data.id); subs.options({ options });
+              options = options.filter(o => o.id !== data.id); 
               subs.grades({ grades: [...grades] });
+              // subs.questions({ questions: [...questions] });
+              // subs.options({ options: [...options] });
               resolve();
             } catch (error) { console.error("Error deleting option:", error); reject(error); }
           }),
@@ -1458,6 +1488,9 @@ var Data = (function () {
         }),
       list() {
         return schools;
+      },
+      getSelected() {
+        return school;
       },
       update: data =>
         new Promise(async (resolve, reject) => {
