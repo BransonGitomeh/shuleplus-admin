@@ -2287,7 +2287,7 @@ var Data = (function () {
           )[0];
 
           schedule.bus = buses.filter(bus => bus.id === schedule.bus)[0];
-          schedule.bus_make = schedule.bus.make
+          schedule.bus_make = schedule?.bus?.make
 
 
           schedules = [...schedules, schedule];

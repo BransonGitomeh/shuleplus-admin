@@ -321,6 +321,22 @@ class Modal extends React.Component {
     return html;
   }
 
+  getCharCount() {
+    const text = this.editorRef.current?.editor?.getEditorState().getCurrentContent().getPlainText();
+    return text.length;
+  }
+
+  getCharCountClass() {
+    const charCount = this.getCharCount();
+    if (charCount > 700) {
+      return 'text-danger';
+    } else if (charCount > 650) {
+      return 'text-warning';
+    } else {
+      return 'text-muted';
+    }
+  }
+
   render() {
     const { editorState, question = {}, videoUrlsInput, generationPrompt, isGenerating, loading, isCompressingImages } = this.state;
     const livePreviewHTML = this.generateLivePreviewHtml();
@@ -395,7 +411,12 @@ class Modal extends React.Component {
                     <div className="form-group mb-4">
                       <label className="font-weight-bold">Content Description <span className="text-danger">*</span></label>
                       <Editor ref={this.editorRef} editorState={editorState} onEditorStateChange={this.onEditorStateChange} wrapperClassName="rdw-editor-wrapper" editorClassName="rdw-editor-main" toolbarClassName="rdw-editor-toolbar" toolbar={{ options: ['inline', 'blockType', 'fontSize', 'list', 'textAlign', 'link', 'embedded', 'emoji', 'image', 'remove', 'history'], image: { previewImage: true, alt: { present: true, mandatory: false }, inputAccept: 'image/gif,image/jpeg,image/jpg,image/png,image/svg', }, embedded: { defaultSize: { height: 'auto', width: 'auto' }, }, }} readOnly={isSaveDisabled} />
+                      <div className="mt-1 text-right">
+                        <span className={this.getCharCountClass()}>{this.getCharCount()}</span>
+                      </div>
                     </div>
+
+                    
 
                     <div className="form-group mb-4">
                       <label htmlFor="contentTypeSelect" className="font-weight-bold">Content Type <span className="text-danger">*</span></label>
