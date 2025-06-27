@@ -323,7 +323,7 @@ class Modal extends React.Component {
 
   getCharCount() {
     const text = this.editorRef.current?.editor?.getEditorState().getCurrentContent().getPlainText();
-    return text.length;
+    return text?.length;
   }
 
   getCharCountClass() {
@@ -411,9 +411,9 @@ class Modal extends React.Component {
                     <div className="form-group mb-4">
                       <label className="font-weight-bold">Content Description <span className="text-danger">*</span></label>
                       <Editor ref={this.editorRef} editorState={editorState} onEditorStateChange={this.onEditorStateChange} wrapperClassName="rdw-editor-wrapper" editorClassName="rdw-editor-main" toolbarClassName="rdw-editor-toolbar" toolbar={{ options: ['inline', 'blockType', 'fontSize', 'list', 'textAlign', 'link', 'embedded', 'emoji', 'image', 'remove', 'history'], image: { previewImage: true, alt: { present: true, mandatory: false }, inputAccept: 'image/gif,image/jpeg,image/jpg,image/png,image/svg', }, embedded: { defaultSize: { height: 'auto', width: 'auto' }, }, }} readOnly={isSaveDisabled} />
-                      <div className="mt-1 text-right">
+                      {/* <div className="mt-1 text-right">
                         <span className={this.getCharCountClass()}>{this.getCharCount()}</span>
-                      </div>
+                      </div> */}
                     </div>
 
                     
