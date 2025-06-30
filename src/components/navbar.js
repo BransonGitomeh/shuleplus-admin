@@ -587,7 +587,7 @@ class Navbar extends React.Component {
         </div>
         
         {/* PROFILE PANEL (Offcanvas) - Unchanged */}
-        <div id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel" style={{ margin: '15px', borderRadius: '10px' }}>
+        <div id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel" style={{ margin: '15px', maxHeight: '30vh', marginTop: '110px', borderRadius: '10px' }}>
             {/* Content remains the same as it's controlled by Metronic JS */}
             <div className="kt-offcanvas-panel__head">
                 <h3 className="kt-offcanvas-panel__title">Profile</h3>
@@ -595,7 +595,7 @@ class Navbar extends React.Component {
             </div>
             <div className="kt-offcanvas-panel__body kt-scroll">
                 <div className="kt-user-card-v3 kt-margin-b-30">
-                    <div className="kt-user-card-v3__avatar"><img alt="Pic" src={storedUser?.avatar || "https://via.placeholder.com/100x100.png?text=U"} /></div>
+                    {/* <div className="kt-user-card-v3__avatar"><img alt="Pic" src={storedUser?.avatar || "https://via.placeholder.com/100x100.png?text=U"} /></div> */}
                     <div className="kt-user-card-v3__detalis">
                         <a href="#!" onClick={e => e.preventDefault()} className="kt-user-card-v3__name">{storedUser?.names || user}</a>
                         <div className="kt-user-card-v3__desc">{storedUser?.userType ? storedUser.userType.charAt(0).toUpperCase() + storedUser.userType.slice(1) : ''}</div>
