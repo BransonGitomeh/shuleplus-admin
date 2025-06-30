@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 // --- Item Type for D&D ---
 const RichListItemType = 'GENERIC_RICH_LIST_ITEM';
 
-// --- STYLES (Your existing styles are here) ---
+// --- STYLES (Your existing styles with additions for the icon) ---
 const genericRichListStyles = `
   .generic-rich-list-wrapper {
     background-color: #fff;
@@ -51,7 +51,6 @@ const genericRichListStyles = `
     background-color: #eef2ff !important; /* Indigo 100 */
   }
 
-  /* --- NEW: Styling for correct answer items --- */
   .draggable-generic-list-item.correct-answer {
     border-color: #34d399 !important; /* Green 400 */
     background-color: #f0fdf4 !important; /* Green 50 */
@@ -75,6 +74,30 @@ const genericRichListStyles = `
   .list-item-drag-handle svg { width: 16px; height: 16px; display: block; }
 
   .list-item-main-content { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+  /* --- NEW: Wrapper for the icon and primary text --- */
+  .list-item-content-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* --- NEW: Styles for the icon container --- */
+  .list-item-icon-display {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background-color: #f1f5f9; /* slate-100 */
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569; /* slate-600 */
+  }
+  .list-item-icon-display .mdi {
+      font-size: 20px;
+  }
+
   .list-item-primary-text { font-size: 0.9rem; color: #1e293b; font-weight: 500; line-height: 1.4; word-break: break-word; }
   .list-item-primary-text img { max-width: 100%; height: auto; border-radius: 3px; margin: 4px 0; }
   .list-item-primary-text h1, .list-item-primary-text h2, .list-item-primary-text h3, 
@@ -94,17 +117,8 @@ const genericRichListStyles = `
   .list-item-action-btn:hover { background-color: #f1f5f9; color: #6366f1; }
   .list-item-action-btn svg { width: 14px; height: 14px; }
   
-  /* --- NEW: Styling for the green checkmark icon --- */
-  .list-item-correct-indicator {
-    color: #10b981; /* Green 600 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .list-item-correct-indicator svg {
-    width: 20px;
-    height: 20px;
-  }
+  .list-item-correct-indicator { color: #10b981; display: flex; align-items: center; justify-content: center; }
+  .list-item-correct-indicator svg { width: 20px; height: 20px; }
 
   .list-view-no-items-message { text-align: center; padding: 20px 15px; color: #64748b; font-style: italic; font-size: 0.85rem; }
 `;
@@ -119,13 +133,14 @@ const DraggableListItem = ({
   onEditItem, 
   onDeleteItem, 
   isSelected,
-  isCorrect, // <-- NEW PROP
+  isCorrect,
   isSelectable,
   primaryDisplayKey,
   options,
 }) => {
   const ref = useRef(null);
-  const { id, name, videos, images, attachments } = item; 
+  // --- MODIFICATION: Destructure 'icon' from the item ---
+  const { id, name, videos, images, attachments, icon } = item; 
 
   const [{ handlerId, isOverCurrent, currentOffset }, drop] = useDrop({ 
     accept: RichListItemType,
@@ -177,7 +192,7 @@ const DraggableListItem = ({
   let itemClasses = "draggable-generic-list-item";
   if (isSelectable && options?.linkable !== false) itemClasses += " selectable";
   if (isSelected) itemClasses += " selected";
-  if (isCorrect) itemClasses += " correct-answer"; // <-- NEW: Apply class if correct
+  if (isCorrect) itemClasses += " correct-answer";
   if (isDragging && draggedItemData?.id === id) itemClasses += " dragging-item";
 
   if (isOverCurrent && currentOffset && draggedItemData && draggedItemData.id !== id && (!draggedItemData.listId || draggedItemData.listId === listId) ) { 
@@ -206,11 +221,22 @@ const DraggableListItem = ({
       )}
 
       <div className="list-item-main-content">
-        {isHTML ? (
-            <div className="list-item-primary-text" dangerouslySetInnerHTML={{ __html: mainTextContent }} />
-        ) : (
-            <div className="list-item-primary-text">{mainTextContent}</div>
-        )}
+        {/* --- MODIFICATION: New wrapper for icon and text --- */}
+        <div className="list-item-content-header">
+            {/* --- Render the icon if it exists --- */}
+            {icon && (
+                <div className="list-item-icon-display" title={`Icon: ${icon}`}>
+                    <i className={`mdi mdi-${icon}`}></i>
+                </div>
+            )}
+            
+            {/* Primary text content */}
+            {isHTML ? (
+                <div className="list-item-primary-text" dangerouslySetInnerHTML={{ __html: mainTextContent }} />
+            ) : (
+                <div className="list-item-primary-text">{mainTextContent}</div>
+            )}
+        </div>
         
         {(safeVideos.length > 0 || safeImages.length > 0 || safeAttachments.length > 0) && (
           <div className="list-item-media-previews">
@@ -221,7 +247,6 @@ const DraggableListItem = ({
         )}
       </div>
       
-      {/* --- MODIFIED: Actions panel now includes the correct indicator --- */}
       <div className="list-item-actions-panel">
             {isCorrect && (
               <div className="list-item-correct-indicator" title="Correct Answer">
@@ -250,13 +275,13 @@ DraggableListItem.propTypes = {
   onEditItem: PropTypes.func,
   onDeleteItem: PropTypes.func,
   isSelected: PropTypes.bool,
-  isCorrect: PropTypes.bool, // <-- NEW
+  isCorrect: PropTypes.bool,
   isSelectable: PropTypes.bool,
   primaryDisplayKey: PropTypes.string,
   options: PropTypes.object,
 };
 
-// --- "Table" Component (New Rich List View) ---
+// --- "Table" Component (No changes needed here, only in DraggableListItem) ---
 const Table = ({
   headers,
   data = [],
@@ -267,7 +292,7 @@ const Table = ({
   listId = 'single-rich-list',
   onOrderChange,
   selectedItemId,
-  correctItemIds = [], // <-- NEW PROP with default
+  correctItemIds = [],
   className = "",
   noItemsText = "No items to display.",
   isItemSelectable = () => true,
@@ -313,7 +338,7 @@ const Table = ({
                   onEditItem={options.editable !== false ? edit : undefined}
                   onDeleteItem={options.deleteable !== false ? deleteItemProp : undefined}
                   isSelected={selectedItemId === item.id}
-                  isCorrect={correctItemIds.includes(item.id)} // <-- Pass down isCorrect
+                  isCorrect={correctItemIds.includes(item.id)}
                   isSelectable={options.linkable !== false && isItemSelectable(item)}
                   primaryDisplayKey={primaryDisplayKey}
                   options={options}
@@ -339,7 +364,7 @@ Table.propTypes = {
   listId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   onOrderChange: PropTypes.func,
   selectedItemId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  correctItemIds: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])), // <-- NEW
+  correctItemIds: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
   className: PropTypes.string,
   noItemsText: PropTypes.string,
   isItemSelectable: PropTypes.func,

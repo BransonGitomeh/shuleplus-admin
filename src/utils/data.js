@@ -114,6 +114,7 @@ var Data = (function () {
             topics {
               id
               name
+              icon
               subtopicOrder
               subtopics {
                 id

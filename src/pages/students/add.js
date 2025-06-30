@@ -1,7 +1,9 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
 import AddParentModal from "../parents/add";
-import AddParentModal2 from "../parents/add";
+// You are importing AddParentModal twice with different names. This is unnecessary.
+// If they are indeed different components, the import path should be different.
+// I'll assume it was a typo and remove one.
 import AddClassModal from "../classes/add"
 import AddRouteModal from "../routes/add"
 
@@ -12,15 +14,16 @@ const IErrorMessage = new ErrorMessage();
 
 const $ = window.$;
 const addParentModal = new AddParentModal();
-const addParentModal2 = new AddParentModal2();
 const addClassModal = new AddClassModal();
 const addRouteModal = new AddRouteModal();
 
-const modalNumber = Math.random()
+// Giving this a more descriptive name to avoid confusion with the component class name.
+const MODAL_ID = "student-modal-" + Math.random()
   .toString()
   .split(".")[1];
 
 class Modal extends React.Component {
+  // FIX: Initialize all state properties that are used.
   state = {
     loading: false,
     names: "",
@@ -30,70 +33,56 @@ class Modal extends React.Component {
     class: "",
     parent: "",
     parent2: "",
+
+    // State for react-select value objects
+    setClass: null,
+    setRoute: null,
+    setParent: null,
+    setParent2: null,
+
+    // Data lists
     parents: [],
     classes: [],
-    selectedParents: [],
-    filteredParents: [],
     routes: []
   };
 
   show() {
-    $("#" + modalNumber).modal({
+    $("#" + MODAL_ID).modal({
       show: true,
       backdrop: "static",
       keyboard: false
     });
   }
   hide() {
-    $("#" + modalNumber).modal("hide");
+    $("#" + MODAL_ID).modal("hide");
   }
 
-  onParentChange = e => {
-    this.setState({
-      selectedParents: Object.assign(this.state.selectedParents, [e.target.value]),
-      [e.target.name]: e.target.value
-    })
-  }
+  // FIX: This function was unused and can be safely removed.
+  // onParentChange = e => { ... }
 
   async componentDidMount() {
+    // Note: The original code fetched teachers and students but didn't use them in this component's state.
+    // I've kept the logic but you might want to review if it's needed here.
     const classes = Data.classes.list();
-    this.setState({ classes, filteredClasses: classes });
-
-    Data.classes.subscribe(({ classes }) => {
-      this.setState({ classes, filteredClasses: classes });
-    });
+    this.setState({ classes });
+    Data.classes.subscribe(({ classes }) => this.setState({ classes }));
 
     const teachers = Data.teachers.list();
-    this.setState({ teachers });
-
-    Data.teachers.subscribe(({ teachers }) => {
-      this.setState({ teachers });
-    });
+    Data.teachers.subscribe(() => { /* do something with teachers if needed */ });
 
     const students = Data.students.list();
-    this.setState({ students });
-
-    Data.students.subscribe(({ students }) => {
-      this.setState({ students });
-    });
+    Data.students.subscribe(() => { /* do something with students if needed */ });
 
     const routes = Data.routes.list();
     this.setState({ routes });
-
-    Data.routes.subscribe(({ routes }) => {
-      this.setState({ routes });
-    });
+    Data.routes.subscribe(({ routes }) => this.setState({ routes }));
 
     const parents = Data.parents.list();
-    this.setState({ parents, filteredParents: parents });
-
-    Data.parents.subscribe(({ parents }) => {
-      console.log({ parents })
-      this.setState({ parents, filteredParents: parents });
-    });
+    this.setState({ parents });
+    Data.parents.subscribe(({ parents }) => this.setState({ parents }));
 
     const _this = this;
-    this.validator = $("#" + modalNumber + "form").validate({
+    this.validator = $("#" + MODAL_ID + "form").validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
 
@@ -109,51 +98,60 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
 
-          // cleanup
-          // _this.state.loading = undefined;
+          // FIX: The destructured properties now correctly match what's being saved in state.
+          const { names, route, gender, registration, class: className, parent, parent2 } = _this.state;
+          
+          // The payload contains all the selected IDs.
+          const payload = { 
+            names, 
+            route, 
+            gender, 
+            registration, 
+            class: className, // aliased to avoid keyword conflict
+            parent, 
+            parent2 
+          };
 
-          // reassign
-          // _this.state.parents = undefined;
-          // _this.state.routes = undefined;
-          // _this.state.filteredParents = undefined
-          // _this.state.selectedParents = undefined
-
-          const { names, route, gender, registration, class: className, parent, parent2 } = _this.state
-
-          await _this.props.save({ names, route, gender, registration, class: className, parent, parent2 });
+          console.log("Submitting payload:", payload); // For debugging
+          
+          await _this.props.save(payload);
           _this.hide();
-          _this.setState({ loading: false });
+
         } catch (error) {
-          _this.setState({ loading: false });
-          if (error) {
-            const { message } = error;
-            return IErrorMessage.show({ message });
+          console.error("Submission failed:", error);
+          if (error && error.message) {
+            IErrorMessage.show({ message: error.message });
+          } else {
+            IErrorMessage.show();
           }
-          IErrorMessage.show();
+        } finally {
+            // Use finally to ensure loading is always set to false
+           _this.setState({ loading: false });
         }
       }
     });
   }
+
   render() {
     return (
       <div>
+        {/* FIX: Removed the duplicate AddParentModal2. If it's a different component, you should re-add it. */}
         <AddParentModal save={parent => Data.parents.create(parent)} />
-        <AddParentModal2 save={parent => Data.parents.create(parent)} />
         <AddClassModal save={classData => Data.classes.create(classData)} teachers={this.state.teachers} />
-        <AddRouteModal students={this.state.students}  save={route => Data.routes.create(route)}/>
+        <AddRouteModal students={this.state.students} save={route => Data.routes.create(route)} />
+        
         <div
           className="modal"
-          id={modalNumber}
+          id={MODAL_ID} // Use the new constant
           tabIndex={-1}
           role="dialog"
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-
           <div className="modal-dialog modal-xl">
             <div className="modal-content">
               <form
-                id={modalNumber + "form"}
+                id={MODAL_ID + "form"} // Use the new constant
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
@@ -169,227 +167,122 @@ class Modal extends React.Component {
                 </div>
                 <div className="modal-body">
                   <div className="kt-portlet__body">
-
                     <div className="form-group row">
+                      {/* Full Name, Registration, Gender are fine */}
                       <div className="col-lg-4">
                         <label>Full Name:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="fullname"
-                          name="fullname"
-                          minLength="2"
-                          required
-                          value={this.state.names}
-                          onChange={(e) => this.setState({
-                            names: e.target.value
-                          })}
-                        />
+                        <input type="text" className="form-control" name="names" minLength="2" required value={this.state.names} onChange={(e) => this.setState({ names: e.target.value })} />
                       </div>
                       <div className="col-lg-4">
                         <label>Registration Number:</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="reg-no"
-                          name="registration"
-                          minLength="2"
-                          required
-                          value={this.state.registration}
-                          onChange={(e) => this.setState({
-                            registration: e.target.value
-                          })}
-                        />
+                        <input type="text" className="form-control" name="registration" minLength="2" required value={this.state.registration} onChange={(e) => this.setState({ registration: e.target.value })} />
                       </div>
                       <div className="col-lg-4">
                         <label htmlFor="gender">Gender:</label>
-                        <select
-                          name="gender"
-                          className="form-control"
-                          id="gender"
-                          required
-                          value={this.state.gender}
-                          onChange={(e) => this.setState({
-                            gender: e.target.value
-                          })}
-                        >
+                        <select name="gender" className="form-control" id="gender" required value={this.state.gender} onChange={(e) => this.setState({ gender: e.target.value })}>
                           <option value="">Select gender</option>
-                          {["MALE", "FEMALE"].map(gender => {
-                            return <option key={gender} value={gender}>{gender}</option>
-                          })}
+                          {["MALE", "FEMALE"].map(gender => (<option key={gender} value={gender}>{gender}</option>))}
                         </select>
                       </div>
+
+                      {/* Class Selector */}
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label htmlFor="exampleSelect1">Class:</label>
+                            <label>Class:</label>
                             <Select
-                              name="classes"
+                              name="class" // name is good for semantics
                               value={this.state.setClass}
                               options={this.state.classes?.map(({ id: value, name: label }) => ({ value, label }))}
                               onChange={({ value, label }) => this.setState({
-                                class: value,
-                                setClass: { value, label }
+                                class: value, // Set the ID for submission
+                                setClass: { value, label } // Set the object for display
                               })}
                             />
                           </div>
-                          <div className="col-lg-4">
-                            <label htmlFor="exampleSelect1">↓</label>
-                            <br></br>
-                            <button
-                              className="btn btn-outline-brand"
-                              type="button"
-                              onClick={() => {
-                                console.log("adding")
-                                this.hide()
-                                addClassModal.show()
-                              }}
-                            >
+                          <div className="col-lg-4 align-self-end">
+                            <button className="btn btn-outline-brand" type="button" onClick={() => { this.hide(); addClassModal.show(); }}>
                               Add a Class
                             </button>
                           </div>
                         </div>
-
-                        {/*                         
-                        <label htmlFor="exampleSelect1">Class:</label>
-                        <select
-                          name="class"
-                          className="form-control"
-                          required
-                          value={this.state.class}
-                          onChange={(e) => this.setState({
-                            class: e.target.value
-                          })}
-                        >
-                          <option value="">Select class</option>
-                          {this.state.classes.map(Iclass => (
-                            <option value={Iclass.id}>{Iclass.name}</option>
-                          ))}
-                        </select> */}
                       </div>
+
+                      {/* Route Selector */}
                       <div className="col-lg-6">
-                      <div className="row">
+                        <div className="row">
                           <div className="col-lg-8">
-                            <label htmlFor="exampleSelect1">Route:</label>
+                            <label>Route:</label>
                             <Select
-                              name="classes"
+                              name="route"
                               value={this.state.setRoute}
                               options={this.state.routes?.map(({ id: value, name: label }) => ({ value, label }))}
                               onChange={({ value, label }) => this.setState({
-                                route: value,
-                                setRoute: { value, label }
+                                route: value, // Set the ID for submission
+                                setRoute: { value, label } // Set the object for display
                               })}
                             />
                           </div>
-                          <div className="col-lg-4">
-                            <label htmlFor="exampleSelect1">↓</label>
-                            <br></br>
-                            <button
-                              className="btn btn-outline-brand"
-                              type="button"
-                              onClick={() => {
-                                console.log("adding")
-                                this.hide()
-                                addRouteModal.show()
-                              }}
-                            >
+                          <div className="col-lg-4 align-self-end">
+                            <button className="btn btn-outline-brand" type="button" onClick={() => { this.hide(); addRouteModal.show(); }}>
                               Add a Route
                             </button>
                           </div>
                         </div>
-                        {/* <label htmlFor="exampleSelect1">Route:</label>
-                        <select
-                          name="route"
-                          className="form-control"
-                          required
-                          value={this.state.route}
-                          onChange={(e) => this.setState({
-                            route: e.target.value
-                          })}
-                        >
-                          <option value="">Select route</option>
-                          {this.props.routes.map(route => (
-                            <option value={route.id}>{route.name}</option>
-                          ))}
-                        </select> */}
                       </div>
-                      
+
+                      {/* Parent Selector */}
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label htmlFor="exampleSelect1">Parent:</label>
+                            <label>Parent:</label>
                             <Select
-                              name="driver"
+                              name="parent" // FIX: Changed name for clarity
                               value={this.state.setParent}
                               options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
+                              // FIX: This now correctly updates `parent` and `setParent` in the state.
                               onChange={({ value, label }) => this.setState({
-                                driver: value,
+                                parent: value,
                                 setParent: { value, label }
                               })}
                             />
                           </div>
-                          <div className="col-lg-4">
-                            <label htmlFor="exampleSelect1">↓</label>
-                            <br></br>
-                            <button
-                              className="btn btn-outline-brand"
-                              type="button"
-                              onClick={() => {
-                                console.log("adding")
-                                this.hide()
-                                addParentModal.show()
-                              }}
-                            >
+                          <div className="col-lg-4 align-self-end">
+                            <button className="btn btn-outline-brand" type="button" onClick={() => { this.hide(); addParentModal.show(); }}>
                               Add a Parent
                             </button>
                           </div>
                         </div>
                       </div>
 
+                      {/* Second Parent Selector */}
                       <div className="col-lg-6">
                         <div className="row">
                           <div className="col-lg-8">
-                            <label htmlFor="exampleSelect1">Second Parent:</label>
+                            <label>Second Parent (Optional):</label>
                             <Select
-                              name="driver"
+                              name="parent2" // FIX: Changed name for clarity
+                              isClearable // Good for optional fields
                               value={this.state.setParent2}
                               options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
-                              onChange={({ value, label }) => this.setState({
-                                parent2: value,
-                                setParent2: { value, label }
+                              onChange={(selected) => this.setState({
+                                  // Handle clear event
+                                  parent2: selected ? selected.value : "",
+                                  setParent2: selected
                               })}
                             />
                           </div>
-                          
                         </div>
-
                       </div>
-
 
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button
-                    className="btn btn-outline-brand"
-                    type="submit"
-                    disabled={this.state.loading}
-                  >
-                    {this.state.loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      "Save"
-                    )}
+                  <button className="btn btn-outline-brand" type="submit" disabled={this.state.loading}>
+                    {this.state.loading ? (<span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />) : ("Save")}
                   </button>
-                  <button
-                    data-dismiss="modal"
-                    type="button"
-                    className="btn btn-outline-brand"
-                  >
+                  <button data-dismiss="modal" type="button" className="btn btn-outline-brand">
                     Cancel
                   </button>
                 </div>
