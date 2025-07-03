@@ -32,109 +32,115 @@ const handleUnauthorized = () => {
     window.location.href = '/';
 };
 
-// A simple in-memory cache for the current session
+// A simple in-memory cache for the current session.
+// This is now primarily used for hydrating from localStorage, not for SWR.
 const queryCache = {};
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// *** NEW: Helper to normalize GraphQL query strings ***
-// This removes newlines, tabs, and extra spaces to create a consistent cache key.
+// Helper to normalize GraphQL query strings for consistent cache keys.
 const normalizeGql = (str) => str.replace(/\s+/g, ' ').trim();
 
 
 /**
- * Performs a GraphQL query with a Stale-While-Revalidate (SWR) caching strategy.
- * - Returns cached data immediately if available.
- * - Fetches fresh data in the background to update the cache.
- * - Implements exponential backoff for failed network requests.
+ * Fetches data from the network with an exponential backoff retry mechanism.
+ * If successful, it updates both the in-memory and localStorage caches.
+ *
+ * @param {string} normalizedQuery - The normalized GraphQL query.
+ * @param {string} cacheKey - The key for caching.
+ * @param {object} params - The query variables.
+ * @returns {Promise<any>} The fresh data from the server.
+ * @throws Will throw an error if all retry attempts fail.
+ */
+const fetchWithRetries = async (normalizedQuery, cacheKey, params) => {
+    const maxRetries = 3;
+    let delay = 1000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const { data: { data } } = await axios.post(`${API}/graph`, {
+                query: normalizedQuery,
+                ...params
+            }, { headers: { authorization: localStorage.getItem("authorization") } });
+
+            // Success: Update caches and return the fresh data
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+            queryCache[cacheKey] = data; // Keep in-memory cache in sync
+            console.log(`[API] Fresh data fetched and cached for ${cacheKey}.`);
+            return data;
+
+        } catch (error) {
+            if (error.response && error.response.status === 401) {
+                handleUnauthorized();
+                return new Promise(() => {}); // Prevent further execution
+            }
+
+            if (attempt === maxRetries) {
+                console.error(`[API] Query failed after ${maxRetries} attempts.`, { query: normalizedQuery, params, error });
+                throw error.response ? error.response.data.errors : error;
+            }
+
+            const isRetryable = !error.response || (error.response.status >= 500 && error.response.status <= 599);
+            if (isRetryable) {
+                console.warn(`[API] Attempt ${attempt} failed. Retrying in ${delay / 1000}s...`);
+                await wait(delay);
+                delay *= 2;
+            } else {
+                console.error("[API] Non-retryable error encountered.", error);
+                throw error.response ? error.response.data.errors : error;
+            }
+        }
+    }
+};
+
+/**
+ * Performs a GraphQL query using a "Network-First, Cache-Fallback" strategy.
+ * - Tries to fetch fresh data from the network.
+ * - If the network fails, it falls back to serving data from the local cache.
  *
  * @param {string} queryString - The GraphQL query string.
  * @param {object} params - The query variables.
- * @returns {Promise<any>}
+ * @returns {Promise<any>} The freshest available data.
  */
 const query = async (queryString, params) => {
-    // 1. Normalize the query and create a consistent cache key
     const normalizedQuery = normalizeGql(queryString);
+    // Note: The cache key no longer includes params to ensure the same query always hits the same cache,
+    // which is typical for GraphQL where variations are handled by the query structure itself.
+    // If your params truly change the resource, consider including them in the key: `${normalizedQuery}:${JSON.stringify(params)}`
     const cacheKey = `${normalizedQuery}`;
 
-    // This self-contained function handles the actual network request and retries
-    const fetchAndUpdate = async () => {
-        const maxRetries = 3;
-        let delay = 1000;
-
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const { data: { data } } = await axios.post(`${API}/graph`, {
-                    query: normalizedQuery, // Use the normalized query
-                    ...params
-                }, { headers: { authorization: localStorage.getItem("authorization") } });
-
-                // Success: Update caches and return fresh data
-                localStorage.setItem(cacheKey, JSON.stringify(data));
-                queryCache[cacheKey] = data;
-                return data;
-
-            } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    handleUnauthorized();
-                    return new Promise(() => {}); // Prevent further execution
-                }
-
-                if (attempt === maxRetries) {
-                    console.error(`API query failed after ${maxRetries} attempts.`, { query: normalizedQuery, params, error });
-                    throw error.response ? error.response.data.errors : error;
-                }
-
-                const isRetryable = !error.response || (error.response.status >= 500 && error.response.status <= 599);
-                if (isRetryable) {
-                    console.warn(`Attempt ${attempt} failed. Retrying in ${delay / 1000}s...`);
-                    await wait(delay);
-                    delay *= 2;
-                } else {
-                    console.error("Non-retryable error encountered.", error);
-                    throw error.response ? error.response.data.errors : error;
-                }
-            }
-        }
-    };
-
-    // 2. Check for cached data (in-memory first, then localStorage)
-    let cachedData = queryCache[cacheKey];
-    if (!cachedData) {
+    try {
+        // 1. Always attempt to get fresh data from the network first.
+        const freshData = await fetchWithRetries(normalizedQuery, cacheKey, params);
+        return freshData;
+    } catch (networkError) {
+        // 2. If the network fails, try to use the cache as a fallback.
+        console.warn(`[Cache Fallback] Network request failed for ${cacheKey}. Attempting to use local cache.`, networkError);
+        
         const storedData = localStorage.getItem(cacheKey);
         if (storedData) {
             try {
-                cachedData = JSON.parse(storedData);
-                queryCache[cacheKey] = cachedData; // Hydrate in-memory cache for speed
-            } catch (e) {
-                console.error("Failed to parse cached data, removing invalid item.", e);
+                const cachedData = JSON.parse(storedData);
+                queryCache[cacheKey] = cachedData; // Hydrate in-memory cache
+                console.log(`[Cache Fallback] Serving stale data for ${cacheKey}.`);
+                return cachedData;
+            } catch (parseError) {
+                console.error(`[Cache Fallback] Failed to parse cached data for ${cacheKey}. Removing invalid item.`, parseError);
                 localStorage.removeItem(cacheKey);
+                // The cache was corrupt, so we must throw the original network error.
+                throw networkError;
             }
+        } else {
+            // 3. If the network fails and there's no cache, it's a hard error.
+            console.error(`[Cache Fallback] Network failed and no cache was available for ${cacheKey}.`);
+            throw networkError;
         }
     }
-
-    // 3. Implement the SWR logic
-    if (cachedData) {
-        console.log(`[SWR] Returning stale data for ${cacheKey} and revalidating in background.`);
-        
-        // **Fire-and-forget** the update. We don't await this.
-        // The UI already has data, this just updates the cache for next time.
-        fetchAndUpdate().catch(error => {
-            console.warn(`[SWR] Background revalidation failed for ${cacheKey}:`, error);
-        });
-
-        // Return the stale data immediately for a fast UI response
-        return cachedData;
-    }
-
-    // 4. If no cache exists, fetch data, wait for it, and return it
-    console.log(`[SWR] No cache for ${cacheKey}. Fetching from network.`);
-    return await fetchAndUpdate();
 };
 
 
 /**
  * Performs a GraphQL mutation.
- * (Mutations are not cached and do not use SWR to prevent side-effects).
+ * (Mutations are not cached to prevent unintended side-effects).
  */
 const mutate = async (query, variables) => {
     try {
