@@ -87,7 +87,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <DeleteModal
                 remove={this.state.remove}

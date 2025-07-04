@@ -148,7 +148,7 @@ class Modal extends React.Component {
           aria-labelledby="myLargeModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <form
                 id={MODAL_ID + "form"} // Use the new constant

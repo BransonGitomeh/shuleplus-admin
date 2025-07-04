@@ -129,7 +129,7 @@ class Modal extends React.Component {
 
             this.setState({ parents, parent2: id })
           }} />
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <form
                 id={modalNumber + "form"}

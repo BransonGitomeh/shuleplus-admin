@@ -563,7 +563,7 @@ var Data = (function () {
           data.class = classes.filter(p => p.id == data.class)[0];
           data.class_name = data.class?.name
 
-          students = [...students, data];
+          students = [data,...students];
           subs.students({ students });
           resolve();
         }),

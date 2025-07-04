@@ -349,7 +349,7 @@ class EditQuestionModal extends React.Component {
             .section-card-body { padding: 1rem; }
         `}</style>
         <div className="modal fade" id={modalId} tabIndex={-1} role="dialog">
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content modal-content-full-height">
               <form ref={this.formRef} onSubmit={this.handleSubmit} noValidate>
                 <div className="modal-header">

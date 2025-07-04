@@ -385,7 +385,7 @@ class Modal extends React.Component {
         `}</style>
 
         <div className="modal fade" id={modalNumber} tabIndex={-1} role="dialog" aria-labelledby={`${modalNumber}Label`} aria-hidden="true">
-          <div className="modal-dialog modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content modal-content-full-height">
               <form id={`${modalNumber}_form_actual`} onSubmit={e => e.preventDefault()} noValidate>
                 <div className="modal-header">
