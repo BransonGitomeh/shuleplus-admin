@@ -171,7 +171,7 @@ var Data = (function () {
           id
         }
         payments{
-          ammount
+          amount
           type
           phone
           ref
