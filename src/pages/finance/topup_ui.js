@@ -164,7 +164,7 @@ class PaymentsView extends React.Component {
                   ]}
                   data={filteredPayments} // Pass filtered data
                 />
-                {filteredPayments.length === 0 && searchTerm && (
+                {filteredPayments?.length === 0 && searchTerm && (
                   <p className="text-center mt-3">No payments found matching your search.</p>
                 )}
                 
