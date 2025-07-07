@@ -243,7 +243,6 @@ var Data = (function () {
                   name
                   type
                   videos
-                  images
                   attachments
                   answers {
                     id
