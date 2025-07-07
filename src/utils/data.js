@@ -88,6 +88,124 @@ var Data = (function () {
 
   // when the data store gets innitialized, fetch all data and store in cache
   const init = (done) => {
+    const requestCallback = async ({data:response}) => {
+
+      schoolsData.push(...response.schools)
+      schools = schoolsData
+      school = schools.find(s => s.id === localStorage.getItem("school")) || schools[0]
+      schoolID = school.id
+      localStorage.setItem("school", schoolID)
+
+      students = school.students.map(student => {
+
+        if (student.parent) {
+          student.parent_name = student.parent.name;
+        }
+
+        if (student.parent2) {
+          student.parent2_name = student.parent2.name;
+        }
+
+        if (student.route) {
+          student.route_name = student.route.name;
+        }
+
+        if (student.class) {
+          student.class_name = student.class.name;
+        }
+
+        return student;
+      });
+
+      subs.students({ students });
+
+      schools = schoolsData
+      subs.schools({ schools });
+
+      charges = school.charges
+      subs.charges({ charges });
+
+      payments = school.payments
+      subs.payments({ payments });
+
+      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.names : "" }));
+      subs.buses({ buses });
+
+      parents = school.parents;
+      subs.parents({ parents });
+
+      teachers = school.teachers
+      subs.teachers({ teachers });
+
+      classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
+      subs.classes({ classes });
+
+      routes = school.routes;
+      subs.routes({ routes });
+
+      drivers = school.drivers;
+      subs.drivers({ drivers });
+
+      admins = school.admins;
+      subs.admins({ admins });
+
+      schedules = school.schedules.map(schedule => {
+        if (schedule.bus)
+          schedule.bus_make = schedule.bus?.make
+
+        if (schedule.route)
+          schedule.route_name = schedule.route?.name
+
+        return schedule
+      });
+      subs.schedules({ schedules });
+
+      trips = school.trips;
+      subs.trips({ trips });
+
+      complaints = school.complaints;
+      subs.complaints({ complaints });
+
+      grades = school.grades;
+      subs.grades({ grades });
+
+      grades.forEach(grade => {
+        grade.subjects.forEach(subject => { subjects.push(subject) })
+      });
+      subjects = [...subjects];
+      subs.subjects({ subjects });
+
+      subjects.forEach(subject => {
+        subject.topics.forEach(topic => { topics.push(topic) })
+      });
+      topics = [...topics];
+      subs.topics({ topics });
+
+      topics.forEach(topic => {
+        topic.subtopics.forEach(subtopic => { subtopics.push(subtopic) })
+      });
+      subtopics = [...subtopics];
+      subs.subtopics({ subtopics });
+
+      subtopics.forEach(subtopic => {
+        subtopic.questions.forEach(question => { questions.push(question) })
+      });
+      questions = [...questions];
+      subs.questions({ questions });
+
+      questions.forEach(question => {
+        question.options.forEach(option => { options.push(option) })
+      });
+      options = [...options];
+      subs.options({ options });
+
+      teams = school.teams;
+      subs.teams({ teams });
+
+      invitations = school.invitations;
+      subs.invitations({ invitations });
+    }
+
     query(`{
       user{
         name,
@@ -351,129 +469,12 @@ var Data = (function () {
           }
         }
     }
-  }`).then(response => {
-
-      schoolsData.push(...response.schools)
-      schools = schoolsData
-      school = schools.find(s => s.id === localStorage.getItem("school")) || schools[0]
-      schoolID = school.id
-      localStorage.setItem("school", schoolID)
-
-      students = school.students.map(student => {
-
-        if (student.parent) {
-          student.parent_name = student.parent.name;
-        }
-
-        if (student.parent2) {
-          student.parent2_name = student.parent2.name;
-        }
-
-        if (student.route) {
-          student.route_name = student.route.name;
-        }
-
-        if (student.class) {
-          student.class_name = student.class.name;
-        }
-
-        return student;
-      });
-
-      subs.students({ students });
-
-      schools = schoolsData
-      subs.schools({ schools });
-
-      charges = school.charges
-      subs.charges({ charges });
-
-      payments = school.payments
-      subs.payments({ payments });
-
-      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.names : "" }));
-      subs.buses({ buses });
-
-      parents = school.parents;
-      subs.parents({ parents });
-
-      teachers = school.teachers
-      subs.teachers({ teachers });
-
-      classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
-      subs.classes({ classes });
-
-      routes = school.routes;
-      subs.routes({ routes });
-
-      drivers = school.drivers;
-      subs.drivers({ drivers });
-
-      admins = school.admins;
-      subs.admins({ admins });
-
-      schedules = school.schedules.map(schedule => {
-        if (schedule.bus)
-          schedule.bus_make = schedule.bus?.make
-
-        if (schedule.route)
-          schedule.route_name = schedule.route?.name
-
-        return schedule
-      });
-      subs.schedules({ schedules });
-
-      trips = school.trips;
-      subs.trips({ trips });
-
-      complaints = school.complaints;
-      subs.complaints({ complaints });
-
-      grades = school.grades;
-      subs.grades({ grades });
-
-      grades.forEach(grade => {
-        grade.subjects.forEach(subject => { subjects.push(subject) })
-      });
-      subjects = [...subjects];
-      subs.subjects({ subjects });
-
-      subjects.forEach(subject => {
-        subject.topics.forEach(topic => { topics.push(topic) })
-      });
-      topics = [...topics];
-      subs.topics({ topics });
-
-      topics.forEach(topic => {
-        topic.subtopics.forEach(subtopic => { subtopics.push(subtopic) })
-      });
-      subtopics = [...subtopics];
-      subs.subtopics({ subtopics });
-
-      subtopics.forEach(subtopic => {
-        subtopic.questions.forEach(question => { questions.push(question) })
-      });
-      questions = [...questions];
-      subs.questions({ questions });
-
-      questions.forEach(question => {
-        question.options.forEach(option => { options.push(option) })
-      });
-      options = [...options];
-      subs.options({ options });
-
-      teams = school.teams;
-      subs.teams({ teams });
-
-      invitations = school.invitations;
-      subs.invitations({ invitations });
-    }).catch(err => {
-      console.log(err);
-      // localStorage.clear()
-      if (err && err.response && err.response.status === 401) {
-        window.location.href = '/#/';
-      }
-    });
+  }`,{},requestCallback)
+  //     // localStorage.clear()
+  //     if (err && err.response && err.response.status === 401) {
+  //       window.location.href = '/#/';
+  //     }
+  //   });
   }
 
   if (localStorage.getItem('authorization'))

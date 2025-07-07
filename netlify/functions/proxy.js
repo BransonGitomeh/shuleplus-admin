@@ -1,13 +1,17 @@
 const fetch = require("node-fetch");
 
 // --- Retry Configuration ---
-const MAX_RETRIES = 3; // Total attempts will be MAX_RETRIES + 1
-const INITIAL_BACKOFF_MS = 100; // Start with a 100ms delay
+// OPTIMIZATION: Increased retries for more resilience.
+const MAX_RETRIES = 6; // 1 initial attempt + 6 retries = 7 total attempts
+const INITIAL_BACKOFF_MS = 100;
 
 // --- Helper function for async sleep ---
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 exports.handler = async (event) => {
+  // OPTIMIZATION: Start timing the entire function execution.
+  const lambdaStartTime = Date.now();
+
   const basePath = event.path.replace(/^\/api/, "");
   const queryString = event.rawQueryString ? `?${event.rawQueryString}` : "";
   const fullPath = `${basePath}${queryString}`;
@@ -32,11 +36,12 @@ exports.handler = async (event) => {
 
   // --- Retry Loop ---
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // OPTIMIZATION: Start timing this specific attempt.
+    const attemptStartTime = Date.now();
     try {
       if (attempt > 0) {
-        // --- Calculate Exponential Backoff with Jitter ---
         const backoffTime = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
-        const jitter = backoffTime * 0.2 * Math.random(); // Add up to 20% jitter
+        const jitter = backoffTime * 0.2 * Math.random();
         const waitTime = backoffTime + jitter;
         
         console.log(`[PROXY_RETRY] Attempt ${attempt} failed. Retrying in ${Math.round(waitTime)}ms...`);
@@ -44,24 +49,25 @@ exports.handler = async (event) => {
       }
       
       console.log(`[PROXY_SENDING] Attempt ${attempt + 1}/${MAX_RETRIES + 1} to ${backendURL}`);
-      console.log(`[PROXY_SENDING] Headers: ${JSON.stringify(forwardedHeaders)}`);
-      if(body) console.log(`[PROXY_SENDING] Body included.`);
-
+      
       const response = await fetch(backendURL, {
         method: requestMethod,
         headers: forwardedHeaders,
         body: body,
         redirect: 'manual' 
       });
+      
+      // OPTIMIZATION: Calculate how long this attempt took.
+      const attemptDuration = Date.now() - attemptStartTime;
 
-      // --- Success or Non-Retryable Error Condition ---
-      // We will not retry on 4xx client errors or most 5xx server errors.
-      // We only retry on specific transient errors like 502, 503, 504.
       if (response.status < 500 || ![502, 503, 504].includes(response.status)) {
         const responseBody = await response.text();
         const responseContentType = response.headers.get("Content-Type") || "application/json";
+        const totalDuration = Date.now() - lambdaStartTime;
         
-        console.log(`[PROXY_SUCCESS] ${requestMethod} ${fullPath} -> ${response.status} ${response.statusText}`);
+        // OPTIMIZATION: Add timing to the success log.
+        console.log(`[PROXY_SUCCESS] ${requestMethod} ${fullPath} -> ${response.status} ${response.statusText}. Attempt took ${attemptDuration}ms.`);
+        console.log(`[PROXY_COMPLETE] Request finished in ${totalDuration}ms.`);
 
         return {
           statusCode: response.status,
@@ -75,15 +81,16 @@ exports.handler = async (event) => {
         };
       }
       
-      // If we are here, it's a retryable status code (502, 503, 504).
-      // We throw an error to trigger the catch block and the next loop iteration.
       throw new Error(`Received retryable status code: ${response.status}`);
 
     } catch (error) {
-      console.error(`[PROXY_ATTEMPT_FAILED] Attempt ${attempt + 1} failed with error: ${error.message}`);
-      // If this was the last attempt, we give up and return an error.
+      // OPTIMIZATION: Add timing to the failure log for this attempt.
+      const attemptDuration = Date.now() - attemptStartTime;
+      console.error(`[PROXY_ATTEMPT_FAILED] Attempt ${attempt + 1} failed after ${attemptDuration}ms with error: ${error.message}`);
+      
       if (attempt === MAX_RETRIES) {
-        console.error(`[PROXY_FATAL] All ${MAX_RETRIES + 1} attempts failed. Giving up.`);
+        const totalDuration = Date.now() - lambdaStartTime;
+        console.error(`[PROXY_FATAL] All ${MAX_RETRIES + 1} attempts failed. Giving up. Total time: ${totalDuration}ms.`);
         return {
           statusCode: 502,
           body: JSON.stringify({ error: "Proxy Error", message: "Could not connect to the backend service after multiple retries." }),
@@ -93,7 +100,6 @@ exports.handler = async (event) => {
           },
         };
       }
-      // Otherwise, the loop will continue to the next attempt after the delay.
     }
   }
 };
