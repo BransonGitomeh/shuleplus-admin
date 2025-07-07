@@ -1601,6 +1601,7 @@ var Data = (function () {
             `mutation ($payment: mpesaStartTxInput!) {
               payments {
                 init(payment: $payment){
+                  id,
                   CheckoutRequestID,
                   MerchantRequestID
                 }
@@ -1618,8 +1619,7 @@ var Data = (function () {
 
 
 
-        return {}
-      },
+        },
       async verifyTx({ MerchantRequestID, CheckoutRequestID }) {
         if (school)
           return await mutate(
@@ -1627,7 +1627,15 @@ var Data = (function () {
               payments {
                 confirm(payment: $Ipayment) {
                   success,
-                  message
+                  message,
+                  id,
+                  amount,
+                  phone,
+                  status,
+                  merchantRequestID,
+                  checkoutRequestID,
+                  ref,
+                  time
                 }
               }
             }
@@ -1641,9 +1649,6 @@ var Data = (function () {
             }
           );
 
-        return school
-
-        return {}
       }
     },
     classes: {
