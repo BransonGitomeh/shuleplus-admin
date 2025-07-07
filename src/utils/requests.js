@@ -52,7 +52,7 @@ const normalizeGql = (str) => str.replace(/\s+/g, ' ').trim();
  * @throws Will throw an error if all retry attempts fail.
  */
 const fetchWithRetries = async (normalizedQuery, cacheKey, params) => {
-    const maxRetries = 3;
+    const maxRetries = 10;
     let delay = 1000;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
