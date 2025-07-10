@@ -66,6 +66,9 @@ var Data = (function () {
     // This query is written as it *should* be for a real-world, scalable backend.
     // We will simulate the filtering/sorting on the larger dataset fetched initially for this example.
     const offset = (page - 1) * limit;
+    let processedStudents = [];
+    let schoolData = {};
+
     const { data } = await query(`
     query GetStudentPage( $limit: Int, $offset: Int, $id: String) {
       school( id: $id) {
@@ -99,22 +102,26 @@ var Data = (function () {
       }
     }
   `, { limit, offset, id:localStorage.getItem("school") },(data)=>{
-    const schoolData = data.school;
+    schoolData = data.school;
     // Post-process data to add flattened names (as in the original code)
-    const processedStudents = schoolData?.students?.map(student => ({
+    processedStudents = schoolData?.students?.map(student => ({
       ...student,
       parent_name: student.parent?.name || '',
       parent2_name: student.parent2?.name || '',
       route_name: student.route?.name || '',
       class_name: student.class?.name || '',
     }));
-    
-    return {
-      students: processedStudents || [],
-      totalCount: schoolData?.studentsCount || 0
-    };
+
+    students = processedStudents;
+    subs.students({ students });
   });
-}
+  return {
+    students: processedStudents || [],
+    totalCount: schoolData?.studentsCount || 0
+  };
+
+    
+  }
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
@@ -278,7 +285,7 @@ var Data = (function () {
     // Note: Type names like 'school' and 'User' are corrected to PascalCase, which is the GraphQL standard.
     // The field names in your query (`schools`, `user`) remain lowercase.
     const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
-    const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor }`;
+    const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount }`;
     // const FRAGMENT_GRADES_DATA = `fragment GradesData on school { gradeOrder grades { id name subjectsOrder subjects { id name topicOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
     // const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
     // const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;

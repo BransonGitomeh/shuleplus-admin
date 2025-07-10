@@ -54,12 +54,14 @@ export default function StudentDataTableV7() {
     if (!initialLoading) setIsPaginating(true);
 
     try {
-        const { students: fetchedStudents, totalCount } = await Data.students.getPage({
+        const pageRes = await Data.students.getPage({
             page,
             limit,
             search,
             sort,
         });
+        console.log(pageRes)
+        const { students: fetchedStudents, totalCount } = pageRes;
         setStudents(fetchedStudents);
         setTotalStudents(totalCount);
     } catch (error) {

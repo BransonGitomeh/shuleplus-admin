@@ -111,13 +111,12 @@ class Navbar extends React.Component {
 
     this.setState({ schools, selectedSchool: school, fetchingSchools: schools.length === 0 });
 
-    Data.schools.subscribe(({ schools, status }) => {
-      const currentSelectedSchool = Data.schools.getSelected();
-      let newSelectedSchool = currentSelectedSchool || (schools.length > 0 ? schools[0] : {});
+    Data.schools.subscribe(({ schools }) => {
+      const currentSelectedSchool = localStorage.getItem("school");
+      let newSelectedSchool = schools.find(s => s.id === currentSelectedSchool) || (schools.length > 0 ? schools[0] : {});
       this.setState({
         availableSchools: schools,
         selectedSchool: newSelectedSchool,
-        fetchingSchools: status === 'loading' || (status === 'idle' && schools.length === 0),
       }, () => {
         if (newSelectedSchool.id) {
           localStorage.setItem("school", newSelectedSchool.id);
