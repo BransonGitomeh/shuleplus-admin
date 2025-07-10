@@ -257,7 +257,7 @@ export default function StudentDataTableV7() {
       `}</style>
     
       <div className="v7-header">
-        <h2 className="v7-header-title">Student Directory (V7)</h2>
+        <h2 className="v7-header-title">Student Directory</h2>
         <div className="v7-header-actions">
           <div className="v7-header-stat">
             <div className="value">{initialLoading ? <div className="v7-spinner" style={{width: 20, height: 20}}></div> : totalStudents}</div>

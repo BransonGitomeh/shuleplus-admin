@@ -1599,7 +1599,7 @@ query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INV
       },
       getSelected() {
         return school;
-      },
+      },  
       update: data =>
         new Promise(async (resolve, reject) => {
           await mutate(
