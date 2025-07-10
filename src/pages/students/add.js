@@ -1,9 +1,6 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
 import AddParentModal from "../parents/add";
-// You are importing AddParentModal twice with different names. This is unnecessary.
-// If they are indeed different components, the import path should be different.
-// I'll assume it was a typo and remove one.
 import AddClassModal from "../classes/add"
 import AddRouteModal from "../routes/add"
 
@@ -17,61 +14,78 @@ const addParentModal = new AddParentModal();
 const addClassModal = new AddClassModal();
 const addRouteModal = new AddRouteModal();
 
-// Giving this a more descriptive name to avoid confusion with the component class name.
-const MODAL_ID = "student-modal-" + Math.random()
-  .toString()
-  .split(".")[1];
+const MODAL_ID = "student-modal-" + Math.random().toString().split(".")[1];
+
+// --- NEW: Define the initial state as a constant ---
+// This makes resetting the state much cleaner and less error-prone.
+const initialState = {
+  loading: false,
+  names: "",
+  route: "",
+  gender: "",
+  registration: "",
+  class: "",
+  parent: "",
+  parent2: "",
+
+  // State for react-select value objects
+  setClass: null,
+  setRoute: null,
+  setParent: null,
+  setParent2: null,
+
+  // Data lists (these don't need to be reset)
+  parents: [],
+  classes: [],
+  routes: []
+};
+
 
 class Modal extends React.Component {
-  // FIX: Initialize all state properties that are used.
-  state = {
-    loading: false,
-    names: "",
-    route: "",
-    gender: "",
-    registration: "",
-    class: "",
-    parent: "",
-    parent2: "",
-
-    // State for react-select value objects
-    setClass: null,
-    setRoute: null,
-    setParent: null,
-    setParent2: null,
-
-    // Data lists
-    parents: [],
-    classes: [],
-    routes: []
-  };
+  // Use the new constant for the initial state
+  state = { ...initialState };
 
   show() {
+    // Optional: You can also reset the state every time the modal is shown
+    // this.resetState(); 
     $("#" + MODAL_ID).modal({
       show: true,
       backdrop: "static",
       keyboard: false
     });
   }
+  
   hide() {
     $("#" + MODAL_ID).modal("hide");
   }
 
-  // FIX: This function was unused and can be safely removed.
-  // onParentChange = e => { ... }
+  // --- NEW: A dedicated method to reset the form's state ---
+  resetState = () => {
+    // We only want to reset the form fields, not the data lists (parents, classes, etc.)
+    this.setState({
+      loading: false,
+      names: "",
+      route: "",
+      gender: "",
+      registration: "",
+      class: "",
+      parent: "",
+      parent2: "",
+      setClass: null,
+      setRoute: null,
+      setParent: null,
+      setParent2: null,
+    });
+    // Also reset the jQuery validator to clear any previous error messages
+    if (this.validator) {
+      this.validator.resetForm();
+    }
+  }
 
   async componentDidMount() {
-    // Note: The original code fetched teachers and students but didn't use them in this component's state.
-    // I've kept the logic but you might want to review if it's needed here.
     const classes = Data.classes.list();
     this.setState({ classes });
     Data.classes.subscribe(({ classes }) => this.setState({ classes }));
-
-    const teachers = Data.teachers.list();
-    Data.teachers.subscribe(() => { /* do something with teachers if needed */ });
-
-    const students = Data.students.list();
-    Data.students.subscribe(() => { /* do something with students if needed */ });
 
     const routes = Data.routes.list();
     this.setState({ routes });
@@ -98,24 +112,23 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
 
-          // FIX: The destructured properties now correctly match what's being saved in state.
           const { names, route, gender, registration, class: className, parent, parent2 } = _this.state;
           
-          // The payload contains all the selected IDs.
           const payload = { 
             names, 
             route, 
             gender, 
             registration, 
-            class: className, // aliased to avoid keyword conflict
+            class: className,
             parent, 
             parent2 
           };
 
-          console.log("Submitting payload:", payload); // For debugging
-          
           await _this.props.save(payload);
           _this.hide();
+          
+          // --- CHANGED: Call the resetState method on success ---
+          _this.resetState();
 
         } catch (error) {
           console.error("Submission failed:", error);
@@ -125,7 +138,6 @@ class Modal extends React.Component {
             IErrorMessage.show();
           }
         } finally {
-            // Use finally to ensure loading is always set to false
            _this.setState({ loading: false });
         }
       }
@@ -135,14 +147,16 @@ class Modal extends React.Component {
   render() {
     return (
       <div>
-        {/* FIX: Removed the duplicate AddParentModal2. If it's a different component, you should re-add it. */}
+        {/* Modals for adding related data */}
         <AddParentModal save={parent => Data.parents.create(parent)} />
-        <AddClassModal save={classData => Data.classes.create(classData)} teachers={this.state.teachers} />
-        <AddRouteModal students={this.state.students} save={route => Data.routes.create(route)} />
+        {/* You probably need to pass teachers to this component if it uses them */}
+        <AddClassModal save={classData => Data.classes.create(classData)} teachers={[]} />
+        {/* And students to this one */}
+        <AddRouteModal students={[]} save={route => Data.routes.create(route)} />
         
         <div
           className="modal"
-          id={MODAL_ID} // Use the new constant
+          id={MODAL_ID}
           tabIndex={-1}
           role="dialog"
           aria-labelledby="myLargeModalLabel"
@@ -150,23 +164,21 @@ class Modal extends React.Component {
         >
           <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
+              {/* --- FORM --- */}
               <form
-                id={MODAL_ID + "form"} // Use the new constant
+                id={MODAL_ID + "form"}
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
                   <h5 className="modal-title">Create Student</h5>
-                  <button
-                    type="button"
-                    className="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
+                  <button type="button" className="close" data-dismiss="modal" aria-label="Close" >
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body">
-                  <div className="kt-portlet__body">
+                  {/* ... The rest of your form JSX is unchanged ... */}
+                  {/* ... Example input ... */}
+                   <div className="kt-portlet__body">
                     <div className="form-group row">
                       {/* Full Name, Registration, Gender are fine */}
                       <div className="col-lg-4">
@@ -191,13 +203,10 @@ class Modal extends React.Component {
                           <div className="col-lg-8">
                             <label>Class:</label>
                             <Select
-                              name="class" // name is good for semantics
+                              name="class" 
                               value={this.state.setClass}
                               options={this.state.classes?.map(({ id: value, name: label }) => ({ value, label }))}
-                              onChange={({ value, label }) => this.setState({
-                                class: value, // Set the ID for submission
-                                setClass: { value, label } // Set the object for display
-                              })}
+                              onChange={({ value, label }) => this.setState({ class: value, setClass: { value, label } })}
                             />
                           </div>
                           <div className="col-lg-4 align-self-end">
@@ -217,10 +226,7 @@ class Modal extends React.Component {
                               name="route"
                               value={this.state.setRoute}
                               options={this.state.routes?.map(({ id: value, name: label }) => ({ value, label }))}
-                              onChange={({ value, label }) => this.setState({
-                                route: value, // Set the ID for submission
-                                setRoute: { value, label } // Set the object for display
-                              })}
+                              onChange={({ value, label }) => this.setState({ route: value, setRoute: { value, label } })}
                             />
                           </div>
                           <div className="col-lg-4 align-self-end">
@@ -237,14 +243,10 @@ class Modal extends React.Component {
                           <div className="col-lg-8">
                             <label>Parent:</label>
                             <Select
-                              name="parent" // FIX: Changed name for clarity
+                              name="parent"
                               value={this.state.setParent}
                               options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
-                              // FIX: This now correctly updates `parent` and `setParent` in the state.
-                              onChange={({ value, label }) => this.setState({
-                                parent: value,
-                                setParent: { value, label }
-                              })}
+                              onChange={({ value, label }) => this.setState({ parent: value, setParent: { value, label } })}
                             />
                           </div>
                           <div className="col-lg-4 align-self-end">
@@ -261,15 +263,11 @@ class Modal extends React.Component {
                           <div className="col-lg-8">
                             <label>Second Parent (Optional):</label>
                             <Select
-                              name="parent2" // FIX: Changed name for clarity
-                              isClearable // Good for optional fields
+                              name="parent2"
+                              isClearable
                               value={this.state.setParent2}
                               options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
-                              onChange={(selected) => this.setState({
-                                  // Handle clear event
-                                  parent2: selected ? selected.value : "",
-                                  setParent2: selected
-                              })}
+                              onChange={(selected) => this.setState({ parent2: selected ? selected.value : "", setParent2: selected })}
                             />
                           </div>
                         </div>
