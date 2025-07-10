@@ -59,19 +59,20 @@ const fetchWithRetries = async (normalizedQuery, cacheKey, params) => {
         try {
             const { data: { data } } = await axios.post(`${API}/graph`, {
                 query: normalizedQuery,
-                ...params
+                params
             }, { headers: { authorization: localStorage.getItem("authorization") } });
 
             // Success: Update caches and return the fresh data
-            localStorage.setItem(cacheKey, JSON.stringify(data));
+            // localStorage.setItem(cacheKey, JSON.stringify(data));
             queryCache[cacheKey] = data; // Keep in-memory cache in sync
             console.log(`[API] Fresh data fetched and cached for ${cacheKey}.`);
             return data;
 
         } catch (error) {
+            console.log(error)
             if (error.response && error.response.status === 401) {
                 handleUnauthorized();
-                return new Promise(() => {}); // Prevent further execution
+                return new Promise(() => { }); // Prevent further execution
             }
 
             if (attempt === maxRetries) {
@@ -101,7 +102,8 @@ const fetchWithRetries = async (normalizedQuery, cacheKey, params) => {
  * @param {object} params - The query variables.
  * @returns {Promise<any>} The freshest available data.
  */
-const query = async (queryString, params) => {
+const query = async (queryString, params, callback) => {
+    console.log(queryString, params, callback)
     const normalizedQuery = normalizeGql(queryString);
     // Note: The cache key no longer includes params to ensure the same query always hits the same cache,
     // which is typical for GraphQL where variations are handled by the query structure itself.
@@ -111,17 +113,20 @@ const query = async (queryString, params) => {
     try {
         // 1. Always attempt to get fresh data from the network first.
         const freshData = await fetchWithRetries(normalizedQuery, cacheKey, params);
+        callback(freshData); // Call the callback with fresh data
+
         return freshData;
     } catch (networkError) {
         // 2. If the network fails, try to use the cache as a fallback.
         console.warn(`[Cache Fallback] Network request failed for ${cacheKey}. Attempting to use local cache.`, networkError);
-        
+
         const storedData = localStorage.getItem(cacheKey);
         if (storedData) {
             try {
                 const cachedData = JSON.parse(storedData);
                 queryCache[cacheKey] = cachedData; // Hydrate in-memory cache
                 console.log(`[Cache Fallback] Serving stale data for ${cacheKey}.`);
+                callback(cachedData); // Call the callback with cached data
                 return cachedData;
             } catch (parseError) {
                 console.error(`[Cache Fallback] Failed to parse cached data for ${cacheKey}. Removing invalid item.`, parseError);
@@ -152,7 +157,7 @@ const mutate = async (query, variables) => {
     } catch (error) {
         if (error.response && error.response.status === 401) {
             handleUnauthorized();
-            return new Promise(() => {});
+            return new Promise(() => { });
         }
         console.error("Mutation failed:", error);
         throw error?.response?.data?.errors || "An unknown error occurred during the mutation.";
