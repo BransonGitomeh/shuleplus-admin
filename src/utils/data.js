@@ -101,26 +101,26 @@ var Data = (function () {
         }
       }
     }
-  `, { limit, offset, id:localStorage.getItem("school") },(data)=>{
-    schoolData = data.school;
-    // Post-process data to add flattened names (as in the original code)
-    processedStudents = schoolData?.students?.map(student => ({
-      ...student,
-      parent_name: student.parent?.name || '',
-      parent2_name: student.parent2?.name || '',
-      route_name: student.route?.name || '',
-      class_name: student.class?.name || '',
-    }));
+  `, { limit, offset, id: localStorage.getItem("school") }, (data) => {
+      schoolData = data.school;
+      // Post-process data to add flattened names (as in the original code)
+      processedStudents = schoolData?.students?.map(student => ({
+        ...student,
+        parent_name: student.parent?.name || '',
+        parent2_name: student.parent2?.name || '',
+        route_name: student.route?.name || '',
+        class_name: student.class?.name || '',
+      }));
 
-    students = processedStudents;
-    subs.students({ students });
-  });
-  return {
-    students: processedStudents || [],
-    totalCount: schoolData?.studentsCount || 0
-  };
+      students = processedStudents;
+      subs.students({ students });
+    });
+    return {
+      students: processedStudents || [],
+      totalCount: schoolData?.studentsCount || 0
+    };
 
-    
+
   }
 
   // subscriptions for every entity to keep track of everyone subscribing to any data
@@ -291,8 +291,7 @@ var Data = (function () {
     const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
     const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
     const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
-    const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: 15, offset: 0) { id names gender registration class { name teacher { name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`;
-    const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { names } } }`;
+    const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: $limit, offset: $offset) { id names gender registration class { name teacher { name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`; const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { names } } }`;
     const FRAGMENT_DRIVERS_DATA = `fragment DriversData on school { drivers { id names phone license_expiry licence_number home } }`;
     const FRAGMENT_ADMINS_DATA = `fragment AdminsData on school { admins { id names email phone } }`;
     const FRAGMENT_PARENTS_DATA = `fragment ParentsData on school { parents { id national_id name gender email phone students { names gender route { name } } } }`;
@@ -308,275 +307,288 @@ var Data = (function () {
       * It checks which piece of data has arrived and updates the corresponding cache
       * and notifies any subscribers, ensuring the UI updates incrementally.
       */
-      /**
-   * REVISED: This single callback correctly handles incremental data.
-   * It processes the `schools` array from each parallel query, identifies the
-   * active school, and updates the specific data that arrived in that payload.
-   */
-  // --- STATE MANAGEMENT & DATA STORE ---
-
-// Stores the complete, merged data for each school, keyed by school ID.
-const mergedDataStore = {};
-
-// The list of all schools the user has access to.
-let schoolsData = []; 
-
-// The ID of the currently active school. This is the key we'll use for mergedDataStore.
-let schoolID = null; 
-
-// A reference to the single, merged data object for the *active* school.
-// This is for convenience so we don't have to look it up in mergedDataStore every time.
-let activeSchoolMergedData = {};
-
-
-// --- UTILITY FUNCTION ---
-
-/**
- * Recursively merges properties of two objects.
- * @param {object} target The object to merge into.
- * @param {object} source The object to merge from.
- * @returns {object} The merged target object.
+    /**
+ * REVISED: This single callback correctly handles incremental data.
+ * It processes the `schools` array from each parallel query, identifies the
+ * active school, and updates the specific data that arrived in that payload.
  */
-const deepMerge = (target, source) => {
-  for (const key in source) {
-    if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
-      // If both target and source have an object for the same key, recurse
-      deepMerge(target[key], source[key]);
-    } else {
-      // Otherwise, just assign the value from source to target
-      target[key] = source[key];
-    }
-  }
-  return target;
-};
+    // --- STATE MANAGEMENT & DATA STORE ---
+
+    // Stores the complete, merged data for each school, keyed by school ID.
+    const mergedDataStore = {};
+
+    // The list of all schools the user has access to.
+    let schoolsData = [];
+
+    // The ID of the currently active school. This is the key we'll use for mergedDataStore.
+    let schoolID = null;
+
+    // A reference to the single, merged data object for the *active* school.
+    // This is for convenience so we don't have to look it up in mergedDataStore every time.
+    let activeSchoolMergedData = {};
 
 
-// --- DATA AGGREGATION & PROCESSING ---
+    // --- UTILITY FUNCTION ---
 
-/**
- * The NEW callback for all queries.
- * It receives an incremental response, merges it into the central store,
- * and then triggers the processing of the fully merged data.
- * @param {object} response - The incremental data from a GraphQL query.
- */
-const mergeData = (response) => {
-  // For debugging: see exactly what data arrives with each call
-  console.log("MergeData received incremental response:", response);
-
-  if (!response || !response.schools || response.schools.length === 0) {
-    return; // Ignore empty or malformed responses
-  }
-
-  // --- ONE-TIME SETUP: Establishes the active school ID ---
-  // This still runs on the first response that contains full school details.
-  if (!schoolID && response.schools[0].name) {
-    console.log("Initial setup: Populating schools and setting active schoolID.");
-    
-    // 1. Populate the list of available schools
-    schoolsData.length = 0; // Clear any old data
-    schoolsData.push(...response.schools);
-    schools = schoolsData; // Assuming 'schools' is a global/module-level variable
-    subs.schools({ schools });
-
-    // 2. Determine the active school
-    const activeSchool = schools.find(s => s.id === localStorage.getItem("school")) || schools[0];
-    if (activeSchool) {
-      schoolID = activeSchool.id;
-      localStorage.setItem("school", schoolID);
-      console.log("Active schoolID has been set to:", schoolID);
-
-      // 3. Initialize the merged data store for this school
-      if (!mergedDataStore[schoolID]) {
-        mergedDataStore[schoolID] = {};
+    /**
+     * Recursively merges properties of two objects.
+     * @param {object} target The object to merge into.
+     * @param {object} source The object to merge from.
+     * @returns {object} The merged target object.
+     */
+    const deepMerge = (target, source) => {
+      for (const key in source) {
+        if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
+          // If both target and source have an object for the same key, recurse
+          deepMerge(target[key], source[key]);
+        } else {
+          // Otherwise, just assign the value from source to target
+          target[key] = source[key];
+        }
       }
-      activeSchoolMergedData = mergedDataStore[schoolID];
-    }
-  }
-  
-  // If we don't have an active school ID yet, we can't merge data.
-  // This can happen if a data-only query resolves before the initial setup query.
-  if (!schoolID) {
-      console.warn("Cannot merge data, active schoolID is not set yet. Discarding payload.");
-      return;
-  }
-
-  // --- INCREMENTAL MERGE ---
-  // Find the data for our active school within the current response payload.
-  const incomingDataForActiveSchool = response.schools.find(s => s.id === schoolID);
-
-  if (incomingDataForActiveSchool) {
-    console.log(`Merging data for school ${schoolID}:`, Object.keys(incomingDataForActiveSchool));
-    
-    // Deep merge the new data chunk into our active school's data object
-    deepMerge(activeSchoolMergedData, incomingDataForActiveSchool);
-    
-    // Now, process the *entire* up-to-date merged object
-    processData(activeSchoolMergedData);
-  }
-};
-
-/**
- * Processes the single, consolidated data object for the active school.
- * This function is called by mergeData after every successful data merge.
- * @param {object} schoolData - The fully merged data object for the active school.
- */
-const processData = (schoolData) => {
-  // The logic here is much cleaner. We just check for the existence of properties
-  // on the single `schoolData` object.
-
-  if (schoolData.students) {
-    // Note: To prevent reprocessing, you could add a check:
-    // if (students.length !== schoolData.students.length) { ... }
-    // Or add a "processed" flag, but for most UI updates, reprocessing is fine.
-    console.log("Processing: Students data.");
-    students = schoolData.students.map(student => ({
-      ...student,
-      parent_name: student.parent?.name || '',
-      parent2_name: student.parent2?.name || '',
-      route_name: student.route?.name || '',
-      class_name: student.class?.name || '',
-    }));
-    subs.students({ students });
-  }
-
-  if (schoolData.financial) {
-    console.log("Processing: Financial data.");
-    charges = schoolData.charges || [];
-    subs.charges({ charges });
-    payments = schoolData.payments || [];
-    subs.payments({ payments });
-  }
-
-  if (schoolData.buses) {
-    console.log("Processing: Buses data.");
-    buses = schoolData.buses.map(bus => ({ ...bus, driver: bus.driver?.names || "" }));
-    subs.buses({ buses });
-  }
-
-  if (schoolData.parents) {
-    console.log("Processing: Parents data.");
-    parents = schoolData.parents;
-    subs.parents({ parents });
-  }
-
-  if (schoolData.teachers) {
-    console.log("Processing: Teachers data.");
-    teachers = schoolData.teachers;
-    subs.teachers({ teachers });
-  }
-
-  if (schoolData.classes) {
-    console.log("Processing: Classes data.");
-    classes = schoolData.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students?.length || 0, teacher_name: Iclass.teacher?.name }));
-    subs.classes({ classes });
-  }
-
-  if (schoolData.routes) {
-    console.log("Processing: Routes data.");
-    routes = schoolData.routes;
-    subs.routes({ routes });
-  }
-
-  if (schoolData.drivers) {
-    console.log("Processing: Drivers data.");
-    drivers = schoolData.drivers;
-    subs.drivers({ drivers });
-  }
-
-  if (schoolData.admins) {
-    console.log("Processing: Admins data.");
-    admins = schoolData.admins;
-    subs.admins({ admins });
-  }
-
-  if (schoolData.schedules) {
-    console.log("Processing: Schedules data.");
-    schedules = schoolData.schedules.map(schedule => ({
-      ...schedule,
-      bus_make: schedule.bus?.make,
-      route_name: schedule.route?.name,
-    }));
-    subs.schedules({ schedules });
-  }
-
-  if (schoolData.trips) {
-    console.log("Processing: Trips data.");
-    trips = schoolData.trips;
-    subs.trips({ trips });
-  }
-
-  if (schoolData.complaints) {
-    console.log("Processing: Complaints data.");
-    complaints = schoolData.complaints;
-    subs.complaints({ complaints });
-  }
-  
-  if (schoolData.teams) {
-    console.log("Processing: Teams data.");
-    teams = schoolData.teams;
-    subs.teams({ teams });
-  }
-  
-  if (schoolData.invitations) {
-    console.log("Processing: Invitations data.");
-    invitations = schoolData.invitations;
-    subs.invitations({ invitations });
-  }
-
-  if (schoolData.grades) {
-    console.log("Processing: Grades & Curriculum data.");
-    grades = schoolData.grades;
-    subs.grades({ grades });
-
-    const newSubjects = []; grades.forEach(grade => grade.subjects?.forEach(subject => newSubjects.push(subject)));
-    subjects = newSubjects; subs.subjects({ subjects });
-
-    const newTopics = []; subjects.forEach(subject => subject.topics?.forEach(topic => newTopics.push(topic)));
-    topics = newTopics; subs.topics({ topics });
-
-    const newSubtopics = []; topics.forEach(topic => topic.subtopics?.forEach(subtopic => newSubtopics.push(subtopic)));
-    subtopics = newSubtopics; subs.subtopics({ subtopics });
-
-    const newQuestions = []; subtopics.forEach(subtopic => subtopic.questions?.forEach(question => newQuestions.push(question)));
-    questions = newQuestions; subs.questions({ questions });
-
-    const newOptions = []; questions.forEach(question => question.options?.forEach(option => newOptions.push(option)));
-    options = newOptions; subs.options({ options });
-  }
-};
+      return target;
+    };
 
 
-// --- EXECUTING THE QUERIES ---
+    // --- DATA AGGREGATION & PROCESSING ---
 
-// Note how ALL queries now use `mergeData` as their callback.
+    /**
+     * The NEW callback for all queries.
+     * It receives an incremental response, merges it into the central store,
+     * and then triggers the processing of the fully merged data.
+     * @param {object} response - The incremental data from a GraphQL query.
+     */
+    const mergeData = (response) => {
+      // For debugging: see exactly what data arrives with each call
+      console.log("MergeData received incremental response:", response);
 
-// --- STEP 1: Get the initial school and user data. This MUST run first to set the schoolID.
-query(
-  `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_school_DETAILS}`,
-  {}, 
-  mergeData // Use the new merger callback
-);
+      if (!response || !response.schools || response.schools.length === 0) {
+        return; // Ignore empty or malformed responses
+      }
 
-// --- STEP 2: Fire parallel requests. Their order of completion no longer matters.
-query(`query GetStudents { schools { id ...StudentsData } } ${FRAGMENT_STUDENTS_DATA}`, {}, mergeData);
-query(`query GetParents { schools { id ...ParentsData } } ${FRAGMENT_PARENTS_DATA}`, {}, mergeData);
-query(`query GetDrivers { schools { id ...DriversData } } ${FRAGMENT_DRIVERS_DATA}`, {}, mergeData);
-query(`query GetAdmins { schools { id ...AdminsData } } ${FRAGMENT_ADMINS_DATA}`, {}, mergeData);
-query(`query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}`, {}, mergeData);
-query(`query GetRoutes { schools { id ...RoutesData } } ${FRAGMENT_ROUTES_DATA}`, {}, mergeData);
-query(`query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}`, {}, mergeData);
-query(`query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}`, {}, mergeData);
-query(`query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}`, {}, mergeData);
-query(`query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}`, {}, mergeData);
-query(`query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}`, {}, mergeData);
-query(`query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}`, {}, mergeData);
-query(`query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}`, {}, mergeData);
-query(`query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}`, {}, mergeData);
-query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}`, {}, mergeData);
+      // --- ONE-TIME SETUP: Establishes the active school ID ---
+      // This still runs on the first response that contains full school details.
+      if (!schoolID && response.schools[0].name) {
+        console.log("Initial setup: Populating schools and setting active schoolID.");
 
-// IMPORTANT: Note that I've added `id` to the top level of each parallel query's `schools` field,
-// e.g., `schools { id ...StudentsData }`. This is crucial so that `mergeData` can identify
-// which school the incoming data belongs to, even before the main `schoolDetails` query has finished.
+        // 1. Populate the list of available schools
+        schoolsData.length = 0; // Clear any old data
+        schoolsData.push(...response.schools);
+        schools = schoolsData; // Assuming 'schools' is a global/module-level variable
+        subs.schools({ schools });
+
+        // 2. Determine the active school
+        const activeSchool = schools.find(s => s.id === localStorage.getItem("school")) || schools[0];
+        if (activeSchool) {
+          schoolID = activeSchool.id;
+          localStorage.setItem("school", schoolID);
+          console.log("Active schoolID has been set to:", schoolID);
+
+          // 3. Initialize the merged data store for this school
+          if (!mergedDataStore[schoolID]) {
+            mergedDataStore[schoolID] = {};
+          }
+          activeSchoolMergedData = mergedDataStore[schoolID];
+        }
+      }
+
+      // If we don't have an active school ID yet, we can't merge data.
+      // This can happen if a data-only query resolves before the initial setup query.
+      if (!schoolID) {
+        console.warn("Cannot merge data, active schoolID is not set yet. Discarding payload.");
+        return;
+      }
+
+      // --- INCREMENTAL MERGE ---
+      // Find the data for our active school within the current response payload.
+      const incomingDataForActiveSchool = response.schools.find(s => s.id === schoolID);
+
+      if (incomingDataForActiveSchool) {
+        console.log(`Merging data for school ${schoolID}:`, Object.keys(incomingDataForActiveSchool));
+
+        // Deep merge the new data chunk into our active school's data object
+        deepMerge(activeSchoolMergedData, incomingDataForActiveSchool);
+
+        // Now, process the *entire* up-to-date merged object
+        processData(activeSchoolMergedData);
+      }
+    };
+
+    /**
+     * Processes the single, consolidated data object for the active school.
+     * This function is called by mergeData after every successful data merge.
+     * @param {object} schoolData - The fully merged data object for the active school.
+     */
+    const processData = (schoolData) => {
+      // The logic here is much cleaner. We just check for the existence of properties
+      // on the single `schoolData` object.
+
+      if (schoolData.students) {
+        // Note: To prevent reprocessing, you could add a check:
+        // if (students.length !== schoolData.students.length) { ... }
+        // Or add a "processed" flag, but for most UI updates, reprocessing is fine.
+        console.log("Processing: Students data.");
+        students = schoolData.students.map(student => ({
+          ...student,
+          parent_name: student.parent?.name || '',
+          parent2_name: student.parent2?.name || '',
+          route_name: student.route?.name || '',
+          class_name: student.class?.name || '',
+        }));
+        subs.students({ students });
+      }
+
+      if (schoolData.financial) {
+        console.log("Processing: Financial data.");
+        charges = schoolData.charges || [];
+        subs.charges({ charges });
+        payments = schoolData.payments || [];
+        subs.payments({ payments });
+      }
+
+      if (schoolData.buses) {
+        console.log("Processing: Buses data.");
+        buses = schoolData.buses.map(bus => ({ ...bus, driver: bus.driver?.names || "" }));
+        subs.buses({ buses });
+      }
+
+      if (schoolData.parents) {
+        console.log("Processing: Parents data.");
+        parents = schoolData.parents;
+        subs.parents({ parents });
+      }
+
+      if (schoolData.teachers) {
+        console.log("Processing: Teachers data.");
+        teachers = schoolData.teachers;
+        subs.teachers({ teachers });
+      }
+
+      if (schoolData.classes) {
+        console.log("Processing: Classes data.");
+        classes = schoolData.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students?.length || 0, teacher_name: Iclass.teacher?.name }));
+        subs.classes({ classes });
+      }
+
+      if (schoolData.routes) {
+        console.log("Processing: Routes data.");
+        routes = schoolData.routes;
+        subs.routes({ routes });
+      }
+
+      if (schoolData.drivers) {
+        console.log("Processing: Drivers data.");
+        drivers = schoolData.drivers;
+        subs.drivers({ drivers });
+      }
+
+      if (schoolData.admins) {
+        console.log("Processing: Admins data.");
+        admins = schoolData.admins;
+        subs.admins({ admins });
+      }
+
+      if (schoolData.schedules) {
+        console.log("Processing: Schedules data.");
+        schedules = schoolData.schedules.map(schedule => ({
+          ...schedule,
+          bus_make: schedule.bus?.make,
+          route_name: schedule.route?.name,
+        }));
+        subs.schedules({ schedules });
+      }
+
+      if (schoolData.trips) {
+        console.log("Processing: Trips data.");
+        trips = schoolData.trips;
+        subs.trips({ trips });
+      }
+
+      if (schoolData.complaints) {
+        console.log("Processing: Complaints data.");
+        complaints = schoolData.complaints;
+        subs.complaints({ complaints });
+      }
+
+      if (schoolData.teams) {
+        console.log("Processing: Teams data.");
+        teams = schoolData.teams;
+        subs.teams({ teams });
+      }
+
+      if (schoolData.invitations) {
+        console.log("Processing: Invitations data.");
+        invitations = schoolData.invitations;
+        subs.invitations({ invitations });
+      }
+
+      if (schoolData.grades) {
+        console.log("Processing: Grades & Curriculum data.");
+        grades = schoolData.grades;
+        subs.grades({ grades });
+
+        const newSubjects = []; grades.forEach(grade => grade.subjects?.forEach(subject => newSubjects.push(subject)));
+        subjects = newSubjects; subs.subjects({ subjects });
+
+        const newTopics = []; subjects.forEach(subject => subject.topics?.forEach(topic => newTopics.push(topic)));
+        topics = newTopics; subs.topics({ topics });
+
+        const newSubtopics = []; topics.forEach(topic => topic.subtopics?.forEach(subtopic => newSubtopics.push(subtopic)));
+        subtopics = newSubtopics; subs.subtopics({ subtopics });
+
+        const newQuestions = []; subtopics.forEach(subtopic => subtopic.questions?.forEach(question => newQuestions.push(question)));
+        questions = newQuestions; subs.questions({ questions });
+
+        const newOptions = []; questions.forEach(question => question.options?.forEach(option => newOptions.push(option)));
+        options = newOptions; subs.options({ options });
+      }
+    };
+
+
+    // --- EXECUTING THE QUERIES ---
+
+    // Note how ALL queries now use `mergeData` as their callback.
+
+    // --- STEP 1: Get the initial school and user data. This MUST run first to set the schoolID.
+    query(
+      `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_school_DETAILS}`,
+      {},
+      mergeData // Use the new merger callback
+    );
+
+    // --- STEP 2: Fire parallel requests. Their order of completion no longer matters.
+    // Corrected Query Call using the "Best Practice" fragment
+    query(
+      `query GetStudents($limit: Int!, $offset: Int!) {
+        schools {
+          id
+          students(limit: $limit, offset: $offset) {
+            ...StudentFields
+          }
+        }
+      }
+      ${FRAGMENT_STUDENTS_DATA}`, // Note we are appending the new fragment here
+          { limit: 15, offset: 0 },
+          mergeData
+    ); 
+    query(`query GetParents { schools { id ...ParentsData } } ${FRAGMENT_PARENTS_DATA}`, {}, mergeData);
+    query(`query GetDrivers { schools { id ...DriversData } } ${FRAGMENT_DRIVERS_DATA}`, {}, mergeData);
+    query(`query GetAdmins { schools { id ...AdminsData } } ${FRAGMENT_ADMINS_DATA}`, {}, mergeData);
+    query(`query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}`, {}, mergeData);
+    query(`query GetRoutes { schools { id ...RoutesData } } ${FRAGMENT_ROUTES_DATA}`, {}, mergeData);
+    query(`query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}`, {}, mergeData);
+    query(`query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}`, {}, mergeData);
+    query(`query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}`, {}, mergeData);
+    query(`query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}`, {}, mergeData);
+    query(`query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}`, {}, mergeData);
+    query(`query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}`, {}, mergeData);
+    query(`query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}`, {}, mergeData);
+    query(`query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}`, {}, mergeData);
+    query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}`, {}, mergeData);
+
+    // IMPORTANT: Note that I've added `id` to the top level of each parallel query's `schools` field,
+    // e.g., `schools { id ...StudentsData }`. This is crucial so that `mergeData` can identify
+    // which school the incoming data belongs to, even before the main `schoolDetails` query has finished.
 
     if (done) {
       done();
@@ -849,12 +861,13 @@ query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INV
     grades: {
       create: data =>
         new Promise(async (resolve, reject) => {
+          const school = localStorage.getItem("school");
           try {
             const { grades: { create: { id } } } = await mutate(
               `mutation ($Igrade: Igrade!) { grades { create(grade: $Igrade) { id } } }`,
-              { Igrade: { ...data, school: schoolID } }
+              { Igrade: { ...data, school } }
             );
-            const newGrade = { ...data, id, school: schoolID, subjects: [] }; // Ensure 'subjects'
+            const newGrade = { ...data, id, school, subjects: [] }; // Ensure 'subjects'
             grades = [...grades, newGrade];
             subs.grades({ grades });
             resolve(); // Original resolves without value
@@ -1599,7 +1612,7 @@ query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INV
       },
       getSelected() {
         return school;
-      },  
+      },
       update: data =>
         new Promise(async (resolve, reject) => {
           await mutate(
