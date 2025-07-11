@@ -1617,7 +1617,7 @@ var Data = (function () {
         new Promise(async (resolve, reject) => {
           await mutate(
             `
-        mutation ($school: Uschool!) {
+        mutation ($school: USchool!) {
           schools {
             update(school: $school) {
               id
