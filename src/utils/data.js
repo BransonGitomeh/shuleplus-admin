@@ -286,7 +286,7 @@ var Data = (function () {
     // The field names in your query (`schools`, `user`) remain lowercase.
     const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
     const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount }`;
-    const FRAGMENT_GRADES_DATA = `fragment GradesData on school { gradeOrder grades { id name subjectsOrder subjects { id name topicOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
+    const FRAGMENT_GRADES_DATA = `fragment GradesData on school { gradeOrder grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
     const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
     const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
     const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
@@ -358,60 +358,24 @@ var Data = (function () {
      * and then triggers the processing of the fully merged data.
      * @param {object} response - The incremental data from a GraphQL query.
      */
-    const mergeData = (response) => {
-      // For debugging: see exactly what data arrives with each call
-      console.log("MergeData received incremental response:", response);
-
-      if (!response || !response.schools || response.schools.length === 0) {
-        return; // Ignore empty or malformed responses
-      }
-
-      // --- ONE-TIME SETUP: Establishes the active school ID ---
-      // This still runs on the first response that contains full school details.
-      if (!schoolID && response.schools[0].name) {
-        console.log("Initial setup: Populating schools and setting active schoolID.");
-
-        // 1. Populate the list of available schools
-        schoolsData.length = 0; // Clear any old data
-        schoolsData.push(...response.schools);
-        schools = schoolsData; // Assuming 'schools' is a global/module-level variable
-        subs.schools({ schools });
-
-        // 2. Determine the active school
-        const activeSchool = schools.find(s => s.id === localStorage.getItem("school")) || schools[0];
-        if (activeSchool) {
-          schoolID = activeSchool.id;
-          localStorage.setItem("school", schoolID);
-          console.log("Active schoolID has been set to:", schoolID);
-
-          // 3. Initialize the merged data store for this school
-          if (!mergedDataStore[schoolID]) {
-            mergedDataStore[schoolID] = {};
-          }
-          activeSchoolMergedData = mergedDataStore[schoolID];
-        }
-      }
-
-      // If we don't have an active school ID yet, we can't merge data.
-      // This can happen if a data-only query resolves before the initial setup query.
-      if (!schoolID) {
-        console.warn("Cannot merge data, active schoolID is not set yet. Discarding payload.");
-        return;
-      }
-
+    const mergeData = (newResponse) => {
+      
       // --- INCREMENTAL MERGE ---
       // Find the data for our active school within the current response payload.
-      const incomingDataForActiveSchool = response.schools.find(s => s.id === schoolID);
+      const incomingDataForSchools = newResponse.schools;
 
-      if (incomingDataForActiveSchool) {
-        console.log(`Merging data for school ${schoolID}:`, Object.keys(incomingDataForActiveSchool));
+      // Deep merge the new data chunk into our active school's data object
+      const mergedData = deepMerge(schools, incomingDataForSchools);
 
-        // Deep merge the new data chunk into our active school's data object
-        deepMerge(activeSchoolMergedData, incomingDataForActiveSchool);
-
-        // Now, process the *entire* up-to-date merged object
-        processData(activeSchoolMergedData);
+      console.log("mergedData", mergedData);
+      if(!school){
+        school = mergedData.find(s => s.id === localStorage.getItem("school"));
       }
+
+      // Now, process the *entire* up-to-date merged object
+      processData(school);
+      subs.schools({ schools:mergedData });
+      subs.grades({ grades:school.grades });
     };
 
     /**
@@ -562,9 +526,7 @@ var Data = (function () {
       `query GetStudents($limit: Int!, $offset: Int!) {
         schools {
           id
-          students(limit: $limit, offset: $offset) {
-            ...StudentFields
-          }
+          ...StudentsData
         }
       }
       ${FRAGMENT_STUDENTS_DATA}`, // Note we are appending the new fragment here
@@ -1610,9 +1572,7 @@ var Data = (function () {
       list() {
         return schools;
       },
-      getSelected() {
-        return school;
-      },
+      
       update: data =>
         new Promise(async (resolve, reject) => {
           await mutate(

@@ -1,10 +1,7 @@
-// components/students/StudentDataTableV7.js
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Data from "../../utils/data";
-import Fuse from 'fuse.js';
 
-// Modals can be used as before
+// Modals are used as before. No changes needed for them.
 import AddModal from "./add";
 import UploadModal from "./upload";
 import EditModal from "./edit";
@@ -15,29 +12,32 @@ const uploadModalInstance = new UploadModal();
 const editModalInstance = new EditModal();
 const deleteModalInstance = new DeleteModal();
 
+// Helper function to safely access nested properties
 const getNestedValue = (obj, path) => {
   if (!path) return '';
   return path.split('.').reduce((acc, part) => acc && acc[part], obj) || '';
 };
 
-// --- V7: PRODUCTION DATATABLE WITH SERVER-SIDE PAGINATION ---
-export default function StudentDataTableV7() {
+// --- V8: PRODUCTION DATATABLE WITH FULL SERVER-SIDE PAGINATION ---
+export default function StudentDataTableV8() {
   // --- STATE MANAGEMENT ---
+  // `students` now holds only the data for the current page.
   const [students, setStudents] = useState([]);
+  // `totalStudents` holds the total count from the server.
   const [totalStudents, setTotalStudents] = useState(0);
   
-  // State for related data for modals/dropdowns
+  // State for related data for modals/dropdowns (fetched once)
   const [routes, setRoutes] = useState([]);
   const [parents, setParents] = useState([]);
   const [classes, setClasses] = useState([]);
 
-  // Loading states: `initialLoading` for the first load, `isPaginating` for subsequent fetches
+  // Loading states: `initialLoading` for the first skeleton screen, `isPaginating` for subsequent fetches
   const [initialLoading, setInitialLoading] = useState(true);
   const [isPaginating, setIsPaginating] = useState(false);
 
-  // Search & Filter state
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeSearch, setActiveSearch] = useState(""); // The search term that is actually applied
+  const [activeSearch, setActiveSearch] = useState("");
 
   // Pagination & Sorting state
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,51 +49,53 @@ export default function StudentDataTableV7() {
   const newRecordTimers = useRef(new Map());
 
   // --- DATA FETCHING & SUBSCRIPTIONS ---
+
+  // The core data fetching function, now responsible for all data loading.
   const fetchPageData = useCallback(async (page, limit, search, sort) => {
-    // Use the `isPaginating` state for subsequent loads
-    if (!initialLoading) setIsPaginating(true);
-
-    try {
-        const pageRes = await Data.students.getPage({
-            page,
-            limit,
-            search,
-            sort,
-        });
-        console.log(pageRes)
-        const { students: fetchedStudents, totalCount } = pageRes;
-        setStudents(fetchedStudents);
-        setTotalStudents(totalCount);
-    } catch (error) {
-        console.error("Failed to fetch student page:", error);
-        // Optionally, set an error state here to show a message to the user
-    } finally {
-        setInitialLoading(false);
-        setIsPaginating(false);
+    // Show overlay spinner for subsequent loads, but not the initial one.
+    if (!initialLoading) {
+      setIsPaginating(true);
     }
-  }, [initialLoading]);
+    
+    try {
+      const pageResponse = await Data.students.getPage({
+        page,
+        limit,
+        search,
+        sort,
+      });
+      
+      const { students: fetchedStudents, totalCount } = pageResponse;
+      setStudents(fetchedStudents);
+      setTotalStudents(totalCount);
+    } catch (error) {
+      console.error("Failed to fetch student page:", error);
+      // Optionally, set an error state here to show a message to the user
+      setStudents([]);
+      setTotalStudents(0);
+    } finally {
+      // Clear all loading states
+      setInitialLoading(false);
+      setIsPaginating(false);
+    }
+  }, [initialLoading]); // Dependency on initialLoading is important for the spinner logic
 
-  // Effect to fetch data when pagination, sort, or search changes
+  // Effect to fetch data whenever pagination, sorting, or searching changes.
+  // This is the main driver of the component.
   useEffect(() => {
     fetchPageData(currentPage, rowsPerPage, activeSearch, sortConfig);
   }, [currentPage, rowsPerPage, activeSearch, sortConfig, fetchPageData]);
 
-  // Effect for initial data and subscriptions
+  // Effect for one-time setup (like fetching data for modals)
   useEffect(() => {
-    // Setup subscription for real-time updates (like new records)
-    Data.students.subscribe(({ students: initialStudents, totalCount }) => {
-        setStudents(initialStudents);
-        setTotalStudents(totalCount);
-        setInitialLoading(false);
-    });
-    
-    // Fetch related data for modals
-    // setRoutes(Data.students.getRoutes());
-    // setParents(Data.students.getParents());
-    // setClasses(Data.students.getClasses());
+    // This is the ideal place to fetch non-paginated data needed for modals.
+    // Assuming these `list` methods exist and return all items.
+    // setRoutes(Data.routes.list());
+    // setParents(Data.parents.list());
+    // setClasses(Data.classes.list());
 
+    // Cleanup for the highlight-new-record timers on unmount
     return () => {
-      // Clean up timers on unmount
       newRecordTimers.current.forEach(timerId => clearTimeout(timerId));
     };
   }, []);
@@ -108,7 +110,7 @@ export default function StudentDataTableV7() {
   ], []);
 
   // --- DERIVED STATE ---
-  // Since data is pre-sorted and paginated by the server, `processedData` is just the `students` state.
+  // Total pages are now calculated based on the server's total count.
   const totalPages = Math.ceil(totalStudents / rowsPerPage);
 
   // --- EVENT HANDLERS ---
@@ -138,15 +140,20 @@ export default function StudentDataTableV7() {
   const handleEdit = (student) => { setEdit(student); editModalInstance.show(); };
   const handleDelete = (student) => { setRemove(student); deleteModalInstance.show(); };
 
+  // Handler for when a student is successfully created via the modal
   const handleStudentCreated = (newStudent) => {
     if (!newStudent || !newStudent.id) return;
 
-    // Prepend the new student to the current page for immediate feedback
+    // Go to the first page to see the new record.
+    setCurrentPage(1);
+    
+    // Optimistic UI update: Prepend the new student for immediate feedback.
+    // The next fetch will correct this anyway.
     setStudents(prev => [newStudent, ...prev.slice(0, rowsPerPage - 1)]);
     setTotalStudents(prev => prev + 1); // Increment total count
-    setNewlyAddedIds(prev => new Set(prev).add(newStudent.id));
-    setCurrentPage(1); // Go to the first page to see the new record
 
+    // Highlight the new row
+    setNewlyAddedIds(prev => new Set(prev).add(newStudent.id));
     const timerId = setTimeout(() => {
         setNewlyAddedIds(prev => {
             const newIds = new Set(prev);
@@ -164,123 +171,114 @@ export default function StudentDataTableV7() {
         handleStudentCreated(newStudent);
     } catch (error) {
         console.error("Failed to create student:", error);
+        // Add user feedback for failure (e.g., a toast notification)
     }
   };
   
+  // After an edit or delete, simply refetch the current page data.
   const handleAfterAction = () => {
-    // Refetch current page data after an edit or delete
     fetchPageData(currentPage, rowsPerPage, activeSearch, sortConfig);
   }
 
   return (
-    <div className="v7-datatable-container">
-      <AddModal routes={routes} save={handleCreateStudent} />
-      <UploadModal save={() => { /* Upload logic would now post to backend and then refetch */ }} />
+    <div className="v8-datatable-container">
+      {/* Modals are passed the necessary data and handlers */}
+      <AddModal routes={routes} parents={parents} classes={classes} save={handleCreateStudent} />
+      <UploadModal save={() => { /* Upload logic would now post to backend and then refetch page 1 */ fetchPageData(1, rowsPerPage, "", sortConfig) }} />
       {edit && <EditModal edit={edit} routes={routes} parents={parents} classes={classes} save={async student => { await Data.students.update(student); handleAfterAction(); }} />}
       {remove && <DeleteModal remove={remove} save={async student => { await Data.students.delete(student); handleAfterAction(); }} />}
 
       <style>{`
-        /* --- V7 STYLING --- */
-        .v7-datatable-container {
-            --v7-bg: #F9F9FB;
-            --v7-content-bg: #FFFFFF;
-            --v7-border-color: #EFF2F5;
-            --v7-text-primary: #181C32;
-            --v7-text-secondary: #7E8299;
-            --v7-accent-color: #0095E8;
-            --v7-accent-light: #F1FAFF;
-            --v7-danger-color: #F64E60;
-            --v7-danger-light: #FFE2E5;
-            --v7-success-light: #E8FFF3;
+        /* --- V8 STYLING (can be identical to V7) --- */
+        .v8-datatable-container {
+            --v8-bg: #F9F9FB;
+            --v8-content-bg: #FFFFFF;
+            --v8-border-color: #EFF2F5;
+            --v8-text-primary: #181C32;
+            --v8-text-secondary: #7E8299;
+            --v8-accent-color: #0095E8;
+            --v8-accent-light: #F1FAFF;
+            --v8-danger-color: #F64E60;
+            --v8-danger-light: #FFE2E5;
+            --v8-success-light: #E8FFF3;
             font-family: 'Poppins', sans-serif;
-            background-color: var(--v7-bg);
+            background-color: var(--v8-bg);
         }
-        .v7-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; }
-        .v7-header-title { font-size: 1.25rem; font-weight: 600; color: var(--v7-text-primary); }
-        .v7-header-actions { display: flex; align-items: center; gap: 1rem; }
-        .v7-header-stat { text-align: right; }
-        .v7-header-stat .value { font-size: 1.25rem; font-weight: 700; color: var(--v7-text-primary); min-width: 30px; }
-        .v7-header-stat .label { font-size: 0.8rem; font-weight: 500; color: var(--v7-text-secondary); }
-        .v7-main { margin: 0 2rem 2rem; background-color: var(--v7-content-bg); border-radius: 0.75rem; box-shadow: 0 0 20px 0 rgba(76,87,125,.02); position: relative; }
-        .v7-table-loader {
-            position: absolute; top: 120px; /* Below toolbar */ left: 0; right: 0; bottom: 68px; /* Above pagination */
+        .v8-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; }
+        .v8-header-title { font-size: 1.25rem; font-weight: 600; color: var(--v8-text-primary); }
+        .v8-header-actions { display: flex; align-items: center; gap: 1rem; }
+        .v8-header-stat { text-align: right; }
+        .v8-header-stat .value { font-size: 1.25rem; font-weight: 700; color: var(--v8-text-primary); min-width: 30px; display: inline-block; }
+        .v8-header-stat .label { font-size: 0.8rem; font-weight: 500; color: var(--v8-text-secondary); }
+        .v8-main { margin: 0 2rem 2rem; background-color: var(--v8-content-bg); border-radius: 0.75rem; box-shadow: 0 0 20px 0 rgba(76,87,125,.02); position: relative; }
+        .v8-table-loader {
+            position: absolute; top: 70px; /* Below toolbar */ left: 0; right: 0; bottom: 68px; /* Above pagination */
             background-color: rgba(255, 255, 255, 0.7);
             display: flex; align-items: center; justify-content: center;
             z-index: 10;
             opacity: 0; visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
         }
-        .v7-table-loader.v7-loading { opacity: 1; visibility: visible; }
-        .v7-spinner {
-            border: 4px solid var(--v7-border-color);
-            border-top: 4px solid var(--v7-accent-color);
+        .v8-table-loader.v8-loading { opacity: 1; visibility: visible; }
+        .v8-spinner {
+            border: 4px solid var(--v8-border-color);
+            border-top: 4px solid var(--v8-accent-color);
             border-radius: 50%;
             width: 40px; height: 40px;
-            animation: v7-spin 1s linear infinite;
+            animation: v8-spin 1s linear infinite;
         }
-        @keyframes v7-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* ... other styles are similar to V6 but with v7 prefix ... */
-        .v7-table th.sortable { cursor: pointer; }
-        .v7-table th .sort-icon {
-            display: inline-block;
-            margin-left: 0.5rem;
-            color: #B5B5C3;
-            opacity: 0.5;
-            transition: all 0.2s;
-        }
-        .v7-table th:hover .sort-icon { opacity: 1; }
-        .v7-table th .sort-icon.active { color: var(--v7-accent-color); opacity: 1; }
-
-        /* Copied from V6 for brevity */
-        .v7-header-actions .btn { font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.42rem; border: none; cursor: pointer; }
-        .v7-toolbar { padding: 1rem 2rem; border-bottom: 1px solid var(--v7-border-color); }
-        .v7-search-group { display: flex; gap: 0.5rem; }
-        .v7-search-input { flex-grow: 1; border: 1px solid #E4E6EF; border-radius: 0.42rem; padding: 0.75rem 1rem; font-size: 1rem; }
-        .v7-table-wrapper { overflow-x: auto; }
-        .v7-table { width: 100%; border-collapse: collapse; }
-        .v7-table th { text-align: left; padding: 1rem 2rem; color: #B5B5C3; text-transform: uppercase; font-size: 0.8rem; font-weight: 600; user-select: none; }
-        .v7-table td { padding: 1.25rem 2rem; color: var(--v7-text-secondary); font-weight: 500; border-top: 1px solid var(--v7-border-color); white-space: nowrap; }
-        .v7-table .td-primary { color: var(--v7-text-primary); font-weight: 600; }
-        .v7-table tbody tr { transition: background-color 2s ease-out; }
-        .v7-table tbody tr:hover { background-color: var(--v7-accent-light); }
-        .v7-table tbody tr.v7-duplicate-row { background-color: var(--v7-danger-light) !important; }
-        .v7-table tbody tr.v7-new-row { background-color: var(--v7-success-light) !important; }
-        .v7-table-actions button { background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.1rem; color: #B5B5C3; }
-        .v7-table-actions button:hover { color: var(--v7-accent-color); }
-        .v7-pagination { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 2rem; border-top: 1px solid var(--v7-border-color); }
-        .v7-pagination-info { font-size: 0.9rem; color: var(--v7-text-secondary); font-weight: 500; }
-        .v7-pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
-        .v7-pagination-controls .btn-nav { font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.42rem; border: 1px solid #E4E6EF; background-color: white; cursor: pointer; }
-        .v7-pagination-controls .btn-nav:disabled { background-color: #F9F9FB; cursor: not-allowed; color: #D1D5DB; }
-        .v7-pagination-controls .page-indicator { font-weight: 500; color: var(--v7-text-primary); }
-        .v7-pagination-controls .form-select { border-color: #E4E6EF; font-weight: 500; }
+        @keyframes v8-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .v8-header-actions .btn { font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.42rem; border: none; cursor: pointer; }
+        .v8-toolbar { padding: 1rem 2rem; border-bottom: 1px solid var(--v8-border-color); }
+        .v8-search-group { display: flex; gap: 0.5rem; }
+        .v8-search-input { flex-grow: 1; border: 1px solid #E4E6EF; border-radius: 0.42rem; padding: 0.75rem 1rem; font-size: 1rem; }
+        .v8-table-wrapper { overflow-x: auto; }
+        .v8-table { width: 100%; border-collapse: collapse; }
+        .v8-table th { text-align: left; padding: 1rem 2rem; color: #B5B5C3; text-transform: uppercase; font-size: 0.8rem; font-weight: 600; user-select: none; }
+        .v8-table th.sortable { cursor: pointer; }
+        .v8-table th .sort-icon { display: inline-block; margin-left: 0.5rem; color: #B5B5C3; opacity: 0.5; transition: all 0.2s; }
+        .v8-table th:hover .sort-icon { opacity: 1; }
+        .v8-table th .sort-icon.active { color: var(--v8-accent-color); opacity: 1; }
+        .v8-table td { padding: 1.25rem 2rem; color: var(--v8-text-secondary); font-weight: 500; border-top: 1px solid var(--v8-border-color); white-space: nowrap; }
+        .v8-table .td-primary { color: var(--v8-text-primary); font-weight: 600; }
+        .v8-table tbody tr { transition: background-color 0.3s ease-in-out; }
+        .v8-table tbody tr.v8-new-row { background-color: var(--v8-success-light) !important; transition: background-color 2s ease-out; }
+        .v8-table tbody tr:hover { background-color: var(--v8-accent-light); }
+        .v8-table-actions button { background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.1rem; color: #B5B5C3; }
+        .v8-table-actions button:hover { color: var(--v8-accent-color); }
+        .v8-pagination { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 2rem; border-top: 1px solid var(--v8-border-color); }
+        .v8-pagination-info { font-size: 0.9rem; color: var(--v8-text-secondary); font-weight: 500; }
+        .v8-pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+        .v8-pagination-controls .btn-nav { font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.42rem; border: 1px solid #E4E6EF; background-color: white; cursor: pointer; }
+        .v8-pagination-controls .btn-nav:disabled { background-color: #F9F9FB; cursor: not-allowed; color: #D1D5DB; }
+        .v8-pagination-controls .page-indicator { font-weight: 500; color: var(--v8-text-primary); }
       `}</style>
     
-      <div className="v7-header">
-        <h2 className="v7-header-title">Student Directory</h2>
-        <div className="v7-header-actions">
-          <div className="v7-header-stat">
-            <div className="value">{initialLoading ? <div className="v7-spinner" style={{width: 20, height: 20}}></div> : totalStudents}</div>
+      <header className="v8-header">
+        <h2 className="v8-header-title">Student Directory</h2>
+        <div className="v8-header-actions">
+          <div className="v8-header-stat">
+            <div className="value">{initialLoading ? <div className="v8-spinner" style={{width: 20, height: 20}}></div> : totalStudents}</div>
             <div className="label">Total Students</div>
           </div>
           <button onClick={() => uploadModalInstance.show()} className="btn" style={{backgroundColor: '#F3F6F9', color: '#3F4254'}}>Upload</button>
-          <button onClick={() => addModalInstance.show()} className="btn" style={{backgroundColor: '#0095E8', color: 'white'}}>Add Student</button>
+          <button onClick={() => addModalInstance.show()} className="btn" style={{backgroundColor: 'var(--v8-accent-color)', color: 'white'}}>Add Student</button>
         </div>
-      </div>
+      </header>
 
-      <div className="v7-main">
-        <div className={`v7-table-loader ${isPaginating ? 'v7-loading' : ''}`}>
-            <div className="v7-spinner"></div>
+      <main className="v8-main">
+        <div className={`v8-table-loader ${isPaginating ? 'v8-loading' : ''}`}>
+            <div className="v8-spinner"></div>
         </div>
-        <div className="v7-toolbar">
-            <div className="v7-search-group">
-                <input type="text" className="v7-search-input" placeholder="Search students..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
-                <button className="btn" onClick={handleSearch} style={{backgroundColor: 'var(--v7-accent-color)', color: 'white'}}>Search</button>
-                {activeSearch && <button className="btn" onClick={handleClearSearch} style={{backgroundColor: 'var(--v7-border-color)', color: 'var(--v7-text-secondary)'}}>Clear</button>}
+        <div className="v8-toolbar">
+            <div className="v8-search-group">
+                <input type="text" className="v8-search-input" placeholder="Search by name, registration, parent..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                <button className="btn" onClick={handleSearch} style={{backgroundColor: 'var(--v8-accent-color)', color: 'white'}}>Search</button>
+                {activeSearch && <button className="btn" onClick={handleClearSearch} style={{backgroundColor: 'var(--v8-border-color)', color: 'var(--v8-text-secondary)'}}>Clear</button>}
             </div>
         </div>
-        <div className="v7-table-wrapper">
-          <table className="v7-table">
+        <div className="v8-table-wrapper">
+          <table className="v8-table">
             <thead>
               <tr>
                 {headers.map(h => (
@@ -298,23 +296,20 @@ export default function StudentDataTableV7() {
             </thead>
             <tbody>
               {initialLoading ? (
-                [...Array(rowsPerPage)].map((_, i) => <tr key={i}><td colSpan={headers.length + 1}><div style={{height: '2rem', backgroundColor: '#EFF2F5', borderRadius: '4px', margin: '1rem 0'}}></div></td></tr>)
-              ) : students?.length > 0 ? (
-                students?.map(row => {
-                  const isNew = newlyAddedIds.has(row.id);
-                  let rowClass = '';
-                  if (isNew) rowClass = 'v7-new-row';
-                  return (
-                    <tr key={row.id} className={rowClass}>
+                // Skeleton loader for the initial page load
+                [...Array(rowsPerPage)].map((_, i) => <tr key={i}><td colSpan={headers.length + 1}><div style={{height: '2rem', backgroundColor: '#EFF2F5', borderRadius: '4px', margin: '1rem 0', animation: 'pulse 1.5s infinite ease-in-out'}}></div></td></tr>)
+              ) : students.length > 0 ? (
+                students.map(row => (
+                    <tr key={row.id} className={newlyAddedIds.has(row.id) ? 'v8-new-row' : ''}>
                       {headers.map(h => <td key={h.key} className={h.key === 'names' ? 'td-primary' : ''}>{getNestedValue(row, h.key)}</td>)}
-                      <td className="v7-table-actions" style={{textAlign: 'right'}}>
+                      <td className="v8-table-actions" style={{textAlign: 'right'}}>
                         <button title="Edit Student" onClick={() => handleEdit(row)}><i className="la la-edit" style={{fontSize: '1.5rem'}}></i></button>
                         <button title="Delete Student" onClick={() => handleDelete(row)}><i className="la la-trash" style={{fontSize: '1.5rem'}}></i></button>
                       </td>
                     </tr>
-                  )
-                })
+                ))
               ) : (
+                // Message for when no results are found
                 <tr><td colSpan={headers.length + 1} style={{ textAlign: 'center', padding: '4rem', color: '#B5B5C3' }}>No students found.</td></tr>
               )}
             </tbody>
@@ -322,13 +317,13 @@ export default function StudentDataTableV7() {
         </div>
         
         {!initialLoading && totalStudents > 0 && (
-          <div className="v7-pagination">
-            <div className="v7-pagination-info">
+          <div className="v8-pagination">
+            <div className="v8-pagination-info">
                 Showing <strong>{(currentPage - 1) * rowsPerPage + 1}</strong>-<strong>{Math.min(currentPage * rowsPerPage, totalStudents)}</strong> of <strong>{totalStudents}</strong>
             </div>
-            <div className="v7-pagination-controls">
-                <span className="me-3">Rows:</span>
-                <select className="form-select form-select-sm" value={rowsPerPage} onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+            <div className="v8-pagination-controls">
+                <span>Rows:</span>
+                <select className="form-select form-select-sm" style={{padding: '0.5rem', borderRadius: '0.42rem', border: '1px solid #E4E6EF'}} value={rowsPerPage} onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
                     {[15, 30, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
                 </select>
                 <button className="btn-nav ms-3" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1 || isPaginating}>Previous</button>
@@ -337,7 +332,7 @@ export default function StudentDataTableV7() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

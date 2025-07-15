@@ -52,6 +52,62 @@ const Search = ({ onSearch, value, title }) => {
   );
 };
 
+// --- [NEW] SKELETON LOADER COMPONENT ---
+const SkeletonLoader = ({ columns = 4, rows = 6 }) => {
+  const skeletonStyles = `
+    @keyframes skeleton-pulse {
+      0% { background-color: #f0f3f7; }
+      50% { background-color: #e2e8f0; }
+      100% { background-color: #f0f3f7; }
+    }
+    .skeleton-placeholder {
+      animation: skeleton-pulse 1.5s infinite ease-in-out;
+      background-color: #f0f3f7;
+      border-radius: 4px;
+    }
+    .skeleton-header {
+      height: 24px;
+      width: 60%;
+      margin-bottom: 20px;
+    }
+    .skeleton-search {
+      height: 38px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .skeleton-item {
+      height: 40px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  `;
+
+  return (
+    <>
+      <style>{skeletonStyles}</style>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+        <button className="btn btn-sm btn-icon btn-light mr-2" disabled><i className="la la-angle-left"></i></button>
+        <div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)" }}>
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <div className="col-md-3 col-sm-12 col-xs-12" key={colIndex}>
+              <div className="kt-portlet__head" style={{ borderBottom: 'none' }}>
+                <div className="skeleton-placeholder skeleton-header"></div>
+              </div>
+              <div className="kt-portlet__body">
+                <div className="skeleton-placeholder skeleton-search"></div>
+                {Array.from({ length: rows }).map((_, rowIndex) => (
+                  <div className="skeleton-placeholder skeleton-item" key={rowIndex}></div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-sm btn-icon btn-light ml-2" disabled><i className="la la-angle-right"></i></button>
+      </div>
+    </>
+  );
+};
+
 // Access toastr from the window object
 const toastr = window.toastr;
 
@@ -89,6 +145,7 @@ class BasicTable extends React.Component {
   state = {
     // State properties...
     school: null,
+    isLoading: true,
     grades: [], _masterGradesList: [],
     gradeToEdit: {}, gradeToDelete: {}, selectedGrade: null, gradeSearchTerm: '',
     filteredSubjects: [], subjectToEdit: {}, subjectToDelete: {}, selectedSubject: null, subjectSearchTerm: '',
@@ -114,12 +171,12 @@ class BasicTable extends React.Component {
     // --- FIX 1: Add event listener for saving state before page unloads ---
     window.addEventListener('beforeunload', this.handleBeforeUnload);
 
-    this._schoolSubscription = Data.schools.subscribe(schools => {
-      const selectedSchool = Data.schools.getSelected();
-      this.setState({ school: selectedSchool });
+    Data.schools.subscribe(({schools}) => {
+      console.log("received school update",{schools})
+      this.setState({ school:schools.find(school => school.id === localStorage.getItem("school")) });
     });
 
-    this._gradeSubscription = Data.grades.subscribe(({ grades: masterTree }) => {
+    Data.grades.subscribe(({ grades: masterTree }) => {
       const newMasterList = masterTree || [];
       const stateString = localStorage.getItem("learningState");
       const school = Data.schools.getSelected();
@@ -128,10 +185,11 @@ class BasicTable extends React.Component {
         const savedState = JSON.parse(stateString);
         this.setState({
           _masterGradesList: newMasterList,
+          isLoading: false,
           school,
           ...savedState,
         }, () => {
-          this.refreshCurrentSelectionsAndFilters(false);
+          this.refreshCurrentSelectionsAndFilters(true);
           if (this.state.selectedSubject) {
             this.fetchAndSetResponses(this.state.selectedSubject);
           }
@@ -141,6 +199,7 @@ class BasicTable extends React.Component {
       } else {
         this.setState({
           _masterGradesList: newMasterList,
+          isLoading: false,
           school,
         }, () => this.refreshCurrentSelectionsAndFilters(true));
       }
@@ -193,7 +252,7 @@ class BasicTable extends React.Component {
     }
   }
   
-  // --- UTILITY & FILTERING FUNCTIONS (Unchanged) ---
+  // --- UTILITY & FILTERING FUNCTIONS ---
   _applyFilter = (list, term, key = 'name') => {
     if (!list) return [];
     const searchTerm = term.toLowerCase().trim();
@@ -201,19 +260,32 @@ class BasicTable extends React.Component {
     return list.filter(item => item && item[key] && String(item[key]).toLowerCase().includes(searchTerm));
   };
     
+  /**
+   * [NEW] Sorts a list of items based on an array of ordered IDs.
+   * Items not found in the order array are pushed to the end.
+   * @param {Array} list The array of objects to sort (e.g., [{id: 'b'}, {id: 'a'}])
+   * @param {Array} orderArray The array of IDs in the desired order (e.g., ['a', 'b'])
+   * @returns {Array} The sorted list.
+   */
   _sortListByOrderArray = (list, orderArray) => {
     if (!list || !Array.isArray(list) || !orderArray || !Array.isArray(orderArray)) {
         return list || [];
     }
+    console.group("_sortListByOrderArray");
+    console.log("Before sorting:", list);
+    console.log("Order array:", orderArray);
     const orderMap = new Map(orderArray.map((id, index) => [id, index]));
-    return [...list].sort((a, b) => {
+    const sortedList = [...list].sort((a, b) => {
         const posA = orderMap.get(a.id) ?? Infinity;
         const posB = orderMap.get(b.id) ?? Infinity;
         return posA - posB;
     });
+    console.log("After sorting:", sortedList);
+    console.groupEnd();
+    return sortedList;
   }
 
-  // --- DATA REFRESH & NAVIGATION (Unchanged) ---
+  // --- DATA REFRESH & NAVIGATION ---
   refreshCurrentSelectionsAndFilters = (doScroll = true) => {
     const {
       _masterGradesList, school,
@@ -227,36 +299,44 @@ class BasicTable extends React.Component {
 
     let newState = {};
 
+    console.log(school)
+
+    // [MODIFIED] Use the new sorting function for grades
     const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder);
     newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name');
 
     const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
     if (selectedGrade && !currentGradeObj) { this.setState(this.clearSelectionsAndDataFromLevel('grade', true)); return; }
     
+    // [MODIFIED] Use the new sorting function for subjects
     const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder);
     newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name');
 
     const currentSubjectObj = selectedSubject ? subjectsList.find(s => s.id === selectedSubject) : null;
     if (selectedSubject && !currentSubjectObj) { this.setState(this.clearSelectionsAndDataFromLevel('subject', true)); return; }
 
-    const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicOrder);
+    // [MODIFIED] Use the new sorting function for topics
+    const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder);
     newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name');
 
     const currentTopicObj = selectedTopic ? topicsList.find(t => t.id === selectedTopic) : null;
     if (selectedTopic && !currentTopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('topic', true)); return; }
 
+    // [MODIFIED] Use the new sorting function for subtopics
     const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder);
     newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name');
 
     const currentSubtopicObj = selectedSubtopic ? subtopicsList.find(st => st.id === selectedSubtopic) : null;
     if (selectedSubtopic && !currentSubtopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('subtopic', true)); return; }
 
+    // [MODIFIED] Use the new sorting function for questions
     const questionsList = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder);
     newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name');
 
     const currentQuestionObj = selectedQuestion ? questionsList.find(q => q.id === selectedQuestion) : null;
     if (selectedQuestion && !currentQuestionObj) { this.setState(this.clearSelectionsAndDataFromLevel('question', true)); return; }
 
+    // [MODIFIED] Use the new sorting function for options
     const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder);
     newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value');
 
@@ -275,6 +355,7 @@ class BasicTable extends React.Component {
       newState[`selected${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}`] = null;
       newState[`filtered${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}s`] = [];
       if (currentLevel === 'grade') {
+         // [MODIFIED] Ensure the base grade list is also sorted when clearing
          const gradesList = this._sortListByOrderArray(this.state._masterGradesList, this.state.school?.gradeOrder);
          newState.grades = this._applyFilter(gradesList, this.state.gradeSearchTerm, 'name');
       }
@@ -309,12 +390,13 @@ class BasicTable extends React.Component {
   handleUpdate = (entity, data) => async () => { await Data[entity].update(data); this.onEntityUpdated(entity.slice(0, -1)); }
   handleDelete = (entity, item, parentId, parentKey) => async () => { const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id }; await Data[entity].delete(payload); this.onEntityDeleted(entity.slice(0, -1)); }
   scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
-  _handleReorder = async (entityType, reorderedList) => { const { _masterGradesList, school, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion } = this.state; const findItem = (id, list) => list.find(item => item.id === id); const revertUI = () => this.refreshCurrentSelectionsAndFilters(); try { const ids = reorderedList.map(item => item.id); switch (entityType) { case 'grades': this.setState({ grades: reorderedList }); if (!school) throw new Error("School not loaded, cannot reorder grades."); const updatedSchool = { id: school.id, gradeOrder: ids }; this.handleUpdate('schools', updatedSchool)(); break; case 'subjects': this.setState({ filteredSubjects: reorderedList }); const parentGrade = findItem(selectedGrade, _masterGradesList); if (!parentGrade) throw new Error("Parent grade not found."); const updatedGrade = { id: parentGrade.id, subjectsOrder: ids }; this.handleUpdate('grades', updatedGrade)(); break; case 'topics': this.setState({ filteredTopics: reorderedList }); const gradeForTopic = findItem(selectedGrade, _masterGradesList); const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []); if (!parentSubject) throw new Error("Parent subject not found."); const updatedSubject = { id: parentSubject.id, topicOrder: ids }; this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })(); break; case 'subtopics': this.setState({ filteredSubtopics: reorderedList }); const gradeForSubtopic = findItem(selectedGrade, _masterGradesList); const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []); const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []); if (!parentTopic) throw new Error("Parent topic not found."); const updatedTopic = { id: parentTopic.id, subtopicOrder: ids }; this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })(); break; case 'questions': this.setState({ filteredQuestions: reorderedList }); const gradeForQuestion = findItem(selectedGrade, _masterGradesList); const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []); const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []); const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []); if (!parentSubtopic) throw new Error("Parent subtopic not found."); const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids }; this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })(); break; case 'options': this.setState({ filteredOptions: reorderedList }); const gradeForOption = findItem(selectedGrade, _masterGradesList); const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []); const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []); const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []); const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []); if (!parentQuestion) throw new Error("Parent question not found."); const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids }; this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })(); break; default: console.warn(`Reorder handler not implemented for: ${entityType}`); return; } } catch (error) { console.error(`Error during reorder of ${entityType}:`, error); toastr.error(`Failed to update order for ${entityType}. Reverting.`); revertUI(); } };
+  _handleReorder = async (entityType, reorderedList) => { const { _masterGradesList, school, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion } = this.state; const findItem = (id, list) => list.find(item => item.id === id); const revertUI = () => this.refreshCurrentSelectionsAndFilters(); try { const ids = reorderedList.map(item => item.id); switch (entityType) { case 'grades': this.setState({ grades: reorderedList }); if (!school) throw new Error("School not loaded, cannot reorder grades."); const updatedSchool = { id: school.id, gradeOrder: ids }; this.handleUpdate('schools', updatedSchool)(); break; case 'subjects': this.setState({ filteredSubjects: reorderedList }); const parentGrade = findItem(selectedGrade, _masterGradesList); if (!parentGrade) throw new Error("Parent grade not found."); const updatedGrade = { id: parentGrade.id, subjectsOrder: ids }; this.handleUpdate('grades', updatedGrade)(); break; case 'topics': this.setState({ filteredTopics: reorderedList }); const gradeForTopic = findItem(selectedGrade, _masterGradesList); const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []); if (!parentSubject) throw new Error("Parent subject not found."); const updatedSubject = { id: parentSubject.id, topicsOrder: ids }; this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })(); break; case 'subtopics': this.setState({ filteredSubtopics: reorderedList }); const gradeForSubtopic = findItem(selectedGrade, _masterGradesList); const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []); const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []); if (!parentTopic) throw new Error("Parent topic not found."); const updatedTopic = { id: parentTopic.id, subtopicOrder: ids }; this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })(); break; case 'questions': this.setState({ filteredQuestions: reorderedList }); const gradeForQuestion = findItem(selectedGrade, _masterGradesList); const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []); const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []); const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []); if (!parentSubtopic) throw new Error("Parent subtopic not found."); const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids }; this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })(); break; case 'options': this.setState({ filteredOptions: reorderedList }); const gradeForOption = findItem(selectedGrade, _masterGradesList); const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []); const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []); const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []); const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []); if (!parentQuestion) throw new Error("Parent question not found."); const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids }; this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })(); break; default: console.warn(`Reorder handler not implemented for: ${entityType}`); return; } } catch (error) { console.error(`Error during reorder of ${entityType}:`, error); toastr.error(`Failed to update order for ${entityType}. Reverting.`); revertUI(); } };
 
   // --- RENDER (Unchanged) ---
 
   render() {
     const {
+      isLoading,
       grades, gradeSearchTerm,
       filteredSubjects, subjectSearchTerm,
       filteredTopics, topicSearchTerm,
@@ -346,7 +428,9 @@ class BasicTable extends React.Component {
         </div>
         
         <div className="kt-portlet__body">
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+          {isLoading ? (
+            <SkeletonLoader columns={4} />
+          ) :<div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
             <button onClick={() => this.scrollBy(-400)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
             <div ref={this.scrollContainerRef} className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)" }}>
               {/* Column 1: Grades */}
@@ -483,7 +567,7 @@ class BasicTable extends React.Component {
               )}
             </div>
             <button onClick={() => this.scrollBy(400)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
-          </div>
+          </div>}
         </div>
 
         {/* --- All Modals --- */}
