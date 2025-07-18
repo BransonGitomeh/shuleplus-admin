@@ -365,18 +365,25 @@ var Data = (function () {
       const incomingDataForSchools = newResponse.schools;
 
       // Deep merge the new data chunk into our active school's data object
-      const mergedData = deepMerge(schools, incomingDataForSchools);
+      const mergedData = deepMerge(schoolsData, incomingDataForSchools);
 
       console.log("mergedData", mergedData);
-      if(!school){
-        school = mergedData.find(s => s.id === localStorage.getItem("school"));
-        schoolID = school.id
+      if (!schoolID) {
+        // If we don't have a schoolID yet, pick the first one
+        if (mergedData.length > 0) {
+          schoolID = mergedData[0].id;
+          localStorage.setItem("school", schoolID);
+        }
       }
 
+      // Update the active school's merged data object
+      activeSchoolMergedData = mergedData.find(s => s.id == schoolID);
+
       // Now, process the *entire* up-to-date merged object
-      processData(school);
-      subs.schools({ schools:mergedData });
-      subs.grades({ grades:school.grades });
+      console.log("Processing: School data.", schoolID, activeSchoolMergedData, localStorage.getItem("school"));
+      processData(activeSchoolMergedData);
+      subs.schools({ schools: mergedData });
+      subs.grades({ grades: activeSchoolMergedData.grades });
     };
 
     /**
@@ -387,6 +394,7 @@ var Data = (function () {
     const processData = (schoolData) => {
       // The logic here is much cleaner. We just check for the existence of properties
       // on the single `schoolData` object.
+      console.log("Processing: School data.", schoolData);
 
       if (schoolData.students) {
         // Note: To prevent reprocessing, you could add a check:
@@ -1971,7 +1979,7 @@ var Data = (function () {
               }
             }`,
             {
-              Iadmin: Object.assign(data, { school: schoolID })
+              Iadmin: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
 
