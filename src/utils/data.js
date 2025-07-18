@@ -370,6 +370,7 @@ var Data = (function () {
       console.log("mergedData", mergedData);
       if(!school){
         school = mergedData.find(s => s.id === localStorage.getItem("school"));
+        schoolID = school.id
       }
 
       // Now, process the *entire* up-to-date merged object
