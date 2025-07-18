@@ -123,6 +123,50 @@ var Data = (function () {
 
   }
 
+
+  const getParentsPage = async ({ page = 1, limit = 15, search = "", sort = { key: 'names', direction: 'ascending' } }) => {
+    const offset = (page - 1) * limit;
+    let processedParents = [];
+    let schoolData = {};
+
+    const { data } = await query(`
+    query GetParentPage( $limit: Int, $offset: Int, $id: String) {
+      school( id: $id) {
+        parentsCount
+        parents( limit: $limit, offset: $offset) {
+          id
+          national_id
+          name
+          gender
+          email
+          phone
+          students {
+            names
+            gender
+            route {
+              name
+            }
+          }
+        }
+      }
+    }
+  `, { limit, offset, id: localStorage.getItem("school") }, (data) => {
+      schoolData = data.school;
+      // Post-process data to add flattened names (as in the original code)
+      processedParents = schoolData?.parents?.map(parent => ({
+        ...parent,
+        parent_name: parent.name || '',
+      }));
+
+      parents = processedParents;
+      subs.parents({ parents });
+    });
+    return {
+      parents: processedParents || [],
+      totalCount: schoolData?.parentsCount || 0
+    };
+  }
+
   // subscriptions for every entity to keep track of everyone subscribing to any data
   var subs = {};
   emitize(subs, "schools");
@@ -285,7 +329,7 @@ var Data = (function () {
     // Note: Type names like 'school' and 'User' are corrected to PascalCase, which is the GraphQL standard.
     // The field names in your query (`schools`, `user`) remain lowercase.
     const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
-    const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount }`;
+    const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount   }`;
     const FRAGMENT_GRADES_DATA = `fragment GradesData on school { gradeOrder grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
     const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
     const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
@@ -822,6 +866,7 @@ var Data = (function () {
       list() {
         return parents;
       },
+      getPage: getParentsPage,
       subscribe(cb) {
         // listen for even change on the students observables
         subs.parents = cb;
