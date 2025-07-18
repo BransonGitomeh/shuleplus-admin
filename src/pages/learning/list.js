@@ -53,56 +53,169 @@ const Search = ({ onSearch, value, title }) => {
 };
 
 // --- [NEW] SKELETON LOADER COMPONENT ---
-const SkeletonLoader = ({ columns = 4, rows = 6 }) => {
+// --- [NEW] STRUCTURE-AWARE SKELETON LOADER ---
+// --- [NEW] HIGH-FIDELITY SKELETON LOADER ---
+const SkeletonLoader = () => {
+
+  // A small, reusable component to build the standard columns
+  const SkeletonColumn = ({ rows = 8, widthClass = "col-md-3" }) => (
+    <div className={widthClass} style={{ flexShrink: 0 }}>
+      {/* This mimics the .kt-portlet__head structure */}
+      <div className="skeleton-portlet-header">
+        <div className="skeleton-placeholder skeleton-title"></div>
+        <div className="skeleton-placeholder skeleton-icon-placeholder"></div>
+      </div>
+      {/* This mimics the .kt-portlet__body structure */}
+      <div className="skeleton-portlet-body">
+        <div className="skeleton-placeholder skeleton-search"></div>
+        {Array.from({ length: rows }).map((_, rowIndex) => (
+          <div className="skeleton-placeholder skeleton-list-item" key={rowIndex}>
+            {/* Placeholder for drag handle icon */}
+            <div className="skeleton-item-icon"></div>
+            {/* Placeholder for text */}
+            <div className="skeleton-item-text"></div>
+            {/* Placeholder for action icons (edit/delete) */}
+            <div className="skeleton-item-actions">
+              <div className="skeleton-action-icon"></div>
+              <div className="skeleton-action-icon"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const skeletonStyles = `
     @keyframes skeleton-pulse {
-      0% { background-color: #f0f3f7; }
-      50% { background-color: #e2e8f0; }
-      100% { background-color: #f0f3f7; }
+      0% { background-color: #f7f8fa; }
+      50% { background-color: #e9ecf2; }
+      100% { background-color: #f7f8fa; }
     }
     .skeleton-placeholder {
-      animation: skeleton-pulse 1.5s infinite ease-in-out;
-      background-color: #f0f3f7;
+      animation: skeleton-pulse 1.8s infinite ease-in-out;
+      background-color: #f7f8fa; /* A subtle grey matching your UI background */
       border-radius: 4px;
     }
-    .skeleton-header {
-      height: 24px;
-      width: 60%;
-      margin-bottom: 20px;
+    
+    /* Column Header styles */
+    .skeleton-portlet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px 20px 25px; /* Matches kt-portlet__head padding */
+    }
+    .skeleton-title {
+      height: 18px;
+      width: 55%;
+    }
+    .skeleton-icon-placeholder {
+      height: 28px;
+      width: 28px;
+      border-radius: 50%;
+    }
+
+    /* Column Body styles */
+    .skeleton-portlet-body {
+      padding: 0 25px; /* Matches kt-portlet__body padding */
     }
     .skeleton-search {
-      height: 38px;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-    .skeleton-item {
       height: 40px;
       width: 100%;
-      margin-bottom: 10px;
+      margin-bottom: 25px;
+    }
+    
+    /* List Item styles to hint at controls */
+    .skeleton-list-item {
+      height: 50px; /* Taller to accommodate icons */
+      width: 100%;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      gap: 15px;
+    }
+    .skeleton-item-icon {
+      height: 16px;
+      width: 12px;
+      flex-shrink: 0;
+    }
+    .skeleton-item-text {
+      height: 14px;
+      width: 70%;
+    }
+    .skeleton-item-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .skeleton-action-icon {
+      height: 16px;
+      width: 16px;
+    }
+
+    /* Tab styles */
+    .skeleton-tab-container {
+      flex-shrink: 0;
+      white-space: normal;
+      padding-top: 15px;
+    }
+    .skeleton-tab-header {
+      display: flex;
+      margin-left: 25px;
+      margin-bottom: 25px;
+    }
+    .skeleton-tab {
+      height: 22px;
+      width: 90px;
+      margin-right: 25px;
+    }
+    .skeleton-tab.active {
+      border-bottom: 2px solid #e9ecf2;
+    }
+    .skeleton-tab-content-wrapper {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: hidden;
+      gap: 30px; /* The main gap between columns */
     }
   `;
 
   return (
     <>
       <style>{skeletonStyles}</style>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-        <button className="btn btn-sm btn-icon btn-light mr-2" disabled><i className="la la-angle-left"></i></button>
-        <div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)" }}>
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <div className="col-md-3 col-sm-12 col-xs-12" key={colIndex}>
-              <div className="kt-portlet__head" style={{ borderBottom: 'none' }}>
-                <div className="skeleton-placeholder skeleton-header"></div>
-              </div>
-              <div className="kt-portlet__body">
-                <div className="skeleton-placeholder skeleton-search"></div>
-                {Array.from({ length: rows }).map((_, rowIndex) => (
-                  <div className="skeleton-placeholder skeleton-item" key={rowIndex}></div>
-                ))}
-              </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-left"></i></button>
+        
+        {/* Main Scrolling Wrapper */}
+        <div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)", gap: '30px' }}>
+          
+          <SkeletonColumn rows={9} widthClass="col-md-2" />
+          <SkeletonColumn rows={2} widthClass="col-md-3" />
+
+          {/* Column 3: The Tabbed View Container */}
+          <div className="col-md-7 skeleton-tab-container">
+            {/* Tab Headers Skeleton */}
+            <div className="skeleton-tab-header">
+              <div className="skeleton-placeholder skeleton-tab active"></div>
+              <div className="skeleton-placeholder skeleton-tab"></div>
             </div>
-          ))}
+            
+            {/* Nested Content Wrapper */}
+            <div className="skeleton-tab-content-wrapper">
+              <div style={{ flex: '1 1 45%' }}> {/* Use flex for more fluid width */}
+                  <SkeletonColumn rows={5} widthClass="w-100" />
+              </div>
+              <div style={{ flex: '1 1 35%' }}>
+                  <SkeletonColumn rows={6} widthClass="w-100" />
+              </div>
+              {/* The subsequent columns are hidden initially, just like the real UI */}
+            </div>
+          </div>
+
         </div>
-        <button className="btn btn-sm btn-icon btn-light ml-2" disabled><i className="la la-angle-right"></i></button>
+        
+        <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-right"></i></button>
       </div>
     </>
   );
@@ -171,22 +284,35 @@ class BasicTable extends React.Component {
     // --- FIX 1: Add event listener for saving state before page unloads ---
     window.addEventListener('beforeunload', this.handleBeforeUnload);
 
-    Data.schools.subscribe(({schools}) => {
-      console.log("received school update",{schools})
-      this.setState({ school:schools.find(school => school.id === localStorage.getItem("school")) });
-    });
-
-    Data.grades.subscribe(({ grades: masterTree }) => {
-      const newMasterList = masterTree || [];
-      const stateString = localStorage.getItem("learningState");
-      const school = Data.schools.getSelected();
+   // --- [REVISED] UNIFIED SUBSCRIPTION MODEL ---
+    // We only need to subscribe to the schools data stream now.
+    // It is the single source of truth that will be incrementally updated.
+    Data.schools.subscribe(({ schools }) => {
+      console.log("Received school data update from service...");
       
+      const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
+
+      // 1. Check if the school object and its grades are ready.
+      // The data arrives in chunks, so `activeSchool.grades` might not exist on the first few updates.
+      if (!activeSchool || !activeSchool.grades) {
+        console.log("School data is not yet complete. Waiting for grades to be loaded...");
+        // Optionally update a loading state or just wait for the next update.
+        this.setState({ isLoading: true, school: activeSchool || null });
+        return; 
+      }
+      
+      console.log("School and Grades data are now available:", activeSchool);
+
+      const masterGradesList = activeSchool.grades || [];
+      const stateString = localStorage.getItem("learningState");
+
+      // 2. Only proceed when we have the complete data we need.
       if (stateString) {
         const savedState = JSON.parse(stateString);
         this.setState({
-          _masterGradesList: newMasterList,
+          _masterGradesList: masterGradesList,
+          school: activeSchool,
           isLoading: false,
-          school,
           ...savedState,
         }, () => {
           this.refreshCurrentSelectionsAndFilters(true);
@@ -194,16 +320,15 @@ class BasicTable extends React.Component {
             this.fetchAndSetResponses(this.state.selectedSubject);
           }
         });
-        // --- FIX 2: Do NOT remove the item from localStorage. Let it be overwritten. ---
-        // localStorage.removeItem("learningState"); 
       } else {
         this.setState({
-          _masterGradesList: newMasterList,
+          _masterGradesList: masterGradesList,
+          school: activeSchool,
           isLoading: false,
-          school,
         }, () => this.refreshCurrentSelectionsAndFilters(true));
       }
     });
+
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -301,6 +426,7 @@ class BasicTable extends React.Component {
 
     console.log(school)
 
+    console.log(_masterGradesList, school?.gradeOrder)
     // [MODIFIED] Use the new sorting function for grades
     const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder);
     newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name');
