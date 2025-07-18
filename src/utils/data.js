@@ -321,7 +321,7 @@ var Data = (function () {
     let schoolsData = [];
 
     // The ID of the currently active school. This is the key we'll use for mergedDataStore.
-    let schoolID = null;
+    let schoolID = localStorage.getItem("school");
 
     // A reference to the single, merged data object for the *active* school.
     // This is for convenience so we don't have to look it up in mergedDataStore every time.
