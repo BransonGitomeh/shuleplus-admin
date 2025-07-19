@@ -361,8 +361,7 @@ var Data = (function () {
     // Stores the complete, merged data for each school, keyed by school ID.
     const mergedDataStore = {};
 
-    // The list of all schools the user has access to.
-    let schoolsData = [];
+
 
     // The ID of the currently active school. This is the key we'll use for mergedDataStore.
     let schoolID = localStorage.getItem("school");
@@ -1619,6 +1618,7 @@ var Data = (function () {
             data.id = res?.schools?.create?.id;
 
             schools = [...schools, data];
+            schoolsData = schools
             subs.schools({ schools });
             resolve();
           }
@@ -1702,9 +1702,9 @@ var Data = (function () {
       getSelected() {
         const schoolId = localStorage.getItem("school");
         if (schoolId) {
-          const school = schools.find(school => school.id == schoolId);
-          console.log("data.js: getSelected: Found school:", school);
-          return school || {};
+          const foundSchool = schoolsData.find(school => school.id == schoolId);
+          console.log("data.js: getSelected: Found school:", foundSchool, schoolsData);
+          return foundSchool || {};
         }
 
         console.log("data.js: getSelected: No school selected");
