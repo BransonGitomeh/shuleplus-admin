@@ -684,7 +684,7 @@ var Data = (function () {
               }
             }
             
-            `, { Istudent: { ...data, school: schoolID } }
+            `, { Istudent: { ...data, school: localStorage.getItem("school") } }
           );
 
           // Post-process the single new student
@@ -786,7 +786,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iparent: Object.assign(data, { school: schoolID })
+              Iparent: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
 
@@ -1528,7 +1528,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iteacher: Object.assign(data, { school: schoolID })
+              Iteacher: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
           data.id = id;
@@ -1702,7 +1702,7 @@ var Data = (function () {
       getSelected() {
         const schoolId = localStorage.getItem("school");
         if (schoolId) {
-          const school = schools.find(school => school.id === schoolId);
+          const school = schools.find(school => school.id == schoolId);
           console.log("data.js: getSelected: Found school:", school);
           return school || {};
         }
@@ -1798,7 +1798,7 @@ var Data = (function () {
             }
           }`,
             {
-              Iclass: Object.assign(data, { school: schoolID })
+              Iclass: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
 
@@ -1878,7 +1878,7 @@ var Data = (function () {
               }
             }`,
             {
-              Idriver: Object.assign(data, { school: schoolID })
+              Idriver: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
 
@@ -2168,7 +2168,7 @@ var Data = (function () {
             }
           }`,
             {
-              bus: Object.assign(bus, { school: schoolID })
+              bus: Object.assign(bus, { school: localStorage.getItem("school") })
             }
           );
 
@@ -2322,7 +2322,7 @@ var Data = (function () {
               }
             }`,
             {
-              Iroute: Object.assign(data, { school: schoolID })
+              Iroute: Object.assign(data, { school: localStorage.getItem("school") })
             }
           );
 
@@ -2411,7 +2411,7 @@ var Data = (function () {
           }            
         `,
             {
-              schedule: Object.assign({}, schedule, { school: schoolID })
+              schedule: Object.assign({}, schedule, { school: localStorage.getItem("school") })
             }
           );
 
