@@ -14,70 +14,84 @@ let selectedGrade = null; // Might be related to parent context
 const modalInstanceId = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
 // --- Constants for AI prompt generation ---
-const AI_QUESTION_GENERATION_PROMPT_TEMPLATE = `
-    Generate **between 4 and 5 unique multiple-choice questions** for the following specific lesson. This quantity is CRITICAL.
+// This prompt is now for generating the FULL JSON structure including topics, lessons, and questions
+const AI_FULL_CURRICULUM_PROMPT_TEMPLATE = `
+    Analyze the following curriculum outline for a {FORM_NAME} student in {SUBJECT_NAME} subject.
+    Your task is to structure this information into a JSON object containing topics, lessons, and for each lesson, generate **between 4 and 5 unique multiple-choice questions**.
 
-    Lesson Details:
-    Title: "{LESSON_TITLE}"
-    Subject: "{SUBJECT_NAME}"
-    Grade: "{FORM_NAME}"
-    Duration: "{LESSON_DURATION}"
+    Curriculum Outline Provided:
+    """
+    {CURRICULUM_OUTLINE_TEXT}
+    """
 
-    Each question must adhere to these rules:
-      - A clear question text (for the "name" field).
-      - **HTML formatted content** for explanations or context. This HTML can include text formatting (bolding, italics), lists, and emojis, but should **not** contain full markdown like code blocks or images unless they are inline SVGs.
-      - Approximately **3 to 4 options**.
-      - Exactly **ONE correct option**.
-      - **Subtle hints** about the correct answer within the options themselves. For example, if the answer is "photosynthesis", one option might read "Process of energy conversion (e.g., photosynthesis)" while others are clearly incorrect.
-
-    Ensure the language and complexity of the questions and explanations are appropriate for a {FORM_NAME} student.
+    Specific Rules for Output:
+      - Create distinct topics based on the outline. For each topic, extract its title and suggest a 'suitable icon' name (e.g., 'magnet', 'ruler-square'). If no icon is clear, use 'file-certificate'.
+      - For each topic, create lessons based on the outline. For each lesson, extract its title and infer a duration (default to '~ 10 mins' if not specified).
+      - For EACH lesson, generate **between 4 and 5** multiple-choice questions. This quantity is CRITICAL.
+      - Each question must adhere to these rules:
+        - A clear question text (for the "name" field).
+        - **HTML formatted content** for explanations or context. This HTML can include text formatting (bolding, italics), lists, and emojis, but should **not** contain full markdown like code blocks or images unless they are inline SVGs.
+        - Approximately **3 to 4 options**.
+        - Exactly **ONE correct option**.
+        - **Subtle hints** about the correct answer within the options themselves. For example, if the answer is "photosynthesis", one option might read "Process of energy conversion (e.g., photosynthesis)" while others are clearly incorrect.
+      - Ensure the language and complexity of the questions and explanations are appropriate for a {FORM_NAME} student.
 
     Return the result ONLY as a raw JSON object, without any markdown formatting or explanations.
 
     The JSON structure MUST be exactly as follows:
     {
-      "questions": [
+      "topics": [
         {
-          "name": "The question text (e.g., 'What is a property of magnets?')",
-          "content": "<b>Brief context or explanation using HTML.</b> For example, this process is vital for life on Earth. 🌱",
-          "options": [
-            { "value": "Option A text", "correct": false },
-            { "value": "Option B text (with a subtle hint)", "correct": true },
-            { "value": "Option C text", "correct": false }
+          "title": "The full title of the topic (e.g., '1. Magnetism')",
+          "icon": "A descriptive icon name, e.g., 'magnet' or 'file-certificate' if not inferrable",
+          "lessons": [
+            {
+              "title": "The full title of the lesson",
+              "duration": "The lesson's duration if visible (e.g., '~ 8 mins'), otherwise default to '~ 10 mins'",
+              "questions": [
+                {
+                  "name": "The question text (e.g., 'What is a property of magnets?')",
+                  "content": "<b>Brief context or explanation using HTML.</b> For example, this process is vital for life on Earth. 🌱",
+                  "options": [
+                    { "value": "Option A text", "correct": false },
+                    { "value": "Option B text (with a subtle hint)", "correct": true },
+                    { "value": "Option C text", "correct": false }
+                  ]
+                }
+                // ... repeat for a total of 4 to 5 questions for this lesson. ENSURE YOU GENERATE AT LEAST 4.
+              ]
+            }
+            // ... more lessons for this topic
           ]
         }
-        // ... repeat for a total of 4 to 5 questions for this lesson. ENSURE YOU GENERATE AT LEAST 4.
+        // ... more topics
       ]
     }
-
     **Do not include any 'id' fields in your response.**
 `;
 
+
 class Modal extends React.Component {
   state = {
-    loading: false, // General form submission loading
-    aiGenerating: false, // Specific state for AI generation
+    loading: false,
+    aiGenerating: false,
     subject: {
       name: "",
-      grade: "", // Will be set by prop 'grade'
+      grade: "",
       teacherId: "",
     },
-    teachers: [], // List of available teachers
-    // --- NEW STATES FOR MANUAL AI INPUT ---
-    manualAiInput: "", // User's pasted text for curriculum outline
-    generatedAiPrompt: "", // Prompt to copy for user to paste into AI
-    aiJsonResponse: "", // User's pasted JSON response from AI
-    // --- END NEW STATES ---
-    uploadedImages: [], // Array of { name: string, dataUrl: string }
-    errorMessage: null, // For displaying specific errors (AI, upload, etc.)
+    teachers: [],
+    manualAiInput: "",
+    generatedAiPrompt: "", // This will store the prompt generated by the user's input
+    aiJsonResponse: "",
+    errorMessage: null,
   };
 
-  validator = null; // jQuery Validation instance
+  validator = null;
 
   async componentDidMount() {
     const _this = this;
 
-    // Fetch teachers
     console.log("Fetching teachers...");
     try {
       const teachers = Data.teachers.list();
@@ -100,12 +114,12 @@ class Modal extends React.Component {
       rules: {
         name: { required: true, minlength: 2 },
         teacherId: { required: true },
-        // Manual AI input rules
-        manualAiInput: { required: false }, // Make it optional if not using AI directly
+        manualAiInput: { required: true }, // Manual input is now required for AI path
       },
       messages: {
         name: { required: "Subject name is required.", minlength: "Subject name must be at least 2 characters long." },
         teacherId: { required: "Please select a teacher." },
+        manualAiInput: { required: "Curriculum outline is required for AI content generation." },
       },
       submitHandler: async function (form, event) {
         event.preventDefault();
@@ -115,45 +129,55 @@ class Modal extends React.Component {
           return;
         }
 
-        // --- NEW: Handle AI JSON Input ---
-        if (!_this.state.aiJsonResponse) {
-            // If AI JSON is missing, it means manual input or upload wasn't used.
-            // If AI is enabled and no JSON is provided, it's an error.
-            // However, if AI is OFF, we still might need to save.
-            // Let's assume AI is optional. If AI is OFF, and we have a subject name + teacher, it's valid.
-            if (_this.state.manualAiInput || _this.state.uploadedImages.length > 0) {
-                // If AI was intended but not provided, show error
-                _this.setState({ errorMessage: "AI generated content is required if AI input is used." });
-                return;
-            }
-            // If no AI input, but form is otherwise valid, proceed with manual save
+        const { manualAiInput, generatedAiPrompt, aiJsonResponse } = _this.state;
+        let isValid = true;
+        let currentErrorMessage = null;
+
+        if (!manualAiInput) {
+            currentErrorMessage = "Please paste the curriculum outline to proceed.";
+            isValid = false;
         }
-        // --- END NEW ---
+        if (!generatedAiPrompt) {
+             currentErrorMessage = "Please generate the AI prompt first.";
+             isValid = false;
+        }
+        if (!aiJsonResponse) {
+            currentErrorMessage = "Please paste the AI generated JSON response.";
+            isValid = false;
+        } else {
+            try {
+                JSON.parse(aiJsonResponse); // Basic JSON validation
+            } catch (parseError) {
+                currentErrorMessage = "Invalid JSON format provided for AI content.";
+                isValid = false;
+            }
+        }
+
+        if (!isValid) {
+            _this.setState({ errorMessage: currentErrorMessage });
+            IErrorMessage.show({ message: currentErrorMessage });
+            return;
+        }
 
         try {
           _this.setState({ loading: true, errorMessage: null });
 
           let parsedAiData = null;
-          if (_this.state.aiJsonResponse) {
-            try {
-              parsedAiData = JSON.parse(_this.state.aiJsonResponse);
-            } catch (parseError) {
+          try {
+             parsedAiData = JSON.parse(_this.state.aiJsonResponse);
+          } catch (parseError) {
               _this.setState({ loading: false, errorMessage: "Invalid JSON format provided for AI content." });
               IErrorMessage.show({ message: "Invalid JSON format provided for AI content." });
               return;
-            }
           }
 
           const subjectDataForAPI = {
             name: _this.state.subject.name,
             grade: _this.state.subject.grade,
             teacher: _this.state.subject.teacherId,
-            // Use AI data if available, otherwise use images
-            topicalImages: parsedAiData ? undefined : _this.state.uploadedImages, // If JSON provided, don't send images
-            aiGeneratedCurriculum: parsedAiData ? parsedAiData : undefined, // Pass the parsed AI data
+            aiGeneratedCurriculum: parsedAiData,
           };
 
-          // Call the parent's save function
           const result = await _this.props.save(subjectDataForAPI);
 
           if (result && result.id) {
@@ -163,7 +187,6 @@ class Modal extends React.Component {
             }
             _this.setState({
               subject: { name: "", grade: _this.props.grade || "", teacherId: "" },
-              uploadedImages: [],
               manualAiInput: "",
               generatedAiPrompt: "",
               aiJsonResponse: "",
@@ -188,7 +211,6 @@ class Modal extends React.Component {
     });
   }
 
-  // Update subject grade if the prop changes
   componentDidUpdate(prevProps) {
     if (this.props.grade !== prevProps.grade && this.props.grade) {
       if (this.state.subject.grade !== this.props.grade) {
@@ -202,16 +224,14 @@ class Modal extends React.Component {
     }
   }
 
-  // Show the modal and reset state
   show() {
     this.setState({
       loading: false,
       aiGenerating: false,
       subject: { name: "", grade: this.props.grade || "", teacherId: "" },
-      uploadedImages: [],
-      manualAiInput: "", // Reset manual input
-      generatedAiPrompt: "", // Reset generated prompt
-      aiJsonResponse: "", // Reset AI JSON response
+      manualAiInput: "",
+      generatedAiPrompt: "",
+      aiJsonResponse: "",
       errorMessage: null,
     });
     if (this.validator) {
@@ -225,15 +245,12 @@ class Modal extends React.Component {
     });
   }
 
-  // Hide the modal and reset state
   hide() {
     $("#" + modalInstanceId).modal("hide");
-    // Reset state when hiding, as the modal might be shown again later with old data
     this.setState({
       loading: false,
       aiGenerating: false,
       subject: { name: "", grade: this.props.grade || "", teacherId: "" },
-      uploadedImages: [],
       manualAiInput: "",
       generatedAiPrompt: "",
       aiJsonResponse: "",
@@ -241,7 +258,6 @@ class Modal extends React.Component {
     });
   }
 
-  // Handle input changes for subject name and teacher selection
   handleInputChange = (event) => {
     const { name, value } = event.target;
     this.setState(prevState => ({
@@ -252,84 +268,32 @@ class Modal extends React.Component {
     }));
   };
 
-  // Handle manual input for AI curriculum outline
   handleManualAiInputChange = (event) => {
     this.setState({ manualAiInput: event.target.value, errorMessage: null });
   };
 
-  // Handle AI JSON response pasting
   handleAiJsonResponseChange = (event) => {
     this.setState({ aiJsonResponse: event.target.value, errorMessage: null });
   };
 
-  // Generate the prompt for the user to copy
   handleGeneratePrompt = () => {
     if (!this.state.manualAiInput) {
       this.setState({ errorMessage: "Please paste the curriculum outline first." });
       return;
     }
 
-    // Basic prompt construction. You might want to make this more sophisticated.
-    // For now, we'll embed the pasted content directly.
-    const promptForAI = `
-        Your task is to generate structured JSON data for a curriculum.
-        Based on the following curriculum outline, create topics, lessons, and for each lesson, generate between 4 and 5 unique multiple-choice questions.
+    const formNameForPrompt = this.state.subject.grade || "student";
 
-        Curriculum Outline:
-        """
-        ${this.state.manualAiInput}
-        """
-
-        Specific Rules for Output:
-          - Each topic needs a title and a suitable icon name (e.g., 'magnet', 'ruler-square'). If no icon is clear, use 'file-certificate'.
-          - Each lesson needs a title and duration (default to '~ 10 mins' if not specified).
-          - For EACH lesson, generate **between 4 and 5** multiple-choice questions. This quantity is CRITICAL.
-          - Each question must have:
-            - A clear question text (for "name").
-            - **HTML formatted content** for explanations or context. This HTML can include text formatting (bolding, italics), lists, and emojis, but should **not** contain full markdown like code blocks or images unless they are inline SVGs.
-            - Approximately **3 to 4 options**.
-            - Exactly **ONE correct option**.
-            - **Subtle hints** about the correct answer within the options themselves.
-          - Ensure the language and complexity are appropriate for a ${this.state.subject.grade || 'student'}.
-
-        Return the result ONLY as a raw JSON object, without any markdown formatting or explanations.
-
-        The JSON structure MUST be exactly as follows:
-        {
-          "topics": [
-            {
-              "title": "The full title of the topic (e.g., '1. Magnetism')",
-              "icon": "A descriptive icon name, e.g., 'magnet' or 'file-certificate' if not inferrable",
-              "lessons": [
-                {
-                  "title": "The full title of the lesson",
-                  "duration": "The lesson's duration if visible (e.g., '~ 8 mins'), otherwise default to '~ 10 mins'",
-                  "questions": [
-                    {
-                      "name": "The question text (e.g., 'What is a property of magnets?')",
-                      "content": "<b>Brief context or explanation using HTML.</b> For example, this process is vital for life on Earth. 🌱",
-                      "options": [
-                        { "value": "Option A text", "correct": false },
-                        { "value": "Option B text (with a subtle hint)", "correct": true },
-                        { "value": "Option C text", "correct": false }
-                      ]
-                    }
-                    // ... repeat for a total of 4 to 5 questions for this lesson. ENSURE YOU GENERATE AT LEAST 4.
-                  ]
-                }
-                // ... more lessons for this topic
-              ]
-            }
-            // ... more topics
-          ]
-        }
-        **Do not include any 'id' fields in your response.**
-    `;
+    const promptForAI = AI_FULL_CURRICULUM_PROMPT_TEMPLATE // <-- Using the correct template here
+      .replace("{LESSON_TITLE}", "Lesson Title")
+      .replace("{SUBJECT_NAME}", this.state.subject.name || "General Subject")
+      .replace("{FORM_NAME}", formNameForPrompt)
+      .replace("{LESSON_DURATION}", "~ 10 mins")
+      .replace('{CURRICULUM_OUTLINE_TEXT}', this.state.manualAiInput);
 
     this.setState({ generatedAiPrompt: promptForAI });
   };
 
-  // Copy the generated prompt to clipboard
   handleCopyPrompt = () => {
     navigator.clipboard.writeText(this.state.generatedAiPrompt).then(() => {
       IErrorMessage.show({ message: "Prompt copied to clipboard!", type: 'success' });
@@ -340,12 +304,8 @@ class Modal extends React.Component {
   };
 
   render() {
-    const { teachers, subject, uploadedImages, manualAiInput, generatedAiPrompt, aiJsonResponse, loading, aiGenerating, errorMessage } = this.state;
-    const isFormValidManually = subject.name && subject.teacherId && uploadedImages.length > 0;
-    const isAiInputProvided = subject.name && subject.teacherId && manualAiInput && generatedAiPrompt && aiJsonResponse;
-    // Consider the form valid if manual inputs are good OR if AI inputs are good
-    const isFormSubmittable = (isFormValidManually && !this.state.manualAiInput) || isAiInputProvided;
-
+    const { teachers, subject, manualAiInput, generatedAiPrompt, aiJsonResponse, loading, aiGenerating, errorMessage } = this.state;
+    const isFormSubmittable = subject.name && subject.teacherId && manualAiInput && generatedAiPrompt && aiJsonResponse;
 
     return (
       <div>
@@ -357,7 +317,7 @@ class Modal extends React.Component {
           aria-labelledby="subjectModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
+          <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <form
                 id={modalInstanceId + "form"}
@@ -376,11 +336,10 @@ class Modal extends React.Component {
                 </div>
                 <div className="modal-body">
 
-                  {/* Metronic General Info Alert */}
                   <div className="alert alert-custom alert-light-info fade show mb-5" role="alert">
                     <div className="alert-icon"><i className="flaticon-information icon-lg"></i></div>
                     <div className="alert-text">
-                      <strong>Content Creation Options</strong>: You can either upload images of your Table of Contents for AI processing, OR paste a curriculum outline and use the generated prompt to get AI-generated content via another tool, then paste the AI's JSON output here.
+                      <strong>AI Content Generation</strong>: Paste your curriculum outline below. Then, generate a prompt to use with an AI tool. Finally, paste the AI's JSON output back here to create your subject's topics, lessons, and questions.
                     </div>
                     <div className="alert-close">
                       <button type="button" className="close" data-dismiss="alert" aria-label="Close">
@@ -389,7 +348,6 @@ class Modal extends React.Component {
                     </div>
                   </div>
 
-                  {/* Display specific errors */}
                   {errorMessage && (
                     <div className="alert alert-custom alert-light-danger fade show mb-5" role="alert">
                       <div className="alert-icon"><i className="flaticon-warning icon-lg"></i></div>
@@ -437,54 +395,54 @@ class Modal extends React.Component {
                       </div>
                     </div>
 
-                    {/* --- NEW: AI Content Generation Section --- */}
-                    <div className="mt-5 pt-5 border-top"> {/* Metronic styling for separation */}
-                      <h5 className="mb-4">AI Content Generation (Optional)</h5>
-
-                      <div className="form-group row align-items-center">
-                        <div className="col-lg-8">
-                          <label>Curriculum Outline (Paste Text Here):</label>
-                          <textarea
-                            className="form-control form-control-solid"
-                            rows="5"
-                            placeholder="Paste your Table of Contents or curriculum outline here..."
-                            value={manualAiInput}
-                            onChange={this.handleManualAiInputChange}
-                          ></textarea>
+                    {/* --- SIMPLIFIED AI Content Generation Section --- */}
+                    <div className="mt-5 pt-5 border-top">
+                      <div className="row">
+                        {/* Left side: Paste Outline & Generate Prompt */}
+                        <div className="col-lg-6 pr-lg-4">
+                          <div className="form-group">
+                            <label>Curriculum Outline (Paste Text Here):</label>
+                            <textarea
+                              className="form-control form-control-solid"
+                              rows="7"
+                              placeholder="Paste your Table of Contents or curriculum outline here..."
+                              value={manualAiInput}
+                              onChange={this.handleManualAiInputChange}
+                            ></textarea>
+                          </div>
+                          <div className="form-group text-center">
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-block mb-2"
+                              onClick={this.handleGeneratePrompt}
+                              disabled={!manualAiInput || aiGenerating}
+                            >
+                              {aiGenerating && <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>}
+                              Generate Prompt
+                            </button>
+                            {generatedAiPrompt && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-block mb-2"
+                                  onClick={this.handleCopyPrompt}
+                                  disabled={!generatedAiPrompt}
+                                >
+                                  Copy Prompt
+                                </button>
+                                <p className="text-muted font-weight-bold">Paste the generated prompt into your AI tool.</p>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="col-lg-4 text-center">
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-block mb-2" // Metronic button styling
-                            onClick={this.handleGeneratePrompt}
-                            disabled={!manualAiInput || aiGenerating}
-                          >
-                            {aiGenerating && <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>}
-                            Generate Prompt
-                          </button>
-                          {generatedAiPrompt && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-block mb-2"
-                                onClick={this.handleCopyPrompt}
-                                disabled={!generatedAiPrompt}
-                              >
-                                Copy Prompt
-                              </button>
-                              <p className="text-muted font-weight-bold">Paste the generated prompt into your AI tool.</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
 
-                      {generatedAiPrompt && (
-                        <div className="form-group row mt-4">
-                          <div className="col-lg-12">
+                        {/* Right side: Paste AI JSON Response */}
+                        <div className="col-lg-6 pl-lg-4">
+                          <div className="form-group">
                             <label>AI Generated JSON Response:</label>
                             <textarea
                               className="form-control form-control-solid"
-                              rows="8"
+                              rows="11"
                               placeholder="Paste the JSON output from your AI tool here..."
                               value={aiJsonResponse}
                               onChange={this.handleAiJsonResponseChange}
@@ -492,64 +450,16 @@ class Modal extends React.Component {
                             <small className="form-text text-muted">Ensure the JSON structure is correct as per the prompt.</small>
                           </div>
                         </div>
-                      )}
-                    </div>
-                    {/* --- END NEW AI Section --- */}
-
-                    {/* Image Upload Section (only show if not using manual AI input) */}
-                    {!manualAiInput && (
-                      <div className="form-group row mt-4">
-                        <div className="col-lg-12">
-                          <label>Table of Contents Images:</label>
-                          <div className="custom-file">
-                            <input
-                              type="file"
-                              className="custom-file-input"
-                              id="customFile"
-                              multiple
-                              accept="image/*"
-                              onChange={this.handleImageUpload}
-                            />
-                            <label className="custom-file-label" htmlFor="customFile">
-                              {uploadedImages.length === 0
-                                ? "Choose files (max 5 images)"
-                                : `${uploadedImages.length} file(s) selected`}
-                            </label>
-                          </div>
-                          <div className="mt-3 d-flex flex-wrap">
-                            {uploadedImages.map((img, index) => (
-                              <div key={index} className="mr-2 mb-2 position-relative image-thumbnail-wrapper" style={{ width: '80px', height: '80px' }}>
-                                <img
-                                  src={img.dataUrl}
-                                  alt={`Topical Section ${index + 1}`}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover', border: '1px solid #ccc' }}
-                                  className="img-fluid img-thumbnail"
-                                />
-                                <button
-                                  type="button"
-                                  className="btn btn-icon btn-sm btn-danger position-absolute"
-                                  onClick={() => this.handleRemoveImage(index)}
-                                  style={{ top: '-10px', right: '-10px', zIndex: 1, borderRadius: '50%', padding: '0.1rem 0.3rem', fontSize: '0.75rem' }}
-                                >
-                                  <i className="ki ki-close icon-xs"></i>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                          {uploadedImages.length < 5 && (
-                            <small className="form-text text-muted mt-2">Upload up to 5 images for the Table of Contents.</small>
-                          )}
-                        </div>
                       </div>
-                    )}
+                    </div>
+                    {/* --- END AI Section --- */}
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button
                     type="submit"
                     className="btn btn-brand btn-block"
-                    // Modify submit validation logic to check if AI JSON is present if manual input is used
-                    disabled={loading || aiGenerating || (!isFormValidManually && !isAiInputProvided)}
+                    disabled={loading || aiGenerating || !isFormSubmittable}
                   >
                     {(loading || aiGenerating) && (
                       <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
