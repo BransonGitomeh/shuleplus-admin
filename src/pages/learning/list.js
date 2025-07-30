@@ -52,29 +52,20 @@ const Search = ({ onSearch, value, title }) => {
   );
 };
 
-// --- [NEW] SKELETON LOADER COMPONENT ---
-// --- [NEW] STRUCTURE-AWARE SKELETON LOADER ---
-// --- [NEW] HIGH-FIDELITY SKELETON LOADER ---
+// --- HIGH-FIDELITY SKELETON LOADER (Unchanged) ---
 const SkeletonLoader = () => {
-
-  // A small, reusable component to build the standard columns
   const SkeletonColumn = ({ rows = 8, widthClass = "col-md-3" }) => (
     <div className={widthClass} style={{ flexShrink: 0 }}>
-      {/* This mimics the .kt-portlet__head structure */}
       <div className="skeleton-portlet-header">
         <div className="skeleton-placeholder skeleton-title"></div>
         <div className="skeleton-placeholder skeleton-icon-placeholder"></div>
       </div>
-      {/* This mimics the .kt-portlet__body structure */}
       <div className="skeleton-portlet-body">
         <div className="skeleton-placeholder skeleton-search"></div>
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div className="skeleton-placeholder skeleton-list-item" key={rowIndex}>
-            {/* Placeholder for drag handle icon */}
             <div className="skeleton-item-icon"></div>
-            {/* Placeholder for text */}
             <div className="skeleton-item-text"></div>
-            {/* Placeholder for action icons (edit/delete) */}
             <div className="skeleton-item-actions">
               <div className="skeleton-action-icon"></div>
               <div className="skeleton-action-icon"></div>
@@ -93,92 +84,24 @@ const SkeletonLoader = () => {
     }
     .skeleton-placeholder {
       animation: skeleton-pulse 1.8s infinite ease-in-out;
-      background-color: #f7f8fa; /* A subtle grey matching your UI background */
+      background-color: #f7f8fa;
       border-radius: 4px;
     }
-    
-    /* Column Header styles */
-    .skeleton-portlet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px 20px 25px; /* Matches kt-portlet__head padding */
-    }
-    .skeleton-title {
-      height: 18px;
-      width: 55%;
-    }
-    .skeleton-icon-placeholder {
-      height: 28px;
-      width: 28px;
-      border-radius: 50%;
-    }
-
-    /* Column Body styles */
-    .skeleton-portlet-body {
-      padding: 0 25px; /* Matches kt-portlet__body padding */
-    }
-    .skeleton-search {
-      height: 40px;
-      width: 100%;
-      margin-bottom: 25px;
-    }
-    
-    /* List Item styles to hint at controls */
-    .skeleton-list-item {
-      height: 50px; /* Taller to accommodate icons */
-      width: 100%;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      padding: 0 15px;
-      gap: 15px;
-    }
-    .skeleton-item-icon {
-      height: 16px;
-      width: 12px;
-      flex-shrink: 0;
-    }
-    .skeleton-item-text {
-      height: 14px;
-      width: 70%;
-    }
-    .skeleton-item-actions {
-      margin-left: auto;
-      display: flex;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    .skeleton-action-icon {
-      height: 16px;
-      width: 16px;
-    }
-
-    /* Tab styles */
-    .skeleton-tab-container {
-      flex-shrink: 0;
-      white-space: normal;
-      padding-top: 15px;
-    }
-    .skeleton-tab-header {
-      display: flex;
-      margin-left: 25px;
-      margin-bottom: 25px;
-    }
-    .skeleton-tab {
-      height: 22px;
-      width: 90px;
-      margin-right: 25px;
-    }
-    .skeleton-tab.active {
-      border-bottom: 2px solid #e9ecf2;
-    }
-    .skeleton-tab-content-wrapper {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: hidden;
-      gap: 30px; /* The main gap between columns */
-    }
+    .skeleton-portlet-header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px 20px 25px; }
+    .skeleton-title { height: 18px; width: 55%; }
+    .skeleton-icon-placeholder { height: 28px; width: 28px; border-radius: 50%; }
+    .skeleton-portlet-body { padding: 0 25px; }
+    .skeleton-search { height: 40px; width: 100%; margin-bottom: 25px; }
+    .skeleton-list-item { height: 50px; width: 100%; margin-bottom: 15px; display: flex; align-items: center; padding: 0 15px; gap: 15px; }
+    .skeleton-item-icon { height: 16px; width: 12px; flex-shrink: 0; }
+    .skeleton-item-text { height: 14px; width: 70%; }
+    .skeleton-item-actions { margin-left: auto; display: flex; gap: 10px; flex-shrink: 0; }
+    .skeleton-action-icon { height: 16px; width: 16px; }
+    .skeleton-tab-container { flex-shrink: 0; white-space: normal; padding-top: 15px; }
+    .skeleton-tab-header { display: flex; margin-left: 25px; margin-bottom: 25px; }
+    .skeleton-tab { height: 22px; width: 90px; margin-right: 25px; }
+    .skeleton-tab.active { border-bottom: 2px solid #e9ecf2; }
+    .skeleton-tab-content-wrapper { display: flex; flex-wrap: nowrap; overflow-x: hidden; gap: 30px; }
   `;
 
   return (
@@ -186,35 +109,20 @@ const SkeletonLoader = () => {
       <style>{skeletonStyles}</style>
       <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}>
         <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-left"></i></button>
-
-        {/* Main Scrolling Wrapper */}
         <div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)", gap: '30px' }}>
-
           <SkeletonColumn rows={9} widthClass="col-md-2" />
           <SkeletonColumn rows={2} widthClass="col-md-3" />
-
-          {/* Column 3: The Tabbed View Container */}
           <div className="col-md-7 skeleton-tab-container">
-            {/* Tab Headers Skeleton */}
             <div className="skeleton-tab-header">
               <div className="skeleton-placeholder skeleton-tab active"></div>
               <div className="skeleton-placeholder skeleton-tab"></div>
             </div>
-
-            {/* Nested Content Wrapper */}
             <div className="skeleton-tab-content-wrapper">
-              <div style={{ flex: '1 1 45%' }}> {/* Use flex for more fluid width */}
-                <SkeletonColumn rows={5} widthClass="w-100" />
-              </div>
-              <div style={{ flex: '1 1 35%' }}>
-                <SkeletonColumn rows={6} widthClass="w-100" />
-              </div>
-              {/* The subsequent columns are hidden initially, just like the real UI */}
+              <div style={{ flex: '1 1 45%' }}><SkeletonColumn rows={5} widthClass="w-100" /></div>
+              <div style={{ flex: '1 1 35%' }}><SkeletonColumn rows={6} widthClass="w-100" /></div>
             </div>
           </div>
-
         </div>
-
         <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-right"></i></button>
       </div>
     </>
@@ -224,29 +132,15 @@ const SkeletonLoader = () => {
 // Access toastr from the window object
 const toastr = window.toastr;
 
-// #region --- MOCKED DATA FOR STUDENT RESPONSES (As requested) ---
-const MockResponses = {
-  getBySubject: (subjectId) => {
-    const todayDateStr = new Date().toISOString().split('T')[0];
-    const dummyResponses = [
-      { id: 'resp-001', studentId: 'stud-101', studentName: 'Alice Johnson', subjectId: 'grade-1-subject-0', topicId: 'grade-1-subject-0-topic-0', subtopicId: 'grade-1-subject-0-topic-0-subtopic-0', questionId: 'grade-1-subject-0-topic-0-subtopic-0-question-0', submissionDate: '2023-10-27T09:15:00Z', type: 'text', content: 'I think the answer is 4. The formula for velocity is distance over time.' },
-      { id: 'resp-002', studentId: 'stud-102', studentName: 'Bob Williams', subjectId: 'grade-1-subject-0', topicId: 'grade-1-subject-0-topic-0', subtopicId: 'grade-1-subject-0-topic-0-subtopic-0', questionId: 'grade-1-subject-0-topic-0-subtopic-0-question-1', submissionDate: '2023-10-27T10:30:00Z', type: 'image', content: 'https://via.placeholder.com/400x300.png?text=My+Diagram' },
-      { id: 'resp-003', studentId: 'stud-101', studentName: 'Alice Johnson', subjectId: 'grade-1-subject-0', topicId: 'grade-1-subject-0-topic-1', subtopicId: 'grade-1-subject-0-topic-1-subtopic-0', questionId: 'grade-1-subject-0-topic-1-subtopic-0-question-0', submissionDate: '2023-10-27T11:05:00Z', type: 'video', content: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-      { id: 'resp-004', studentId: 'stud-103', studentName: 'Charlie Brown', subjectId: 'grade-1-subject-0', topicId: 'grade-1-subject-0-topic-0', subtopicId: 'grade-1-subject-0-topic-0-subtopic-0', questionId: 'grade-1-subject-0-topic-0-subtopic-0-question-0', submissionDate: `${todayDateStr}T14:00:00Z`, type: 'text', content: 'My answer for today is different, I got 3.14.' },
-    ];
-    // Ensure one response is always for "today" for the demo
-    return dummyResponses.map(r => r.id === 'resp-004' ? { ...r, submissionDate: `${todayDateStr}T14:00:00Z` } : r);
-  }
-};
-// #endregion
+// MOCKED DATA for student responses remains for demonstration
+const MockResponses = { getBySubject: (subjectId) => { const todayDateStr = new Date().toISOString().split('T')[0]; return [{ id: 'resp-001', studentId: 'stud-101', studentName: 'Alice Johnson', subjectId, topicId: 'topic-1', subtopicId: 'subtopic-1-A', questionId: 'q-1', submissionDate: '2023-10-27T09:15:00Z', type: 'text', content: 'The formula for velocity is distance over time.' }, { id: 'resp-004', studentId: 'stud-103', studentName: 'Charlie Brown', subjectId, topicId: 'topic-1', subtopicId: 'subtopic-1-A', questionId: 'q-1', submissionDate: `${todayDateStr}T14:00:00Z`, type: 'text', content: 'My answer for today is different, I got 3.14.' },]; } };
 
 class BasicTable extends React.Component {
   scrollContainerRef = React.createRef();
-  _gradeSubscription = null;
   _schoolSubscription = null;
   styleTag = null;
 
-  // Create refs for all modals
+  // Modal Refs (Unchanged)
   addGradeModalRef = React.createRef(); editGradeModalRef = React.createRef(); deleteGradeModalRef = React.createRef();
   addSubjectModalRef = React.createRef(); editSubjectModalRef = React.createRef(); deleteSubjectModalRef = React.createRef();
   addTopicModalRef = React.createRef(); editTopicModalRef = React.createRef(); deleteTopicModalRef = React.createRef();
@@ -256,16 +150,41 @@ class BasicTable extends React.Component {
 
 
   state = {
-    // State properties...
-    school: null,
+    // Flag to control the initial skeleton loader.
     isLoading: true,
-    grades: [], _masterGradesList: [],
-    gradeToEdit: {}, gradeToDelete: {}, selectedGrade: null, gradeSearchTerm: '',
-    filteredSubjects: [], subjectToEdit: {}, subjectToDelete: {}, selectedSubject: null, subjectSearchTerm: '',
-    filteredTopics: [], topicToEdit: {}, topicToDelete: {}, selectedTopic: null, topicSearchTerm: '',
-    filteredSubtopics: [], subtopicToEdit: {}, subtopicToDelete: {}, selectedSubtopic: null, subtopicSearchTerm: '',
-    filteredQuestions: [], questionToEdit: {}, questionToDelete: {}, selectedQuestion: null, questionSearchTerm: '',
-    filteredOptions: [], optionToEdit: {}, optionToDelete: {}, selectedOption: null, optionSearchTerm: '',
+    // Holds the complete school object, our single source of truth from the data service.
+    school: null,
+    // Holds the complete, unsorted, and unfiltered list of grades for the school.
+    _masterGradesList: [],
+
+    // Filtered and displayed lists
+    grades: [],
+    filteredSubjects: [],
+    filteredTopics: [],
+    filteredSubtopics: [],
+    filteredQuestions: [],
+    filteredOptions: [],
+
+    // Selected item IDs
+    selectedGrade: null,
+    selectedSubject: null,
+    selectedTopic: null,
+    selectedSubtopic: null,
+    selectedQuestion: null,
+
+    // Items for modals
+    gradeToEdit: {}, gradeToDelete: {},
+    subjectToEdit: {}, subjectToDelete: {},
+    topicToEdit: {}, topicToDelete: {},
+    subtopicToEdit: {}, subtopicToDelete: {},
+    questionToEdit: {}, questionToDelete: {},
+    optionToEdit: {}, optionToDelete: {},
+
+    // Search terms
+    gradeSearchTerm: '', subjectSearchTerm: '', topicSearchTerm: '',
+    subtopicSearchTerm: '', questionSearchTerm: '', optionSearchTerm: '',
+
+    // Tab state and mock data state
     activeTab: 'content',
     subjectResponses: [],
     responsesStudyDate: new Date().toISOString().split('T')[0],
@@ -273,105 +192,133 @@ class BasicTable extends React.Component {
     selectedStudentId: null,
   };
 
-  // --- LIFECYCLE & STATE MANAGEMENT ---
+  // --- LIFECYCLE & DATA HANDLING ---
 
   componentDidMount() {
+    // Inject component-specific styles
     const customStyles = `
-      .nav-tabs .nav-link { cursor: pointer; } .nav-tabs .nav-link.active { font-weight: bold; border-color: #dee2e6 #dee2e6 #fff; border-bottom: 2px solid #5867dd !important; color: #5867dd; } .student-timeline-item { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #ebedf2; } .student-timeline-item.active { background-color: #f7f8fa; border-left: 3px solid #5867dd; } .response-card { border: 1px solid #ebedf2; padding: 15px; margin-bottom: 15px; border-radius: 4px; background: #fff; } .response-card-breadcrumbs { font-size: 0.8rem; color: #a7abc3; margin-bottom: 10px; } .response-card-content img, .response-card-content video { max-width: 100%; height: auto; border-radius: 4px; } .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; } .scrolling-wrapper > .col-md-3, .scrolling-wrapper > .col-md-9, .scrolling-wrapper > .col-md-12 { flex: 0 0 auto; }
+      .nav-tabs .nav-link { cursor: pointer; } .nav-tabs .nav-link.active { font-weight: bold; border-color: #dee2e6 #dee2e6 #fff; border-bottom: 2px solid #5867dd !important; color: #5867dd; } .student-timeline-item { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #ebedf2; } .student-timeline-item.active { background-color: #f7f8fa; border-left: 3px solid #5867dd; } .response-card { border: 1px solid #ebedf2; padding: 15px; margin-bottom: 15px; border-radius: 4px; background: #fff; } .response-card-breadcrumbs { font-size: 0.8rem; color: #a7abc3; margin-bottom: 10px; } .response-card-content img, .response-card-content video { max-width: 100%; height: auto; border-radius: 4px; } .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; } .scrolling-wrapper > .col-md-3, .scrolling-wrapper > .col-md-7, .scrolling-wrapper > .col-md-9, .scrolling-wrapper > .col-md-12 { flex: 0 0 auto; }
     `;
-    const styleTag = document.createElement("style"); styleTag.innerHTML = customStyles; document.head.appendChild(styleTag); this.styleTag = styleTag;
+    const styleTag = document.createElement("style");
+    styleTag.innerHTML = customStyles;
+    document.head.appendChild(styleTag);
+    this.styleTag = styleTag;
 
-    // --- FIX 1: Add event listener for saving state before page unloads ---
-    window.addEventListener('beforeunload', this.handleBeforeUnload);
+    // Attach a reliable handler to save state before the page unloads
+    window.addEventListener('beforeunload', this.saveStateToLocalStorage);
 
-    const handleSchool = (activeSchool) => {
-      // 1. Check if the school object and its grades are ready.
-      // The data arrives in chunks, so `activeSchool.grades` might not exist on the first few updates.
-      if (!activeSchool || !activeSchool.grades) {
-        console.log("School data is not yet complete. Waiting for grades to be loaded...");
-        // Optionally update a loading state or just wait for the next update.
-        this.setState({ isLoading: true, school: activeSchool || null });
-        return;
-      }
+    // --- REVISED & CORRECTED SUBSCRIPTION LOGIC ---
+    // The ONLY subscription we need. `data.js` ensures this fires on ANY relevant data change.
+    this._schoolSubscription = Data.schools.subscribe(this.processDataUpdate);
 
-      console.log("School and Grades data are now available:", activeSchool);
-
-      const masterGradesList = activeSchool.grades || [];
-      const stateString = localStorage.getItem("learningState");
-
-      // 2. Only proceed when we have the complete data we need.
-      if (stateString) {
-        const savedState = JSON.parse(stateString);
-        this.setState({
-          _masterGradesList: masterGradesList,
-          school: activeSchool,
-          isLoading: false,
-          ...savedState,
-        }, () => {
-          this.refreshCurrentSelectionsAndFilters(true);
-          if (this.state.selectedSubject) {
-            this.fetchAndSetResponses(this.state.selectedSubject);
-          }
-        });
-      } else {
-        this.setState({
-          _masterGradesList: masterGradesList,
-          school: activeSchool,
-          isLoading: false,
-        }, () => this.refreshCurrentSelectionsAndFilters(true));
-      }
-    }
-
-    const activeSchool = Data.schools.list().find(school => school.id === localStorage.getItem("school"))
-    if (activeSchool) {
-      handleSchool(activeSchool)
-    }
-    // --- [REVISED] UNIFIED SUBSCRIPTION MODEL ---
-    // We only need to subscribe to the schools data stream now.
-    // It is the single source of truth that will be incrementally updated.
-    Data.schools.subscribe(({ schools }) => {
-      console.log("Received school data update from service...");
-
-      const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
-      handleSchool(activeSchool)
-    });
-
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const persistedStateKeys = [
-      'selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion',
-      'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm',
-      'activeTab'
-    ];
-    const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key]));
-    if (hasPersistedStateChanged) {
-      this.saveStateToLocalStorage();
-    }
+    // Also run the process function with the initially available data in case it's already cached.
+    const initialData = { schools: Data.schools.list() };
+    this.processDataUpdate(initialData);
   }
 
   componentWillUnmount() {
-    // if (this._gradeSubscription) this._gradeSubscription();
-    // if (this._schoolSubscription) this._schoolSubscription();
+    // Clean up subscriptions and listeners
+    if (this._schoolSubscription) this._schoolSubscription();
     if (this.styleTag) this.styleTag.remove();
-
-    // --- FIX 1 (cont.): Remove the event listener on cleanup ---
-    window.removeEventListener('beforeunload', this.handleBeforeUnload);
-
-    // --- FIX 1 (cont.): DO NOT save state here anymore. It's unreliable. ---
-    // this.saveStateToLocalStorage();
+    window.removeEventListener('beforeunload', this.saveStateToLocalStorage);
   }
 
-  // --- FIX 1 (cont.): This is the new, reliable save handler for page reloads. ---
-  handleBeforeUnload = () => {
-    this.saveStateToLocalStorage();
+  /**
+   * [REVISED] This is the single entry point for all data updates from the data service.
+   * It now validates the current state against the new data on EVERY update.
+   */
+  processDataUpdate = ({ schools }) => {
+    const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
+
+    if (!activeSchool || !activeSchool.grades) {
+      this.setState({ isLoading: true, school: activeSchool });
+      return;
+    }
+
+    const masterGradesList = activeSchool.grades || [];
+
+    // Determine the source of truth for the state we need to validate.
+    // On first load, it's localStorage. On subsequent updates, it's the component's current state.
+    const stateSource = this.state.isLoading ? JSON.parse(localStorage.getItem("learningState") || '{}') : this.state;
+
+    // Validate the selections from the source against the new master list.
+    const validatedState = this.getValidatedState(stateSource, masterGradesList);
+
+    this.setState({
+      ...validatedState,
+      school: activeSchool,
+      _masterGradesList: masterGradesList,
+      isLoading: false, // Turn off skeleton loader
+    }, () => {
+      // After state is set, refresh all filtered lists based on the now-validated state.
+      this.refreshCurrentSelectionsAndFilters();
+      // If a subject is still selected after validation, fetch its response data.
+      if (this.state.selectedSubject) {
+        this.fetchAndSetResponses(this.state.selectedSubject);
+      }
+    });
+  }
+
+  /**
+   * [REVISED] Validates a given state object against the master data list.
+   * This prevents errors if data was deleted since the state was last set.
+   */
+  getValidatedState = (sourceState, masterGradesList) => {
+    const validated = {
+      selectedGrade: null, selectedSubject: null, selectedTopic: null,
+      selectedSubtopic: null, selectedQuestion: null,
+      gradeSearchTerm: sourceState.gradeSearchTerm || '',
+      subjectSearchTerm: sourceState.subjectSearchTerm || '',
+      topicSearchTerm: sourceState.topicSearchTerm || '',
+      subtopicSearchTerm: sourceState.subtopicSearchTerm || '',
+      questionSearchTerm: sourceState.questionSearchTerm || '',
+      optionSearchTerm: sourceState.optionSearchTerm || '',
+      activeTab: sourceState.activeTab || 'content',
+    };
+
+    try {
+      if (!sourceState) return validated;
+
+      // --- Validation Cascade ---
+      const grade = masterGradesList.find(g => g.id === sourceState.selectedGrade);
+      if (!grade) return validated; // If saved grade is gone, reset everything.
+      validated.selectedGrade = grade.id;
+
+      const subject = (grade.subjects || []).find(s => s.id === sourceState.selectedSubject);
+      if (!subject) return validated;
+      validated.selectedSubject = subject.id;
+
+      const topic = (subject.topics || []).find(t => t.id === sourceState.selectedTopic);
+      if (!topic) return validated;
+      validated.selectedTopic = topic.id;
+
+      const subtopic = (topic.subtopics || []).find(st => st.id === sourceState.selectedSubtopic);
+      if (!subtopic) return validated;
+      validated.selectedSubtopic = subtopic.id;
+
+      const question = (subtopic.questions || []).find(q => q.id === sourceState.selectedQuestion);
+      if (question) {
+        validated.selectedQuestion = question.id;
+      }
+
+    } catch (error) {
+      console.error("Failed to parse or validate state:", error);
+      return validated; // Return defaults on error
+    }
+    return validated;
   }
 
   saveStateToLocalStorage = () => {
-    const { selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion,
+    // Only save state if we are not in the initial loading phase.
+    if (this.state.isLoading || !this.state.school) {
+      return;
+    }
+    const {
+      selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion,
       gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm,
-      optionSearchTerm, activeTab } = this.state;
-    if (selectedGrade === null) return;
+      optionSearchTerm, activeTab
+    } = this.state;
+
     const stateToSave = {
       selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion,
       gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm,
@@ -382,9 +329,25 @@ class BasicTable extends React.Component {
     } catch (error) {
       console.error("Failed to save state to localStorage:", error);
     }
+  };
+
+  componentDidUpdate(prevProps, prevState) {
+    // When any selection or search term changes, persist it to localStorage.
+    const persistedStateKeys = [
+      'selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion',
+      'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm',
+      'activeTab'
+    ];
+    const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key]));
+
+    // We save on every meaningful state change. The beforeunload listener is a final backup.
+    if (hasPersistedStateChanged) {
+      this.saveStateToLocalStorage();
+    }
   }
 
-  // --- UTILITY & FILTERING FUNCTIONS ---
+  // --- UTILITY, REFRESH, & NAVIGATION FUNCTIONS ---
+
   _applyFilter = (list, term, key = 'name') => {
     if (!list) return [];
     const searchTerm = term.toLowerCase().trim();
@@ -392,33 +355,18 @@ class BasicTable extends React.Component {
     return list.filter(item => item && item[key] && String(item[key]).toLowerCase().includes(searchTerm));
   };
 
-  /**
-   * [NEW] Sorts a list of items based on an array of ordered IDs.
-   * Items not found in the order array are pushed to the end.
-   * @param {Array} list The array of objects to sort (e.g., [{id: 'b'}, {id: 'a'}])
-   * @param {Array} orderArray The array of IDs in the desired order (e.g., ['a', 'b'])
-   * @returns {Array} The sorted list.
-   */
   _sortListByOrderArray = (list, orderArray) => {
-    if (!list || !Array.isArray(list) || !orderArray || !Array.isArray(orderArray)) {
-      return list || [];
-    }
-    console.group("_sortListByOrderArray");
-    console.log("Before sorting:", list);
-    console.log("Order array:", orderArray);
+    if (!list || !Array.isArray(list)) return [];
+    if (!orderArray || !Array.isArray(orderArray)) return list; // Return original if no order is specified
     const orderMap = new Map(orderArray.map((id, index) => [id, index]));
-    const sortedList = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       const posA = orderMap.get(a.id) ?? Infinity;
       const posB = orderMap.get(b.id) ?? Infinity;
       return posA - posB;
     });
-    console.log("After sorting:", sortedList);
-    console.groupEnd();
-    return sortedList;
   }
 
-  // --- DATA REFRESH & NAVIGATION ---
-  refreshCurrentSelectionsAndFilters = (doScroll = true) => {
+  refreshCurrentSelectionsAndFilters = () => {
     const {
       _masterGradesList, school,
       selectedGrade, gradeSearchTerm,
@@ -428,104 +376,212 @@ class BasicTable extends React.Component {
       selectedQuestion, questionSearchTerm,
       optionSearchTerm
     } = this.state;
+    if (this.state.isLoading) return;
 
     let newState = {};
-
-    console.log(school)
-
-    console.log(_masterGradesList, school?.gradeOrder)
-    // [MODIFIED] Use the new sorting function for grades
     const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder);
     newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name');
 
     const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
-    if (selectedGrade && !currentGradeObj) { this.setState(this.clearSelectionsAndDataFromLevel('grade', true)); return; }
-
-    // [MODIFIED] Use the new sorting function for subjects
     const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder);
     newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name');
 
-    const currentSubjectObj = selectedSubject ? subjectsList.find(s => s.id === selectedSubject) : null;
-    if (selectedSubject && !currentSubjectObj) { this.setState(this.clearSelectionsAndDataFromLevel('subject', true)); return; }
-
-    // [MODIFIED] Use the new sorting function for topics
+    const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null;
     const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder);
     newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name');
 
-    const currentTopicObj = selectedTopic ? topicsList.find(t => t.id === selectedTopic) : null;
-    if (selectedTopic && !currentTopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('topic', true)); return; }
-
-    // [MODIFIED] Use the new sorting function for subtopics
+    const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null;
     const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder);
     newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name');
 
-    const currentSubtopicObj = selectedSubtopic ? subtopicsList.find(st => st.id === selectedSubtopic) : null;
-    if (selectedSubtopic && !currentSubtopicObj) { this.setState(this.clearSelectionsAndDataFromLevel('subtopic', true)); return; }
-
-    // [MODIFIED] Use the new sorting function for questions
+    const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
     const questionsList = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder);
     newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name');
 
-    const currentQuestionObj = selectedQuestion ? questionsList.find(q => q.id === selectedQuestion) : null;
-    if (selectedQuestion && !currentQuestionObj) { this.setState(this.clearSelectionsAndDataFromLevel('question', true)); return; }
-
-    // [MODIFIED] Use the new sorting function for options
+    const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null;
     const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder);
     newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value');
 
     this.setState(newState);
   };
 
-  clearSelectionsAndDataFromLevel = (levelName, includeSelf = false) => {
+  /**
+   * [FIXED] Correctly clears selections and downstream data without removing the current list.
+   */
+  clearSelectionsAndDataFromLevel = (levelName) => {
     const newState = {};
     const levels = ['grade', 'subject', 'topic', 'subtopic', 'question', 'option'];
     const startIndex = levels.indexOf(levelName);
+
     if (startIndex === -1) return {};
-    if (startIndex <= 1) { newState.activeTab = 'content'; newState.subjectResponses = []; newState.studentsForDate = []; newState.selectedStudentId = null; }
+
+    // When clearing from subject level up, reset the content tab
+    if (startIndex <= 1) {
+      newState.activeTab = 'content';
+      newState.subjectResponses = [];
+      newState.studentsForDate = [];
+      newState.selectedStudentId = null;
+    }
+
+    // Loop from the specified level downwards
     for (let i = startIndex; i < levels.length; i++) {
-      const currentLevel = levels[i];
-      if (i === startIndex && !includeSelf) continue;
-      newState[`selected${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}`] = null;
-      newState[`filtered${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}s`] = [];
-      if (currentLevel === 'grade') {
-        // [MODIFIED] Ensure the base grade list is also sorted when clearing
-        const gradesList = this._sortListByOrderArray(this.state._masterGradesList, this.state.school?.gradeOrder);
-        newState.grades = this._applyFilter(gradesList, this.state.gradeSearchTerm, 'name');
+      const level = levels[i];
+      const capitalizedLevel = level.charAt(0).toUpperCase() + level.slice(1);
+
+      // 1. Nullify the selection for the current level
+      newState[`selected${capitalizedLevel}`] = null;
+
+      // 2. Clear the *FILTERED LIST* for the level BELOW the current one.
+      // e.g., if we clear 'subject' (i=1), we must clear 'filteredTopics' (from levels[2]).
+      const childIndex = i + 1;
+      if (childIndex < levels.length) {
+        const childLevel = levels[childIndex];
+        const capitalizedChildLevel = childLevel.charAt(0).toUpperCase() + childLevel.slice(1);
+        newState[`filtered${capitalizedChildLevel}s`] = [];
       }
     }
     return newState;
   };
 
-  // --- EVENT HANDLERS (Unchanged) ---
+
+  // --- UI EVENT HANDLERS ---
+
   onEntityCreated = (entityName) => { toastr.success(`${entityName} has been CREATED successfully!`, `Create ${entityName}`); }
   onEntityUpdated = (entityName) => { toastr.success(`${entityName} has been UPDATED successfully!`, `Edit ${entityName}`); }
   onEntityDeleted = (entityName) => { toastr.success(`${entityName} has been DELETED successfully!`, `Delete ${entityName}`); }
+  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term }, () => this.refreshCurrentSelectionsAndFilters()); }
+  onSubjectSearch = e => { this.setState({ subjectSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters()); }
+  onTopicSearch = e => { this.setState({ topicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters()); }
+  onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters()); }
+  onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters()); }
+  onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters()); }
 
-  onGradeSearch = e => { const term = e.target.value; this.setState({ gradeSearchTerm: term }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onSubjectSearch = e => { this.setState({ subjectSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onTopicSearch = e => { this.setState({ topicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
-  onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, () => this.refreshCurrentSelectionsAndFilters(false)); }
+  handleGradeSelect = (grade) => { this.setState(this.clearSelectionsAndDataFromLevel('subject'), () => { this.setState({ selectedGrade: grade.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+  handleSubjectSelect = (subject) => { this.fetchAndSetResponses(subject.id); this.setState(this.clearSelectionsAndDataFromLevel('topic'), () => { this.setState({ selectedSubject: subject.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+  handleTopicSelect = (topic) => { this.setState(this.clearSelectionsAndDataFromLevel('subtopic'), () => { this.setState({ selectedTopic: topic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+  handleSubtopicSelect = (subtopic) => { this.setState(this.clearSelectionsAndDataFromLevel('question'), () => { this.setState({ selectedSubtopic: subtopic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+  handleQuestionSelect = (question) => { this.setState(this.clearSelectionsAndDataFromLevel('option'), () => { this.setState({ selectedQuestion: question.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }); };
 
-  handleGradeSelect = (grade) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subject', true), selectedGrade: grade.id }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
-  handleSubjectSelect = (subject) => { this.fetchAndSetResponses(subject.id); this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('topic', true), selectedSubject: subject.id, activeTab: 'content', selectedStudentId: null, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
-  handleTopicSelect = (topic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('subtopic', true), selectedTopic: topic.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
-  handleSubtopicSelect = (subtopic) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('question', true), selectedSubtopic: subtopic.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }
-  handleQuestionSelect = (question) => { this.setState(prevState => ({ ...this.clearSelectionsAndDataFromLevel('option', true), selectedQuestion: question.id, }), () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }
+  // Handlers for mocked data tab
   fetchAndSetResponses = (subjectId) => { const responses = MockResponses.getBySubject(subjectId); this.setState({ subjectResponses: responses }, () => { this.filterStudentsByDate(this.state.responsesStudyDate); }); }
   handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
   handleStudyDateChange = (e) => { const newDate = e.target.value; this.setState({ responsesStudyDate: newDate, selectedStudentId: null }, () => this.filterStudentsByDate(newDate)); }
   filterStudentsByDate = (dateString) => { const { subjectResponses } = this.state; if (!dateString || !subjectResponses) { this.setState({ studentsForDate: [] }); return; } const responsesOnDate = subjectResponses.filter(r => r.submissionDate.startsWith(dateString)); const studentMap = new Map(); responsesOnDate.forEach(r => { if (!studentMap.has(r.studentId)) { studentMap.set(r.studentId, { id: r.studentId, name: r.studentName }); } }); this.setState({ studentsForDate: Array.from(studentMap.values()) }); }
   handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId }); }
-  findContentBreadcrumbs = (response) => { const { selectedGrade, _masterGradesList } = this.state; const grade = _masterGradesList.find(g => g.id === selectedGrade); if (!grade) return "Path not found"; const subject = (grade.subjects || []).find(s => s.id === response.subjectId); const topic = (subject?.topics || []).find(t => t.id === response.topicId); const subtopic = (topic?.subtopics || []).find(st => st.id === response.subtopicId); const question = (subtopic?.questions || []).find(q => q.id === response.questionId); if (question && subtopic && topic) { return `${topic.name} > ${subtopic.name} > ${question.name}`; } return "Unknown Content Location"; }
-  handleCreate = async (entity, data, parentId, parentKey) => { const payload = parentId ? { ...data, [parentKey]: parentId } : data; this.onEntityCreated(entity.slice(0, -1)); return Data[entity].create(payload); }
-  handleUpdate = (entity, data) => async () => { await Data[entity].update(data); this.onEntityUpdated(entity.slice(0, -1)); }
-  handleDelete = (entity, item, parentId, parentKey) => async () => { const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id }; await Data[entity].delete(payload); this.onEntityDeleted(entity.slice(0, -1)); }
-  scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
-  _handleReorder = async (entityType, reorderedList) => { const { _masterGradesList, school, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion } = this.state; const findItem = (id, list) => list.find(item => item.id === id); const revertUI = () => this.refreshCurrentSelectionsAndFilters(); try { const ids = reorderedList.map(item => item.id); switch (entityType) { case 'grades': this.setState({ grades: reorderedList }); if (!school) throw new Error("School not loaded, cannot reorder grades."); const updatedSchool = { id: school.id, gradeOrder: ids }; this.handleUpdate('schools', updatedSchool)(); break; case 'subjects': this.setState({ filteredSubjects: reorderedList }); const parentGrade = findItem(selectedGrade, _masterGradesList); if (!parentGrade) throw new Error("Parent grade not found."); const updatedGrade = { id: parentGrade.id, subjectsOrder: ids }; this.handleUpdate('grades', updatedGrade)(); break; case 'topics': this.setState({ filteredTopics: reorderedList }); const gradeForTopic = findItem(selectedGrade, _masterGradesList); const parentSubject = findItem(selectedSubject, gradeForTopic?.subjects || []); if (!parentSubject) throw new Error("Parent subject not found."); const updatedSubject = { id: parentSubject.id, topicsOrder: ids }; this.handleUpdate('subjects', { ...updatedSubject, grade: selectedGrade })(); break; case 'subtopics': this.setState({ filteredSubtopics: reorderedList }); const gradeForSubtopic = findItem(selectedGrade, _masterGradesList); const subjectForSubtopic = findItem(selectedSubject, gradeForSubtopic?.subjects || []); const parentTopic = findItem(selectedTopic, subjectForSubtopic?.topics || []); if (!parentTopic) throw new Error("Parent topic not found."); const updatedTopic = { id: parentTopic.id, subtopicOrder: ids }; this.handleUpdate('topics', { ...updatedTopic, subject: selectedSubject })(); break; case 'questions': this.setState({ filteredQuestions: reorderedList }); const gradeForQuestion = findItem(selectedGrade, _masterGradesList); const subjectForQuestion = findItem(selectedSubject, gradeForQuestion?.subjects || []); const topicForQuestion = findItem(selectedTopic, subjectForQuestion?.topics || []); const parentSubtopic = findItem(selectedSubtopic, topicForQuestion?.subtopics || []); if (!parentSubtopic) throw new Error("Parent subtopic not found."); const updatedSubtopic = { id: parentSubtopic.id, questionsOrder: ids }; this.handleUpdate('subtopics', { ...updatedSubtopic, topic: selectedTopic })(); break; case 'options': this.setState({ filteredOptions: reorderedList }); const gradeForOption = findItem(selectedGrade, _masterGradesList); const subjectForOption = findItem(selectedSubject, gradeForOption?.subjects || []); const topicForOption = findItem(selectedTopic, subjectForOption?.topics || []); const subtopicForOption = findItem(selectedSubtopic, topicForOption?.subtopics || []); const parentQuestion = findItem(selectedQuestion, subtopicForOption?.questions || []); if (!parentQuestion) throw new Error("Parent question not found."); const updatedQuestion = { id: parentQuestion.id, optionsOrder: ids }; this.handleUpdate('questions', { ...updatedQuestion, subtopic: selectedSubtopic })(); break; default: console.warn(`Reorder handler not implemented for: ${entityType}`); return; } } catch (error) { console.error(`Error during reorder of ${entityType}:`, error); toastr.error(`Failed to update order for ${entityType}. Reverting.`); revertUI(); } };
+  findContentBreadcrumbs = (response) => { const { selectedGrade, _masterGradesList } = this.state; const grade = _masterGradesList.find(g => g.id === selectedGrade); if (!grade) return "Path not found"; const subject = (grade.subjects || []).find(s => s.id === response.subjectId); const topic = (subject?.topics || []).find(t => t.id === 'topic-1'); /* MOCK */ const subtopic = (topic?.subtopics || []).find(st => st.id === 'subtopic-1-A'); /* MOCK */ const question = (subtopic?.questions || []).find(q => q.id === 'q-1'); /* MOCK */ if (topic && subtopic && question) { return `${topic.name} > ${subtopic.name} > ${question.name}`; } return "Unknown Mock Location"; }
 
-  // --- RENDER (Unchanged) ---
+  // --- [REFACTORED] Data Mutation Handlers ---
+
+  handleCreate = async (entity, data, parentId, parentKey) => {
+    try {
+      const payload = parentId ? { ...data, [parentKey]: parentId } : data;
+      const createResponse = await Data[entity].create(payload); 
+      this.onEntityCreated(entity.slice(0, -1));
+      this.refreshCurrentSelectionsAndFilters();
+      return createResponse;
+    }
+    catch (err) {
+      console.error(err);
+      toastr.error(`Failed to create ${entity.slice(0, -1)}`);
+    }
+  };
+
+  /**
+   * [REFACTORED] A generic, simplified update handler.
+   * The caller in the render method is responsible for building the correct payload.
+   */
+  handleUpdate = async (entity, payload) => {
+    try {
+      await Data[entity].update(payload);
+      this.onEntityUpdated(entity.slice(0, -1));
+    } catch (err) {
+      console.error(`Failed to update ${entity.slice(0, -1)}:`, err);
+      toastr.error(`Failed to update ${entity.slice(0, -1)}`);
+    }
+  };
+
+  /**
+   * [SIMPLIFIED] The delete handler now provides immediate feedback by clearing downstream state correctly.
+   * The subsequent subscription update from the data service will handle refreshing the list itself.
+   */
+  handleDelete = (entity, item, parentId, parentKey) => async () => {
+    try {
+      const payload = parentId ? { id: item.id, [parentKey]: parentId } : { id: item.id };
+      await Data[entity].delete(payload);
+      this.onEntityDeleted(entity.slice(0, -1));
+
+      // If the deleted item was the currently selected one, clear the selections to prevent a broken UI state.
+      const singularEntity = entity.slice(0, -1);
+      const capitalizedEntity = singularEntity.charAt(0).toUpperCase() + singularEntity.slice(1);
+      if (this.state[`selected${capitalizedEntity}`] === item.id) {
+        const clearedState = this.clearSelectionsAndDataFromLevel(singularEntity);
+        this.setState(clearedState, this.refreshCurrentSelectionsAndFilters);
+      }
+    } catch (err) {
+      console.error(err);
+      toastr.error(`Failed to delete ${entity.slice(0, -1)}`);
+    }
+  };
+
+  scrollBy = (amount) => { if (this.scrollContainerRef.current) { this.scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' }); } }
+
+  /**
+   * [REFACTORED & FIXED] Handles reordering of items within a list.
+   * It now correctly identifies the parent entity to update and sends the correct payload.
+   */
+  _handleReorder = async (entityType, reorderedList) => {
+    const { school, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion } = this.state;
+    const originalStateUpdater = () => this.refreshCurrentSelectionsAndFilters();
+
+    try {
+      const ids = reorderedList.map(item => item.id);
+      let entityToUpdate;
+      let payload;
+
+      switch (entityType) {
+        case 'grades':
+          this.setState({ grades: reorderedList }); // Optimistic UI update
+          entityToUpdate = 'schools';
+          payload = { id: school.id, gradeOrder: ids };
+          break;
+        case 'subjects':
+          this.setState({ filteredSubjects: reorderedList });
+          entityToUpdate = 'grades';
+          payload = { id: selectedGrade, subjectsOrder: ids };
+          break;
+        case 'topics':
+          this.setState({ filteredTopics: reorderedList });
+          entityToUpdate = 'subjects';
+          payload = { id: selectedSubject, topicsOrder: ids, grade: selectedGrade };
+          break;
+        case 'subtopics':
+          this.setState({ filteredSubtopics: reorderedList });
+          entityToUpdate = 'topics';
+          payload = { id: selectedTopic, subtopicOrder: ids, subject: selectedSubject };
+          break;
+        case 'questions':
+          this.setState({ filteredQuestions: reorderedList });
+          entityToUpdate = 'subtopics';
+          payload = { id: selectedSubtopic, questionsOrder: ids, topic: selectedTopic };
+          break;
+        case 'options':
+          this.setState({ filteredOptions: reorderedList });
+          entityToUpdate = 'questions';
+          payload = { id: selectedQuestion, optionsOrder: ids, subtopic: selectedSubtopic };
+          break;
+        default:
+          throw new Error(`Reorder not implemented for: ${entityType}`);
+      }
+
+      await this.handleUpdate(entityToUpdate, payload);
+
+    } catch (error) {
+      console.error(`Error during reorder of ${entityType}:`, error);
+      toastr.error(`Failed to update order for ${entityType}. Reverting.`);
+      originalStateUpdater(); // Revert on failure
+    }
+  };
+
 
   render() {
     const {
@@ -542,14 +598,26 @@ class BasicTable extends React.Component {
       activeTab, responsesStudyDate, studentsForDate, selectedStudentId
     } = this.state;
 
+    if (isLoading && (!this.state.school || !this.state.grades || !this.state.grades.length)) { // Only show full skeleton on very first load
+      return (
+        <div className="kt-portlet kt-portlet--mobile">
+          <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Student Learning</h3></div></div>
+          <div className="kt-portlet__body"><SkeletonLoader /></div>
+        </div>
+      )
+    }
+
+    // --- [NEW] Derive full objects from state IDs for safe rendering ---
     const selectedGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
+    const selectedSubjectObj = selectedGradeObj ? (selectedGradeObj.subjects || []).find(s => s.id === selectedSubject) : null;
+    const selectedTopicObj = selectedSubjectObj ? (selectedSubjectObj.topics || []).find(t => t.id === selectedTopic) : null;
+    const selectedSubtopicObj = selectedTopicObj ? (selectedTopicObj.subtopics || []).find(st => st.id === selectedSubtopic) : null;
 
     const selectedStudentResponses = selectedStudentId
       ? this.state.subjectResponses.filter(r => r.studentId === selectedStudentId && r.submissionDate.startsWith(responsesStudyDate))
       : [];
 
     const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
-
     const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
 
     return (
@@ -559,11 +627,8 @@ class BasicTable extends React.Component {
             <h3 className="kt-portlet__head-title">Student Learning</h3>
           </div>
         </div>
-
         <div className="kt-portlet__body">
-          {isLoading ? (
-            <SkeletonLoader columns={4} />
-          ) : <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
             <button onClick={() => this.scrollBy(-400)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
             <div ref={this.scrollContainerRef} className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)" }}>
               {/* Column 1: Grades */}
@@ -592,105 +657,35 @@ class BasicTable extends React.Component {
                 </div>
               )}
 
-              {/* --- NEW VISUALLY GROUPED CONTAINER FOR TABS (no inner scroll) --- */}
+              {/* Tabbed Container for remaining columns */}
               {selectedSubject && (
-                <div className="col-md-9" style={{ whiteSpace: 'normal' }}>
+                <div className="col-md-7" style={{ whiteSpace: 'normal' }}>
                   <div className="kt-portlet kt-portlet--tabs">
                     <div className="kt-portlet__head">
                       <div className="kt-portlet__head-toolbar">
                         <ul className="nav nav-tabs nav-tabs-line nav-tabs-line-info" role="tablist">
-                          <li className="nav-item">
-                            <a className={`nav-link ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')} role="tab">
-                              <i className="la la-list"></i> Content
-                            </a>
-                          </li>
-                          <li className="nav-item">
-                            <a className={`nav-link ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')} role="tab">
-                              <i className="la la-comments"></i> Responses
-                            </a>
-                          </li>
+                          <li className="nav-item"> <a className={`nav-link ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')} role="tab"> <i className="la la-list"></i> Content </a> </li>
+                          <li className="nav-item"> <a className={`nav-link ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')} role="tab"> <i className="la la-comments"></i> Responses </a> </li>
                         </ul>
                       </div>
                     </div>
                     <div className="kt-portlet__body">
                       <div className="tab-content">
-                        {/* Content Tab Pane with Horizontal Columns */}
+                        {/* Content Tab with scrolling inner columns */}
                         <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel">
                           <div className="d-flex flex-row flex-nowrap">
-                            {/* Topic Column */}
-                            <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12">
-                              <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="strands" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>
-
-                            {/* Subtopic Column */}
-                            {selectedTopic &&
-                              <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12">
-                                <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Sub Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}
-
-                            {/* Question Column */}
-                            {selectedSubtopic &&
-                              <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12">
-                                <div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Content</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="content" onSearch={this.onQuestionSearch} value={questionSearchTerm} />
-                                  <Table
-                                    listId={`questions-list-${selectedSubtopic}`}
-                                    headers={[{ label: "Name", key: "name" }]}
-                                    data={filteredQuestions}
-                                    options={tableOptions}
-                                    selectedItemId={selectedQuestion}
-                                    show={this.handleQuestionSelect}
-                                    edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())}
-                                    delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())}
-                                    onOrderChange={(list) => this._handleReorder('questions', list)}
-                                  />
-                                </div></div>}
-
-                            {/* Option Column */}
-                            {selectedQuestion &&
-                              <div className="col-md-3 col-lg-3 col-sm-12 col-xl-3 col-xs-12">
-                                <div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Responses</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="answers" onSearch={this.onOptionSearch} value={optionSearchTerm} />
-                                  <Table
-                                    listId={`options-list-${selectedQuestion}`}
-                                    headers={[{ label: "Answer", key: "value" }]}
-                                    data={filteredOptions}
-                                    options={{ ...tableOptions, linkable: false }}
-                                    edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())}
-                                    delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())}
-                                    onOrderChange={(list) => this._handleReorder('options', list)}
-                                    correctItemIds={correctOptionIds}
-                                  />
-                                </div></div>}
+                            {/* All subsequent columns go here */}
+                            <div className="col-md-6"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Topics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>
+                            {selectedTopic && <div className="col-md-6"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Subtopics</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}
+                            {selectedSubtopic && <div className="col-md-6"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Questions</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}
+                            {selectedQuestion && <div className="col-md-6"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Options</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} correctItemIds={correctOptionIds} /></div></div>}
                           </div>
                         </div>
                         {/* Responses Tab Pane */}
                         <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} role="tabpanel">
                           <div className="row">
-                            <div className="col-md-4">
-                              <h5>Filter by Study Date</h5>
-                              <input type="date" className="form-control mb-4" value={responsesStudyDate} onChange={this.handleStudyDateChange} />
-                              <h6>Student Submissions</h6>
-                              <div className="student-timeline" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                                {studentsForDate.length > 0 ? studentsForDate.map(student => (
-                                  <div key={student.id} className={`student-timeline-item ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}>
-                                    {student.name}
-                                  </div>
-                                )) : <p className="text-muted">No submissions on this date.</p>}
-                              </div>
-                            </div>
-                            <div className="col-md-8">
-                              <h5>{selectedStudentId ? `${studentsForDate.find(s => s.id === selectedStudentId)?.name || ''}'s Responses` : 'Select a Student'}</h5>
-                              <div className="responses-view" style={{ maxHeight: '65vh', overflowY: 'auto', background: '#f7f8fa', padding: '15px', borderRadius: '4px' }}>
-                                {selectedStudentId && selectedStudentResponses.length > 0 ? selectedStudentResponses.map(response => (
-                                  <div key={response.id} className="response-card">
-                                    <div className="response-card-breadcrumbs"><i className="la la-folder-open"></i> {this.findContentBreadcrumbs(response)}</div>
-                                    <div className="response-card-content">
-                                      {response.type === 'text' && <p>{response.content}</p>}
-                                      {response.type === 'image' && <img src={response.content} alt="Student submission" />}
-                                      {response.type === 'video' && <video controls src={response.content} width="100%" />}
-                                    </div>
-                                    <div className="text-muted small mt-2 text-right">Submitted at {new Date(response.submissionDate).toLocaleTimeString()}</div>
-                                  </div>
-                                )) : (selectedStudentId ? <p>No responses found for this student on the selected date.</p> : <p className="text-muted">Select a date and a student to view responses.</p>)}
-                              </div>
-                            </div>
+                            <div className="col-md-4"><h5 className="mb-3">Filter by Date</h5><input type="date" className="form-control mb-4" value={responsesStudyDate} onChange={this.handleStudyDateChange} /><h6>Student Submissions</h6><div className="student-timeline" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{studentsForDate.length > 0 ? studentsForDate.map(student => (<div key={student.id} className={`student-timeline-item ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}> {student.name} </div>)) : <p className="text-muted">No submissions on this date.</p>}</div></div>
+                            <div className="col-md-8"><h6>{selectedStudentId ? `${studentsForDate.find(s => s.id === selectedStudentId)?.name || ''}'s Responses` : 'Select a Student'}</h6><div className="responses-view" style={{ maxHeight: '65vh', overflowY: 'auto', background: '#f7f8fa', padding: '15px', borderRadius: '4px' }}>{selectedStudentId && selectedStudentResponses.length > 0 ? selectedStudentResponses.map(response => (<div key={response.id} className="response-card"> <div className="response-card-breadcrumbs"><i className="la la-folder-open"></i> {this.findContentBreadcrumbs(response)}</div> <div className="response-card-content"> {response.type === 'text' && <p>{response.content}</p>} {response.type === 'image' && <img src={response.content} alt="Student submission" />} {response.type === 'video' && <video controls src={response.content} width="100%" />} </div> <div className="text-muted small mt-2 text-right">Submitted at {new Date(response.submissionDate).toLocaleTimeString()}</div> </div>)) : (selectedStudentId ? <p>No responses found for this student on the selected date.</p> : <p className="text-muted">Select a date and a student to view responses.</p>)}</div></div>
                           </div>
                         </div>
                       </div>
@@ -700,28 +695,33 @@ class BasicTable extends React.Component {
               )}
             </div>
             <button onClick={() => this.scrollBy(400)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
-          </div>}
+          </div>
         </div>
 
-        {/* --- All Modals --- */}
-        {this.state.school && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', { ...data, school: this.state.school.id })()} />}
-        {gradeToEdit && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', data)()} />}
-        {gradeToDelete && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={() => this.handleDelete('grades', gradeToDelete)()} />}
+        {/* --- [REFACTORED] All Modals with corrected props and handlers --- */}
+        {this.state.school && <AddGradeModal ref={this.addGradeModalRef} save={(data) => this.handleCreate('grades', { ...data, school: this.state.school.id })} />}
+        {gradeToEdit.id && <EditGradeModal ref={this.editGradeModalRef} grade={gradeToEdit} edit={(data) => this.handleUpdate('grades', { ...data, id: gradeToEdit.id })} />}
+        {gradeToDelete.id && <DeleteGradeModal ref={this.deleteGradeModalRef} grade={gradeToDelete} delete={this.handleDelete('grades', gradeToDelete)} />}
+
         {selectedGrade && <AddSubjectModal ref={this.addSubjectModalRef} save={(data) => this.handleCreate('subjects', data, selectedGrade, 'grade')} />}
-        {subjectToEdit && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', { ...data, grade: selectedGrade })()} />}
-        {subjectToDelete && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={() => this.handleDelete('subjects', subjectToDelete, selectedGrade, 'gradeId')()} />}
-        {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
-        {topicToEdit && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => this.handleUpdate('topics', { ...data, subject: selectedSubject })()} />}
-        {topicToDelete && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={() => this.handleDelete('topics', topicToDelete, selectedSubject, 'subject')()} />}
-        {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} topic={selectedTopic} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
-        {subtopicToEdit && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} edit={(data) => this.handleUpdate('subtopics', { ...data, topic: selectedTopic })()} />}
-        {subtopicToDelete && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={() => this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topic')()} />}
-        {selectedSubtopic && <AddQuestionModal ref={this.addQuestionModalRef} save={(data) => this.handleCreate('questions', data, selectedSubtopic, 'subtopic')} subtopic={selectedSubtopic} filteredOptions={filteredOptions} />}
-        {questionToEdit && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} subtopic={selectedSubtopic} edit={(data) => this.handleUpdate('questions', { ...data, subtopic: selectedSubtopic })()} />}
-        {questionToDelete && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} delete={() => this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopic')()} />}
-        {selectedQuestion && (<AddOptionModal ref={this.addOptionModalRef} question={selectedQuestion} save={(data) => this.handleCreate('options', data, selectedQuestion, 'question')} />)}
-        {optionToEdit && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => this.handleUpdate('options', { ...data, question: selectedQuestion })()} question={selectedQuestion} />}
-        {optionToDelete && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={() => this.handleDelete('options', optionToDelete, selectedQuestion, 'question')()} />}
+        {selectedSubject && <EditSubjectModal ref={this.editSubjectModalRef} subject={subjectToEdit} edit={(data) => this.handleUpdate('subjects', { ...data, id: subjectToEdit.id, grade: selectedGrade })} />}
+        {selectedSubject && <DeleteSubjectModal ref={this.deleteSubjectModalRef} subject={subjectToDelete} delete={this.handleDelete('subjects', subjectToDelete, selectedGrade, 'grade')} />}
+
+        {selectedSubject && <AddTopicModal ref={this.addTopicModalRef} save={(data) => this.handleCreate('topics', data, selectedSubject, 'subject')} />}
+        {selectedSubject && <EditTopicModal ref={this.editTopicModalRef} topic={topicToEdit} edit={(data) => this.handleUpdate('topics', { ...data, id: topicToEdit.id, subject: selectedSubject })} />}
+        {selectedSubject && <DeleteTopicModal ref={this.deleteTopicModalRef} topic={topicToDelete} delete={this.handleDelete('topics', topicToDelete, selectedSubject, 'subject')} />}
+
+        {selectedTopic && <AddSubtopicModal ref={this.addSubtopicModalRef} save={(data) => this.handleCreate('subtopics', data, selectedTopic, 'topic')} />}
+        {selectedTopic && <EditSubtopicModal ref={this.editSubtopicModalRef} subtopic={subtopicToEdit} topic={selectedTopicObj} subject={selectedSubjectObj} grade={selectedGradeObj} grades={this.state._masterGradesList} edit={(data) => this.handleUpdate('subtopics', { ...data, id: subtopicToEdit.id, topic: selectedTopic })} />}
+        {selectedTopic && <DeleteSubtopicModal ref={this.deleteSubtopicModalRef} subtopic={subtopicToDelete} delete={this.handleDelete('subtopics', subtopicToDelete, selectedTopic, 'topic')} />}
+
+        {selectedSubtopic && <AddQuestionModal subtopicId={selectedSubtopic} ref={this.addQuestionModalRef} save={(data) => this.handleCreate('questions', data, selectedSubtopic, 'subtopic')} />}
+        {selectedSubtopicObj && <EditQuestionModal ref={this.editQuestionModalRef} question={questionToEdit} subtopic={selectedSubtopicObj} edit={(data) => this.handleUpdate('questions', { ...data, id: questionToEdit.id, subtopic: selectedSubtopic })} />}
+        {selectedSubtopic && <DeleteQuestionModal ref={this.deleteQuestionModalRef} question={questionToDelete} subtopic={selectedSubtopic} delete={this.handleDelete('questions', questionToDelete, selectedSubtopic, 'subtopic')} />}
+
+        {selectedQuestion && <AddOptionModal ref={this.addOptionModalRef} save={(data) => this.handleCreate('options', data, selectedQuestion, 'question')} />}
+        {selectedQuestion && <EditOptionModal ref={this.editOptionModalRef} option={optionToEdit} edit={(data) => this.handleUpdate('options', { ...data, id: optionToEdit.id, question: selectedQuestion })} />}
+        {selectedQuestion && <DeleteOptionModal ref={this.deleteOptionModalRef} option={optionToDelete} delete={this.handleDelete('options', optionToDelete, selectedQuestion, 'question')} />}
       </div>
     );
   }

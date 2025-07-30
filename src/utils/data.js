@@ -1,2731 +1,479 @@
 import emitize from "./emitize";
 import { query, mutate } from "./requests";
 
-const studentsData = [];
-const parentsData = [];
-const busesData = [];
-const driversData = [];
-const adminsData = [];
-const routesData = [];
-const complaintsData = []
-const tripsData = [];
-const schedulesData = [];
-const classesData = [];
-const teachersData = [];
-const schoolsData = [];
-const paymentsData = []
-const chargesData = [];
-const gradesData = [];
-const subjectsData = [];
-const topicsData = [];
-const subtopicsData = [];
-const questionsData = [];
-const optionsData = [];
-const teamsData = [];
-const invitationsData = [];
-const teamMembersData = [];
+// Centralized cache for all data entities, both flat and nested.
+const allData = {
+    // Top-level tree structure
+    schools: [],
+    // Flat lists for easy access and table views
+    students: [],
+    parents: [],
+    buses: [],
+    drivers: [],
+    admins: [],
+    routes: [],
+    complaints: [],
+    trips: [],
+    schedules: [],
+    classes: [],
+    teachers: [],
+    payments: [],
+    charges: [],
+    grades: [],
+    subjects: [],
+    topics: [],
+    subtopics: [],
+    questions: [],
+    options: [],
+    teams: [],
+    invitations: [],
+    team_members: [],
+};
+
+// Centralized subscriptions object. Each key will hold an array of callbacks.
+const subs = {};
 let schoolID = undefined;
 
+/**
+ * =================================================================
+ * The Generic Entity API Factory (REVISED for MULTI-SUBSCRIBE)
+ * =================================================================
+ */
+const createEntityAPI = (config) => {
+  const {
+      name,           // Plural name (e.g., "grades")
+      singularName,   // Singular name (e.g., "grade")
+      isNested = false,
+      parentEntity = null, // e.g. "grades" for subjects
+      parentKey = null,    // e.g. "grade"
+      createFields = [],
+      updateFields = [],
+  } = config;
 
+  const filterPayload = (data, allowedFields) => {
+      const filtered = {};
+      for (const field of allowedFields) {
+          if (data[field] !== undefined) {
+              filtered[field] = data[field];
+          }
+      }
+      return filtered;
+  };
 
+  const findItemInTree = (itemId, startNodes = allData.schools) => {
+      for (const node of startNodes) {
+          if (node.id === itemId) return { item: node, parent: null, parentList: startNodes };
+          const keysToRecurse = ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options', 'members', 'students', 'classes', 'buses', 'drivers', 'admins', 'parents', 'teachers', 'routes', 'schedules', 'trips', 'complaints', 'charges', 'payments', 'teams', 'invitations'];
+          for (const key of keysToRecurse) {
+              if (Array.isArray(node[key])) {
+                  const found = findItemInTree(itemId, node[key]);
+                  if (found.item) {
+                      if (found.parent === null) {
+                         found.parent = node;
+                         found.parentList = node[key];
+                      }
+                      return found;
+                  }
+              }
+          }
+      }
+      return { item: null, parent: null, parentList: null };
+  };
+
+    const notifySubscribers = (entity) => {
+        if (Array.isArray(subs[entity])) {
+            const dataPayload = { [entity]: [...allData[entity]] };
+            subs[entity].forEach(cb => cb(dataPayload));
+        }
+    };
+    
+    const notifySchoolSubscribers = () => {
+        if (Array.isArray(subs.schools)) {
+            const selectedSchool = allData.schools.find(s => s.id === schoolID) || {};
+            subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
+        }
+    };
+
+  const api = {
+      create: (data) => new Promise(async (resolve, reject) => {
+          try {
+              const payload = { ...data };
+              if (!isNested && !payload.school && name !== 'schools') {
+                  payload.school = localStorage.getItem("school");
+              }
+
+              const sanitizedData = filterPayload(payload, createFields);
+              const mutationName = `I${singularName}`;
+              const response = await mutate(
+                  `mutation ($data: ${mutationName}!) { ${name} { create(${singularName}: $data) { id } } }`,
+                  { data: sanitizedData }
+              );
+
+              const createdItem = response[name].create;
+              const newItem = { ...data, id: createdItem.id };
+
+              allData[name].push(newItem);
+              if (isNested && payload[parentKey]) {
+                  const { item: parentItem } = findItemInTree(payload[parentKey]);
+                  if (parentItem) {
+                      if (!Array.isArray(parentItem[name])) parentItem[name] = [];
+                      parentItem[name].push(newItem);
+                  } else {
+                       console.warn(`Could not find parent with ID ${payload[parentKey]} to append new ${singularName}`);
+                  }
+              } else {
+                  const school = allData.schools.find(s => s.id === payload.school);
+                  if(school) {
+                      if (!Array.isArray(school[name])) school[name] = [];
+                      school[name].push(newItem);
+                  }
+              }
+
+              // --- Notify ---
+              notifySubscribers(name);
+              notifySchoolSubscribers();
+              if (isNested) notifySubscribers(parentEntity);
+
+              resolve(newItem);
+          } catch (error) {
+              console.error(`Error creating ${singularName}:`, error);
+              reject(error);
+          }
+      }),
+
+      update: (data) => new Promise(async (resolve, reject) => {
+          try {
+              const { id, ...payload } = data;
+              const sanitizedPayload = filterPayload(payload, updateFields);
+              const mutationName = `U${singularName}`;
+              await mutate(
+                  `mutation ($data: ${mutationName}!) { ${name} { update(${singularName}: $data) { id } } }`,
+                  { data: { id, ...sanitizedPayload} }
+              );
+
+              const { item: itemInTree } = findItemInTree(id, allData.schools);
+              if (itemInTree) Object.assign(itemInTree, data);
+              const itemIndexFlat = allData[name].findIndex(item => item.id === id);
+              if (itemIndexFlat > -1) {
+                  allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...data };
+              }
+
+              // --- Notify ---
+              notifySubscribers(name);
+              notifySchoolSubscribers();
+              if (isNested) notifySubscribers(parentEntity);
+              resolve();
+          } catch (error) {
+              console.error(`Error updating ${singularName}:`, error);
+              reject(error);
+          }
+      }),
+
+      delete: (itemToDelete) => new Promise(async (resolve, reject) => {
+          try {
+              const { id } = itemToDelete;
+              const mutationName = `U${singularName}`;
+              await mutate(
+                  `mutation ($data: ${mutationName}!) { ${name} { archive(${singularName}: $data) { id } } }`,
+                  { data: { id } }
+              );
+              allData[name] = allData[name].filter(item => item.id !== id);
+              const { parentList } = findItemInTree(id, allData.schools);
+              if (parentList) {
+                  const itemIndex = parentList.findIndex(item => item.id === id);
+                  if(itemIndex > -1) parentList.splice(itemIndex, 1);
+              }
+              // --- Notify ---
+              notifySubscribers(name);
+              notifySchoolSubscribers();
+              if (isNested) notifySubscribers(parentEntity);
+
+              resolve();
+          } catch (error) {
+              console.error(`Error deleting ${singularName}:`, error);
+              reject(error);
+          }
+      }),
+
+      list: () => allData[name],
+      subscribe: (cb) => {
+          // *** FIX: SUPPORT MULTIPLE SUBSCRIBERS ***
+          if (!Array.isArray(subs[name])) {
+              subs[name] = [];
+          }
+          subs[name].push(cb);
+          // Immediately notify the new subscriber with current data
+          cb({ [name]: allData[name] });
+
+          // Return a function to allow the caller to unsubscribe
+          return () => {
+              subs[name] = subs[name].filter(subscriber => subscriber !== cb);
+          };
+      },
+      getOne: (id) => allData[name].find(item => item.id === id),
+  };
+
+  if (config.customMethods) {
+      Object.assign(api, config.customMethods(allData, subs, api));
+  }
+
+  return api;
+};
 
 
 var Data = (function () {
-  var instance;
-
-  // local variables to keep a cache of every entity
-  var students = studentsData;
-  var parents = parentsData;
-  var drivers = driversData;
-  var admins = adminsData;
-  var buses = busesData;
-  var routes = routesData;
-  var schedules = schedulesData;
-  var trips = tripsData;
-  var complaints = complaintsData;
-  var classes = classesData;
-  var teachers = teachersData;
-  var schools = schoolsData;
-  var payments = paymentsData;
-  var charges = chargesData;
-  var grades = gradesData;
-  var subjects = subjectsData;
-  var topics = topicsData;
-  var subtopics = subtopicsData;
-  var questions = questionsData;
-  var options = optionsData;
-  var school = undefined
-  var teams = teamsData;
-  var invitations = invitationsData;
-  var team_members = teamMembersData;
-
-  // --- NEW: A more robust function to fetch paginated students ---
-  // --- NEW: A more robust function to fetch paginated students ---
-  const getStudentsPage = async ({ page = 1, limit = 15, search = "", sort = { key: 'names', direction: 'ascending' } }) => {
-    // NOTE: The provided backend resolver doesn't support search/sort args.
-    // This query is written as it *should* be for a real-world, scalable backend.
-    // We will simulate the filtering/sorting on the larger dataset fetched initially for this example.
-    const offset = (page - 1) * limit;
-    let processedStudents = [];
-    let schoolData = {};
-
-    const { data } = await query(`
-    query GetStudentPage( $limit: Int, $offset: Int, $id: String) {
-      school( id: $id) {
-        studentsCount
-        students( limit: $limit, offset: $offset) {
-          id
-          names
-          gender
-          registration
-          class{
-            name,
-            teacher{
-              name
-            }
-          }
-          route {
-            id,
-            name
-          }
-          parent {
-            id,
-            national_id,
-            name
-          }
-          parent2 {
-            id,
-            national_id,
-            name
-          }
-        }
-      }
-    }
-  `, { limit, offset, id: localStorage.getItem("school") }, (data) => {
-      schoolData = data.school;
-      // Post-process data to add flattened names (as in the original code)
-      processedStudents = schoolData?.students?.map(student => ({
-        ...student,
-        parent_name: student.parent?.name || '',
-        parent2_name: student.parent2?.name || '',
-        route_name: student.route?.name || '',
-        class_name: student.class?.name || '',
-      }));
-
-      students = processedStudents;
-      subs.students({ students });
-    });
-    return {
-      students: processedStudents || [],
-      totalCount: schoolData?.studentsCount || 0
-    };
-
-
-  }
-
-
-  const getParentsPage = async ({ page = 1, limit = 15, search = "", sort = { key: 'names', direction: 'ascending' } }) => {
-    const offset = (page - 1) * limit;
-    let processedParents = [];
-    let schoolData = {};
-
-    const { data } = await query(`
-    query GetParentPage( $limit: Int, $offset: Int, $id: String) {
-      school( id: $id) {
-        parentsCount
-        parents( limit: $limit, offset: $offset) {
-          id
-          national_id
-          name
-          gender
-          email
-          phone
-          students {
-            names
-            gender
-            route {
-              name
-            }
-          }
-        }
-      }
-    }
-  `, { limit, offset, id: localStorage.getItem("school") }, (data) => {
-      schoolData = data.school;
-      // Post-process data to add flattened names (as in the original code)
-      processedParents = schoolData?.parents?.map(parent => ({
-        ...parent,
-        parent_name: parent.name || '',
-      }));
-
-      parents = processedParents;
-      subs.parents({ parents });
-    });
-    return {
-      parents: processedParents || [],
-      totalCount: schoolData?.parentsCount || 0
-    };
-  }
-
-  // subscriptions for every entity to keep track of everyone subscribing to any data
-  var subs = {};
-  emitize(subs, "schools");
-  emitize(subs, "students");
-  emitize(subs, "parents");
-  emitize(subs, "drivers");
-  emitize(subs, "admins");
-  emitize(subs, "buses");
-  emitize(subs, "routes");
-  emitize(subs, "schedules");
-  emitize(subs, "trips");
-  emitize(subs, "complaints");
-  emitize(subs, "classes");
-  emitize(subs, "teachers");
-  emitize(subs, "payments");
-  emitize(subs, "charges");
-  emitize(subs, "grades");
-  emitize(subs, "subjects");
-  emitize(subs, "topics");
-  emitize(subs, "subtopics");
-  emitize(subs, "questions");
-  emitize(subs, "options");
-  emitize(subs, "teams");
-  emitize(subs, "invitations");
-  emitize(subs, "team_members");
-
-  // subs.students = log; //subscribe to events (named 'x') with cb (log)
-  // //another subscription won't override the previous one
-  // subs.students = logPlus1;
-  // subs.students(9); //emits '9' to all listeners;
-
-  // when the data store gets innitialized, fetch all data and store in cache
-  const init = (done) => {
-    const requestCallback = async ({ data: response }) => {
-
-      schoolsData.push(...response.schools)
-      schools = schoolsData
-      school = schools.find(s => s.id === localStorage.getItem("school")) || schools[0]
-      schoolID = school.id
-      localStorage.setItem("school", schoolID)
-
-      students = school.students.map(student => {
-
-        if (student.parent) {
-          student.parent_name = student.parent.name;
-        }
-
-        if (student.parent2) {
-          student.parent2_name = student.parent2.name;
-        }
-
-        if (student.route) {
-          student.route_name = student.route.name;
-        }
-
-        if (student.class) {
-          student.class_name = student.class.name;
-        }
-
-        return student;
-      });
-
-      subs.students({ students });
-
-      schools = schoolsData
-      subs.schools({ schools });
-
-      charges = school.charges
-      subs.charges({ charges });
-
-      payments = school.payments
-      subs.payments({ payments });
-
-      buses = school.buses.map(bus => ({ ...bus, driver: bus.driver ? bus.driver.names : "" }));
-      subs.buses({ buses });
-
-      parents = school.parents;
-      subs.parents({ parents });
-
-      teachers = school.teachers
-      subs.teachers({ teachers });
-
-      classes = school.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students.length || 0, teacher_name: Iclass.teacher?.name }));
-      subs.classes({ classes });
-
-      routes = school.routes;
-      subs.routes({ routes });
-
-      drivers = school.drivers;
-      subs.drivers({ drivers });
-
-      admins = school.admins;
-      subs.admins({ admins });
-
-      schedules = school.schedules.map(schedule => {
-        if (schedule.bus)
-          schedule.bus_make = schedule.bus?.make
-
-        if (schedule.route)
-          schedule.route_name = schedule.route?.name
-
-        return schedule
-      });
-      subs.schedules({ schedules });
-
-      trips = school.trips;
-      subs.trips({ trips });
-
-      complaints = school.complaints;
-      subs.complaints({ complaints });
-
-      grades = school.grades;
-      subs.grades({ grades });
-
-      grades.forEach(grade => {
-        grade.subjects.forEach(subject => { subjects.push(subject) })
-      });
-      subjects = [...subjects];
-      subs.subjects({ subjects });
-
-      subjects.forEach(subject => {
-        subject.topics.forEach(topic => { topics.push(topic) })
-      });
-      topics = [...topics];
-      subs.topics({ topics });
-
-      topics.forEach(topic => {
-        topic.subtopics.forEach(subtopic => { subtopics.push(subtopic) })
-      });
-      subtopics = [...subtopics];
-      subs.subtopics({ subtopics });
-
-      subtopics.forEach(subtopic => {
-        subtopic.questions.forEach(question => { questions.push(question) })
-      });
-      questions = [...questions];
-      subs.questions({ questions });
-
-      questions.forEach(question => {
-        question.options.forEach(option => { options.push(option) })
-      });
-      options = [...options];
-      subs.options({ options });
-
-      teams = school.teams;
-      subs.teams({ teams });
-
-      invitations = school.invitations;
-      subs.invitations({ invitations });
-    }
-
-    /**
- * GraphQL Fragments
- *
- * Defining fragments for each data type allows us to reuse these structures
- * in different queries without repetition. They form the basis of our
- * incremental data fetching strategy.
- */
-    // --- STEP 1: Define each fragment as a separate, named constant ---
-    // Note: Type names like 'school' and 'User' are corrected to PascalCase, which is the GraphQL standard.
-    // The field names in your query (`schools`, `user`) remain lowercase.
-    const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
-    const FRAGMENT_school_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount   }`;
-    const FRAGMENT_GRADES_DATA = `fragment GradesData on school { gradeOrder grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
-    const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
-    const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
-    const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
-    const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
-    const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: $limit, offset: $offset) { id names gender registration class { name teacher { name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`; const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { names } } }`;
-    const FRAGMENT_DRIVERS_DATA = `fragment DriversData on school { drivers { id names phone license_expiry licence_number home } }`;
-    const FRAGMENT_ADMINS_DATA = `fragment AdminsData on school { admins { id names email phone } }`;
-    const FRAGMENT_PARENTS_DATA = `fragment ParentsData on school { parents { id national_id name gender email phone students { names gender route { name } } } }`;
-    const FRAGMENT_TEACHERS_DATA = `fragment TeachersData on school { teachers { id national_id name gender phone email classes { name } } }`;
-    const FRAGMENT_CLASSES_DATA = `fragment ClassesData on school { classes { id name students { names gender route { name } } teacher { id, name } } }`;
-    const FRAGMENT_ROUTES_DATA = `fragment RoutesData on school { routes { id name description path { lat lng } } }`;
-    const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id make } } }`;
-    const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
-
-
-    /**
-      * This single callback function processes all incoming data from our parallel queries.
-      * It checks which piece of data has arrived and updates the corresponding cache
-      * and notifies any subscribers, ensuring the UI updates incrementally.
-      */
-    /**
- * REVISED: This single callback correctly handles incremental data.
- * It processes the `schools` array from each parallel query, identifies the
- * active school, and updates the specific data that arrived in that payload.
- */
-    // --- STATE MANAGEMENT & DATA STORE ---
-
-    // Stores the complete, merged data for each school, keyed by school ID.
-    const mergedDataStore = {};
-
-
-
-    // The ID of the currently active school. This is the key we'll use for mergedDataStore.
-    let schoolID = localStorage.getItem("school");
-
-    // A reference to the single, merged data object for the *active* school.
-    // This is for convenience so we don't have to look it up in mergedDataStore every time.
-    let activeSchoolMergedData = {};
-
-
-    // --- UTILITY FUNCTION ---
-
-    /**
-     * Recursively merges properties of two objects.
-     * @param {object} target The object to merge into.
-     * @param {object} source The object to merge from.
-     * @returns {object} The merged target object.
-     */
-    const deepMerge = (target, source) => {
-      for (const key in source) {
-        if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
-          // If both target and source have an object for the same key, recurse
-          deepMerge(target[key], source[key]);
-        } else {
-          // Otherwise, just assign the value from source to target
-          target[key] = source[key];
-        }
-      }
-      return target;
-    };
-
-
-    // --- DATA AGGREGATION & PROCESSING ---
-
-    /**
-     * The NEW callback for all queries.
-     * It receives an incremental response, merges it into the central store,
-     * and then triggers the processing of the fully merged data.
-     * @param {object} response - The incremental data from a GraphQL query.
-     */
-    const mergeData = (newResponse) => {
-      
-      // --- INCREMENTAL MERGE ---
-      // Find the data for our active school within the current response payload.
-      const incomingDataForSchools = newResponse.schools;
-
-      // Deep merge the new data chunk into our active school's data object
-      const mergedData = deepMerge(schoolsData, incomingDataForSchools);
-
-      console.log("mergedData", mergedData);
-      if (!schoolID) {
-        // If we don't have a schoolID yet, pick the first one
-        if (mergedData.length > 0) {
-          schoolID = mergedData[0].id;
-          localStorage.setItem("school", schoolID);
-        }
-      }
-
-      // Update the active school's merged data object
-      activeSchoolMergedData = mergedData.find(s => s.id == schoolID);
-
-      // Now, process the *entire* up-to-date merged object
-      console.log("Processing: School data.", schoolID, activeSchoolMergedData, localStorage.getItem("school"));
-      processData(activeSchoolMergedData);
-      subs.schools({ schools: mergedData });
-      subs.grades({ grades: activeSchoolMergedData.grades });
-    };
-
-    /**
-     * Processes the single, consolidated data object for the active school.
-     * This function is called by mergeData after every successful data merge.
-     * @param {object} schoolData - The fully merged data object for the active school.
-     */
-    const processData = (schoolData) => {
-      // The logic here is much cleaner. We just check for the existence of properties
-      // on the single `schoolData` object.
-      console.log("Processing: School data.", schoolData);
-
-      if (schoolData.students) {
-        // Note: To prevent reprocessing, you could add a check:
-        // if (students.length !== schoolData.students.length) { ... }
-        // Or add a "processed" flag, but for most UI updates, reprocessing is fine.
-        console.log("Processing: Students data.");
-        students = schoolData.students.map(student => ({
-          ...student,
-          parent_name: student.parent?.name || '',
-          parent2_name: student.parent2?.name || '',
-          route_name: student.route?.name || '',
-          class_name: student.class?.name || '',
-        }));
-        subs.students({ students });
-      }
-
-      if (schoolData.financial) {
-        console.log("Processing: Financial data.");
-        charges = schoolData.charges || [];
-        subs.charges({ charges });
-        payments = schoolData.payments || [];
-        subs.payments({ payments });
-      }
-
-      if (schoolData.buses) {
-        console.log("Processing: Buses data.");
-        buses = schoolData.buses.map(bus => ({ ...bus, driver: bus.driver?.names || "" }));
-        subs.buses({ buses });
-      }
-
-      if (schoolData.parents) {
-        console.log("Processing: Parents data.");
-        parents = schoolData.parents;
-        subs.parents({ parents });
-      }
-
-      if (schoolData.teachers) {
-        console.log("Processing: Teachers data.");
-        teachers = schoolData.teachers;
-        subs.teachers({ teachers });
-      }
-
-      if (schoolData.classes) {
-        console.log("Processing: Classes data.");
-        classes = schoolData.classes.map(Iclass => ({ ...Iclass, student_num: Iclass.students?.length || 0, teacher_name: Iclass.teacher?.name }));
-        subs.classes({ classes });
-      }
-
-      if (schoolData.routes) {
-        console.log("Processing: Routes data.");
-        routes = schoolData.routes;
-        subs.routes({ routes });
-      }
-
-      if (schoolData.drivers) {
-        console.log("Processing: Drivers data.");
-        drivers = schoolData.drivers;
-        subs.drivers({ drivers });
-      }
-
-      if (schoolData.admins) {
-        console.log("Processing: Admins data.");
-        admins = schoolData.admins;
-        subs.admins({ admins });
-      }
-
-      if (schoolData.schedules) {
-        console.log("Processing: Schedules data.");
-        schedules = schoolData.schedules.map(schedule => ({
-          ...schedule,
-          bus_make: schedule.bus?.make,
-          route_name: schedule.route?.name,
-        }));
-        subs.schedules({ schedules });
-      }
-
-      if (schoolData.trips) {
-        console.log("Processing: Trips data.");
-        trips = schoolData.trips;
-        subs.trips({ trips });
-      }
-
-      if (schoolData.complaints) {
-        console.log("Processing: Complaints data.");
-        complaints = schoolData.complaints;
-        subs.complaints({ complaints });
-      }
-
-      if (schoolData.teams) {
-        console.log("Processing: Teams data.");
-        teams = schoolData.teams;
-        subs.teams({ teams });
-      }
-
-      if (schoolData.invitations) {
-        console.log("Processing: Invitations data.");
-        invitations = schoolData.invitations;
-        subs.invitations({ invitations });
-      }
-
-      if (schoolData.grades) {
-        console.log("Processing: Grades & Curriculum data.");
-        grades = schoolData.grades;
-        subs.grades({ grades });
-
-        const newSubjects = []; grades.forEach(grade => grade.subjects?.forEach(subject => newSubjects.push(subject)));
-        subjects = newSubjects; subs.subjects({ subjects });
-
-        const newTopics = []; subjects.forEach(subject => subject.topics?.forEach(topic => newTopics.push(topic)));
-        topics = newTopics; subs.topics({ topics });
-
-        const newSubtopics = []; topics.forEach(topic => topic.subtopics?.forEach(subtopic => newSubtopics.push(subtopic)));
-        subtopics = newSubtopics; subs.subtopics({ subtopics });
-
-        const newQuestions = []; subtopics.forEach(subtopic => subtopic.questions?.forEach(question => newQuestions.push(question)));
-        questions = newQuestions; subs.questions({ questions });
-
-        const newOptions = []; questions.forEach(question => question.options?.forEach(option => newOptions.push(option)));
-        options = newOptions; subs.options({ options });
-      }
-    };
-
-
-    // --- EXECUTING THE QUERIES ---
-
-    // Note how ALL queries now use `mergeData` as their callback.
-
-    // --- STEP 1: Get the initial school and user data. This MUST run first to set the schoolID.
-    query(
-      `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_school_DETAILS}`,
-      {},
-      mergeData // Use the new merger callback
-    );
-
-    // --- STEP 2: Fire parallel requests. Their order of completion no longer matters.
-    // Corrected Query Call using the "Best Practice" fragment
-    query(
-      `query GetStudents($limit: Int!, $offset: Int!) {
-        schools {
-          id
-          ...StudentsData
-        }
-      }
-      ${FRAGMENT_STUDENTS_DATA}`, // Note we are appending the new fragment here
-          { limit: 15, offset: 0 },
-          mergeData
-    ); 
-    query(`query GetParents { schools { id ...ParentsData } } ${FRAGMENT_PARENTS_DATA}`, {}, mergeData);
-    query(`query GetDrivers { schools { id ...DriversData } } ${FRAGMENT_DRIVERS_DATA}`, {}, mergeData);
-    query(`query GetAdmins { schools { id ...AdminsData } } ${FRAGMENT_ADMINS_DATA}`, {}, mergeData);
-    query(`query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}`, {}, mergeData);
-    query(`query GetRoutes { schools { id ...RoutesData } } ${FRAGMENT_ROUTES_DATA}`, {}, mergeData);
-    query(`query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}`, {}, mergeData);
-    query(`query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}`, {}, mergeData);
-    query(`query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}`, {}, mergeData);
-    query(`query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}`, {}, mergeData);
-    query(`query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}`, {}, mergeData);
-    query(`query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}`, {}, mergeData);
-    query(`query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}`, {}, mergeData);
-    query(`query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}`, {}, mergeData);
-    query(`query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}`, {}, mergeData);
-
-    // IMPORTANT: Note that I've added `id` to the top level of each parallel query's `schools` field,
-    // e.g., `schools { id ...StudentsData }`. This is crucial so that `mergeData` can identify
-    // which school the incoming data belongs to, even before the main `schoolDetails` query has finished.
-
-    if (done) {
-      done();
-    }
-    //     // localStorage.clear()
-    //     if (err && err.response && err.response.status === 401) {
-    //       window.location.href = '/#/';
-    //     }
-    //   });
-  }
-
-  if (localStorage.getItem('authorization'))
-    init(() => {
-      console.log("data module initialization complete")
-    })
-
-
-  function createInstance() {
-    // eslint-disable-next-line no-new-object
-    var object = new Object("Instance here");
-    return object;
-  }
-
-  // Helper to remove a specific listener if emitize uses a simple array
-  // This is a guess about emitize's internal structure. Replace if emitize has its own .off or .removeListener method.
-  const removeListener = (subsArray, listener) => {
-    // if (Array.isArray(subsArray._listeners)) { // Common pattern for simple emitize
-    //   const index = subsArray._listeners.indexOf(listener);
-    //   if (index > -1) {
-    //     subsArray._listeners.splice(index, 1);
-    //   }
-    // } else {
-    //   // console.warn("Cannot unsubscribe: _listeners array not found or emitize structure unknown.");
-    // }
-  };
-
-  return {
-    onReady: (cb) => cb(),
-    getInstance: function () {
-      if (!instance) {
-        instance = createInstance();
-      }
-
-      return instance;
-    },
-    init: () => init(),
-    comms: {
-      send: ({ type, parents, message }) => new Promise(async (resolve, reject) => {
-        resolve('ok')
-      })
-    },
-    auth: {
-      login(id) {
-        return {};
-      },
-      getUser(id) {
-        return {};
-      },
-      logout(id, data) {
-        return;
-      }
-    },
-    user: {
-      getOne() {
-
-      }
-    },
-    students: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { students: { create: createdStudent } } = await mutate(
-            `
-            mutation ($Istudent: Istudent!) {
-              students {
-                create(student: $Istudent) {
-                  id
+    var instance;
+
+    const init = () => {
+        const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
+        const FRAGMENT_SCHOOL_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount gradeOrder }`;
+        const FRAGMENT_GRADES_DATA = `fragment GradesData on school { grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos images contentOrder attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
+        const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
+        const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
+        const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
+        const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
+        const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: 1000, offset: 0) { id names gender registration class { id, name, teacher { id, name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`;
+        const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { id, names } } }`;
+        const FRAGMENT_DRIVERS_DATA = `fragment DriversData on school { drivers { id names phone license_expiry licence_number home } }`;
+        const FRAGMENT_ADMINS_DATA = `fragment AdminsData on school { admins { id names email phone } }`;
+        const FRAGMENT_PARENTS_DATA = `fragment ParentsData on school { parents { id national_id name gender email phone students { id, names, gender, route { id, name } } } }`;
+        const FRAGMENT_TEACHERS_DATA = `fragment TeachersData on school { teachers { id national_id name gender phone email classes { id, name } } }`;
+        const FRAGMENT_CLASSES_DATA = `fragment ClassesData on school { classes { id name students { id, names, gender, route { id, name } } teacher { id, name } } }`;
+        const FRAGMENT_ROUTES_DATA = `fragment RoutesData on school { routes { id name description path { lat lng } } }`;
+        const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
+        const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
+        
+        const mergeAndNotify = (response) => {
+            const incomingSchools = response?.schools;
+            if (!incomingSchools || incomingSchools.length === 0) return;
+
+            const updatedSubEntities = new Set(); 
+
+            incomingSchools.forEach(incomingSchool => {
+                let school = allData.schools.find(s => s.id === incomingSchool.id);
+                if (!school) {
+                    school = { id: incomingSchool.id };
+                    allData.schools.push(school);
                 }
-              }
+
+                Object.assign(school, incomingSchool);
+                
+                Object.keys(incomingSchool).forEach(key => updatedSubEntities.add(key));
+            });
+
+            if (!schoolID && allData.schools.length > 0) {
+                schoolID = localStorage.getItem("school") || allData.schools[0].id;
+                localStorage.setItem("school", schoolID);
             }
             
-            `, { Istudent: { ...data, school: localStorage.getItem("school") } }
-          );
-
-          // Post-process the single new student
-          const newStudent = {
-            ...createdStudent,
-            parent_name: parents.find(p => p.id === data.parent)?.name || '',
-            parent2_name: parents.find(p => p.id === data.parent2)?.name || '',
-            route_name: routes.find(r => r.id === data.route)?.name || '',
-            class_name: classes.find(c => c.id === data.class)?.name || '',
-          };
-
-          // No longer need to update the central `students` array here.
-          // The component will receive the new student and prepend it to its local state.
-          resolve(newStudent);
-        }),
-      getPage: getStudentsPage,
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($student: Ustudent!) {
-            students {
-              update(student: $student) {
-                id
-              }
+            // *** FIX: NOTIFY ALL 'schools' SUBSCRIBERS ***
+            if (Array.isArray(subs.schools)) {
+                const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
             }
-          } `,
-            {
-              student: Object.assign({}, data, {
-                parent_name: undefined,
-                parent2_name: undefined,
-                class: data.class.id,
-                class_name: undefined,
-                parent: data?.parent?.id,
-                parent2: data?.parent2?.id,
-                route_name: undefined,
-                route: data.route.id
-              })
-            }
-          );
+            
+            const activeSchool = allData.schools.find(s => s.id === schoolID);
+            if (!activeSchool) return;
 
-          const subtract = students.filter(({ id }) => id !== data.id);
-          students = [data, ...subtract];
-          subs.students({ students });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Istudent: Ustudent!) {
-            students {
-              archive(student: $Istudent) {
-                id
-              }
-            }
-          }  `,
-            {
-              Istudent: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = students.filter(({ id }) => id !== data.id);
-          students = [...subtract];
-          subs.students({ students });
-          resolve();
-        }),
-      list() {
-        return students;
-      },
-      subscribe(cb) {
-        subs.students = cb;
-        return students;
-      },
-      getOne(id) { }
-    },
-    payments: {
-      list() {
-        return payments;
-      },
-      subscribe(cb) {
-        subs.payments = cb;
-        return payments;
-      },
-      getOne(id) { }
-    },
-    parents: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { parents: { create: { id } } } = await mutate(
-            `
-          mutation ($Iparent: Iparent!) {
-            parents {
-              create(parent: $Iparent) {
-                id
-              }
-            }
-          }`,
-            {
-              Iparent: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-
-          data.id = id;
-
-          parents = [...parents, data];
-          subs.parents({ parents });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($parent: Uparent!) {
-            parents {
-              update(parent: $parent) {
-                id
-              }
-            }
-          }`,
-            {
-              parent: data
-            }
-          );
-
-          const subtract = parents.filter(({ id }) => id !== data.id);
-          parents = [data, ...subtract];
-          subs.parents({ parents });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-          mutation ($Iparent: Uparent!) {
-            parents {
-              archive(parent: $Iparent) {
-                id
-              }
-            }
-          } `,
-            {
-              Iparent: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = parents.filter(({ id }) => id !== data.id);
-          parents = [...subtract];
-          subs.parents({ parents });
-          resolve();
-        }),
-      invite: data =>
-        new Promise(async (resolve, reject) => {
-          const { parents: { invite: { id, phone, message } } } = await mutate(
-            `
-            mutation ($Iinvite: Iinvite!) {
-              parents {
-                invite(parent: $Iinvite) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iinvite: data
-            }
-          );
-          const invitation = {};
-          invitation.id = id;
-          invitation.phone = phone;
-          invitation.message = message;
-          invitations = [...invitations, invitation];
-          subs.invitations({ invitations });
-          resolve();
-        }),
-      list() {
-        return parents;
-      },
-      getPage: getParentsPage,
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.parents = cb;
-        return parents;
-      },
-      getOne(id) { }
-    },
-    grades: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const school = localStorage.getItem("school");
-          try {
-            const { grades: { create: { id } } } = await mutate(
-              `mutation ($Igrade: Igrade!) { grades { create(grade: $Igrade) { id } } }`,
-              { Igrade: { ...data, school } }
-            );
-            const newGrade = { ...data, id, school, subjects: [] }; // Ensure 'subjects'
-            grades = [...grades, newGrade];
-            subs.grades({ grades });
-            resolve(); // Original resolves without value
-          } catch (error) { console.error("Error creating grade:", error); reject(error); }
-        }),
-      // =================================================================
-      // === THIS IS THE CORRECTED FUNCTION ===
-      // =================================================================
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          try {
-            // 'data' comes from the form, e.g., { id: '...', name: 'new name' }
-            const { id: gradeId, ...updatePayload } = data;
-
-            delete updatePayload.subjects;
-            await mutate(
-              `mutation ($Igrade: Ugrade!) { grades { update(grade: $Igrade) { id } } }`,
-              { Igrade: { id: gradeId, ...updatePayload } } // Send the update to the backend
-            );
-
-            // --- FIX STARTS HERE ---
-            const gradeIndex = grades.findIndex(g => g.id === gradeId);
-            if (gradeIndex > -1) {
-              // MERGE the old object with the new data to preserve nested arrays like 'subjects'
-              grades[gradeIndex] = { ...grades[gradeIndex], ...data };
-
-              console.log(grades[gradeIndex])
-
-              // Notify subscribers with a NEW array reference to trigger React re-renders
-              subs.grades({ grades: [...grades] });
-            } else {
-              console.warn(`Grade with ID ${gradeId} not found for local update.`);
-            }
-            // --- FIX ENDS HERE ---
-            resolve();
-          } catch (error) {
-            console.error("Error updating grade:", error);
-            reject(error);
-          }
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          try {
-            await mutate(
-              `mutation ($Igrade: Ugrade!) { grades { archive(grade: $Igrade) { id } } }`,
-              { Igrade: { id: data.id } }
-            );
-            grades = grades.filter(g => g.id !== data.id);
-            subs.grades({ grades });
-            resolve();
-          } catch (error) { console.error("Error deleting grade:", error); reject(error); }
-        }),
-      list() {
-        return grades;
-      },
-      subscribe(callback) {
-        const specificListener = (data) => callback(data);
-        subs.grades = specificListener;
-        callback({ grades: [...grades] });
-        return () => removeListener(subs.grades, specificListener);
-      },
-      getOne(id) { return grades.find(g => g.id === id); }
-    },
-
-    subjects: {
-      create: data => // data = { name, grade (parent ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { subjects: { create: { id } } } = await mutate(
-              `mutation ($Isubject: Isubject!) { subjects { create(subject: $Isubject) { id } } }`,
-              { Isubject: data }
-            );
-            const newSubject = { ...data, id, topics: [], gradeId: data.grade };
-
-            const parentGrade = grades.find(g => g.id === data.grade);
-            if (parentGrade) {
-              parentGrade.subjects = parentGrade.subjects || [];
-              parentGrade.subjects.push(newSubject);
-            } else { throw new Error(`Parent grade ${data.grade} not found.`); }
-
-            subjects = [...subjects, newSubject]; subs.subjects({ subjects: [...subjects] });
-            subs.grades({ grades: [...grades] });
-            resolve(id);
-          } catch (error) { console.error("Error creating subject:", error); reject(error); }
-        }),
-      update: data => // data = { id, name, grade (parent ID), ... }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { id: subjectId, ...updatePayload } = data;
-            const parentGradeId = grades.find(g => g.subjects && g.subjects.find(s => s.id === subjectId))?.id;
-            if (!parentGradeId) throw new Error(`Parent/Subject not found for update.`);
-            delete updatePayload.topics;
-            delete updatePayload.gradeId;
-
-            await mutate(
-              `mutation ($Isubject: Usubject!) { subjects { update(subject: $Isubject) { id } } }`,
-              { Isubject: { id: subjectId, grade: parentGradeId, ...updatePayload } }
-            );
-
-            // --- FIX STARTS HERE (Same logic as grades.update) ---
-            const parentGrade = grades.find(g => g.id === parentGradeId);
-            if (parentGrade && parentGrade.subjects) {
-              const idx = parentGrade.subjects.findIndex(s => s.id === subjectId);
-              if (idx > -1) {
-                parentGrade.subjects[idx] = { ...parentGrade.subjects[idx], ...data };
-              }
-            } else { throw new Error(`Parent/Subject not found for update.`); }
-
-            const flatIdx = subjects.findIndex(s => s.id === subjectId);
-            if (flatIdx > -1) {
-              subjects[flatIdx] = { ...subjects[flatIdx], ...data };
-            }
-
-            subs.subjects({ subjects: [...subjects] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error updating subject:", error); reject(error); }
-        }),
-      delete: data => // data = { id (subjectId), gradeId (parent grade ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            await mutate(`mutation ($Isubject: Usubject!) {
-          subjects {
-            archive(subject: $Isubject) {
-              id
-            }
-          }
-        }`, { Isubject: { id: data.id } });
-            const parentGrade = grades.find(g => g.id === data.gradeId);
-            if (parentGrade && parentGrade.subjects) {
-              parentGrade.subjects = parentGrade.subjects.filter(s => s.id !== data.id);
-            } else { throw new Error(`Parent/Subject not found for delete.`); }
-            subjects = subjects.filter(s => s.id !== data.id); subs.subjects({ subjects });
-            subs.grades({ grades: [...grades] });
-            resolve();
-          } catch (error) { console.error("Error deleting subject:", error); reject(error); }
-        }),
-      list() { return subjects; },
-      subscribe(cb) { subs.subjects = cb; cb({ subjects: [...subjects] }); return () => removeListener(subs.subjects, cb); },
-    },
-
-    topics: {
-      create: data => // data = { name, subject (parent ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { topics: { create: { id } } } = await mutate(
-              `
-              mutation ($Itopic: Itopic!) {
-                topics {
-                  create(topic: $Itopic) {
-                    id
-                  }
-                }
-              } `,
-              {
-                Itopic: data
-              }
-            );
-            const newTopic = { ...data, id, subtopics: [], subjectId: data.subject };
-            let found = false;
-            for (const grade of grades) {
-              const parentSubject = (grade.subjects || []).find(s => s.id === data.subject);
-              if (parentSubject) {
-                parentSubject.topics = parentSubject.topics || [];
-                parentSubject.topics.push(newTopic);
-                found = true; break;
-              }
-            }
-            if (!found) throw new Error(`Parent subject ${data.subject} not found.`);
-            topics = [...topics, newTopic]; subs.topics({ topics: [...topics] });
-            subs.grades({ grades: [...grades] });
-            resolve();
-          } catch (error) { console.error("Error creating topic:", error); reject(error); }
-        }),
-      update: data => // data = { id, name, subject (parent ID / subjectId), ... }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { id: topicId, ...updatePayload } = data;
-
-            let parentSubjectId;
-            for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                const parentTopic = (subject.topics || []).find(t => t.id === topicId);
-                if (parentTopic) {
-                  parentSubjectId = subject.id;
-                  break;
-                }
-              }
-              if (parentSubjectId) break;
-            }
-            if (!parentSubjectId) throw new Error(`Parent/Topic not found for update.`);
-
-            await mutate(`
-        mutation ($Itopic: Utopic!) {
-          topics {
-            update(topic: $Itopic) {
-              id
-            }
-          }
-        } `, { Itopic: { id: topicId, subject: parentSubjectId, ...updatePayload } });
-
-            // --- FIX STARTS HERE ---
-            let found = false;
-            for (const grade of grades) {
-              const parentSubject = (grade.subjects || []).find(s => s.id === parentSubjectId);
-              if (parentSubject && parentSubject.topics) {
-                const idx = parentSubject.topics.findIndex(t => t.id === topicId);
-                if (idx > -1) {
-                  parentSubject.topics[idx] = { ...parentSubject.topics[idx], ...data };
-                  found = true;
-                  break;
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Topic not found for update.`);
-
-            const flatIdx = topics.findIndex(t => t.id === topicId);
-            if (flatIdx > -1) topics[flatIdx] = { ...topics[flatIdx], ...data };
-
-            subs.topics({ topics: [...topics] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error updating topic:", error); reject(error); }
-        }),
-      delete: data => // data = { id (topicId), subjectId (parent subject ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            await mutate(`mutation ($Itopic: Utopic!) {
-          topics {
-            archive(topic: $Itopic) {
-              id
-            }
-          }
-        }  `, { Itopic: { id: data.id } });
-            let found = false;
-            for (const grade of grades) {
-              const parentSubject = (grade.subjects || []).find(s => s.id === data.subjectId);
-              if (parentSubject && parentSubject.topics) {
-                const oldLen = parentSubject.topics.length;
-                parentSubject.topics = parentSubject.topics.filter(t => t.id !== data.id);
-                if (parentSubject.topics.length < oldLen) { found = true; break; }
-              }
-            }
-            if (!found) throw new Error(`Parent/Topic not found for delete.`);
-            topics = topics.filter(t => t.id !== data.id); subs.topics({ topics });
-            subs.grades({ grades: [...grades] });
-            resolve();
-          } catch (error) { console.error("Error deleting topic:", error); reject(error); }
-        }),
-      list() { return topics; },
-      subscribe(cb) { subs.topics = cb; cb({ topics: [...topics] }); return () => removeListener(subs.topics, cb); },
-    },
-
-    subtopics: {
-      create: data => // data = { name, topic (parent ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { subtopics: { create: { id } } } = await mutate(`
-        mutation ($Isubtopic: Isubtopic!) {
-          subtopics {
-            create(subtopic: $Isubtopic) {
-              id
-            }
-          }
-        } `, { Isubtopic: data });
-            const newSubtopic = { ...data, id, questions: [], topicId: data.topic };
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                const parentTopic = (subject.topics || []).find(t => t.id === data.topic);
-                if (parentTopic) {
-                  parentTopic.subtopics = parentTopic.subtopics || [];
-                  parentTopic.subtopics.push(newSubtopic);
-                  found = true; break outer;
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent topic ${data.topic} not found.`);
-            subtopics = [...subtopics, newSubtopic]; subs.subtopics({ subtopics: [...subtopics] });
-            subs.grades({ grades: [...grades] });
-            resolve();
-          } catch (error) { console.error("Error creating subtopic:", error); reject(error); }
-        }),
-      update: data => // data = { id, name, topic (parent ID / topicId), ... }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { id: subtopicId, ...updatePayload } = data;
-            delete updatePayload.questions;
-
-            let parentTopicId;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  if (topic.subtopics) {
-                    const idx = topic.subtopics.findIndex(st => st.id === subtopicId);
-                    if (idx > -1) {
-                      parentTopicId = topic.id;
-                      break outer;
+            const notifyEntity = (entityName, dataMapper) => {
+                if (updatedSubEntities.has(entityName) && activeSchool[entityName]) {
+                    allData[entityName] = dataMapper ? activeSchool[entityName].map(dataMapper) : activeSchool[entityName];
+                    if (Array.isArray(subs[entityName])) {
+                        subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
                     }
-                  }
                 }
-              }
-            }
-            if (!parentTopicId) throw new Error(`Parent topic of subtopic ${subtopicId} not found.`);
-
-            await mutate(`
-        mutation ($Isubtopic: Usubtopic!) {
-          subtopics {
-            update(subtopic: $Isubtopic) {
-              id
-            }
-          }
-        } `, { Isubtopic: { ...data, topic: parentTopicId } });
-
-            // --- FIX STARTS HERE ---
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                const parentTopic = (subject.topics || []).find(t => t.id === parentTopicId);
-                if (parentTopic && parentTopic.subtopics) {
-                  const idx = parentTopic.subtopics.findIndex(st => st.id === subtopicId);
-                  if (idx > -1) {
-                    parentTopic.subtopics[idx] = { ...parentTopic.subtopics[idx], ...data };
-                    found = true;
-                    break outer;
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Subtopic not found for update.`);
-
-            const flatIdx = subtopics.findIndex(st => st.id === subtopicId);
-            if (flatIdx > -1) subtopics[flatIdx] = { ...subtopics[flatIdx], ...data };
-
-            subs.subtopics({ subtopics: [...subtopics] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error updating subtopic:", error); reject(error); }
-        }),
-      delete: data => // data = { id (subtopicId), topicId (parent topic ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            await mutate(`
-        mutation ($Isubtopic: Usubtopic!) {
-          subtopics {
-            archive(subtopic: $Isubtopic) {
-              id
-            }
-          }
-        }  `, { Isubtopic: { id: data.id } });
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                const parentTopic = (subject.topics || []).find(t => t.id === data.topicId);
-                if (parentTopic && parentTopic.subtopics) {
-                  const oldLen = parentTopic.subtopics.length;
-                  parentTopic.subtopics = parentTopic.subtopics.filter(st => st.id !== data.id);
-                  if (parentTopic.subtopics.length < oldLen) { found = true; break outer; }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Subtopic not found for delete.`);
-            subtopics = subtopics.filter(st => st.id !== data.id); subs.subtopics({ subtopics });
-            subs.grades({ grades: [...grades] });
-            resolve();
-          } catch (error) { console.error("Error deleting subtopic:", error); reject(error); }
-        }),
-      list() { return subtopics; },
-      subscribe(cb) { subs.subtopics = cb; cb({ subtopics: [...subtopics] }); return () => removeListener(subs.subtopics, cb); },
-    },
-
-    questions: {
-      create: data => // data = { name, type, subtopic (parent ID) }
-        new Promise(async (resolve, reject) => {
-          console.log({ innitialData: data })
-          try {
-            const { questions: { create: { id } } } = await mutate(`
-                mutation ($Iquestion: Iquestion!) {
-                  questions {
-                    create(question: $Iquestion) {
-                      id
-                    }
-                  }
-                } `, { Iquestion: data });
-            const newQuestion = { ...data, id, options: [], subtopicId: data.subtopic };
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  const parentSubtopic = (topic.subtopics || []).find(st => st.id === data.subtopic);
-                  if (parentSubtopic) {
-                    parentSubtopic.questions = parentSubtopic.questions || [];
-                    parentSubtopic.questions.push(newQuestion);
-                    found = true; break outer;
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent subtopic ${data.subtopic} not found.`);
-            questions = [...questions, newQuestion]; subs.questions({ questions: [...questions] });
-            subs.grades({ grades: [...grades] });
-            resolve(newQuestion);
-          } catch (error) { console.error("Error creating question:", error); reject(error); }
-        }),
-      update: data => // data = { id, name, type, subtopic (parent ID / subtopicId), ... }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { id: questionId, subtopic: parentSubtopicId, subtopicId: altParentSubtopicId, ...updatePayload } = data;
-            delete updatePayload.options;
-            const actualParentSubtopicId = parentSubtopicId || altParentSubtopicId;
-
-            await mutate(`
-        mutation ($Iquestion: Uquestion!) {
-          questions {
-            update(question: $Iquestion) {
-              id
-            }
-          }
-        } `, { Iquestion: data });
-
-            // --- FIX STARTS HERE ---
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  const parentSubtopic = (topic.subtopics || []).find(st => st.id === actualParentSubtopicId);
-                  if (parentSubtopic && parentSubtopic.questions) {
-                    const idx = parentSubtopic.questions.findIndex(q => q.id === questionId);
-                    if (idx > -1) {
-                      parentSubtopic.questions[idx] = { ...parentSubtopic.questions[idx], ...data };
-                      found = true;
-                      break outer;
-                    }
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Question not found for update.`);
-
-            const flatIdx = questions.findIndex(q => q.id === questionId);
-            if (flatIdx > -1) questions[flatIdx] = { ...questions[flatIdx], ...data };
-
-            subs.questions({ questions: [...questions] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error updating question:", error); reject(error); }
-        }),
-      delete: data => // data = { id, subtopic (parent ID / subtopicId) }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { id: questionId, subtopic: parentSubtopicId, subtopicId: altParentSubtopicId } = data;
-            const actualParentSubtopicId = parentSubtopicId || altParentSubtopicId;
-
-            await mutate(`
-        mutation ($Iquestion: Uquestion!) {
-          questions {
-            archive(question: $Iquestion) {
-              id
-            }
-          }
-        }  ` , { Iquestion: { id: questionId } });
-
-            // --- FIX STARTS HERE ---
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  const parentSubtopic = (topic.subtopics || []).find(st => st.id === actualParentSubtopicId);
-                  if (parentSubtopic && parentSubtopic.questions) {
-                    const idx = parentSubtopic.questions.findIndex(q => q.id === questionId);
-                    if (idx > -1) {
-                      parentSubtopic.questions.splice(idx, 1);
-                      found = true;
-                      break outer;
-                    }
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Question not found for delete.`);
-
-            const flatIdx = questions.findIndex(q => q.id === questionId);
-            if (flatIdx > -1) questions.splice(flatIdx, 1);
-
-            subs.questions({ questions: [...questions] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error deleting question:", error); reject(error); }
-        }),
-      list() { return questions; },
-      subscribe(cb) { subs.questions = cb; cb({ questions: [...questions] }); return () => removeListener(subs.questions, cb); },
-    },
-
-    options: {
-      create: data => // data = { value, question (parent ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            const { options: { create: { id } } } = await mutate(`
-        mutation ($Ioption: Ioption!) {
-          options {
-            create(option: $Ioption) {
-              id
-            }
-          }
-        } `, { Ioption: data });
-            const newOption = { ...data, id, questionId: data.question };
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  for (const subtopic of topic.subtopics || []) {
-                    const parentQuestion = (subtopic.questions || []).find(q => q.id === data.question);
-                    if (parentQuestion) {
-                      parentQuestion.options = parentQuestion.options || [];
-                      parentQuestion.options.push(newOption);
-                      found = true; break outer;
-                    }
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent question ${data.question} not found.`);
-            options = [...options, newOption]; subs.options({ options: [...options] });
-            subs.grades({ grades: [...grades] });
-            resolve(newOption);
-          } catch (error) { console.error("Error creating option:", error); reject(error); }
-        }),
-      update: data => // data = { id, value, question (parent ID / questionId), ... }
-        new Promise(async (resolve, reject) => {
-          console.log({ data });
-          try {
-            const { id: optionId, question: parentQuestionId, questionId: altParentQuestionId, ...updatePayload } = data;
-            const actualParentQuestionId = parentQuestionId || altParentQuestionId;
-
-            await mutate(`
-        mutation ($Ioption: Uoption!) {
-          options {
-            update(option: $Ioption) {
-              id
-            }
-          }
-        } `, { Ioption: { id: optionId, question: actualParentQuestionId, ...updatePayload } });
-
-            // --- FIX STARTS HERE ---
-            let found = false;
-            outer: for (const grade of grades) {
-              for (const subject of grade.subjects || []) {
-                for (const topic of subject.topics || []) {
-                  for (const subtopic of topic.subtopics || []) {
-                    const parentQuestion = (subtopic.questions || []).find(q => q.id === actualParentQuestionId);
-                    if (parentQuestion && parentQuestion.options) {
-                      const idx = parentQuestion.options.findIndex(o => o.id === optionId);
-                      if (idx > -1) {
-                        parentQuestion.options[idx] = { ...parentQuestion.options[idx], ...data };
-                        found = true;
-                        break outer;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Option not found for update.`);
-
-            const flatIdx = options.findIndex(o => o.id === optionId);
-            if (flatIdx > -1) options[flatIdx] = { ...options[flatIdx], ...data };
-
-            // subs.options({ options: [...options] });
-            subs.grades({ grades: [...grades] });
-            // --- FIX ENDS HERE ---
-
-            resolve();
-          } catch (error) { console.error("Error updating option:", error); reject(error); }
-        }),
-      delete: data => // data = { id (optionId), questionId (parent question ID) }
-        new Promise(async (resolve, reject) => {
-          try {
-            await mutate(`
-        mutation ($Ioption: Uoption!) {
-          options {
-            archive(option: $Ioption) {
-              id
-            }
-          }
-        }  ` , { Ioption: { id: data.id } });
-            let found = false;
-            console.log(`Deleting option ${data.id} from question ${data.question}`);
-            outer: for (const grade of grades) {
-              console.log(`Deleting option ${data.id} from question ${data.question} in grade ${grade.id}`);
-              for (const subject of grade.subjects || []) {
-                console.log(`Deleting option ${data.id} from question ${data.question} in subject ${subject.id}`);
-                for (const topic of subject.topics || []) {
-                  console.log(`Deleting option ${data.id} from question ${data.question} in topic ${topic.id}`);
-                  for (const subtopic of topic.subtopics || []) {
-                    console.log(`Deleting option ${data.id} from question ${data.question} in subtopic ${subtopic.id}`);
-                    const parentQuestion = (subtopic.questions || []).find(q => q.id === data.question);
-
-                    if (parentQuestion && parentQuestion.options) {
-                      console.log(`Parent question ${data.question} found:`, parentQuestion);
-                      const oldLen = parentQuestion.options.length;
-                      console.log(`Deleting option ${data.id} from question ${data.question} in subtopic ${subtopic.id}`);
-                      parentQuestion.options = parentQuestion.options.filter(o => o.id !== data.id);
-                      found = true;
-                      break outer;
-                    }
-                  }
-                }
-              }
-            }
-            if (!found) throw new Error(`Parent/Option not found for delete.`);
-            options = options.filter(o => o.id !== data.id);
-            subs.grades({ grades: [...grades] });
-            // subs.questions({ questions: [...questions] });
-            // subs.options({ options: [...options] });
-            resolve();
-          } catch (error) { console.error("Error deleting option:", error); reject(error); }
-        }),
-      list() { return options; },
-      subscribe(cb) { subs.options = cb; cb({ options: [...options] }); return () => removeListener(subs.options, cb); },
-    },
-    //... (rest of the file is unchanged)
-    teachers: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { teachers: { create: { id } } } = await mutate(
-            `
-          mutation ($Iteacher: Iteacher!) {
-            teachers {
-              create(teacher: $Iteacher) {
-                id
-              }
-            }
-          }`,
-            {
-              Iteacher: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-          data.id = id;
-
-          teachers = [...teachers, data];
-          subs.teachers({ teachers });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($teacher: Uteacher!) {
-            teachers {
-              update(teacher: $teacher) {
-                id
-              }
-            }
-          }`,
-            {
-              teacher: data
-            }
-          );
-
-          const subtract = teachers.filter(({ id }) => id !== data.id);
-          teachers = [data, ...subtract];
-          subs.teachers({ teachers });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-          mutation ($Iteacher: Uteacher!) {
-            teachers {
-              archive(teacher: $Iteacher) {
-                id
-              }
-            }
-          } `,
-            {
-              Iteacher: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = teachers.filter(({ id }) => id !== data.id);
-          teachers = [...subtract];
-          subs.teachers({ teachers });
-          resolve();
-        }),
-      list() {
-        return teachers;
-      },
-      subscribe(cb) {
-        // listen for even change on the teachers observables
-        subs.teachers = cb;
-        return teachers;
-      },
-      getOne(id) { }
-    },
-    schools: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const res = await mutate(
-            `
-          mutation ($school: Ischool!) {
-            schools {
-              create(school: $school) {
-                id
-                error
-              }
-            }
-          }`,
-            {
-              school: data
-            }
-          );
-
-          if (res?.schools?.create?.error) {
-            const data = {
-              message: res?.schools?.create?.error
             };
-            reject(data);
-          } else {
-            console.log(res)
-            data.id = res?.schools?.create?.id;
 
-            schools = [...schools, data];
-            schoolsData = schools
-            subs.schools({ schools });
-            resolve();
-          }
-        }),
-      list() {
-        return schools;
-      },
-      
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-        mutation ($school: USchool!) {
-          schools {
-            update(school: $school) {
-              id
-            }
-          }
-        } 
-        `,
-            {
-              school: data
-            }
-          );
+            // *** FIX: NOTIFY ALL SUBSCRIBERS FOR EACH ENTITY ***
+            notifyEntity('students', s => ({...s, parent_name: s.parent?.name, class_name: s.class?.name, route_name: s.route?.name }));
+            notifyEntity('parents');
+            notifyEntity('drivers');
+            notifyEntity('admins');
+            notifyEntity('buses', b => ({...b, driver: b.driver?.names}));
+            notifyEntity('routes');
+            notifyEntity('complaints');
+            notifyEntity('trips');
+            notifyEntity('schedules', s => ({...s, bus_make: s.bus?.make, route_name: s.route?.name}));
+            notifyEntity('classes', c => ({...c, student_num: c.students?.length || 0, teacher_name: c.teacher?.name}));
+            notifyEntity('teachers');
+            notifyEntity('invitations');
 
-          const subtract = schools.filter(({ id }) => id !== data.id);
-          schools = [data, ...subtract];
-          subs.schools({ schools });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-          mutation ($school: Uschool!) {
-            schools {
-              archive(school: $school) {
-                id
-              }
+            if (updatedSubEntities.has('grades') && activeSchool.grades) {
+                allData.grades = activeSchool.grades;
+                allData.subjects = activeSchool.grades.flatMap(g => g.subjects || []);
+                allData.topics = allData.subjects.flatMap(s => s.topics || []);
+                allData.subtopics = allData.topics.flatMap(t => t.subtopics || []);
+                allData.questions = allData.subtopics.flatMap(st => st.questions || []);
+                allData.options = allData.questions.flatMap(q => q.options || []);
+                
+                ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options'].forEach(entityName => {
+                    if (Array.isArray(subs[entityName])) {
+                        subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
+                    }
+                });
             }
-          } `,
-            {
-              school: data
+            
+            if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
+                allData.charges = activeSchool.charges || [];
+                allData.payments = activeSchool.payments || [];
+                if (Array.isArray(subs.charges)) subs.charges.forEach(cb => cb({ charges: [...allData.charges] }));
+                if (Array.isArray(subs.payments)) subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
             }
-          );
-
-          const subtract = schools.filter(({ id }) => id !== data.id);
-          schools = [...subtract];
-          subs.schools({ schools });
-          resolve();
-        }),
-      invite: data =>
-        new Promise(async (resolve, reject) => {
-          const { schools: { invite: { id, phone, message } } } = await mutate(
-            `
-            mutation ($school: Uschool!) {
-              schools {
-                invite(school: $school) {
-                  id
-                }
-              }
-            } `,
-            {
-              school: data
+            
+            if (updatedSubEntities.has('teams') && activeSchool.teams) {
+                allData.teams = activeSchool.teams;
+                allData.team_members = activeSchool.teams?.flatMap(t => t.members || []) || [];
+                if(Array.isArray(subs.teams)) subs.teams.forEach(cb => cb({ teams: [...allData.teams] }));
+                if(Array.isArray(subs.team_members)) subs.team_members.forEach(cb => cb({ team_members: [...allData.team_members] }));
             }
-          );
+        };
 
-          const invitation = {};
-          invitation.id = id;
-          invitation.phone = phone;
-          invitation.message = message;
-          invitations = [...invitations, invitation];
-          subs.invitations({ invitations });
-          resolve();
-        }),
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.schools = cb;
-        return schools;
-      },
-      getSelected() {
-        const schoolId = localStorage.getItem("school");
-        if (schoolId) {
-          const foundSchool = schoolsData.find(school => school.id == schoolId);
-          console.log("data.js: getSelected: Found school:", foundSchool, schoolsData);
-          return foundSchool || {};
-        }
+        const queries = [
+            { query: `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_SCHOOL_DETAILS}` },
+            { query: `query GetStudents { schools { id ...StudentsData } } ${FRAGMENT_STUDENTS_DATA}` },
+            { query: `query GetParents { schools { id ...ParentsData } } ${FRAGMENT_PARENTS_DATA}` },
+            { query: `query GetDrivers { schools { id ...DriversData } } ${FRAGMENT_DRIVERS_DATA}` },
+            { query: `query GetAdmins { schools { id ...AdminsData } } ${FRAGMENT_ADMINS_DATA}` },
+            { query: `query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}` },
+            { query: `query GetRoutes { schools { id ...RoutesData } } ${FRAGMENT_ROUTES_DATA}` },
+            { query: `query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}` },
+            { query: `query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}` },
+            { query: `query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}` },
+            { query: `query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}` },
+            { query: `query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}` },
+            { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
+            { query: `query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
+            { query: `query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}` },
+            { query: `query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}` },
+        ];
 
-        console.log("data.js: getSelected: No school selected");
-        return {};
-      },
-      async archive() {
-        if (school)
-          await mutate(
-            `mutation ($school: Uschool!) {
-                schools {
-                  archive(school: $school) {
-                    id
+        queries.forEach(({ query: qStr, variables = {} }) => {
+            query(qStr, variables)
+              .then((response) => mergeAndNotify(response))
+              .catch(err => {
+                  if (err?.response?.status !== 401) {
+                      console.error("GraphQL Query Failed:", err);
                   }
-                }
-              }`,
-            {
-              school: { id: school.id }
-            }
-          );
+              });
+        });
+    };
 
-        return school
+    if (localStorage.getItem('authorization')) {
+        init();
+    }
 
-        return {}
-      },
-      async charge(phone, ammount) {
-        if (school)
-          return await mutate(
-            `mutation ($payment: mpesaStartTxInput!) {
-              payments {
-                init(payment: $payment){
-                  id,
-                  CheckoutRequestID,
-                  MerchantRequestID
-                }
-              }
-            }
-            `,
-            {
-              "payment": {
-                "id": school.id,
-                ammount,
-                phone
-              }
-            }
-          );
+const entityConfigs = [
+  { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder'], updateFields: ['name', 'school', 'subjectsOrder'] },
+  { name: "subjects", singularName: "subject", isNested: true, parentEntity: "grades", parentKey: "grade", createFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'], updateFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'] },
+  { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder'] },
+  { name: "subtopics", singularName: "subtopic", isNested: true, parentEntity: "topics", parentKey: "topic", createFields: ['name', 'topic', 'questionsOrder'], updateFields: ['name', 'topic', 'questionsOrder'] },
+  { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'] },
+  { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
+  { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{name} route{id, name} parent{id, name} } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } })},
+  { name: "parents", singularName: "parent", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'], updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") }); return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 }; }, invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { parents { invite(parent: $data) { id phone message } } }`, { data }); const invitation = response.parents.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+  { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) })},
+  { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+  { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
+  { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },
+  { name: "schedules", singularName: "schedule", createFields: ['name', 'message', 'time', 'end_time', 'school', 'route', 'type', 'days', 'bus', 'driver', 'actions'], updateFields: ['name', 'message', 'time', 'end_time', 'type', 'days', 'route', 'bus', 'driver', 'actions'] },
+  { name: "classes", singularName: "class", createFields: ['name', 'teacher', 'school'], updateFields: ['name', 'teacher'] },
+  { name: "teachers", singularName: "teacher", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'gender', 'password'], updateFields: ['national_id', 'name', 'phone', 'email', 'gender', 'password'] },
+  { name: "teams", singularName: "team", createFields: ['name', 'school'], updateFields: ['name', 'school'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { teams { invite(team: $data) { id phone message } } }`, { data }); const invitation = response.teams.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+  { name: "team_members", singularName: "team_member", createFields: ['team', 'user'], updateFields: ['team', 'user'] },
+  { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },
+  { name: "trips", singularName: "trip", createFields: ['startedAt', 'completedAt', 'isCancelled', 'school', 'driver', 'schedule'], updateFields: ['startedAt', 'completedAt', 'isCancelled', 'schedule'] },
+  { name: "payments", singularName: "payment", createFields: ['school', 'phone', 'ammount', 'type', 'ref', 'time'], updateFields: ['phone', 'school', 'ammount', 'type', 'ref', 'time'] },
+  { name: "charges", singularName: "charge", createFields: ['school', 'ammount', 'reason', 'time'], updateFields: ['school', 'ammount', 'reason', 'time'] },
+  { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
+];
 
+    const generatedApis = {};
+    entityConfigs.forEach(config => {
+        generatedApis[config.name] = createEntityAPI(config);
+    });
 
-
-      },
-      async verifyTx({ MerchantRequestID, CheckoutRequestID }) {
-        if (school)
-          return await mutate(
-            `mutation ($Ipayment: mpesaStartTxVerificationInput!) {
-              payments {
-                confirm(payment: $Ipayment) {
-                  success,
-                  message,
-                  id,
-                  amount,
-                  phone,
-                  status,
-                  merchantRequestID,
-                  checkoutRequestID,
-                  ref,
-                  time
-                }
-              }
-            }
-            `,
-            {
-              "Ipayment": {
-                MerchantRequestID,
-                CheckoutRequestID,
-                school: school.id
-              }
-            }
-          );
-
-      }
-    },
-    classes: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
-            `
-          mutation ($Iclass: IClass!) {
-            classes {
-              create(class: $Iclass) {
-                id
-              }
-            }
-          }`,
-            {
-              Iclass: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-
-          data.id = id;
-          data.teacher_name = teachers.find(t => t.id === data.teacher)?.name
-          data.student_num = 0
-
-          classes = [...classes, data];
-          subs.classes({ classes });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Iclass: UClass!) {
-            classes {
-              update(class: $Iclass) {
-                id
-              }
-            }
-          }`,
-            {
-              Iclass: Object.assign({}, { id: data.id, name: data.name })
-            }
-          );
-
-          const subtract = classes.filter(({ id }) => id !== data.id);
-          classes = [data, ...subtract];
-          subs.classes({ classes });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-          mutation ($Iclass: UClass!) {
-            classes {
-              archive(class: $Iclass) {
-                id
-              }
-            }
-          } `,
-            {
-              Iclass: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = classes.filter(({ id }) => id !== data.id);
-          classes = [...subtract];
-          subs.classes({ classes });
-          resolve();
-        }),
-      list() {
-        return classes;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.classes = cb;
-        return classes;
-      },
-      getOne(id) { }
-    },
-    drivers: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          console.log({ schoolID })
-          const res = await mutate(
-            `
-            mutation ($Idriver: Idriver!) {
-              drivers {
-                create(driver: $Idriver) {
-                  id
-                }
-              }
-            }`,
-            {
-              Idriver: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-
-          const { id } = res.drivers.create
-          data.id = id;
-
-          drivers = [...drivers, data];
-          subs.drivers({ drivers });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($driver: Udriver!) {
-            drivers {
-              update(driver: $driver) {
-                id
-              }
-            }
-          } 
-          `,
-            {
-              driver: data
-            }
-          );
-
-          const subtract = drivers.filter(({ id }) => id !== data.id);
-          drivers = [data, ...subtract];
-          subs.drivers({ drivers });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Idriver: Udriver!) {
-            drivers {
-              archive(driver: $Idriver) {
-                id
-              }
-            }
-          } 
-          `,
-            {
-              Idriver: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = drivers.filter(({ id }) => id !== data.id);
-          drivers = [...subtract];
-          subs.drivers({ drivers });
-          resolve();
-        }),
-      invite: data =>
-        new Promise(async (resolve, reject) => {
-          const { drivers: { invite: { id, phone, message } } } = await mutate(
-            `
-            mutation ($Iinvite: Iinvite!) {
-              drivers {
-                invite(driver: $Iinvite) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iinvite: data
-            }
-          );
-
-          const invitation = {};
-          invitation.id = id;
-          invitation.phone = phone;
-          invitation.message = message;
-          invitations = [...invitations, invitation];
-          subs.invitations({ invitations });
-          resolve();
-        }),
-      transfer: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Itransfer: Itransfer!) {
-              drivers {
-                transfer(driver: $Itransfer) {
-                  id
-                }
-              }
-            } `,
-            {
-              Itransfer: data
-            }
-          );
-
-          const targetschool = schools.filter(school => {
-            return school.id === data.school;
-          });
-
-          console.log(targetschool)
-
-          if (targetschool.length) {
-            const driver = drivers.filter(driver => {
-              return driver.id === data.driver;
-            })
-
-            if (driver.length) {
-              if (!targetschool[0].drivers) {
-                targetschool[0].drivers = [];
-                targetschool[0].drivers.push(driver[0]);
-              } else {
-                targetschool[0].drivers.push(driver[0]);
-              }
-            }
-          }
-
-          const subtract = drivers.filter(({ id }) => id !== data.driver);
-          drivers = [...subtract];
-          subs.drivers({ drivers });
-          resolve();
-        }),
-      list() {
-        return drivers;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.drivers = cb;
-        return drivers;
-      },
-      getOne(id) { }
-    },
-    admins: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const res = await mutate(
-            `
-            mutation ($Iadmin: Iadmin!) {
-              admins {
-                create(admin: $Iadmin) {
-                  id
-                }
-              }
-            }`,
-            {
-              Iadmin: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-
-          const { id } = res.admins.create
-          data.id = id;
-
-          admins = [...admins, data];
-          subs.admins({ admins });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($admin: Uadmin!) {
-            admins {
-              update(admin: $admin) {
-                id
-              }
-            }
-          }`,
-            {
-              admin: data
-            }
-          );
-
-          const subtract = admins.filter(({ id }) => id !== data.id);
-          admins = [data, ...subtract];
-          subs.admins({ admins });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Iadmin: Uadmin!) {
-            admins {
-              archive(admin: $Iadmin) {
-                id
-              }
-            }
-          } 
-          `,
-            {
-              Iadmin: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = admins.filter(({ id }) => id !== data.id);
-          admins = [...subtract];
-          subs.admins({ admins });
-          resolve();
-        }),
-      invite: data =>
-        new Promise(async (resolve, reject) => {
-          const { admins: { invite: { id, phone, message } } } = await mutate(
-            `
-            mutation ($Iinvite: Iinvite!) {
-              admins {
-                invite(admin: $Iinvite) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iinvite: data
-            }
-          );
-
-          const invitation = {};
-          invitation.id = id;
-          invitation.phone = phone;
-          invitation.message = message;
-          invitations = [...invitations, invitation];
-          subs.invitations({ invitations });
-          resolve();
-        }),
-      transfer: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Itransfer: Itransfer!) {
-              drivers {
-                transfer(driver: $Itransfer) {
-                  id
-                }
-              }
-            } `,
-            {
-              Itransfer: data
-            }
-          );
-
-          const targetschool = schools.filter(school => {
-            return school.id === data.school;
-          });
-
-          console.log(targetschool)
-
-          if (targetschool.length) {
-            const driver = admins.filter(driver => {
-              return driver.id === data.driver;
-            })
-
-            if (driver.length) {
-              if (!targetschool[0].admins) {
-                targetschool[0].admins = [];
-                targetschool[0].admins.push(driver[0]);
-              } else {
-                targetschool[0].admins.push(driver[0]);
-              }
-            }
-          }
-
-          const subtract = admins.filter(({ id }) => id !== data.driver);
-          admins = [...subtract];
-          subs.admins({ admins });
-          resolve();
-        }),
-      list() {
-        return admins;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.admins = cb;
-        return admins;
-      },
-      getOne(id) { }
-    },
-    buses: {
-      create: bus =>
-        new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
-            `mutation ($bus: Ibus!) {
-            buses {
-              create(bus: $bus) {
-                id
-              }
-            }
-          }`,
-            {
-              bus: Object.assign(bus, { school: localStorage.getItem("school") })
-            }
-          );
-
-          bus.id = id;
-          buses = [...buses, bus];
-          subs.buses({ buses });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($bus: Ubus!) {
-            buses {
-              update(bus: $bus) {
-                id
-              }
-            }
-          }`,
-            {
-              bus: data
-            }
-          );
-
-          const subtract = buses.filter(({ id }) => id !== data.id);
-          buses = [data, ...subtract];
-          subs.buses({ buses });
-          resolve();
-        }),
-      delete: bus =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($Ibus: Ubus!) {
-            buses {
-              archive(bus: $Ibus) {
-                id
-              }
-            }
-          }  `,
-            {
-              Ibus: {
-                id: bus.id
-              }
-            }
-          );
-
-          const subtract = buses.filter(({ id }) => id !== bus.id);
-          buses = [...subtract];
-          subs.buses({ buses });
-          resolve();
-        }),
-      list() {
-        return buses;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.buses = cb;
-        return buses;
-      },
-      getOne(id) { }
-    },
-    trips: {
-      list() {
-        return trips;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.trips = cb;
-        return trips;
-      },
-      getOne: id => {
-        const trip = trips.find(trip => trip.id === id)
-        return trip
-      },
-      delete: trip =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($Itrip: Utrip!) {
-            trips {
-              archive(trip: $Itrip) {
-                id
-              }
-            }
-          }  `,
-            {
-              Itrip: {
-                id: trip.id
-              }
-            }
-          );
-
-          const subtract = trips.filter(({ id }) => id !== trip.id);
-          trips = [...subtract];
-          subs.trips({ trips });
-          resolve();
-        }),
-    },
-    complaints: {
-      list() {
-        return complaints;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.complaints = cb;
-        return complaints;
-      },
-      delete: complaint =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($Icomplaint: Ucomplaint!) {
-            complaints {
-              archive(complaint: $Icomplaint) {
-                id
-              }
-            }
-          }  `,
-            {
-              Icomplaint: {
-                id: complaint.id
-              }
-            }
-          );
-
-          const subtract = complaints.filter(({ id }) => id !== complaint.id);
-          complaints = [...subtract];
-          subs.complaints({ complaints });
-          resolve();
-        }),
-      getOne(id) { }
-    },
-    charges: {
-      list() {
-        return charges;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.charges = cb;
-        return charges;
-      },
-      getOne(id) { }
-    },
-    routes: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { id } = await mutate(
-            `
-            mutation ($Iroute: Iroute!) {
-              routes {
-                create(route: $Iroute) {
-                  id
-                }
-              }
-            }`,
-            {
-              Iroute: Object.assign(data, { school: localStorage.getItem("school") })
-            }
-          );
-
-          data.id = id;
-          routes = [...routes, data];
-          subs.routes({ routes });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($route: Uroute!) {
-            routes {
-              update(route: $route) {
-                id
-              }
-            }
-          } `,
-            {
-              route: {
-                id: data.id,
-                name: data.name,
-                description: data.description
-              }
-            }
-          );
-
-          const subtract = routes.filter(({ id }) => id !== data.id);
-          routes = [data, ...subtract];
-          subs.routes({ routes });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `mutation ($Iroute: Uroute!) {
-            routes {
-              archive(route: $Iroute) {
-                id
-              }
-            }
-          }`,
-            {
-              Iroute: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = routes.filter(({ id }) => id !== data.id);
-          routes = [...subtract];
-          subs.routes({ routes });
-          resolve();
-        }),
-      list() {
-        return routes;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.routes = cb;
-        return routes;
-      },
-      getOne(id) { }
-    },
-    schedules: {
-      create: schedule =>
-        new Promise(async (resolve, reject) => {
-          schedule.days = schedule.days.join(",");
-
-          if (schedule.route) {
-            schedule.route_name = undefined
-          }
-
-          if (schedule.bus) {
-            schedule.bus_make = undefined
-          }
-
-          const res = await mutate(
-            `
-          mutation ($schedule: Ischedule!) {
-            schedules {
-              create(schedule: $schedule) {
-                id
-              }
-            }
-          }            
-        `,
-            {
-              schedule: Object.assign({}, schedule, { school: localStorage.getItem("school") })
-            }
-          );
-
-          console.log(res);
-
-          const { id } = res
-
-          schedule.id = id;
-          schedule.days = schedule.days.split(",");
-
-          schedule.route = routes.filter(
-            route => route.id === schedule.route
-          )[0];
-
-          schedule.bus = buses.filter(bus => bus.id === schedule.bus)[0];
-          schedule.bus_make = schedule?.bus?.make
-
-
-          schedules = [...schedules, schedule];
-          subs.schedules({ schedules });
-          resolve();
-        }),
-      update: schedule =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Uschedule: Uschedule!) {
-            schedules {
-              update(schedule: $Uschedule) {
-                id
-              }
-            }
-          }            
-        `,
-            {
-              Uschedule: Object.assign({}, schedule, {
-                bus_make: undefined,
-                route_name: undefined,
-                buses: undefined,
-                routes: undefined,
-                selectedDays: undefined,
-                bus: schedule.bus.id,
-                route: schedule.route.id
-              })
-            }
-          );
-
-          const subtract = schedules.filter(({ id }) => id !== schedule.id);
-          schedule.bus_make = schedule.bus.make
-          schedule.route_name = schedule.route.name
-          schedule.days = schedule.days.split(',')
-
-          schedules = [schedule, ...subtract];
-          subs.schedules({ schedules });
-          resolve();
-        }),
-      delete: schedule =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-          mutation ($Ischedule: Uschedule!) {
-            schedules {
-              archive(schedule: $Ischedule) {
-                id
-              }
-            }
-          }                  
-        `,
-            {
-              Ischedule: {
-                id: schedule.id
-              }
-            }
-          );
-
-          const subtract = schedules.filter(({ id }) => id !== schedule.id);
-          schedules = [...subtract];
-          subs.schedules({ schedules });
-          resolve();
-        }),
-      list() {
-        return schedules;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.schedules = cb;
-        return schedules;
-      },
-      getOne(id) { }
-    },
-    picksAndDrops: {
-      create(id) {
-        return {};
-      },
-      update(id, data) {
-        return;
-      },
-      delete(id) {
-        return;
-      },
-      list() {
-        return [];
-      },
-      getOne(id) { }
-    },
-    messages: {
-      create(id) {
-        return {};
-      },
-      update(id, data) {
-        return;
-      },
-      delete(id) {
-        return;
-      },
-      list() {
-        return [];
-      },
-      getOne(id) { }
-    },
-    communication: {
-      sms: {
-        create: sms => new Promise(async (resolve, reject) => {
-          const res = await mutate(`
-          mutation($sms : Isms!){
-            sms{
-              send(sms: $sms)
-            }
-          }
-          `, {
-            sms
-          })
-
-          resolve(res)
-        }),
-        update(id, data) {
-          return;
+    instance = {
+        ...generatedApis,
+        init,
+        auth: {
+            login: (id) => ({}),
+            getUser: (id) => ({}),
+            logout: (id, data) => {},
         },
-        delete(id) {
-          return;
+        user: {
+            getOne: () => ({}),
         },
-        list() {
-          return [];
-        },
-        getOne(id) { }
-      },
-      email: {
-        create(id) {
-          return {};
-        },
-        update(id, data) {
-          return;
-        },
-        delete(id) {
-          return;
-        },
-        list() {
-          return [];
-        },
-        getOne(id) { }
-      }
-    },
-    teams: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { teams: { create: { id } } } = await mutate(
-            `
-            mutation ($Iteam: Iteam!) {
-              teams {
-                create(team: $Iteam) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iteam: data
+        communication: {
+            sms: {
+                create: sms => mutate(`mutation($sms : Isms!){ sms{ send(sms: $sms) } }`, { sms })
             }
-          );
-          data.id = id;
-          data.members = [];
+        },
+        schools: {
+            list: () => allData.schools,
+            // *** FIX: ROBUST SCHOOLS SUBSCRIBE METHOD ***
+            subscribe: (cb) => {
+                if (!Array.isArray(subs.schools)) {
+                    subs.schools = [];
+                }
+                subs.schools.push(cb);
+                // Call immediately with the current state.
+                const selectedSchool = allData.schools.find(s => s.id === (schoolID || localStorage.getItem("school")));
+                cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} });
+                // Return an unsubscribe function.
+                return () => {
+                    subs.schools = subs.schools.filter(subscriber => subscriber !== cb);
+                };
+            },
+            update: generatedApis.grades.update,
+            create: (data) => new Promise(async (resolve, reject) => {
+                try {
+                    const response = await mutate(
+                        `mutation ($data: Ischool!) { schools { create(school: $data) { id } } }`,
+                        { data }
+                    );
+                    const newSchool = { ...data, id: response.schools.create.id };
+                    allData.schools.push(newSchool);
+                     if (Array.isArray(subs.schools)) {
+                        subs.schools.forEach(sCb => sCb({ schools: [...allData.schools] }));
+                     }
+                    resolve(newSchool);
+                } catch (error) {
+                    reject(error);
+                }
+            }),
+            getSelected: () => allData.schools.find(s => s.id === localStorage.getItem("school")) || {},
+            archive: () => new Promise(async (resolve, reject) => {
+                const school = instance.schools.getSelected();
+                if (!school.id) return reject("No school selected");
+                await mutate(`mutation ($data: Uschool!) { schools { archive(school: $data) { id } } }`, { data: { id: school.id } });
+                allData.schools = allData.schools.filter(s => s.id !== school.id);
+                if (Array.isArray(subs.schools)) {
+                   subs.schools.forEach(sCb => sCb({ schools: [...allData.schools] }));
+                }
+                resolve(school);
+            }),
+            charge: (phone, ammount) => {
+                const school = instance.schools.getSelected();
+                if (!school.id) return Promise.reject("No school selected");
+                return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
+                    payment: { id: school.id, ammount, phone }
+                });
+            },
+            verifyTx: ({ MerchantRequestID, CheckoutRequestID }) => {
+                 const school = instance.schools.getSelected();
+                 if (!school.id) return Promise.reject("No school selected");
+                 return mutate(`mutation ($data: mpesaStartTxVerificationInput!) { payments { confirm(payment: $data) { success, message, id, amount, phone, status, ref, time } } }`, {
+                     data: { MerchantRequestID, CheckoutRequestID, school: school.id }
+                 });
+            }
+        },
+    };
 
-          teams = [...teams, data];
-          subs.teams({ teams });
-          resolve();
-        }),
-      update: data =>
-        new Promise(async (resolve, reject) => {
-          await mutate(
-            `
-            mutation ($Iteam: Uteam!) {
-              teams {
-                update(team: $Iteam) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iteam: data
-            }
-          );
-
-          const subtract = teams.filter(({ id }) => id !== data.id);
-          teams = [data, ...subtract];
-          subs.teams({ teams });
-          resolve();
-        }),
-      invite: data =>
-        new Promise(async (resolve, reject) => {
-          const { teams: { invite: { id, phone, message } } } = await mutate(
-            `
-            mutation ($Iinvite: Iinvite!) {
-              teams {
-                invite(team: $Iinvite) {
-                  id
-                }
-              }
-            } `,
-            {
-              Iinvite: data
-            }
-          );
-          const invitation = {};
-          invitation.id = id;
-          invitation.phone = phone;
-          invitation.message = message;
-          invitations = [...invitations, invitation];
-          subs.invitations({ invitations });
-          resolve();
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          mutate(
-            `
-            mutation ($Iteam: Uteam!) {
-              teams {
-                archive(team: $Iteam) {
-                  id
-                }
-              }
-            }  `,
-            {
-              Iteam: {
-                id: data.id
-              }
-            }
-          );
-
-          const subtract = teams.filter(({ id }) => id !== data.id);
-          teams = [...subtract];
-          subs.teams({ teams });
-          resolve();
-        }),
-      list() {
-        return teams;
-      },
-      subscribe(cb) {
-        // listen for even change on the students observables
-        subs.teams = cb;
-        return teams;
-      },
-      getOne(id) { }
-    },
-    invitations: {
-      list() {
-        return invitations;
-      },
-      subscribe(cb) {
-        // listen for even change on the invitations observables
-        subs.invitations = cb;
-        return invitations;
-      },
-      getOne(id) { }
-    },
-    team_members: {
-      create: data =>
-        new Promise(async (resolve, reject) => {
-          const { team_members: { create: { id } } } = await mutate(
-            `
-            mutation ($IteamMember: IteamMember!) {
-              team_members {
-                create(team_member: $IteamMember) {
-                  id
-                }
-              }
-            } `,
-            {
-              IteamMember: data
-            }
-          );
-          resolve(id);
-        }),
-      delete: data =>
-        new Promise(async (resolve, reject) => {
-          const { team_members: { archive: { id } } } = await mutate(
-            `
-            mutation ($UteamMember: UteamMember!) {
-              team_members {
-                archive(team_member: $UteamMember) {
-                  id
-                }
-              }
-            }  `,
-            {
-              UteamMember: {
-                user: data.user,
-                team: data.team
-              }
-            }
-          );
-
-          resolve(id);
-        }),
-    },
-  };
+    return {
+        getInstance: function () {
+            return instance;
+        }
+    };
 })();
 
-export default Data;
+export default Data.getInstance();

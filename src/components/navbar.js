@@ -11,7 +11,6 @@ const KTOffcanvas = window.KTOffcanvas;
 const KTMenu = window.KTMenu;
 
 // --- SVG Icon Components (Keep as is) ---
-// ... (All your SVG components are here, no changes needed) ...
 const SvgSchoolsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path> <polyline points="9 22 9 12 15 12 15 22"></polyline> </svg> );
 const SvgAdminsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path> <circle cx="9" cy="7" r="4"></circle> <rect x="14" y="10" width="8" height="7" rx="1"></rect> <path d="M18 10V8a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v2"></path> </svg> );
 const SvgInvitationsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path> <polyline points="22,6 12,13 2,6"></polyline> </svg> );
@@ -54,24 +53,29 @@ class Navbar extends React.Component {
 
   componentDidMount() {
     const userData = JSON.parse(localStorage.getItem("user"));
-    const school = Data.schools.getSelected();
     const schools = Data.schools.list();
+    
+    this.setState({ 
+      schools,
+      fetchingSchools: schools.length === 0,
+      userRole: userData.role
+    });
 
-    this.setState({ schools, selectedSchool: school, fetchingSchools: schools.length === 0 });
-
-    Data.schools.subscribe(({ schools }) => {
-      const currentSelectedSchool = localStorage.getItem("school");
-      let newSelectedSchool = schools.find(s => s.id === currentSelectedSchool) || (schools.length > 0 ? schools[0] : {});
+    Data.schools.subscribe(({ schools, selectedSchool }) => {
+      console.log("Schools updated:", schools, selectedSchool);
+      
       this.setState({
         availableSchools: schools,
-        selectedSchool: newSelectedSchool,
+        selectedSchool,
+        fetchingSchools: !selectedSchool
       }, () => {
-        if (newSelectedSchool.id) {
-          localStorage.setItem("school", newSelectedSchool.id);
-          document.title = `${newSelectedSchool.name} | Shule Plus`;
+        if (selectedSchool.id) {
+          localStorage.setItem("school", selectedSchool.id);
+          document.title = `${selectedSchool.name || 'Shule Plus'} | Shule Plus`;
         }
       });
     });
+    
 
     let role = "";
     if (userData && typeof userData === 'object' && Object.keys(userData).length > 0) {
@@ -146,7 +150,6 @@ class Navbar extends React.Component {
     }
   };
 
-  // [V2 CHANGE] This entire function is updated for semantic correctness and to prevent reloads.
   renderMobileNav = () => {
     const { isMobileMenuOpen, availableSchools, selectedSchool, openMobileSubmenu } = this.state;
     const manageDataItems = [
@@ -247,7 +250,6 @@ class Navbar extends React.Component {
     );
   }
 
-  // [V2 CHANGE] This is the full, updated render function
   render() {
     const storedUser = JSON.parse(localStorage.getItem("user")) || {};
     let user = storedUser.names || "Guest";
@@ -315,7 +317,7 @@ class Navbar extends React.Component {
         {/* DESKTOP TOP NAVBAR (Remains Fixed) */}
         <div id="kt_header" className="kt-header kt-grid__item d-none d-lg-flex" style={{ backgroundColor: effectiveTopBarBgColor, alignItems: 'center', justifyContent: 'space-between', height: `${topNavbarHeight}px`, zIndex: 1002, position: 'fixed', top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)', padding: `0 25px` }}>
           <div className="kt-header__brand">
-            {!selectedSchool || Object.keys(selectedSchool).length === 0 ? ( <div className="kt-spinner kt-spinner--sm kt-spinner--brand" /> ) : ( <Link to="/home"> <img alt="School Logo" style={{ maxHeight: '50px', width: 'auto', borderRadius: '6px' }} src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'} /> </Link> )}
+            {!selectedSchool || Object.keys(selectedSchool).length === 0 || !selectedSchool.name ? ( <div className="kt-spinner kt-spinner--sm kt-spinner--brand" /> ) : ( <Link to="/home"> <img alt="School Logo" style={{ maxHeight: '50px', width: 'auto', borderRadius: '6px' }} src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'} /> </Link> )}
           </div>
           
           <div className="kt-header-menu-wrapper" style={{ flex: '1', display: 'flex', justifyContent: 'center' }}>
@@ -323,7 +325,7 @@ class Navbar extends React.Component {
               <ul className="kt-menu__nav">
                 {availableSchools.length > 1 && (
                   <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                    <a onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                       <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>{selectedSchool.name || "Select School"}</span>
                       <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
                     </a>
@@ -331,7 +333,7 @@ class Navbar extends React.Component {
                       <ul className="kt-menu__subnav">
                         {availableSchools.map(schoolItem => (
                           <li key={schoolItem.id} onClick={() => this.switchSchools(schoolItem)} className="kt-menu__item" aria-haspopup="true">
-                            <a onClick={e => e.preventDefault()} className="kt-menu__link">
+                            <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link">
                                 <span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{schoolItem.name}</span>
                             </a>
                           </li>
@@ -342,7 +344,7 @@ class Navbar extends React.Component {
                 )}
                 <li className="kt-menu__item"><Link to="/home" className="kt-menu__link"><span className="kt-menu__link-text" style={topNavlinkStyle}>Reports</span></Link></li>
                 <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                  <a onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                  <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                     <span className="kt-menu__link-text" style={topNavlinkStyle}>Manage Data</span>
                     <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
                   </a>
@@ -360,7 +362,7 @@ class Navbar extends React.Component {
                   </div>
                 </li>
                  <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                    <a onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                         <span className="kt-menu__link-text" style={topNavlinkStyle}>
                            {(selectedSchool?.financial?.balanceFormated) || "KSH 0.00"}, Finance
                         </span>
@@ -434,12 +436,12 @@ class Navbar extends React.Component {
         <div id="kt_offcanvas_toolbar_profile" className="kt-offcanvas-panel" style={{ margin: '15px', maxHeight: 'calc(100vh - 125px)', marginTop: '110px', borderRadius: '10px' }}>
             <div className="kt-offcanvas-panel__head">
                 <h3 className="kt-offcanvas-panel__title">Profile</h3>
-                <a onClick={e => e.preventDefault()} className="kt-offcanvas-panel__close" id="kt_offcanvas_toolbar_profile_close"><i className="flaticon2-delete" /></a>
+                <a href="!#" onClick={e => e.preventDefault()} className="kt-offcanvas-panel__close" id="kt_offcanvas_toolbar_profile_close"><i className="flaticon2-delete" /></a>
             </div>
             <div className="kt-offcanvas-panel__body kt-scroll">
                 <div className="kt-user-card-v3 kt-margin-b-30">
                     <div className="kt-user-card-v3__detalis">
-                        <a onClick={e => e.preventDefault()} className="kt-user-card-v3__name">{storedUser?.names || user}</a>
+                        <a href="!#" onClick={e => e.preventDefault()} className="kt-user-card-v3__name">{storedUser?.names || user}</a>
                         <div className="kt-user-card-v3__desc">{storedUser?.userType ? storedUser.userType.charAt(0).toUpperCase() + storedUser.userType.slice(1) : ''}</div>
                         <div className="kt-user-card-v3__info">
                             {storedUser?.email && (<a href={`mailto:${storedUser.email}`} className="kt-user-card-v3__item"><i className="flaticon-email-black-circular-button kt-font-brand" /><span className="kt-user-card-v3__tag">{storedUser.email}</span></a>)}

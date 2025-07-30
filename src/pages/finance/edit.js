@@ -208,7 +208,7 @@ class Modal extends React.Component {
                           value={this.state.edit.parent_name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             parent: this.props.parents.filter(parent => parent.name == e.target.value)[0],
-                            parent_name: e.target.value
+                            // parent_name: e.target.value
                           }))}
                         >
                           <option value="">Select parent</option>
@@ -225,7 +225,7 @@ class Modal extends React.Component {
                           value={this.state.edit.parent2_name}
                           onChange={(e) => this.setState(Object.assign(this.state.edit, {
                             parent2: this.props.parents.filter(parent => parent.name == e.target.value)[0],
-                            parent2_name: e.target.value
+                            // parent2_name: e.target.value
                           }))}
                         >
                           <option value="">Select parent</option>
