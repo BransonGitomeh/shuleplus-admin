@@ -86,7 +86,7 @@ class OptionModal extends React.Component {
       await save(payload);
 
       this.hide();
-      toastr.success("Option has been created successfully!", "Option Created");
+      // toastr.success("Option has been created successfully!", "Option Created");
       this.resetForm();
     } catch (error) {
       this.setState({ loading: false });

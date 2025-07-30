@@ -7,7 +7,7 @@ import ErrorMessage from "../components/error-toast";
 import { EditorState, ContentState } from 'draft-js';
 import { Editor } from "react-draft-wysiwyg";
 import { stateToHTML } from 'draft-js-export-html';
-import htmlToDraft from 'html-to-draftjs'; // Needed for editing
+import htmlToDraft from 'html-to-draftjs';
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 // --- Data, Utils, and Components ---
@@ -73,9 +73,9 @@ class EditQuestionModal extends React.Component {
     isCompressingImages: false,
     contentBlocks: [],
     questionType: 'SINGLECHOICE',
-    questionId: null, // Keep track of the current question ID
+    questionId: null,
     subtopic: "",
-    createdQuestionId: null, // This is used by child components, let's alias it
+    createdQuestionId: null,
     addedOptions: [],
     optionToEdit: null,
     optionToDelete: null,
@@ -92,19 +92,27 @@ class EditQuestionModal extends React.Component {
       ignore: ":hidden:not(select)",
     });
     $(`#${modalId}`).on(`hidden.bs.modal.${modalId}`, this.handleModalClose);
+    this.initializeFromProps(this.props.question);
   }
 
+  // --- Replace it with this corrected version ---
   componentDidUpdate(prevProps) {
-    // This logic correctly determines when to open and populate the modal
-    const hasNewQuestion = this.props.question && this.props.question.id;
-    const hadOldQuestion = prevProps.question && prevProps.question.id;
-    const isDifferentQuestion = hasNewQuestion && hadOldQuestion && this.props.question.id !== prevProps.question.id;
-
-    if (hasNewQuestion && (!hadOldQuestion || isDifferentQuestion)) {
-      this.initializeFromProps(this.props.question);
-      this.show();
+    // Only proceed if the component has received a valid question with an ID.
+    if (this.props.question && this.props.question.id) {
+        // Check if the new question's ID is different from the ID currently in our state.
+        // This is the most reliable way to know if we need to re-initialize.
+        console.log(this.props.question.id, this.state.questionId, this.props.question.id != this.state.questionId);
+        if (this.props.question.id != this.state.questionId) {
+            this.initializeFromProps(this.props.question);
+        }
     }
-  }
+}
+
+// onPropsChange = (prevProps) => {
+//   if (this.props.question && this.props.question.id && this.props.question.id != this.state.questionId) {
+//     this.initializeFromProps(this.props.question);
+//   }
+// }
 
   componentWillUnmount() {
     $(`#${modalId}`).off(`.modal.${modalId}`);
@@ -125,7 +133,6 @@ class EditQuestionModal extends React.Component {
 
   resetState = () => {
     (this.state.contentBlocks || []).forEach(block => {
-      // Only revoke blob URLs created for new image previews
       if (block.type === 'IMAGE' && !block.isExisting && block.preview) {
         URL.revokeObjectURL(block.preview);
       }
@@ -134,12 +141,13 @@ class EditQuestionModal extends React.Component {
   }
 
   initializeFromProps = (question) => {
+
+    console.log("initializeFromProps", question)
     if (!question) return this.resetState();
 
     const contentOrder = question.contentOrder || [];
     const reconstructedBlocks = [];
 
-    // If there's a contentOrder, use it to rebuild the blocks
     if (contentOrder.length > 0) {
       contentOrder.forEach(item => {
         if (item.type === 'TEXT') {
@@ -147,38 +155,28 @@ class EditQuestionModal extends React.Component {
           const { contentBlocks, entityMap } = blocksFromHtml;
           const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
           reconstructedBlocks.push({
-            id: generateId('text'),
-            type: 'TEXT',
+            id: generateId('text'), type: 'TEXT',
             editorState: EditorState.createWithContent(contentState),
           });
-        }
-        else if (item.type === 'IMAGE') {
+        } else if (item.type === 'IMAGE') {
           const imgData = (question.images || []).find(img => img.id === item.id);
           if (imgData) {
             reconstructedBlocks.push({
-              id: imgData.id,
-              type: 'IMAGE',
-              name: imgData.name || 'Existing Image',
-              preview: imgData.url, // The existing URL is the preview
-              isExisting: true,
+              id: imgData.id, type: 'IMAGE', name: imgData.name || 'Existing Image',
+              preview: imgData.url, isExisting: true,
             });
           }
-        }
-        else if (item.type === 'VIDEO') {
+        } else if (item.type === 'VIDEO') {
           const videoData = (question.videos || []).find(vid => vid.id === item.id);
           if (videoData) {
             reconstructedBlocks.push({
-              id: videoData.id,
-              type: 'VIDEO',
-              embedUrl: videoData.embedUrl,
-              originalUrl: videoData.embedUrl, // Assuming original is not stored
-              isExisting: true,
+              id: videoData.id, type: 'VIDEO', embedUrl: videoData.embedUrl,
+              originalUrl: videoData.embedUrl, isExisting: true,
             });
           }
         }
       });
     } else {
-      // Fallback for legacy data without contentOrder
       const blocksFromHtml = htmlToDraft(question.name || '');
       reconstructedBlocks.push({
         id: generateId('text'), type: 'TEXT',
@@ -191,7 +189,7 @@ class EditQuestionModal extends React.Component {
     this.setState({
       contentBlocks: reconstructedBlocks,
       questionId: question.id,
-      createdQuestionId: question.id, // for option modals
+      createdQuestionId: question.id,
       questionType: question.type || 'SINGLECHOICE',
       subtopic: question.subtopic,
       addedOptions: question.options || [],
@@ -223,7 +221,6 @@ class EditQuestionModal extends React.Component {
             contentOrder.push({ type: 'TEXT' });
             break;
           case 'IMAGE':
-            // If it's a new image, create the base64 string. If existing, just pass the object with the URL.
             const imageData = block.isExisting ?
               { id: block.id, name: block.name, url: block.preview } :
               { id: block.id, name: block.name, base64: await toBase64(block.data) };
@@ -238,7 +235,6 @@ class EditQuestionModal extends React.Component {
         }
       }
 
-      // Process attachments in the same way (existing vs. new)
       const serializedAttachments = await Promise.all(
         this.state.attachments.map(async (att) => {
           return att.isExisting ?
@@ -255,14 +251,13 @@ class EditQuestionModal extends React.Component {
         videos: videos.map(v => v.embedUrl),
         images: images.map(i => i.url),
         attachments: serializedAttachments.map(a => a.url),
-        contentOrder: contentOrder.map(co => co.type),
+        contentOrder: contentOrder.map(co => co.id),
       };
 
       await this.props.edit(payload);
       // toastr.success("Content has been updated successfully!");
-      this.hide();
-
       this.setState({ loading: false });
+      this.hide();
 
     } catch (error) {
       this.setState({ loading: false });
@@ -270,7 +265,6 @@ class EditQuestionModal extends React.Component {
     }
   }
 
-  // --- All other handlers are identical to AddQuestionModal ---
   onEditorStateChange = (editorState) => {
     this.setState(prevState => ({
       contentBlocks: prevState.contentBlocks.map(block =>
@@ -310,7 +304,7 @@ class EditQuestionModal extends React.Component {
       this.setState(prevState => ({ contentBlocks: [...prevState.contentBlocks, ...newImageBlocks] }));
     }
     this.setState({ isCompressingImages: false });
-    // event.target.value = null;
+    event.target.value = null;
   };
   removeContentBlock = (idToRemove) => {
     this.setState(prevState => {
@@ -356,103 +350,126 @@ class EditQuestionModal extends React.Component {
     switch (block.type) {
       case 'TEXT': return <div dangerouslySetInnerHTML={{ __html: stateToHTML(block.editorState.getCurrentContent()) }} />;
       case 'IMAGE': return <img src={block.preview} alt="preview" className="img-fluid rounded" />;
-      case 'VIDEO': return <div className="video-embed-container"><iframe src={block.embedUrl} frameBorder="0" allowFullScreen title="YouTube Preview" /></div>;
+      case 'VIDEO': return <div className="embed-responsive embed-responsive-16by9"><iframe src={block.embedUrl} className="embed-responsive-item" allowFullScreen title="YouTube Preview" /></div>;
       default: return null;
     }
   };
 
   render() {
+    console.log(this.state)
     const { contentBlocks, questionType, loading, isCompressingImages, addedOptions, optionSearchTerm, questionId } = this.state;
-    if (!questionId) return null; // Don't render anything if there's no question
+    if (!questionId) return null;
 
     const isSaveDisabled = loading || isCompressingImages;
     const showOptionsSection = contentTypes.find(ct => ct.value === questionType)?.hasOptions;
-
     const filteredOptions = (addedOptions || []).filter(opt => (opt.value || '').toLowerCase().includes(optionSearchTerm.toLowerCase()));
     const correctOptionIds = (addedOptions || []).filter(o => o.correct).map(o => o.id);
-
     const textBlock = contentBlocks.find(b => b.type === 'TEXT');
 
     return (
       <div>
-        <style>{`.modal-xl { max-width: 90%; } .modal-body-columns { display: flex; padding: 0; } .form-column { flex: 6; padding: 1.5rem; border-right: 1px solid #dee2e6; overflow-y: auto; } .content-column { flex: 4; padding: 1.5rem; overflow-y: auto; background-color: #f8f9fa; } .modal-content-full-height { max-height: calc(100vh - 120px); } .section-card { margin-bottom: 1.5rem; } .rdw-editor-main { min-height: 200px; } .preview-block { position: relative; border: 1px dashed #ccc; background-color: #fff; border-radius: 5px; padding: 1rem; margin-bottom: 1rem; } .preview-block:hover { border-color: #007bff; } .drag-handle { position: absolute; top: 10px; left: -10px; background: #007bff; color: white; width: 20px; height: 30px; border-radius: 3px; cursor: grab; display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: opacity 0.2s; } .preview-block:hover .drag-handle { opacity: 1; } .remove-block-btn { position: absolute; top: 5px; right: 5px; z-index: 10; } .video-embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; background: #000; } .video-embed-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }`}</style>
+        <style>{`.modal-xl { max-width: 1200px; } .rdw-editor-main { min-height: 150px; border: 1px solid #E4E6EF; border-radius: 0.42rem; padding: 0.75rem 1rem; } .preview-block { position: relative; padding: 1rem; margin-bottom: 1rem; background-color: #ffffff; border: 1px dashed #E4E6EF; border-radius: 0.42rem; } .preview-block:hover { border-color: var(--primary); } .drag-handle { position: absolute; top: 10px; left: -15px; background: var(--primary); color: white; width: 30px; height: 30px; border-radius: 50%; cursor: grab; display: flex; align-items: center; justify-content: center; opacity: 0.6; transition: opacity 0.2s; } .preview-block:hover .drag-handle { opacity: 1; } .remove-block-btn { position: absolute; top: 8px; right: 8px; z-index: 10; }`}</style>
         <div className="modal fade" id={modalId} tabIndex={-1}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
-            <div className="modal-content modal-content-full-height">
+            <div className="modal-content">
               <form ref={this.formRef} onSubmit={this.handleSubmit} noValidate>
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Content</h5>
+                  <h4 className="modal-title">Edit Content</h4>
                   <button type="button" className="close" onClick={this.hide} disabled={isSaveDisabled}>×</button>
                 </div>
-                <div className="modal-body modal-body-columns">
-                  <div className="form-column">
-                    <div className="form-group">
-                      <label className="font-weight-bold">Content Type <span className="text-danger">*</span></label>
-                      <select className="form-control" value={questionType} onChange={this.handleTypeChange} required>
-                        {contentTypes.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
-                      </select>
-                    </div>
-                    <hr /><h6 className="text-muted">ADD CONTENT BLOCKS</h6>
-                    {textBlock && (
-                      <div className="form-group section-card">
-                        <label className="font-weight-bold p-2">Content Description <span className="text-danger">*</span></label>
-                        <Editor editorState={textBlock.editorState} onEditorStateChange={this.onEditorStateChange} wrapperClassName="rdw-editor-wrapper" editorClassName="rdw-editor-main p-2" />
+                <div className="modal-body">
+                  <div className="row">
+                    {/* --- Left Column: Form Inputs --- */}
+                    <div className="col-md-7">
+                      <div className="form-group">
+                        <label className="font-weight-bold text-dark">Content Type <span className="text-danger">*</span></label>
+                        <select className="form-control form-control-solid" value={questionType} onChange={this.handleTypeChange} required>
+                          {contentTypes.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
+                        </select>
                       </div>
-                    )}
-                    <div className="section-card border p-3">
-                      <label className="font-weight-bold">Add Videos (YouTube)</label>
-                      <textarea className="form-control form-control-sm mb-2" rows="2" placeholder="Paste YouTube URLs..." value={this.state.videoUrlsInput} onChange={this.handleVideoUrlsInputChange} />
-                      <button type="button" className="btn btn-sm btn-outline-primary" onClick={this.handleAddVideoUrls}>Add Videos</button>
-                    </div>
-                    <div className="section-card border p-3">
-                      <label className="font-weight-bold">Add Images {isCompressingImages && <span className="text-primary">(Processing...)</span>}</label>
-                      <input type="file" multiple accept="image/*" ref={this.imageFileInputRef} onChange={this.handleImageFileSelect} style={{ display: 'none' }} />
-                      <button type="button" className="btn btn-sm btn-outline-info btn-block" onClick={() => this.imageFileInputRef.current.click()}>Add Images from Device</button>
-                    </div>
-                  </div>
-                  <div className="content-column">
-                    <div className="card">
-                      <div className="card-header bg-white"><h6 className="m-0">Live Content (Drag to Reorder)</h6></div>
-                      <div className="card-body">
-                        <DragDropContext onDragEnd={this.onDragEnd}>
-                          <Droppable droppableId="content-blocks">
-                            {(provided) => (
-                              <div {...provided.droppableProps} ref={provided.innerRef}>
-                                {contentBlocks.map((block, index) => (
-                                  <Draggable key={block.id} draggableId={block.id} index={index}>
-                                    {(provided) => (
-                                      <div ref={provided.innerRef} {...provided.draggableProps} className="preview-block">
-                                        <div {...provided.dragHandleProps} className="drag-handle"><i className="fas fa-grip-vertical"></i></div>
-                                        {block.type !== 'TEXT' && (<button type="button" className="btn btn-xs btn-outline-danger remove-block-btn" onClick={() => this.removeContentBlock(block.id)}>×</button>)}
-                                        {this.renderContentBlock(block)}
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </DragDropContext>
-                      </div>
-                    </div>
-                    {showOptionsSection && (
-                      <div className="card mt-4">
-                        <div className="card-header bg-white d-flex justify-content-between align-items-center">
-                          <h6 className="m-0">Responses</h6>
-                          <button type="button" className="btn btn-primary btn-sm" onClick={() => this.addOptionModalRef.current.show()}>Add Response</button>
+
+                      {textBlock && (
+                        <div className="form-group mb-8">
+                           <label className="font-weight-bold text-dark">Content Description <span className="text-danger">*</span></label>
+                           <Editor editorState={textBlock.editorState} onEditorStateChange={this.onEditorStateChange} wrapperClassName="rdw-editor-wrapper bg-white rounded" editorClassName="rdw-editor-main" />
+                        </div>
+                       )}
+
+                      <div className="card card-custom gutter-b">
+                        <div className="card-header">
+                          <div className="card-title"><h3 className="card-label">Add Content Blocks</h3></div>
                         </div>
                         <div className="card-body">
-                          <Search title="responses" onSearch={this.onOptionSearch} value={optionSearchTerm} />
-                          <Table listId={`options-list-${questionId}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ reorderable: true, editable: true, deleteable: true }} edit={opt => this.setState({ optionToEdit: opt }, () => this.editOptionModalRef.current.show())} delete={opt => this.setState({ optionToDelete: opt }, () => this.deleteOptionModalRef.current.show())} onOrderChange={this.handleOptionOrderChange} correctItemIds={correctOptionIds} />
+                          <div className="form-group">
+                            <label className="font-weight-bold">Add Videos (YouTube)</label>
+                            <textarea className="form-control form-control-solid" rows="2" placeholder="Paste one or more YouTube URLs, each on a new line." value={this.state.videoUrlsInput} onChange={this.handleVideoUrlsInputChange} />
+                            <button type="button" className="btn btn-sm btn-light-primary font-weight-bold mt-2" onClick={this.handleAddVideoUrls}>Add Videos</button>
+                          </div>
+                          <hr/>
+                          <div className="form-group">
+                            <label className="font-weight-bold">Add Images {isCompressingImages && <span className="text-primary font-weight-normal">(Processing...)</span>}</label>
+                            <input type="file" multiple accept="image/*" ref={this.imageFileInputRef} onChange={this.handleImageFileSelect} style={{ display: 'none' }} />
+                            <button type="button" className="btn btn-light-info btn-block font-weight-bold" onClick={() => this.imageFileInputRef.current.click()}>
+                              <i className="fa fa-image mr-2"></i>Click to Add Images from Device
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* --- Right Column: Live Preview and Options --- */}
+                    <div className="col-md-5">
+                      <div className="card card-custom gutter-b">
+                        <div className="card-header">
+                          <div className="card-title"><h3 className="card-label">Live Content Preview</h3></div>
+                        </div>
+                        <div className="card-body bg-light">
+                          <p className="text-muted text-center small">Drag and drop content blocks to reorder</p>
+                          <DragDropContext onDragEnd={this.onDragEnd}>
+                            <Droppable droppableId="content-blocks">
+                              {(provided) => (
+                                <div {...provided.droppableProps} ref={provided.innerRef}>
+                                  {contentBlocks.map((block, index) => (
+                                    <Draggable key={block.id} draggableId={block.id} index={index}>
+                                      {(provided) => (
+                                        <div ref={provided.innerRef} {...provided.draggableProps} className="preview-block">
+                                          <div {...provided.dragHandleProps} className="drag-handle"><i className="fas fa-grip-vertical"></i></div>
+                                          {block.type !== 'TEXT' && (<button type="button" className="btn btn-xs btn-icon btn-light-danger remove-block-btn" onClick={() => this.removeContentBlock(block.id)}><i className="fa fa-times"></i></button>)}
+                                          {this.renderContentBlock(block)}
+                                        </div>
+                                    )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </DragDropContext>
+                        </div>
+                      </div>
+
+                      {showOptionsSection && (
+                        <div className="card card-custom">
+                           <div className="card-header">
+                            <div className="card-title"><h3 className="card-label">Responses</h3></div>
+                            <div className="card-toolbar">
+                                <button type="button" className="btn btn-primary btn-sm font-weight-bold" onClick={() => this.addOptionModalRef.current.show()}>
+                                  <i className="fa fa-plus"></i> Add Response
+                                </button>
+                            </div>
+                           </div>
+                           <div className="card-body">
+                             <Search title="responses" onSearch={this.onOptionSearch} value={optionSearchTerm} />
+                             <Table listId={`options-list-${questionId}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ reorderable: true, editable: true, deleteable: true }} edit={opt => this.setState({ optionToEdit: opt }, () => this.editOptionModalRef.current.show())} delete={opt => this.setState({ optionToDelete: opt }, () => this.deleteOptionModalRef.current.show())} onOrderChange={this.handleOptionOrderChange} correctItemIds={correctOptionIds} />
+                           </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={this.hide} disabled={isSaveDisabled}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" style={{ minWidth: '120px' }} disabled={isSaveDisabled}>
+                  <button type="button" className="btn btn-light-primary font-weight-bold" onClick={this.hide} disabled={isSaveDisabled}>Cancel</button>
+                  <button type="submit" className="btn btn-primary font-weight-bold" style={{ minWidth: '120px' }} disabled={isSaveDisabled}>
                     {isSaveDisabled ? <span className="spinner-border spinner-border-sm" /> : 'Save Changes'}
                   </button>
                 </div>
@@ -470,7 +487,7 @@ class EditQuestionModal extends React.Component {
 
 EditQuestionModal.propTypes = {
   question: PropTypes.object,
-  subtopic: PropTypes.string, // subtopic is part of the question object
+  subtopic: PropTypes.string,
   edit: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
 };
