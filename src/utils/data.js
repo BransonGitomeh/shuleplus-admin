@@ -424,7 +424,37 @@ const entityConfigs = [
                     subs.schools = subs.schools.filter(subscriber => subscriber !== cb);
                 };
             },
-            update: generatedApis.grades.update,
+            update: (data) => new Promise(async (resolve, reject) => {
+                try {
+                    const { id, ...payload } = data;
+                    const sanitizedPayload = payload;
+                    // ... (rest of the update logic)
+                    const response = await mutate(
+                        `mutation ($data: USchool!) { schools { update(school: $data) { id } } }`,
+                        { data: { id, ...sanitizedPayload} }
+                    );
+            
+                    const updatedSchool = { ...data, id: response.schools.update.id };
+                    const itemIndexFlat = allData.schools.findIndex(item => item.id === id);
+                    if (itemIndexFlat > -1) {
+                        allData.schools[itemIndexFlat] = updatedSchool;
+                    }
+            
+                    // --- Notify (FIXED) ---
+                    if (Array.isArray(subs.schools)) {
+                        // Also find the currently selected school to send it in the payload.
+                        const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                        subs.schools.forEach(cb => cb({
+                            schools: [...allData.schools],
+                            selectedSchool: selectedSchool || {} // Ensure selectedSchool is at least an empty object
+                        }));
+                    }
+                    resolve(updatedSchool);
+                } catch (error) {
+                    console.error(`Error updating school:`, error);
+                    reject(error);
+                }
+            }),
             create: (data) => new Promise(async (resolve, reject) => {
                 try {
                     const response = await mutate(
