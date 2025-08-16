@@ -223,71 +223,85 @@ var Data = (function () {
     const init = () => {
         const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
         const FRAGMENT_SCHOOL_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount gradeOrder }`;
+        
+        // --- REFINED FRAGMENTS FOR EFFICIENCY ---
+
+        // Fragment 1: The base data. Fast and lightweight.
         const FRAGMENT_GRADES_DATA = `fragment GradesData on school {
-  grades {
-    id
-    name
-    subjectsOrder
-    subjects {
-      id
-      name
-      topicsOrder
-      topics {
-        id
-        name
-        icon
-        subtopicOrder
-        subtopics {
-          id
-          name
-          questionsOrder
-          questions {
-            id
-            name
-            videos
-            contentOrder
-            attachments
-            optionsOrder
-          }
-        }
-      }
-    }
-  }
-}`;
-        const FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA = `fragment GradesOptionsAndImagesData on school {
-  id
-  grades {
-    id
-    name
-    subjects {
-      id
-      name
-      topics {
-        id
-        name
-        subtopics {
-          id
-          name
-          questionsOrder
-          questions {
-            id
-            name
-            videos
-            contentOrder
-            attachments
-            optionsOrder
-            images
-            options {
-              id
-              value
-              correct
+            grades {
+                id
+                name
+                subjectsOrder
+                subjects {
+                    id
+                    name
+                    topicsOrder
+                    topics {
+                        id
+                        name
+                        icon
+                        subtopicOrder
+                        subtopics {
+                            id
+                            name
+                            questionsOrder
+                            questions {
+                                id
+                                name
+                                videos
+                                contentOrder
+                                attachments
+                                optionsOrder
+                            }
+                        }
+                    }
+                }
             }
-          }
-        }
-      }
-    }
-  }
-}`;
+        }`;
+
+        // Fragment 2: Only the data path needed to get question images.
+        const FRAGMENT_GRADES_IMAGES_DATA = `fragment GradesImagesData on school {
+            grades {
+                id
+                subjects {
+                    id
+                    topics {
+                        id
+                        subtopics {
+                            id
+                            questions {
+                                id
+                                images
+                            }
+                        }
+                    }
+                }
+            }
+        }`;
+
+        // Fragment 3: Only the data path needed to get question options.
+        const FRAGMENT_GRADES_OPTIONS_DATA = `fragment GradesOptionsData on school {
+            grades {
+                id
+                subjects {
+                    id
+                    topics {
+                        id
+                        subtopics {
+                            id
+                            questions {
+                                id
+                                options {
+                                    id
+                                    value
+                                    correct
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }`;
 
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } } }`;
@@ -304,15 +318,6 @@ var Data = (function () {
         const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
         
-
-        /**
-         * =================================================================
-         * NEW: Deep Merge Utility
-         * =================================================================
-         * Recursively merges properties from a source object/array into a target.
-         * For arrays, it matches items by 'id' to merge them, or adds new items.
-         * This prevents overwriting data from different queries.
-         */
         const deepMergeById = (target, source) => {
             for (const key in source) {
                 if (Object.prototype.hasOwnProperty.call(source, key)) {
@@ -327,27 +332,26 @@ var Data = (function () {
                             if (typeof sourceItem === 'object' && sourceItem !== null && sourceItem.id) {
                                 const targetItem = target[key].find(t => t.id === sourceItem.id);
                                 if (targetItem) {
-                                    deepMergeById(targetItem, sourceItem); // Recurse for existing items
+                                    deepMergeById(targetItem, sourceItem);
                                 } else {
-                                    target[key].push(sourceItem); // Add new items
+                                    target[key].push(sourceItem);
                                 }
                             } else {
-                                target[key].push(sourceItem); // Push primitives
+                                target[key].push(sourceItem);
                             }
                         });
                     } else if (typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)) {
                         if (typeof target[key] !== 'object' || target[key] === null) {
                             target[key] = {};
                         }
-                        deepMergeById(target[key], sourceVal); // Recurse for nested objects
+                        deepMergeById(target[key], sourceVal);
                     } else {
-                        target[key] = sourceVal; // Assign primitive values
+                        target[key] = sourceVal;
                     }
                 }
             }
             return target;
         };
-
 
         const mergeAndNotify = (response) => {
             const incomingSchools = response?.schools;
@@ -362,9 +366,6 @@ var Data = (function () {
                     allData.schools.push(school);
                 }
 
-                // *** REVISED LOGIC: Use deepMergeById instead of Object.assign ***
-                // This correctly merges nested arrays (like grades, subjects, questions)
-                // by matching item IDs, preventing data loss from other queries.
                 deepMergeById(school, incomingSchool);
                 
                 Object.keys(incomingSchool).forEach(key => updatedSubEntities.add(key));
@@ -392,7 +393,6 @@ var Data = (function () {
                 }
             };
 
-            // This notification logic now works correctly because `activeSchool` contains the fully merged data.
             notifyEntity('students', s => ({...s, parent_name: s.parent?.name, class_name: s.class?.name, route_name: s.route?.name }));
             notifyEntity('parents');
             notifyEntity('drivers');
@@ -407,7 +407,6 @@ var Data = (function () {
             notifyEntity('invitations');
 
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
-                // Flatten the newly merged tree structure into flat lists for easy access.
                 allData.grades = activeSchool.grades;
                 allData.subjects = activeSchool.grades.flatMap(g => g.subjects || []);
                 allData.topics = allData.subjects.flatMap(s => s.topics || []);
@@ -437,6 +436,7 @@ var Data = (function () {
             }
         };
 
+        // --- REVISED QUERIES ARRAY ---
         const queries = [
             { query: `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_SCHOOL_DETAILS}` },
             { query: `query GetStudents { schools { id ...StudentsData } } ${FRAGMENT_STUDENTS_DATA}` },
@@ -451,10 +451,13 @@ var Data = (function () {
             { query: `query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}` },
             { query: `query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}` },
             { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
-            { query: `query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
-            { query: `query GetGradesOptionsAndImages { schools { id ...GradesOptionsAndImagesData } } ${FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA}` },
             { query: `query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}` },
             { query: `query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}` },
+
+            // Split into three focused queries for better performance
+            { query: `query GetGradesBase { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
+            { query: `query GetGradesImages { schools { id ...GradesImagesData } } ${FRAGMENT_GRADES_IMAGES_DATA}` },
+            { query: `query GetGradesOptions { schools { id ...GradesOptionsData } } ${FRAGMENT_GRADES_OPTIONS_DATA}` },
         ];
 
         queries.forEach(({ query: qStr, variables = {} }) => {
