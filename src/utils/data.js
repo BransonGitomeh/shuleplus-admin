@@ -36,7 +36,7 @@ let schoolID = undefined;
 
 /**
  * =================================================================
- * The Generic Entity API Factory (REVISED for MULTI-SUBSCRIBE)
+ * The Generic Entity API Factory
  * =================================================================
  */
 const createEntityAPI = (config) => {
@@ -197,15 +197,11 @@ const createEntityAPI = (config) => {
 
       list: () => allData[name],
       subscribe: (cb) => {
-          // *** FIX: SUPPORT MULTIPLE SUBSCRIBERS ***
           if (!Array.isArray(subs[name])) {
               subs[name] = [];
           }
           subs[name].push(cb);
-          // Immediately notify the new subscriber with current data
           cb({ [name]: allData[name] });
-
-          // Return a function to allow the caller to unsubscribe
           return () => {
               subs[name] = subs[name].filter(subscriber => subscriber !== cb);
           };
@@ -245,6 +241,14 @@ var Data = (function () {
           id
           name
           questionsOrder
+          questions {
+            id
+            name
+            videos
+            contentOrder
+            attachments
+            optionsOrder
+          }
         }
       }
     }
@@ -264,14 +268,15 @@ var Data = (function () {
         subtopics {
           id
           name
+          questionsOrder
           questions {
             id
             name
             videos
-            images
             contentOrder
             attachments
             optionsOrder
+            images
             options {
               id
               value
@@ -285,7 +290,7 @@ var Data = (function () {
 }`;
 
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
-        const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
+        const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } } }`;
         const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
         const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
         const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: 1000, offset: 0) { id names gender registration class { id, name, teacher { id, name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`;
@@ -299,6 +304,51 @@ var Data = (function () {
         const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
         
+
+        /**
+         * =================================================================
+         * NEW: Deep Merge Utility
+         * =================================================================
+         * Recursively merges properties from a source object/array into a target.
+         * For arrays, it matches items by 'id' to merge them, or adds new items.
+         * This prevents overwriting data from different queries.
+         */
+        const deepMergeById = (target, source) => {
+            for (const key in source) {
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    const sourceVal = source[key];
+                    const targetVal = target[key];
+
+                    if (Array.isArray(sourceVal)) {
+                        if (!Array.isArray(targetVal)) {
+                            target[key] = [];
+                        }
+                        sourceVal.forEach(sourceItem => {
+                            if (typeof sourceItem === 'object' && sourceItem !== null && sourceItem.id) {
+                                const targetItem = target[key].find(t => t.id === sourceItem.id);
+                                if (targetItem) {
+                                    deepMergeById(targetItem, sourceItem); // Recurse for existing items
+                                } else {
+                                    target[key].push(sourceItem); // Add new items
+                                }
+                            } else {
+                                target[key].push(sourceItem); // Push primitives
+                            }
+                        });
+                    } else if (typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)) {
+                        if (typeof target[key] !== 'object' || target[key] === null) {
+                            target[key] = {};
+                        }
+                        deepMergeById(target[key], sourceVal); // Recurse for nested objects
+                    } else {
+                        target[key] = sourceVal; // Assign primitive values
+                    }
+                }
+            }
+            return target;
+        };
+
+
         const mergeAndNotify = (response) => {
             const incomingSchools = response?.schools;
             if (!incomingSchools || incomingSchools.length === 0) return;
@@ -312,7 +362,10 @@ var Data = (function () {
                     allData.schools.push(school);
                 }
 
-                Object.assign(school, incomingSchool);
+                // *** REVISED LOGIC: Use deepMergeById instead of Object.assign ***
+                // This correctly merges nested arrays (like grades, subjects, questions)
+                // by matching item IDs, preventing data loss from other queries.
+                deepMergeById(school, incomingSchool);
                 
                 Object.keys(incomingSchool).forEach(key => updatedSubEntities.add(key));
             });
@@ -322,7 +375,6 @@ var Data = (function () {
                 localStorage.setItem("school", schoolID);
             }
             
-            // *** FIX: NOTIFY ALL 'schools' SUBSCRIBERS ***
             if (Array.isArray(subs.schools)) {
                 const selectedSchool = allData.schools.find(s => s.id === schoolID);
                 subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
@@ -340,7 +392,7 @@ var Data = (function () {
                 }
             };
 
-            // *** FIX: NOTIFY ALL SUBSCRIBERS FOR EACH ENTITY ***
+            // This notification logic now works correctly because `activeSchool` contains the fully merged data.
             notifyEntity('students', s => ({...s, parent_name: s.parent?.name, class_name: s.class?.name, route_name: s.route?.name }));
             notifyEntity('parents');
             notifyEntity('drivers');
@@ -355,6 +407,7 @@ var Data = (function () {
             notifyEntity('invitations');
 
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
+                // Flatten the newly merged tree structure into flat lists for easy access.
                 allData.grades = activeSchool.grades;
                 allData.subjects = activeSchool.grades.flatMap(g => g.subjects || []);
                 allData.topics = allData.subjects.flatMap(s => s.topics || []);
@@ -415,34 +468,32 @@ var Data = (function () {
         });
     };
 
-    // if (localStorage.getItem('authorization')) {
-        init();
-    // }
+    init();
 
-const entityConfigs = [
-  { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder'], updateFields: ['name', 'school', 'subjectsOrder'] },
-  { name: "subjects", singularName: "subject", isNested: true, parentEntity: "grades", parentKey: "grade", createFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'], updateFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'] },
-  { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder'] },
-  { name: "subtopics", singularName: "subtopic", isNested: true, parentEntity: "topics", parentKey: "topic", createFields: ['name', 'topic', 'questionsOrder'], updateFields: ['name', 'topic', 'questionsOrder'] },
-  { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'] },
-  { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
-  { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{name} route{id, name} parent{id, name} } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } })},
-  { name: "parents", singularName: "parent", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'], updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") }); return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 }; }, invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { parents { invite(parent: $data) { id phone message } } }`, { data }); const invitation = response.parents.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
-  { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) })},
-  { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
-  { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
-  { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },
-  { name: "schedules", singularName: "schedule", createFields: ['name', 'message', 'time', 'end_time', 'school', 'route', 'type', 'days', 'bus', 'driver', 'actions'], updateFields: ['name', 'message', 'time', 'end_time', 'type', 'days', 'route', 'bus', 'driver', 'actions'] },
-  { name: "classes", singularName: "class", createFields: ['name', 'teacher', 'school'], updateFields: ['name', 'teacher'] },
-  { name: "teachers", singularName: "teacher", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'gender', 'password'], updateFields: ['national_id', 'name', 'phone', 'email', 'gender', 'password'] },
-  { name: "teams", singularName: "team", createFields: ['name', 'school'], updateFields: ['name', 'school'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { teams { invite(team: $data) { id phone message } } }`, { data }); const invitation = response.teams.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
-  { name: "team_members", singularName: "team_member", createFields: ['team', 'user'], updateFields: ['team', 'user'] },
-  { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },
-  { name: "trips", singularName: "trip", createFields: ['startedAt', 'completedAt', 'isCancelled', 'school', 'driver', 'schedule'], updateFields: ['startedAt', 'completedAt', 'isCancelled', 'schedule'] },
-  { name: "payments", singularName: "payment", createFields: ['school', 'phone', 'ammount', 'type', 'ref', 'time'], updateFields: ['phone', 'school', 'ammount', 'type', 'ref', 'time'] },
-  { name: "charges", singularName: "charge", createFields: ['school', 'ammount', 'reason', 'time'], updateFields: ['school', 'ammount', 'reason', 'time'] },
-  { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
-];
+    const entityConfigs = [
+      { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder'], updateFields: ['name', 'school', 'subjectsOrder'] },
+      { name: "subjects", singularName: "subject", isNested: true, parentEntity: "grades", parentKey: "grade", createFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'], updateFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'] },
+      { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder'] },
+      { name: "subtopics", singularName: "subtopic", isNested: true, parentEntity: "topics", parentKey: "topic", createFields: ['name', 'topic', 'questionsOrder'], updateFields: ['name', 'topic', 'questionsOrder'] },
+      { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'] },
+      { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
+      { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{name} route{id, name} parent{id, name} } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } })},
+      { name: "parents", singularName: "parent", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'], updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") }); return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 }; }, invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { parents { invite(parent: $data) { id phone message } } }`, { data }); const invitation = response.parents.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+      { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) })},
+      { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+      { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
+      { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },
+      { name: "schedules", singularName: "schedule", createFields: ['name', 'message', 'time', 'end_time', 'school', 'route', 'type', 'days', 'bus', 'driver', 'actions'], updateFields: ['name', 'message', 'time', 'end_time', 'type', 'days', 'route', 'bus', 'driver', 'actions'] },
+      { name: "classes", singularName: "class", createFields: ['name', 'teacher', 'school'], updateFields: ['name', 'teacher'] },
+      { name: "teachers", singularName: "teacher", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'gender', 'password'], updateFields: ['national_id', 'name', 'phone', 'email', 'gender', 'password'] },
+      { name: "teams", singularName: "team", createFields: ['name', 'school'], updateFields: ['name', 'school'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { teams { invite(team: $data) { id phone message } } }`, { data }); const invitation = response.teams.invite; allData.invitations.push(invitation); if(Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) })},
+      { name: "team_members", singularName: "team_member", createFields: ['team', 'user'], updateFields: ['team', 'user'] },
+      { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },
+      { name: "trips", singularName: "trip", createFields: ['startedAt', 'completedAt', 'isCancelled', 'school', 'driver', 'schedule'], updateFields: ['startedAt', 'completedAt', 'isCancelled', 'schedule'] },
+      { name: "payments", singularName: "payment", createFields: ['school', 'phone', 'ammount', 'type', 'ref', 'time'], updateFields: ['phone', 'school', 'ammount', 'type', 'ref', 'time'] },
+      { name: "charges", singularName: "charge", createFields: ['school', 'ammount', 'reason', 'time'], updateFields: ['school', 'ammount', 'reason', 'time'] },
+      { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
+    ];
 
     const generatedApis = {};
     entityConfigs.forEach(config => {
@@ -467,16 +518,13 @@ const entityConfigs = [
         },
         schools: {
             list: () => allData.schools,
-            // *** FIX: ROBUST SCHOOLS SUBSCRIBE METHOD ***
             subscribe: (cb) => {
                 if (!Array.isArray(subs.schools)) {
                     subs.schools = [];
                 }
                 subs.schools.push(cb);
-                // Call immediately with the current state.
                 const selectedSchool = allData.schools.find(s => s.id === (schoolID || localStorage.getItem("school")));
                 cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} });
-                // Return an unsubscribe function.
                 return () => {
                     subs.schools = subs.schools.filter(subscriber => subscriber !== cb);
                 };
@@ -485,7 +533,6 @@ const entityConfigs = [
                 try {
                     const { id, ...payload } = data;
                     const sanitizedPayload = payload;
-                    // ... (rest of the update logic)
                     const response = await mutate(
                         `mutation ($data: USchool!) { schools { update(school: $data) { id } } }`,
                         { data: { id, ...sanitizedPayload} }
@@ -497,13 +544,11 @@ const entityConfigs = [
                         allData.schools[itemIndexFlat] = updatedSchool;
                     }
             
-                    // --- Notify (FIXED) ---
                     if (Array.isArray(subs.schools)) {
-                        // Also find the currently selected school to send it in the payload.
                         const selectedSchool = allData.schools.find(s => s.id === schoolID);
                         subs.schools.forEach(cb => cb({
                             schools: [...allData.schools],
-                            selectedSchool: selectedSchool || {} // Ensure selectedSchool is at least an empty object
+                            selectedSchool: selectedSchool || {}
                         }));
                     }
                     resolve(updatedSchool);
