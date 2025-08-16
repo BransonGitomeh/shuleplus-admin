@@ -304,7 +304,7 @@ class EditQuestionModal extends React.Component {
       this.setState(prevState => ({ contentBlocks: [...prevState.contentBlocks, ...newImageBlocks] }));
     }
     this.setState({ isCompressingImages: false });
-    event.target.value = null;
+    // event.target.value = null;
   };
   removeContentBlock = (idToRemove) => {
     this.setState(prevState => {
