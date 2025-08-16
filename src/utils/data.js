@@ -227,7 +227,9 @@ var Data = (function () {
     const init = () => {
         const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
         const FRAGMENT_SCHOOL_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount gradeOrder }`;
-        const FRAGMENT_GRADES_DATA = `fragment GradesData on school { grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name type videos images contentOrder attachments answers { id value } optionsOrder options { id value correct } } } } } } }`;
+        const FRAGMENT_GRADES_DATA = `fragment GradesData on school { grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder } } } } } }`;
+        const FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA = `fragment GradesData on school { grades { id subjects { id  { id  { id questions { id videos images contentOrder attachments optionsOrder options { id value correct } } } } } } }`;
+
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
         const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
@@ -343,6 +345,7 @@ var Data = (function () {
             { query: `query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}` },
             { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
             { query: `query GetGrades { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
+            { query: `query GetGradesOptionsAndImages { schools { id ...GradesOptionsAndImagesData } } ${FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA}` },
             { query: `query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}` },
             { query: `query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}` },
         ];
@@ -358,9 +361,9 @@ var Data = (function () {
         });
     };
 
-    if (localStorage.getItem('authorization')) {
+    // if (localStorage.getItem('authorization')) {
         init();
-    }
+    // }
 
 const entityConfigs = [
   { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder'], updateFields: ['name', 'school', 'subjectsOrder'] },
@@ -466,7 +469,7 @@ const entityConfigs = [
                      if (Array.isArray(subs.schools)) {
                         subs.schools.forEach(sCb => sCb({ schools: [...allData.schools] }));
                      }
-                    resolve(newSchool);
+                resolve(newSchool);
                 } catch (error) {
                     reject(error);
                 }
@@ -486,14 +489,14 @@ const entityConfigs = [
                 const school = instance.schools.getSelected();
                 if (!school.id) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { id: school.id, ammount, phone }
+                    payment: { school: school.id, ammount, phone }
                 });
             },
-            verifyTx: ({ MerchantRequestID, CheckoutRequestID }) => {
+            verifyTx: ({ merchantRequestID, checkoutRequestID }) => {
                  const school = instance.schools.getSelected();
                  if (!school.id) return Promise.reject("No school selected");
                  return mutate(`mutation ($data: mpesaStartTxVerificationInput!) { payments { confirm(payment: $data) { success, message, id, amount, phone, status, ref, time } } }`, {
-                     data: { MerchantRequestID, CheckoutRequestID, school: school.id }
+                     data: { merchantRequestID, checkoutRequestID, school: school.id }
                  });
             }
         },
