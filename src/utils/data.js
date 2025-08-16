@@ -227,8 +227,62 @@ var Data = (function () {
     const init = () => {
         const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
         const FRAGMENT_SCHOOL_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount gradeOrder }`;
-        const FRAGMENT_GRADES_DATA = `fragment GradesData on school { grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder } } } } } }`;
-        const FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA = `fragment GradesOptionsAndImagesData on school { id grades { id subjects { id topics { id subtopics { id questions { id videos images contentOrder attachments optionsOrder options { id value correct } }}}}}}}`;
+        const FRAGMENT_GRADES_DATA = `fragment GradesData on school {
+  grades {
+    id
+    name
+    subjectsOrder
+    subjects {
+      id
+      name
+      topicsOrder
+      topics {
+        id
+        name
+        icon
+        subtopicOrder
+        subtopics {
+          id
+          name
+          questionsOrder
+        }
+      }
+    }
+  }
+}`;
+        const FRAGMENT_GRADES_OPTIONS_AND_IMAGES_DATA = `fragment GradesOptionsAndImagesData on school {
+  id
+  grades {
+    id
+    name
+    subjects {
+      id
+      name
+      topics {
+        id
+        name
+        subtopics {
+          id
+          name
+          questions {
+            id
+            name
+            videos
+            images
+            contentOrder
+            attachments
+            optionsOrder
+            options {
+              id
+              value
+              correct
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
 
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
