@@ -563,7 +563,7 @@ var Data = (function () {
             create: (data) => new Promise(async (resolve, reject) => {
                 try {
                     const response = await mutate(
-                        `mutation ($data: Ischool!) { schools { create(school: $data) { id } } }`,
+                        `mutation ($data: ISchool!) { schools { create(school: $data) { id } } }`,
                         { data }
                     );
                     const newSchool = { ...data, id: response.schools.create.id };
