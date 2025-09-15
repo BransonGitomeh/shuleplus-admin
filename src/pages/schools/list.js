@@ -19,6 +19,16 @@ const ISuccessMessage = new SuccessMessage();
 const IErrorMessage = new ErrorMessage();
 const inviteModalInstance = new InviteModal();
 
+function keepOnlyKeys(obj, keysToKeep) {
+  if (!obj || typeof obj !== 'object') return {};
+  return Object.keys(obj)
+    .filter(key => keysToKeep.includes(key))
+    .reduce((result, key) => {
+      result[key] = obj[key];
+      return result;
+    }, {});
+}
+
 class BasicTable extends React.Component {
   state = {
     schoolToInvite: {},
@@ -27,12 +37,13 @@ class BasicTable extends React.Component {
     schoolToEdit: "",
     selectedSchool: "",
     schools: [],
-    filteredSchools:[]
+    filteredSchools: []
   };
+
   componentDidMount() {
     let user = localStorage.getItem('user');
     user = JSON.parse(user);
-    if(user?.admin?.user === 'Super Admin'){
+    if (user?.admin?.user === 'Super Admin') {
       this.setState({ admin: true });
     }
 
@@ -50,7 +61,7 @@ class BasicTable extends React.Component {
     this.setState({ filteredSchools })
   }
 
-  sendInvite = async(school) => {
+  sendInvite = async (school) => {
     try {
       const data = {};
       Object.assign(data, {
@@ -62,32 +73,40 @@ class BasicTable extends React.Component {
       });
 
       await Data.schools.invite(data);
-      ISuccessMessage.show();   
+      ISuccessMessage.show();
     } catch (error) {
-    }
-  }
-
-  createSchool = async(school) => {
-    try{
-      await Data.schools.create(school);
-      ISuccessMessage.show({ message: "School has been created successfuly!", header: "Create School" });
-    } catch(error){
       throw new Error(error.message)
     }
   }
 
-  editSchool = async(school) => {
-    try{
-      await Data.schools.update(school);
-      ISuccessMessage.show({ message: "School has been updated successfuly!", header: "Edit School" });
-    } catch(error){}
+  createSchool = async (school) => {
+    try {
+      await Data.schools.create(school);
+      ISuccessMessage.show({ message: "School has been created successfuly!", header: "Create School" });
+    } catch (error) {
+      throw new Error(error.message)
+    }
   }
 
-  deleteSchool = async(school) => {
-    try{
+  editSchool = async (school) => {
+    try {
+      const validSchoolFields = ['id', 'name', 'phone', 'email', 'localStorage', 'themeColor', 'address', 'inviteSmsText', 'gradeOrder', 'termOrder'];
+      const filteredSchoolData = keepOnlyKeys(school, validSchoolFields);
+      await Data.schools.update(filteredSchoolData);
+      ISuccessMessage.show({ message: "School has been updated successfuly!", header: "Edit School" });
+    } catch (error) {
+      throw new Error(error.message)
+    }
+  }
+
+  deleteSchool = async (school) => {
+    console.dir(Data.schools);
+    try {
       await Data.schools.delete(school);
       ISuccessMessage.show({ message: "School has been deleted successfuly!", header: "Delete School" });
-    } catch(error){}
+    } catch (error) {
+      throw new Error(error.message)
+    }
   }
 
   render() {
@@ -98,9 +117,9 @@ class BasicTable extends React.Component {
           <div className="kt-portlet kt-portlet--mobile">
             <AddModal save={school => this.createSchool(school)} />
             <UploadModal user={this.user} save={schools => schools.forEach(school => Data.schools.create(school))} />
-            <DeleteModal remove={remove} delete={school => this.deleteSchool(school)}/>
-            <InviteModal school={schoolToInvite} invite={() => this.sendInvite()}/>
-            <EditModal edit={edit} save={school => this.editSchool(school)}/>
+            <DeleteModal remove={remove} delete={school => this.deleteSchool(school)} />
+            <InviteModal school={schoolToInvite} invite={() => this.sendInvite()} />
+            <EditModal edit={edit} save={school => this.editSchool(school)} />
             <div className="kt-portlet__body">
               {/*begin: Search Form */}
               <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">
