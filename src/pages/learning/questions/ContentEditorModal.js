@@ -20,6 +20,8 @@ const Data = {
     delete: async () => true,
   }
 };
+
+import { inputTypes } from "./add";
 const toastr = window.toastr || { success: console.log, error: console.error, warning: console.warn };
 const $ = window.$;
 const generateId = () => `item_${Math.random().toString(36).substr(2, 9)}`;
@@ -260,9 +262,9 @@ const ContentEditorModal = forwardRef(({ onSave, onFinished }, ref) => {
                             value={content.type} 
                             onChange={(e) => handleFieldChange('type', e.target.value)}
                           >
-                            <option value="SINGLECHOICE">Single Choice</option>
-                            <option value="MULTICHOICE">Multiple Choice</option>
-                            <option value="CAMERA">Camera Input</option>
+                            {inputTypes.map((type) => (
+                              <option key={type.value} value={type.value}>{type.label}</option>
+                            ))}
                           </select>
                         </div>
                       </div>

@@ -28,10 +28,6 @@ const IErrorMessage = new ErrorMessage();
 const modalId = `modal-edit-content-${Math.random().toString().split(".")[1]}`;
 const generateId = (prefix = 'item') => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
 
-const contentTypes = [
-  { value: 'SINGLECHOICE', label: 'Single Choice', hasOptions: true },
-  { value: 'MULTICHOICE', label: 'Multiple Choice', hasOptions: true },
-];
 
 const getYoutubeEmbedUrl = (url) => {
   if (!url) return null;
