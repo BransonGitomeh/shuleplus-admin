@@ -27,9 +27,11 @@ const IErrorMessage = new ErrorMessage();
 const modalId = `modal-add-content-${Math.random().toString().split(".")[1]}`;
 const generateId = (prefix = 'item') => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
 
-const contentTypes = [
+export const inputTypes = [
   { value: 'SINGLECHOICE', label: 'Single Choice', hasOptions: true },
   { value: 'MULTICHOICE', label: 'Multiple Choice', hasOptions: true },
+  { value: 'TEXT', label: 'Text', hasOptions: false },
+  { value: 'CAMERA', label: 'Camera', hasOptions: false },
 ];
 
 const getYoutubeEmbedUrl = (url) => {
