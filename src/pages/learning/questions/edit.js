@@ -9,6 +9,7 @@ import { Editor } from "react-draft-wysiwyg";
 import { stateToHTML } from 'draft-js-export-html';
 import htmlToDraft from 'html-to-draftjs';
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
+import { contentTypes } from "./add";
 
 // --- Data, Utils, and Components ---
 import Data from "../../../utils/data";
@@ -23,6 +24,8 @@ import Search from "../components/search";
 const toastr = window.toastr;
 const $ = window.$;
 const IErrorMessage = new ErrorMessage();
+
+
 
 // --- Constants ---
 const modalId = `modal-edit-content-${Math.random().toString().split(".")[1]}`;

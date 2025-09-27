@@ -18,6 +18,13 @@ import DeleteOptionModal from "../options/delete";
 import Table from "../components/table";
 import Search from "../components/search";
 
+export const contentTypes = [
+  { value: 'SINGLECHOICE', label: 'Single Choice', hasOptions: true },
+  { value: 'MULTICHOICE', label: 'Multiple Choice', hasOptions: true },
+  { value: 'TEXT', label: 'Text', hasOptions: false },
+  { value: 'CAMERA', label: 'Camera', hasOptions: false },
+];
+
 // --- Global Dependencies ---
 const toastr = window.toastr;
 const $ = window.$;
