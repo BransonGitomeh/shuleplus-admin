@@ -28,6 +28,8 @@ const allData = {
     teams: [],
     invitations: [],
     team_members: [],
+    lessonAttempts: [],
+    attemptEvents: []
 };
 
 // Centralized subscriptions object. Each key will hold an array of callbacks.
@@ -129,7 +131,6 @@ const createEntityAPI = (config) => {
                     }
                 }
 
-                // --- Notify ---
                 notifySubscribers(name);
                 notifySchoolSubscribers();
                 if (isNested) notifySubscribers(parentEntity);
@@ -158,7 +159,6 @@ const createEntityAPI = (config) => {
                     allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...data };
                 }
 
-                // --- Notify ---
                 notifySubscribers(name);
                 notifySchoolSubscribers();
                 if (isNested) notifySubscribers(parentEntity);
@@ -183,7 +183,7 @@ const createEntityAPI = (config) => {
                     const itemIndex = parentList.findIndex(item => item.id === id);
                     if (itemIndex > -1) parentList.splice(itemIndex, 1);
                 }
-                // --- Notify ---
+
                 notifySubscribers(name);
                 notifySchoolSubscribers();
                 if (isNested) notifySubscribers(parentEntity);
@@ -223,84 +223,40 @@ var Data = (function () {
     const init = () => {
         const FRAGMENT_USER_DATA = `fragment UserData on user { name email phone }`;
         const FRAGMENT_SCHOOL_DETAILS = `fragment schoolDetails on school { id name phone email address logo themeColor studentsCount parentsCount gradeOrder }`;
-
-        // --- REFINED FRAGMENTS FOR EFFICIENCY ---
-
-        // Fragment 1: The base data. Fast and lightweight.
         const FRAGMENT_GRADES_DATA = `fragment GradesData on school {
-            grades {
-                id
-                name
-                subjectsOrder
-                subjects {
-                    id
-                    name
-                    topicsOrder
-                    topics {
-                        id
-                        name
-                        icon
-                        subtopicOrder
-                        subtopics {
-                            id
-                            name
-                            questionsOrder
-                            questions {
-                                id
-                                name
-                                videos
-                                contentOrder
-                                attachments
-                                optionsOrder
-                            }
-                        }
-                    }
-                }
-            }
+            grades { id name subjectsOrder subjects { id name topicsOrder topics { id name icon subtopicOrder subtopics { id name questionsOrder questions { id name videos contentOrder attachments optionsOrder } } } } }
         }`;
-
-        // Fragment 2: Only the data path needed to get question images.
         const FRAGMENT_GRADES_IMAGES_DATA = `fragment GradesImagesData on school {
-            grades {
-                id
-                subjects {
-                    id
-                    topics {
-                        id
-                        subtopics {
-                            id
-                            questions {
-                                id
-                                images
-                            }
-                        }
-                    }
-                }
-            }
+            grades($id:String!) { id subjects { id topics { id subtopics { id questions { id images } } } } }
         }`;
-
-        // Fragment 3: Only the data path needed to get question options.
         const FRAGMENT_GRADES_OPTIONS_DATA = `fragment GradesOptionsData on school {
+            grades { id subjects { id topics { id subtopics { id questions { id options { id value correct } } } } } }
+        }`;
+        
+        // --- CORRECTED FRAGMENT TO FETCH ATTEMPTS AND EVENTS ---
+        const FRAGMENT_LESSON_DATA = `fragment LessonData on school {
             grades {
-                id
                 subjects {
-                    id
-                    topics {
+                    lessonAttempts {
                         id
-                        subtopics {
+                        lessonId
+                        userId
+                        startedAt
+                        completedAt
+                        status
+                        finalScore
+                        deviceInfo
+                        attemptEvents {
                             id
-                            questions {
-                                id
-                                options {
-                                    id
-                                    value
-                                    correct
-                                }
-                            }
+                            questionId
+                            eventType
+                            eventTimestamp
+                            userAnswer
+                            isCorrect
                         }
                     }
                 }
-            }
+            } 
         }`;
 
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
@@ -323,31 +279,18 @@ var Data = (function () {
                 if (Object.prototype.hasOwnProperty.call(source, key)) {
                     const sourceVal = source[key];
                     const targetVal = target[key];
-
                     if (Array.isArray(sourceVal)) {
-                        if (!Array.isArray(targetVal)) {
-                            target[key] = [];
-                        }
+                        if (!Array.isArray(targetVal)) { target[key] = []; }
                         sourceVal.forEach(sourceItem => {
                             if (typeof sourceItem === 'object' && sourceItem !== null && sourceItem.id) {
                                 const targetItem = target[key].find(t => t.id === sourceItem.id);
-                                if (targetItem) {
-                                    deepMergeById(targetItem, sourceItem);
-                                } else {
-                                    target[key].push(sourceItem);
-                                }
-                            } else {
-                                target[key].push(sourceItem);
-                            }
+                                if (targetItem) { deepMergeById(targetItem, sourceItem); } else { target[key].push(sourceItem); }
+                            } else { target[key].push(sourceItem); }
                         });
                     } else if (typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)) {
-                        if (typeof target[key] !== 'object' || target[key] === null) {
-                            target[key] = {};
-                        }
+                        if (typeof target[key] !== 'object' || target[key] === null) { target[key] = {}; }
                         deepMergeById(target[key], sourceVal);
-                    } else {
-                        target[key] = sourceVal;
-                    }
+                    } else { target[key] = sourceVal; }
                 }
             }
             return target;
@@ -356,18 +299,14 @@ var Data = (function () {
         const mergeAndNotify = (response) => {
             const incomingSchools = response?.schools;
             if (!incomingSchools || incomingSchools.length === 0) return;
-
             const updatedSubEntities = new Set();
-
             incomingSchools.forEach(incomingSchool => {
                 let school = allData.schools.find(s => s.id === incomingSchool.id);
                 if (!school) {
                     school = { id: incomingSchool.id };
                     allData.schools.push(school);
                 }
-
                 deepMergeById(school, incomingSchool);
-
                 Object.keys(incomingSchool).forEach(key => updatedSubEntities.add(key));
             });
 
@@ -413,7 +352,6 @@ var Data = (function () {
                 allData.subtopics = allData.topics.flatMap(t => t.subtopics || []);
                 allData.questions = allData.subtopics.flatMap(st => st.questions || []);
                 allData.options = allData.questions.flatMap(q => q.options || []);
-
                 ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options'].forEach(entityName => {
                     if (Array.isArray(subs[entityName])) {
                         subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
@@ -421,13 +359,42 @@ var Data = (function () {
                 });
             }
 
+            // --- *** FIX & LOGGING ADDED HERE *** ---
+            // Check if grades were part of the update, as lessonAttempts are nested within them.
+            if (updatedSubEntities.has('grades') && activeSchool.grades) {
+                console.log('[DataService] Processing lesson attempts from nested school structure...');
+                
+                // Flatten all lesson attempts from the entire school's grade/subject hierarchy
+                const allLessonAttempts = activeSchool.grades.flatMap(g => g.subjects || [])
+                                                              .flatMap(s => s.lessonAttempts || []);
+
+                if (allLessonAttempts.length > 0) {
+                    console.log(`[DataService] Found ${allLessonAttempts.length} total lesson attempts. Caching.`);
+                    allData.lessonAttempts = allLessonAttempts;
+
+                    // Flatten all nested attemptEvents
+                    allData.attemptEvents = allLessonAttempts.flatMap(l => l.attemptEvents || []);
+                    console.log(`[DataService] Found ${allData.attemptEvents.length} total attempt events. Caching.`);
+
+                    // Notify subscribers for both entities
+                    if (Array.isArray(subs.lessonAttempts)) {
+                        subs.lessonAttempts.forEach(cb => cb({ lessonAttempts: [...allData.lessonAttempts] }));
+                    }
+                    if (Array.isArray(subs.attemptEvents)) {
+                        subs.attemptEvents.forEach(cb => cb({ attemptEvents: [...allData.attemptEvents] }));
+                    }
+                } else {
+                    console.log('[DataService] No lesson attempts found in the updated data.');
+                }
+            }
+
+
             if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
                 allData.charges = activeSchool.charges || [];
                 allData.payments = activeSchool.payments || [];
                 if (Array.isArray(subs.charges)) subs.charges.forEach(cb => cb({ charges: [...allData.charges] }));
                 if (Array.isArray(subs.payments)) subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
             }
-
             if (updatedSubEntities.has('teams') && activeSchool.teams) {
                 allData.teams = activeSchool.teams;
                 allData.team_members = activeSchool.teams?.flatMap(t => t.members || []) || [];
@@ -436,7 +403,6 @@ var Data = (function () {
             }
         };
 
-        // --- REVISED QUERIES ARRAY ---
         const queries = [
             { query: `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_SCHOOL_DETAILS}` },
             { query: `query GetStudents { schools { id ...StudentsData } } ${FRAGMENT_STUDENTS_DATA}` },
@@ -453,11 +419,10 @@ var Data = (function () {
             { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
             { query: `query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}` },
             { query: `query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}` },
-
-            // Split into three focused queries for better performance
             { query: `query GetGradesBase { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
-            { query: `query GetGradesImages { schools { id ...GradesImagesData } } ${FRAGMENT_GRADES_IMAGES_DATA}` },
             { query: `query GetGradesOptions { schools { id ...GradesOptionsData } } ${FRAGMENT_GRADES_OPTIONS_DATA}` },
+            // --- ADDED LESSON DATA QUERY ---
+            { query: `query GetLessonAttempts { schools { id ...LessonData } } ${FRAGMENT_LESSON_DATA}` },
         ];
 
         queries.forEach(({ query: qStr, variables = {} }) => {
@@ -496,6 +461,21 @@ var Data = (function () {
         { name: "payments", singularName: "payment", createFields: ['school', 'phone', 'ammount', 'type', 'ref', 'time'], updateFields: ['phone', 'school', 'ammount', 'type', 'ref', 'time'] },
         { name: "charges", singularName: "charge", createFields: ['school', 'ammount', 'reason', 'time'], updateFields: ['school', 'ammount', 'reason', 'time'] },
         { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
+        {
+            name: "lessonAttempts",
+            singularName: "lessonAttempt",
+            createFields: ['lessonId', 'userId', 'startedAt', 'completedAt', 'status', 'finalScore', 'deviceInfo', 'school'],
+            updateFields: ['id', 'lessonId', 'userId', 'startedAt', 'completedAt', 'status', 'finalScore', 'deviceInfo', 'school']
+        },
+        {
+            name: "attemptEvents",
+            singularName: "attemptEvent",
+            isNested: true,
+            parentEntity: "lessonAttempts",
+            parentKey: "lessonAttempt",
+            createFields: ['lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect'],
+            updateFields: ['id', 'lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect']
+        },
     ];
 
     const generatedApis = {};
@@ -522,9 +502,7 @@ var Data = (function () {
         schools: {
             list: () => allData.schools,
             subscribe: (cb) => {
-                if (!Array.isArray(subs.schools)) {
-                    subs.schools = [];
-                }
+                if (!Array.isArray(subs.schools)) { subs.schools = []; }
                 subs.schools.push(cb);
                 const selectedSchool = allData.schools.find(s => s.id === (schoolID || localStorage.getItem("school")));
                 cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} });
@@ -535,54 +513,28 @@ var Data = (function () {
             update: (data) => new Promise(async (resolve, reject) => {
                 try {
                     const { id, ...payload } = data;
-                    const sanitizedPayload = payload;
-                    const response = await mutate(
-                        `mutation ($data: USchool!) { schools { update(school: $data) { id } } }`,
-                        { data: { id, ...sanitizedPayload } }
-                    );
-
+                    const response = await mutate(`mutation ($data: USchool!) { schools { update(school: $data) { id } } }`, { data: { id, ...payload } });
                     const updatedSchool = { ...data, id: response.schools.update.id };
                     const itemIndexFlat = allData.schools.findIndex(item => item.id === id);
-                    if (itemIndexFlat > -1) {
-                        allData.schools[itemIndexFlat] = updatedSchool;
-                    }
-
+                    if (itemIndexFlat > -1) { allData.schools[itemIndexFlat] = updatedSchool; }
                     if (Array.isArray(subs.schools)) {
                         const selectedSchool = allData.schools.find(s => s.id === schoolID);
-                        subs.schools.forEach(cb => cb({
-                            schools: [...allData.schools],
-                            selectedSchool: selectedSchool || {}
-                        }));
+                        subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
                     resolve(updatedSchool);
-                } catch (error) {
-                    console.error(`Error updating school:`, error);
-                    reject(error);
-                }
+                } catch (error) { console.error(`Error updating school:`, error); reject(error); }
             }),
             create: (data) => new Promise(async (resolve, reject) => {
                 try {
-                    const response = await mutate(
-                        `mutation ($data: ISchool!) { schools { create(school: $data) { id } } }`,
-                        { data }
-                    );
+                    const response = await mutate(`mutation ($data: ISchool!) { schools { create(school: $data) { id } } }`, { data });
                     const newSchool = { ...data, id: response.schools.create.id };
                     allData.schools.push(newSchool);
                     if (Array.isArray(subs.schools)) {
                         const selectedSchool = allData.schools.find(s => s.id === schoolID);
-                        subs.schools.forEach(cb => cb({
-                            schools: [...allData.schools],
-                            selectedSchool: selectedSchool || {}
-                        }));
+                        subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
-                    // if (Array.isArray(subs.schools)) {
-                    //     subs.schools.forEach(sCb => sCb({ schools: [...allData.schools] }));
-                    // }
                     resolve(newSchool);
-                } catch (error) {
-                    console.error(`Error creating school:`, error);
-                    reject(error);
-                }
+                } catch (error) { console.error(`Error creating school:`, error); reject(error); }
             }),
             getSelected: () => allData.schools.find(s => s.id === localStorage.getItem("school")) || {},
             archive: () => new Promise(async (resolve, reject) => {
@@ -617,16 +569,10 @@ var Data = (function () {
                     allData.schools = allData.schools.filter(s => s.id !== school.id);
                     if (Array.isArray(subs.schools)) {
                         const selectedSchool = allData.schools.find(s => s.id === schoolID);
-                        subs.schools.forEach(cb => cb({
-                            schools: [...allData.schools],
-                            selectedSchool: selectedSchool || {}
-                        }));
+                        subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
                     resolve(school);
-                } catch (error) {
-                    console.error(`Error deleting school:`, error);
-                    reject(error);
-                }
+                } catch (error) { console.error(`Error deleting school:`, error); reject(error); }
             }),
         },
     };
