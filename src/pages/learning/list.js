@@ -95,27 +95,7 @@ const SkeletonLoader = () => {
   `;
 
     return (
-        <>
-            <style>{skeletonStyles}</style>
-            <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-left"></i></button>
-                <div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)", gap: '30px' }}>
-                    <SkeletonColumn rows={9} widthClass="col-md-2" />
-                    <SkeletonColumn rows={2} widthClass="col-md-3" />
-                    <div className="col-md-7 skeleton-tab-container">
-                        <div className="skeleton-tab-header">
-                            <div className="skeleton-placeholder skeleton-tab active"></div>
-                            <div className="skeleton-placeholder skeleton-tab"></div>
-                        </div>
-                        <div className="skeleton-tab-content-wrapper">
-                            <div style={{ flex: '1 1 45%' }}><SkeletonColumn rows={5} widthClass="w-100" /></div>
-                            <div style={{ flex: '1 1 35%' }}><SkeletonColumn rows={6} widthClass="w-100" /></div>
-                        </div>
-                    </div>
-                </div>
-                <button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-right"></i></button>
-            </div>
-        </>
+        <><style>{skeletonStyles}</style><div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}><button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-left"></i></button><div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)", gap: '30px' }}><SkeletonColumn rows={9} widthClass="col-md-2" /><SkeletonColumn rows={2} widthClass="col-md-3" /><div className="col-md-7 skeleton-tab-container"><div className="skeleton-tab-header"><div className="skeleton-placeholder skeleton-tab active"></div><div className="skeleton-placeholder skeleton-tab"></div></div><div className="skeleton-tab-content-wrapper"><div style={{ flex: '1 1 45%' }}><SkeletonColumn rows={5} widthClass="w-100" /></div><div style={{ flex: '1 1 35%' }}><SkeletonColumn rows={6} widthClass="w-100" /></div></div></div></div><button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-right"></i></button></div></>
     );
 };
 
@@ -157,7 +137,6 @@ class BasicTable extends React.Component {
         gradeSearchTerm: '', subjectSearchTerm: '', topicSearchTerm: '',
         subtopicSearchTerm: '', questionSearchTerm: '', optionSearchTerm: '',
         activeTab: 'content',
-        // --- STATE for lesson attempts ---
         subjectLessonAttempts: [],
         studentsWithAttempts: [],
         selectedStudentId: null,
@@ -170,17 +149,33 @@ class BasicTable extends React.Component {
             .list-group-item { cursor: pointer; border-left: 3px solid transparent; } .list-group-item.active { background-color: #f7f8fa; border-left: 3px solid #5867dd; font-weight: 500; }
             .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .scrolling-wrapper > .col-md-3, .scrolling-wrapper > .col-md-7, .scrolling-wrapper > .col-md-9, .scrolling-wrapper > .col-md-12 { flex: 0 0 auto; }
-            /* --- TIMELINE STYLES --- */
-            .timeline { position: relative; padding-left: 30px; }
-            .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #e9ecf2; }
-            .timeline-item { position: relative; margin-bottom: 25px; }
-            .timeline-icon { position: absolute; left: -24px; top: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #e9ecf2; }
-            .timeline-icon.correct { border-color: #1dc9b7; color: #1dc9b7; }
-            .timeline-icon.incorrect { border-color: #fd397a; color: #fd397a; }
-            .timeline-content { background: #fff; padding: 15px; border-radius: 4px; border: 1px solid #ebedf2; }
-            .timeline-breadcrumbs { font-size: 0.8rem; color: #a7abc3; margin-bottom: 8px; }
-            .timeline-question { font-weight: 500; margin-bottom: 10px; }
-            .timeline-answer img { max-width: 200px; height: auto; border-radius: 4px; margin-top: 10px; border: 1px solid #ebedf2; cursor: pointer; }
+            
+            /* --- FINAL ATTEMPT VIEW STYLES --- */
+            .attempt-view-container { background: #f7f8fa; padding: 20px; border-radius: 4px; max-height: 65vh; overflow-y: auto; }
+            .attempt-question-card { background: #fff; border: 1px solid #ebedf2; border-radius: 4px; margin-bottom: 20px; }
+            .attempt-question-header { padding: 15px; border-bottom: 1px solid #ebedf2; }
+            .attempt-question-header p { margin: 0; font-weight: 500; font-size: 1.1rem; }
+            .question-events-timeline { position: relative; padding: 15px 15px 5px 30px; }
+            .question-events-timeline::before { content: ''; position: absolute; left: 15px; top: 15px; bottom: 5px; width: 2px; background: #e9ecf2; }
+            .event-item { position: relative; margin-bottom: 15px; }
+            .event-icon { position: absolute; left: -22px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #e9ecf2; }
+            .event-icon.correct { border-color: #1dc9b7; color: #1dc9b7; }
+            .event-icon.incorrect { border-color: #fd397a; color: #fd397a; }
+            .event-icon.viewed { border-color: #a7abc3; color: #a7abc3; font-size: 0.8rem; }
+            .event-details { margin-left: 15px; }
+            .event-title { font-weight: 500; color: #595d6e; }
+            .event-time { font-size: 0.8rem; color: #a7abc3; }
+            .answer-details { margin-top: 10px; padding: 15px; background-color: #f9f9fc; border-radius: 4px; border: 1px solid #ebedf2;}
+            .answer-details .option-display { display: flex; align-items: center; padding: 10px; border: 1px solid #ebedf2; border-radius: 4px; margin-bottom: 8px; font-weight: 500; }
+            .answer-details .option-display.correct { border-color: #c9f7f5; background-color: #f1fcfb; color: #15a192; }
+            .answer-details .option-display.selected-correct { border-color: #1dc9b7; background-color: #d8f5f2; }
+            .answer-details .option-display.selected-incorrect { border-color: #fdd0e1; background-color: #fff5f8; color: #d9215d; }
+            .answer-details .option-display i { font-size: 1.2rem; margin-right: 10px; }
+            .answer-details .option-display.selected-correct i { color: #1dc9b7; }
+            .answer-details .option-display.selected-incorrect i { color: #fd397a; }
+            .answer-details .text-answer p, .answer-details .image-answer p { margin: 0; }
+            .answer-details .image-answer img { max-width: 250px; height: auto; border-radius: 4px; border: 1px solid #ebedf2; cursor: pointer; margin-top: 5px;}
+            .skipped-question { padding: 0 15px 15px; color: #a7abc3; font-style: italic; }
         `;
         const styleTag = document.createElement("style");
         styleTag.innerHTML = customStyles;
@@ -215,7 +210,6 @@ class BasicTable extends React.Component {
         }, () => {
             this.refreshCurrentSelectionsAndFilters();
             if (this.state.selectedSubject) {
-                // When data updates, re-process the attempts for the currently selected subject
                 this.processLessonAttemptsForSubject(this.state.selectedSubject);
             }
         });
@@ -246,9 +240,7 @@ class BasicTable extends React.Component {
             validated.selectedSubtopic = subtopic.id;
             const question = (subtopic.questions || []).find(q => q.id === sourceState.selectedQuestion);
             if (question) validated.selectedQuestion = question.id;
-        } catch (error) {
-            console.error("Failed to parse or validate state:", error);
-        }
+        } catch (error) { console.error("Failed to parse or validate state:", error); }
         return validated;
     }
 
@@ -359,82 +351,142 @@ class BasicTable extends React.Component {
     handleSubtopicSelect = (subtopic) => { this.setState(this.clearSelectionsAndDataFromLevel('question'), () => { this.setState({ selectedSubtopic: subtopic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
     handleQuestionSelect = (question) => { this.setState(this.clearSelectionsAndDataFromLevel('option'), () => { this.setState({ selectedQuestion: question.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }); };
     
-    // --- REVISED LOGIC WITH ADDED LOGGING ---
+    // --- FINALIZED User Lookup Logic ---
     processLessonAttemptsForSubject = (subjectId) => {
-        console.log(`[Attempts] Processing attempts for Subject ID: ${subjectId}`);
         const { _masterGradesList, selectedGrade } = this.state;
         const grade = _masterGradesList.find(g => g.id === selectedGrade);
         const subject = (grade?.subjects || []).find(s => s.id === subjectId);
-        if (!subject) {
-            console.warn('[Attempts] Could not find subject object in state.');
-            return;
-        }
+        if (!subject) return;
 
         const subtopicIds = (subject.topics || []).flatMap(t => t.subtopics || []).map(st => st.id);
-        console.log(`[Attempts] Found ${subtopicIds.length} subtopic(s) for this subject:`, subtopicIds);
-
         const allAttempts = Data.lessonAttempts.list();
-        console.log(`[Attempts] Total cached lesson attempts from DataService: ${allAttempts.length}`);
-
         const attemptsForSubject = allAttempts.filter(attempt => subtopicIds.includes(attempt.lessonId));
-        console.log(`[Attempts] Found ${attemptsForSubject.length} attempts matching the subtopic IDs.`);
-
-        const studentMap = new Map();
+        
+        const parentAccountMap = new Map();
         attemptsForSubject.forEach(attempt => {
-            if (!studentMap.has(attempt.userId)) {
-                const student = Data.students.getOne(attempt.userId);
-                studentMap.set(attempt.userId, { id: attempt.userId, name: student ? student.names : `User ID: ${attempt.userId}` });
+            if (!parentAccountMap.has(attempt.userId)) {
+                const parent = Data.parents.getOne(attempt.userId);
+                parentAccountMap.set(attempt.userId, { 
+                    id: parent ? parent.id : attempt.userId, 
+                    name: parent ? parent.name : `User ID: ${attempt.userId}`,
+                    children: parent ? parent.students : []
+                });
             }
         });
 
-        console.log(`[Attempts] Found ${studentMap.size} unique students with attempts.`);
         this.setState({
             subjectLessonAttempts: attemptsForSubject,
-            studentsWithAttempts: Array.from(studentMap.values()),
-            selectedStudentId: null,
+            studentsWithAttempts: Array.from(parentAccountMap.values()),
+            selectedStudentId: null, // This state now holds the Parent ID
             selectedAttemptId: null
         });
     }
 
     handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
-    handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId, selectedAttemptId: null }); }
+    handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId, selectedAttemptId: null }); } // Renaming studentId to parentId would be clearer, but keeping for consistency
     handleAttemptSelect = (attemptId) => { this.setState({ selectedAttemptId: attemptId }); }
 
-    findQuestionDetails = (questionId) => {
+    findLessonById = (lessonId) => {
         for (const grade of this.state._masterGradesList) {
             for (const subject of grade.subjects || []) {
                 for (const topic of subject.topics || []) {
-                    for (const subtopic of topic.subtopics || []) {
-                        const question = (subtopic.questions || []).find(q => q.id === questionId);
-                        if (question) {
-                            return { question, breadcrumbs: `${grade.name} > ${subject.name} > ${topic.name} > ${subtopic.name}` };
-                        }
-                    }
+                    const subtopic = (topic.subtopics || []).find(st => st.id === lessonId);
+                    if (subtopic) return subtopic;
                 }
             }
         }
-        return { question: null, breadcrumbs: 'Unknown Location' };
-    };
+        return null;
+    }
 
-    renderAnswerContent = (answerString) => {
-        try {
-            const answer = JSON.parse(answerString);
-            if (answer.imageData && answer.imageData.startsWith('data:image')) {
-                return <img src={answer.imageData} alt="Student submission" className="timeline-answer-image" onClick={() => window.open(answer.imageData, '_blank')} />;
-            }
-            if (answer.inputText) return <p className="mb-0"><strong>Answer:</strong> {answer.inputText}</p>;
-            if (answer.selectedOptionId) {
-                return <p className="mb-0"><strong>Selected Option ID:</strong> {answer.selectedOptionId}</p>;
-            }
-            if (answer.selectedOptionIds) {
-                return <p className="mb-0"><strong>Selected Option IDs:</strong> {answer.selectedOptionIds.join(', ')}</p>;
-            }
-        } catch (e) {
-            // This is a fallback for older data that might not be a JSON string.
-            return <p className="mb-0"><strong>Answer:</strong> {answerString}</p>;
+    // --- FINALIZED Answer Rendering Logic ---
+    renderAnswerDetails = (question, event) => {
+        if (!event || !event.userAnswer) return null;
+        const answer = JSON.parse(event.userAnswer);
+
+        // Use question.type, which matches the backend schema
+        switch (question.type) {
+            case 'SINGLECHOICE':
+            case 'MULTICHOICE':
+                const selectedIds = new Set(answer.selectedOptionIds || [answer.selectedOptionId].filter(Boolean));
+                return (
+                    <div className="answer-details">
+                        {(question.options || []).map(option => {
+                            const isSelected = selectedIds.has(option.id);
+                            const isCorrect = option.correct;
+                            let className = 'option-display';
+                            let icon = 'la-circle-thin';
+
+                            if (isCorrect && isSelected) {
+                                className += ' selected-correct';
+                                icon = 'la-check-circle';
+                            } else if (isCorrect) {
+                                className += ' correct';
+                                icon = 'la-check-circle-o';
+                            } else if (isSelected && !isCorrect) {
+                                className += ' selected-incorrect';
+                                icon = 'la-times-circle';
+                            }
+                            return (<div key={option.id} className={className}><i className={`la ${icon}`}></i> {option.value}</div>);
+                        })}
+                    </div>
+                );
+            case 'TEXT':
+                return (<div className="answer-details text-answer"><p><strong>Student's Answer:</strong> {answer.inputText || 'N/A'}</p></div>);
+            case 'CAMERA':
+                return (
+                    <div className="answer-details image-answer">
+                        <p><strong>Student's Submission:</strong></p>
+                        {answer.imageData ? 
+                            <img src={answer.imageData} alt="Student submission" onClick={() => window.open(answer.imageData, '_blank')} />
+                            : <p>No image submitted.</p>
+                        }
+                    </div>
+                );
+            default:
+                return <div className="answer-details"><p>Could not render answer for question type: {question.type}</p></div>;
         }
-        return <p className="text-muted font-italic">No valid answer recorded.</p>;
-    };
+    }
+
+    renderEventsForQuestion = (question, events) => {
+        if (!events || events.length === 0) {
+            return <div className="skipped-question">Question was skipped.</div>;
+        }
+
+        return (
+            <div className="question-events-timeline">
+                {events.map(event => {
+                    const eventTime = new Date(event.eventTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    if (event.eventType === 'check_attempt') {
+                        const icon = event.isCorrect ? 'la-check' : 'la-times';
+                        const eventClass = event.isCorrect ? 'correct' : 'incorrect';
+                        const title = "Answer Checked";
+
+                        return (
+                            <div key={event.id} className="event-item">
+                                <div className={`event-icon ${eventClass}`}><i className={`la ${icon}`}></i></div>
+                                <div className="event-details">
+                                    <span className="event-title">{title}</span>
+                                    <span className="event-time float-right">{eventTime}</span>
+                                    {this.renderAnswerDetails(question, event)}
+                                </div>
+                            </div>
+                        );
+                    }
+                    
+                    return (
+                        <div key={event.id} className="event-item">
+                             <div className="event-icon viewed"><i className="la la-eye"></i></div>
+                             <div className="event-details" style={{paddingTop: '2px'}}>
+                                 <span className="event-title" style={{fontWeight: 'normal', color: '#a7abc3'}}>Question Viewed</span>
+                                 <span className="event-time float-right">{eventTime}</span>
+                             </div>
+                         </div>
+                    );
+                })}
+            </div>
+        );
+    }
 
     handleCreate = async (entity, data, parentId, parentKey) => { try { const payload = parentId ? { ...data, [parentKey]: parentId } : data; await Data[entity].create(payload); this.onEntityCreated(entity.slice(0, -1)); } catch (err) { toastr.error(`Failed to create ${entity.slice(0, -1)}`); } };
     handleUpdate = async (entity, payload) => { try { await Data[entity].update(payload); this.onEntityUpdated(entity.slice(0, -1)); } catch (err) { toastr.error(`Failed to update ${entity.slice(0, -1)}`); } };
@@ -457,7 +509,7 @@ class BasicTable extends React.Component {
     };
 
     render() {
-        const { isLoading, grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, filteredTopics, topicSearchTerm, filteredSubtopics, subtopicSearchTerm, filteredQuestions, questionSearchTerm, filteredOptions, optionSearchTerm, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeToEdit, gradeToDelete, subjectToEdit, subjectToDelete, topicToEdit, topicToDelete, subtopicToEdit, subtopicToDelete, questionToEdit, questionToDelete, optionToEdit, optionToDelete, activeTab, studentsWithAttempts, selectedStudentId, selectedAttemptId, subjectLessonAttempts } = this.state;
+        const { isLoading, grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, filteredTopics, topicSearchTerm, filteredSubtopics, subtopicSearchTerm, filteredQuestions, questionSearchTerm, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeToEdit, gradeToDelete, subjectToEdit, subjectToDelete, topicToEdit, topicToDelete, subtopicToEdit, subtopicToDelete, questionToEdit, questionToDelete, optionToEdit, optionToDelete, activeTab, studentsWithAttempts, selectedStudentId, selectedAttemptId, subjectLessonAttempts } = this.state;
 
         if (isLoading && (!this.state.school || !this.state.grades || !this.state.grades.length)) {
             return (<div className="kt-portlet kt-portlet--mobile"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Student Learning</h3></div></div><div className="kt-portlet__body"><SkeletonLoader /></div></div>)
@@ -465,11 +517,21 @@ class BasicTable extends React.Component {
 
         const selectedGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
-        const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
 
-        const selectedStudentName = selectedStudentId ? studentsWithAttempts.find(s => s.id === selectedStudentId)?.name : null;
+        const selectedParentName = selectedStudentId ? studentsWithAttempts.find(s => s.id === selectedStudentId)?.name : null;
         const attemptsForSelectedStudent = selectedStudentId ? subjectLessonAttempts.filter(a => a.userId === selectedStudentId) : [];
         const selectedAttempt = selectedAttemptId ? subjectLessonAttempts.find(a => a.id === selectedAttemptId) : null;
+        
+        let originalLesson, sortedOriginalQuestions, attemptEventsByQuestionId;
+        if (selectedAttempt) {
+            originalLesson = this.findLessonById(selectedAttempt.lessonId);
+            sortedOriginalQuestions = originalLesson ? this._sortListByOrderArray(originalLesson.questions, originalLesson.questionsOrder) : [];
+            attemptEventsByQuestionId = (selectedAttempt.attemptEvents || []).reduce((acc, event) => {
+                if (!acc.has(event.questionId)) acc.set(event.questionId, []);
+                acc.get(event.questionId).push(event);
+                return acc;
+            }, new Map());
+        }
 
         return (
             <div className="kt-portlet kt-portlet--mobile">
@@ -481,12 +543,40 @@ class BasicTable extends React.Component {
                             <div className="col-md-3 col-sm-12 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Grades</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="grades" onSearch={this.onGradeSearch} value={gradeSearchTerm} /><Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} /></div></div>
                             {selectedGrade && (<div className="col-md-3 col-sm-12 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">{(selectedGradeObj?.name) || '...'} Subjects</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubjectModalRef.current.show()} title="Add Subject"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subjects" onSearch={this.onSubjectSearch} value={subjectSearchTerm} /><Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} /></div></div>)}
                             {selectedSubject && (<div className="col-md-7" style={{ whiteSpace: 'normal' }}><div className="kt-portlet kt-portlet--tabs"><div className="kt-portlet__head"><div className="kt-portlet__head-toolbar"><ul className="nav nav-tabs nav-tabs-line nav-tabs-line-info" role="tablist"><li className="nav-item"><a className={`nav-link ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')} role="tab"><i className="la la-list"></i> Content </a></li><li className="nav-item"><a className={`nav-link ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')} role="tab"><i className="la la-graduation-cap"></i> Student Attempts </a></li></ul></div></div><div className="kt-portlet__body"><div className="tab-content">
-                                <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel"><div className="d-flex flex-row flex-nowrap">{selectedSubject && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>}{selectedTopic && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Sub Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}{selectedSubtopic && <div className="col-md-9 col-lg-9 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Questions</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}{selectedQuestion && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Options</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} correctItemIds={correctOptionIds} /></div></div>}</div></div>
+                                <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel"><div className="d-flex flex-row flex-nowrap">{selectedSubject && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>}{selectedTopic && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Sub Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}{selectedSubtopic && <div className="col-md-9 col-lg-9 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Questions</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}{selectedQuestion && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Options</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} /></div></div>}</div></div>
                                 <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} role="tabpanel">
                                     <div className="row">
-                                        <div className="col-md-3"><h6 className="mb-3">Students</h6><div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{studentsWithAttempts.length > 0 ? studentsWithAttempts.map(student => (<a key={student.id} className={`list-group-item list-group-item-action ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}>{student.name}</a>)) : <p className="text-muted p-2">No student attempts for this subject yet.</p>}</div></div>
-                                        <div className="col-md-3"><h6 className="mb-3">{selectedStudentName ? `${selectedStudentName}'s Attempts` : 'Select a Student'}</h6>{selectedStudentId && (<div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{attemptsForSelectedStudent.length > 0 ? attemptsForSelectedStudent.map((attempt, index) => (<a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}><div>Attempt {index + 1} - <span className="font-weight-bold">Score: {attempt.finalScore}</span></div><small className="text-muted">{new Date(attempt.startedAt).toLocaleString()}</small></a>)) : <p className="text-muted p-2">No attempts found.</p>}</div>)}</div>
-                                        <div className="col-md-6"><h6 className="mb-3">{selectedAttempt ? `Attempt Timeline` : 'Select an Attempt'}</h6>{selectedAttempt && (<div style={{ maxHeight: '60vh', overflowY: 'auto', background: '#f7f8fa', padding: '15px', borderRadius: '4px' }}><div className="timeline">{(selectedAttempt.attemptEvents || []).map(event => { const { question, breadcrumbs } = this.findQuestionDetails(event.questionId); return (<div key={event.id} className="timeline-item"><div className={`timeline-icon ${event.isCorrect ? 'correct' : 'incorrect'}`}><i className={`la ${event.isCorrect ? 'la-check' : 'la-times'}`}></i></div><div className="timeline-content"><div className="timeline-breadcrumbs"><i className="la la-folder-open"></i> {breadcrumbs}</div><div className="timeline-question">{question ? question.name : 'Question not found'}</div><div className="timeline-answer">{this.renderAnswerContent(event.userAnswer)}</div><div className="text-muted small mt-2 text-right">{new Date(event.eventTimestamp).toLocaleTimeString()}</div></div></div>); })}</div></div>)}</div>
+                                        <div className="col-md-3">
+                                            <h6 className="mb-3">Parent Accounts</h6>
+                                            <div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                                                {studentsWithAttempts.length > 0 ? studentsWithAttempts.map(parent => (
+                                                    <a key={parent.id} className={`list-group-item list-group-item-action flex-column align-items-start ${selectedStudentId === parent.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(parent.id)}>
+                                                        <div className="d-flex w-100 justify-content-between">
+                                                            <h5 className="mb-1">{parent.name}</h5>
+                                                        </div>
+                                                        {parent.children && parent.children.length > 0 &&
+                                                            <small className="text-muted">
+                                                                Students: {parent.children.map(child => child.names).join(', ')}
+                                                            </small>
+                                                        }
+                                                    </a>
+                                                )) : <p className="text-muted p-2">No attempts found for this subject.</p>}
+                                            </div>
+                                        </div>
+                                        <div className="col-md-3"><h6 className="mb-3">{selectedParentName ? `${selectedParentName}'s Attempts` : 'Select an Account'}</h6>{selectedStudentId && (<div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{attemptsForSelectedStudent.length > 0 ? attemptsForSelectedStudent.map((attempt, index) => (<a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}><div>Attempt {index + 1} - <span className="font-weight-bold">Score: {attempt.finalScore}%</span></div><small className="text-muted">{new Date(attempt.startedAt).toLocaleString()}</small></a>)) : <p className="text-muted p-2">No attempts found.</p>}</div>)}</div>
+                                        <div className="col-md-6">
+                                            <h6 className="mb-3">{selectedAttempt ? `Attempt Details (Score: ${selectedAttempt.finalScore}%)` : 'Select an Attempt'}</h6>
+                                            {selectedAttempt && (
+                                                <div className="attempt-view-container">
+                                                    {originalLesson ? sortedOriginalQuestions.map(q => (
+                                                        <div key={q.id} className="attempt-question-card">
+                                                            <div className="attempt-question-header" dangerouslySetInnerHTML={{ __html: q.name }}></div>
+                                                            {this.renderEventsForQuestion(q, attemptEventsByQuestionId.get(q.id))}
+                                                        </div>
+                                                    )) : <p>Could not load original lesson questions.</p>}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div></div></div></div>)}
@@ -519,3 +609,4 @@ class BasicTable extends React.Component {
 }
 
 export default BasicTable;
+;
