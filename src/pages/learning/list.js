@@ -351,7 +351,7 @@ class BasicTable extends React.Component {
     handleSubtopicSelect = (subtopic) => { this.setState(this.clearSelectionsAndDataFromLevel('question'), () => { this.setState({ selectedSubtopic: subtopic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
     handleQuestionSelect = (question) => { this.setState(this.clearSelectionsAndDataFromLevel('option'), () => { this.setState({ selectedQuestion: question.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }); };
     
-    // --- FINALIZED User Lookup Logic ---
+    // --- CORRECTED User Lookup ---
     processLessonAttemptsForSubject = (subjectId) => {
         const { _masterGradesList, selectedGrade } = this.state;
         const grade = _masterGradesList.find(g => g.id === selectedGrade);
@@ -362,28 +362,25 @@ class BasicTable extends React.Component {
         const allAttempts = Data.lessonAttempts.list();
         const attemptsForSubject = allAttempts.filter(attempt => subtopicIds.includes(attempt.lessonId));
         
-        const parentAccountMap = new Map();
+        const studentMap = new Map();
         attemptsForSubject.forEach(attempt => {
-            if (!parentAccountMap.has(attempt.userId)) {
-                const parent = Data.parents.getOne(attempt.userId);
-                parentAccountMap.set(attempt.userId, { 
-                    id: parent ? parent.id : attempt.userId, 
-                    name: parent ? parent.name : `User ID: ${attempt.userId}`,
-                    children: parent ? parent.students : []
-                });
+            if (!studentMap.has(attempt.userId)) {
+                // FIX: Look up in parents data, not students
+                const user = Data.parents.getOne(attempt.userId); 
+                studentMap.set(attempt.userId, { id: attempt.userId, name: user ? user.name : `User ID: ${attempt.userId}` });
             }
         });
 
         this.setState({
             subjectLessonAttempts: attemptsForSubject,
-            studentsWithAttempts: Array.from(parentAccountMap.values()),
-            selectedStudentId: null, // This state now holds the Parent ID
+            studentsWithAttempts: Array.from(studentMap.values()),
+            selectedStudentId: null,
             selectedAttemptId: null
         });
     }
 
     handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
-    handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId, selectedAttemptId: null }); } // Renaming studentId to parentId would be clearer, but keeping for consistency
+    handleStudentSelect = (studentId) => { this.setState({ selectedStudentId: studentId, selectedAttemptId: null }); }
     handleAttemptSelect = (attemptId) => { this.setState({ selectedAttemptId: attemptId }); }
 
     findLessonById = (lessonId) => {
@@ -398,12 +395,13 @@ class BasicTable extends React.Component {
         return null;
     }
 
-    // --- FINALIZED Answer Rendering Logic ---
+    // --- CORRECTED Answer Rendering Logic ---
     renderAnswerDetails = (question, event) => {
         if (!event || !event.userAnswer) return null;
         const answer = JSON.parse(event.userAnswer);
 
-        // Use question.type, which matches the backend schema
+        console.log({question})
+        // FIX: Use question.type, which matches the backend schema
         switch (question.type) {
             case 'SINGLECHOICE':
             case 'MULTICHOICE':
@@ -437,7 +435,7 @@ class BasicTable extends React.Component {
                     <div className="answer-details image-answer">
                         <p><strong>Student's Submission:</strong></p>
                         {answer.imageData ? 
-                            <img src={answer.imageData} alt="Student submission" onClick={() => window.open(answer.imageData, '_blank')} />
+                            <img src={answer.imageData} style={{ height: 'auto', width: '25vh', maxWidth: '300px' }} alt="Student submission" onClick={() => window.open(answer.imageData, '_blank')} />
                             : <p>No image submitted.</p>
                         }
                     </div>
@@ -474,6 +472,7 @@ class BasicTable extends React.Component {
                         );
                     }
                     
+                    // Render other events (like 'question_viewed') in a compact way
                     return (
                         <div key={event.id} className="event-item">
                              <div className="event-icon viewed"><i className="la la-eye"></i></div>
@@ -509,7 +508,7 @@ class BasicTable extends React.Component {
     };
 
     render() {
-        const { isLoading, grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, filteredTopics, topicSearchTerm, filteredSubtopics, subtopicSearchTerm, filteredQuestions, questionSearchTerm, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeToEdit, gradeToDelete, subjectToEdit, subjectToDelete, topicToEdit, topicToDelete, subtopicToEdit, subtopicToDelete, questionToEdit, questionToDelete, optionToEdit, optionToDelete, activeTab, studentsWithAttempts, selectedStudentId, selectedAttemptId, subjectLessonAttempts } = this.state;
+        const { isLoading, grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, filteredTopics, topicSearchTerm, filteredSubtopics, subtopicSearchTerm, filteredQuestions, questionSearchTerm, filteredOptions, optionSearchTerm, selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeToEdit, gradeToDelete, subjectToEdit, subjectToDelete, topicToEdit, topicToDelete, subtopicToEdit, subtopicToDelete, questionToEdit, questionToDelete, optionToEdit, optionToDelete, activeTab, studentsWithAttempts, selectedStudentId, selectedAttemptId, subjectLessonAttempts } = this.state;
 
         if (isLoading && (!this.state.school || !this.state.grades || !this.state.grades.length)) {
             return (<div className="kt-portlet kt-portlet--mobile"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Student Learning</h3></div></div><div className="kt-portlet__body"><SkeletonLoader /></div></div>)
@@ -518,7 +517,7 @@ class BasicTable extends React.Component {
         const selectedGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
 
-        const selectedParentName = selectedStudentId ? studentsWithAttempts.find(s => s.id === selectedStudentId)?.name : null;
+        const selectedStudentName = selectedStudentId ? studentsWithAttempts.find(s => s.id === selectedStudentId)?.name : null;
         const attemptsForSelectedStudent = selectedStudentId ? subjectLessonAttempts.filter(a => a.userId === selectedStudentId) : [];
         const selectedAttempt = selectedAttemptId ? subjectLessonAttempts.find(a => a.id === selectedAttemptId) : null;
         
@@ -546,24 +545,8 @@ class BasicTable extends React.Component {
                                 <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`} role="tabpanel"><div className="d-flex flex-row flex-nowrap">{selectedSubject && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addTopicModalRef.current.show()} title="Add Topic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="topics" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>}{selectedTopic && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Sub Strands</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Subtopic"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="subtopics" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}{selectedSubtopic && <div className="col-md-9 col-lg-9 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Questions</h3></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}{selectedQuestion && <div className="col-md-6 col-lg-6 col-sm-12 col-xl-6 col-xs-12"><div className="kt-portlet__head"><div className="kt-portlet__head-label"><div className="kt-portlet__head-title">Options</div></div><div style={{ paddingTop: 10 }}><button type="button" className="btn btn-icon btn-sm pull-right" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus-circle"></i></button></div></div><div className="kt-portlet__body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} /></div></div>}</div></div>
                                 <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} role="tabpanel">
                                     <div className="row">
-                                        <div className="col-md-3">
-                                            <h6 className="mb-3">Parent Accounts</h6>
-                                            <div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                                                {studentsWithAttempts.length > 0 ? studentsWithAttempts.map(parent => (
-                                                    <a key={parent.id} className={`list-group-item list-group-item-action flex-column align-items-start ${selectedStudentId === parent.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(parent.id)}>
-                                                        <div className="d-flex w-100 justify-content-between">
-                                                            <h5 className="mb-1">{parent.name}</h5>
-                                                        </div>
-                                                        {parent.children && parent.children.length > 0 &&
-                                                            <small className="text-muted">
-                                                                Students: {parent.children.map(child => child.names).join(', ')}
-                                                            </small>
-                                                        }
-                                                    </a>
-                                                )) : <p className="text-muted p-2">No attempts found for this subject.</p>}
-                                            </div>
-                                        </div>
-                                        <div className="col-md-3"><h6 className="mb-3">{selectedParentName ? `${selectedParentName}'s Attempts` : 'Select an Account'}</h6>{selectedStudentId && (<div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{attemptsForSelectedStudent.length > 0 ? attemptsForSelectedStudent.map((attempt, index) => (<a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}><div>Attempt {index + 1} - <span className="font-weight-bold">Score: {attempt.finalScore}%</span></div><small className="text-muted">{new Date(attempt.startedAt).toLocaleString()}</small></a>)) : <p className="text-muted p-2">No attempts found.</p>}</div>)}</div>
+                                        <div className="col-md-3"><h6 className="mb-3">Students</h6><div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{studentsWithAttempts.length > 0 ? studentsWithAttempts.map(student => (<a key={student.id} className={`list-group-item list-group-item-action ${selectedStudentId === student.id ? 'active' : ''}`} onClick={() => this.handleStudentSelect(student.id)}>{student.name}</a>)) : <p className="text-muted p-2">No student attempts for this subject yet.</p>}</div></div>
+                                        <div className="col-md-3"><h6 className="mb-3">{selectedStudentName ? `${selectedStudentName}'s Attempts` : 'Select a Student'}</h6>{selectedStudentId && (<div className="list-group" style={{ maxHeight: '60vh', overflowY: 'auto' }}>{attemptsForSelectedStudent.length > 0 ? attemptsForSelectedStudent.map((attempt, index) => (<a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}><div>Attempt {index + 1} - <span className="font-weight-bold">Score: {attempt.finalScore}%</span></div><small className="text-muted">{new Date(attempt.startedAt).toLocaleString()}</small></a>)) : <p className="text-muted p-2">No attempts found.</p>}</div>)}</div>
                                         <div className="col-md-6">
                                             <h6 className="mb-3">{selectedAttempt ? `Attempt Details (Score: ${selectedAttempt.finalScore}%)` : 'Select an Attempt'}</h6>
                                             {selectedAttempt && (
