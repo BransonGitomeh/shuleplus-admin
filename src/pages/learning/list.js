@@ -226,7 +226,7 @@ class CurriculumManagerV5 extends React.Component {
         this.setState({ subjectLessonAttempts: attemptsForSubject, usersWithAttempts: Array.from(parentMap.values()), selectedUserId: null, selectedAttemptId: null });
     }
 
-    handleDeleteAttempt = async (attempt) => { if (!window.confirm(`Are you sure you want to delete this attempt? This action cannot be undone.`)) return; try { await Data.lessonAttempts.delete({ id: attempt.id }); toastr.success("Attempt deleted successfully!"); if (this.state.selectedAttemptId === attempt.id) { this.setState({ selectedAttemptId: null }); } } catch (e) { toastr.error("Failed to delete attempt."); console.error("Delete attempt error:", e); } };
+    handleDeleteAttempt = async (attempt) => { if (!window.confirm(`Are you sure you want to delete this attempt? This action cannot be undone.`)) return; try { await Data.lessonAttempts.delete({ id: attempt.id }); toastr.success("Session deleted successfully!"); if (this.state.selectedAttemptId === attempt.id) { this.setState({ selectedAttemptId: null }); } } catch (e) { toastr.error("Failed to delete attempt."); console.error("Delete attempt error:", e); } };
     handleTabChange = (tabName) => { this.setState({ activeTab: tabName }); }
     handleUserSelect = (userId) => { this.setState({ selectedUserId: userId, selectedAttemptId: null }); }
     handleAttemptSelect = (attemptId) => { this.setState({ selectedAttemptId: attemptId }); }
@@ -355,20 +355,20 @@ class CurriculumManagerV5 extends React.Component {
                         <a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}>
                             <div className="attempt-list-item-content">
                                 <div>
-                                    <div className="attempt-list-item-header">Attempt {index + 1}</div>
+                                    <div className="attempt-list-item-header">Session {index + 1}</div>
                                     <div className="attempt-list-item-meta">{moment(attempt.startedAt).format('MMM D, YYYY')}</div>
                                     <div className="attempt-list-item-meta">Lesson: {this.findLessonById(attempt.lessonId)?.name || 'Unknown'}</div>
                                 </div>
                                 <div className="d-flex align-items-center">
                                     <span className={`attempt-score-badge ${attempt.finalScore >= 50 ? 'high-score' : 'low-score'} mr-2`}>{attempt.finalScore}%</span>
-                                    <button type="button" className="btn btn-sm btn-icon btn-delete-attempt" onClick={(e) => { e.stopPropagation(); this.handleDeleteAttempt(attempt); }} title="Delete Attempt"><i className="la la-trash"></i></button>
+                                    <button type="button" className="btn btn-sm btn-icon btn-delete-attempt" onClick={(e) => { e.stopPropagation(); this.handleDeleteAttempt(attempt); }} title="Delete Session"><i className="la la-trash"></i></button>
                                 </div>
                             </div>
                         </a>)) : <p className="text-muted p-2 text-center">No attempts by this user.</p>}
                     </div>)}
                 </div>
                 <div className="attempts-column">
-                    <h6>{selectedAttempt ? `Attempt Details` : 'Select an Attempt'}</h6>
+                    <h6>{selectedAttempt ? `Session Details` : 'Select a Session'}</h6>
                     {selectedAttempt ? (
                         <div className="attempt-details-container">
                             {originalLesson && sortedOriginalQuestions ? sortedOriginalQuestions.map(q => (
