@@ -195,7 +195,7 @@ const Register = () => {
         setIsFetchingClasses(true);
         setClassesError(null);
         try {
-            const response = await axios.get(`${API}/auth/classes`, { params: { schoolid: id } });
+            const response = await axios.get(`${API}/auth/classes`, { params: { school: id } });
             setClasses(response.data || []);
         } catch (err) {
             console.error("Failed to fetch classes:", err);
