@@ -1,111 +1,104 @@
 import React from "react";
-import ErrorMessage from "./components/error-toast";
-import "./spinner.css"; // Ensure this has .spinner-border styles
-
+import ErrorMessage from "./components/error-toast"; // Adjust path as needed
 import Data from "../../utils/data";
 
 const IErrorMessage = new ErrorMessage();
-const $ = window.$; // Assuming jQuery for modal control is required
+const $ = window.$; 
 
+// Generate a unique ID so we don't conflict if multiple modals exist
 const modalId = `mpesa-modal-${Math.random().toString(36).substring(2, 9)}`;
 
-// --- UI Component for Status Display ---
 const StatusDisplay = ({ status, message }) => {
   const statusConfig = {
-    // Initial state or after reset
     IDLE: {
       icon: 'fas fa-info-circle',
       color: '#0c5460',
       bgColor: '#d1ecf1',
       borderColor: '#bee5eb',
-      defaultMessage: 'Enter details to start your payment.',
+      title: 'Ready',
     },
-    // Waiting for init mutation
     INITIATING: {
       icon: 'spinner',
       color: '#004085',
       bgColor: '#cce5ff',
       borderColor: '#b8daff',
-      defaultMessage: 'Connecting to M-Pesa...',
+      title: 'Connecting...',
     },
-    // Waiting for user to enter PIN on their phone
     AWAITING_USER_ACTION: {
       icon: 'fas fa-mobile-alt',
-      color: '#004085',
-      bgColor: '#cce5ff',
-      borderColor: '#b8daff',
-      defaultMessage: 'A prompt has been sent to your phone. Please enter your M-Pesa PIN to authorize.',
+      color: '#856404', // Yellow/Gold for attention
+      bgColor: '#fff3cd',
+      borderColor: '#ffeeba',
+      title: 'Check your Phone',
     },
-    // Polling getPaymentStatus query
     VERIFYING: {
       icon: 'spinner',
       color: '#0c5460',
       bgColor: '#d1ecf1',
       borderColor: '#bee5eb',
-      defaultMessage: 'Verifying payment, please wait...',
+      title: 'Verifying...',
     },
-    // Terminal success state
     SUCCESS: {
       icon: 'fas fa-check-circle',
       color: '#155724',
       bgColor: '#d4edda',
       borderColor: '#c3e6cb',
-      defaultMessage: 'Payment was successful! Redirecting...',
+      title: 'Success',
     },
-    // Terminal error state
     ERROR: {
-      icon: 'fas fa-times-circle',
+      icon: 'fas fa-exclamation-circle',
       color: '#721c24',
       bgColor: '#f8d7da',
       borderColor: '#f5c6cb',
-      defaultMessage: 'An error occurred. Please try again.',
+      title: 'Payment Failed',
     },
   };
 
-  const currentStatus = statusConfig[status];
-  if (!currentStatus) return null;
-
-  const displayMessage = message || currentStatus.defaultMessage;
+  const current = statusConfig[status] || statusConfig.IDLE;
   
-  const style = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '1rem',
-    padding: '1rem',
-    marginTop: '1.5rem',
-    borderRadius: '0.25rem',
-    border: `1px solid ${currentStatus.borderColor}`,
-    color: currentStatus.color,
-    backgroundColor: currentStatus.bgColor,
-    textAlign: 'center',
-    minHeight: '60px',
-    transition: 'all 0.3s ease-in-out',
-  };
+  // Allow message to be a string or a React component/element
+  const content = message || current.defaultMessage;
 
   return (
-    <div style={style}>
-      {currentStatus.icon === 'spinner' ? (
-        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-      ) : (
-        <i className={currentStatus.icon} style={{ fontSize: '1.2rem' }} />
-      )}
-      <span>{displayMessage}</span>
+    <div style={{
+      display: 'flex', 
+      alignItems: 'flex-start', // Align to top for multi-line errors
+      justifyContent: 'flex-start', 
+      gap: '15px',
+      padding: '15px', 
+      marginTop: '20px', 
+      borderRadius: '6px',
+      border: `1px solid ${current.borderColor}`, 
+      color: current.color, 
+      backgroundColor: current.bgColor,
+      textAlign: 'left'
+    }}>
+      <div style={{ marginTop: '2px' }}>
+        {(status === 'INITIATING' || status === 'VERIFYING') ? (
+          <span className="spinner-border spinner-border-sm" />
+        ) : (
+          <i className={current.icon} style={{ fontSize: '1.4rem' }} />
+        )}
+      </div>
+      <div>
+        {/* If we have a custom Error Object (JSX), render it, else render standard text */}
+        {typeof content === 'object' ? content : (
+            <>
+                <strong style={{display: 'block', marginBottom: '4px'}}>{current.title}</strong>
+                <span>{content}</span>
+            </>
+        )}
+      </div>
     </div>
   );
 };
 
-// --- Main Modal Component ---
-class MpesaPaymentModalV2 extends React.Component {
+class MpesaPaymentModal extends React.Component {
   state = {
-    // Single status string to manage the entire flow
-    status: 'IDLE', // IDLE | INITIATING | AWAITING_USER_ACTION | VERIFYING | SUCCESS | ERROR
-    message: '',      // User-facing message from the API or for guidance
-    transactionId: null, // The ID we get from our backend to poll with
-    form: {
-      phone: '',
-      amount: '',
-    },
+    status: 'IDLE', 
+    message: '',
+    transactionId: null, 
+    form: { phone: '', amount: '' },
   };
 
   _isMounted = false;
@@ -113,19 +106,24 @@ class MpesaPaymentModalV2 extends React.Component {
 
   componentDidMount() {
     this._isMounted = true;
+    // Pre-fill phone if available in school data
     const school = Data.schools.getSelected();
     if (school?.phone) {
-      this.setState({ form: { ...this.state.form, phone: school.phone } });
+      this.setState(prev => ({ form: { ...prev.form, phone: school.phone } }));
     }
   }
 
   componentWillUnmount() {
     this._isMounted = false;
-    this.stopPolling(); // Ensure no intervals are left running
+    this.stopPolling();
   }
 
-  show = () => {
+  // --- Public Methods called via Ref ---
+  show = (prefillData = {}) => {
     this.resetState();
+    if (prefillData.amount) this.setState(prev => ({ form: { ...prev.form, amount: prefillData.amount }}));
+    if (prefillData.phone) this.setState(prev => ({ form: { ...prev.form, phone: prefillData.phone }}));
+    
     $(`#${modalId}`).modal({ show: true, backdrop: 'static', keyboard: false });
   };
 
@@ -133,78 +131,60 @@ class MpesaPaymentModalV2 extends React.Component {
     this.stopPolling();
     $(`#${modalId}`).modal('hide');
   };
+  // ------------------------------------
 
   resetState = () => {
     this.stopPolling();
     if (this._isMounted) {
-      this.setState({
-        status: 'IDLE',
-        message: '',
-        transactionId: null,
-        // Don't reset the form fields, user might want to retry with same details
-      });
+      this.setState({ status: 'IDLE', message: '', transactionId: null });
     }
   };
 
-  handleInputChange = (event) => {
-    const { name, value } = event.target;
-    this.setState(prevState => ({
-      form: { ...prevState.form, [name]: value },
-    }));
+  handleInputChange = (e) => {
+    const { name, value } = e.target;
+    this.setState(prev => ({ form: { ...prev.form, [name]: value } }));
   };
 
   initiatePayment = async () => {
     const { phone, amount } = this.state.form;
-
-    if (!phone || !amount || Number(amount) <= 0) {
-      IErrorMessage.show({ message: 'Please enter a valid phone number and amount.' });
-      return;
-    }
+    if (!phone || !amount) return IErrorMessage.show({ message: 'Invalid details.' });
 
     this.setState({ status: 'INITIATING', message: '' });
 
     try {
-      // Assuming Data.schools.initiatePayment maps to your `init` mutation
+      // 1. Initiate STK Push
       const result = await Data.schools.charge(phone, amount);
-
-      console.log(result)
-      if (!this._isMounted) return;
-
-      if (result.errors || !result?.payments?.init) {
-        const errorMessage = result.errors?.[0]?.message || 'Failed to start payment process.';
-        this.setState({ status: 'ERROR', message: errorMessage });
-        return;
-      }
       
+      if (!this._isMounted) return;
+      if (result.errors || !result?.payments?.init) {
+        throw new Error(result.errors?.[0]?.message || 'Failed to init payment.');
+      }
+
       const { id, CheckoutRequestID, MerchantRequestID } = result.payments.init;
+      
       this.setState({
         transactionId: id,
         status: 'AWAITING_USER_ACTION',
-        message: `Your payment request has been sent. CheckoutRequestID: ${CheckoutRequestID}, MerchantRequestID: ${MerchantRequestID}`,
+        message: `Request sent to ${phone}. Enter PIN now.`
       });
 
-      // Start polling for the result
-      this.startPolling(id);
+      // 2. Start Polling
+      this.startPolling(MerchantRequestID, CheckoutRequestID);
 
     } catch (error) {
-      console.error("Initiation Error:", error);
-      if (this._isMounted) {
-        this.setState({ status: 'ERROR', message: 'A network error occurred. Please try again.' });
-      }
+      console.error(error);
+      if (this._isMounted) this.setState({ status: 'ERROR', message: error.message });
     }
   };
 
-  startPolling = (transactionId) => {
-    this.stopPolling(); // Ensure no multiple polls are running
-
-    // Immediately check status, then set interval
-    this.checkPaymentStatus(transactionId);
-
+  startPolling = (MerchantRequestID, CheckoutRequestID) => {
+    this.stopPolling();
+    // Poll every 5 seconds
     this.pollingInterval = setInterval(() => {
-      this.checkPaymentStatus(transactionId);
-    }, 5000); // Poll every 5 seconds
+      this.checkStatus(MerchantRequestID, CheckoutRequestID);
+    }, 5000);
   };
-  
+
   stopPolling = () => {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
@@ -212,155 +192,95 @@ class MpesaPaymentModalV2 extends React.Component {
     }
   };
 
-  checkPaymentStatus = async ({ MerchantRequestID, CheckoutRequestID }) => {
-    // If we've already reached a terminal state, don't continue polling
-    if (['SUCCESS', 'ERROR'].includes(this.state.status)) {
-        this.stopPolling();
-        return;
-    }
-    
-    // Set verifying status for better UX, unless we're still waiting for user PIN
-    if (this.state.status !== 'AWAITING_USER_ACTION') {
-      this.setState({ status: 'VERIFYING' });
+  checkStatus = async (MerchantRequestID, CheckoutRequestID) => {
+    // Only show "Verifying" if we aren't already in a failure/success state
+    if (this.state.status !== 'AWAITING_USER_ACTION' && this.state.status !== 'ERROR') {
+        this.setState({ status: 'VERIFYING' });
     }
 
     try {
-      // Assumes Data.schools.verifyTx maps to your `getPaymentStatus` query
-      const {payments:paymentData} = await Data.schools.verifyTx({ MerchantRequestID, CheckoutRequestID });
-
-      console.log(paymentData)
+      const result = await Data.schools.verifyTx({ MerchantRequestID, CheckoutRequestID });
+      
       if (!this._isMounted) return;
+      if (!result?.payments?.confirm) return; // Still pending
 
-      if (paymentData.errors || !paymentData?.confirm) {
-        // Don't stop polling on a single failed check, could be a network blip.
-        // After several failures, you might want to stop and show an error.
-        console.warn('Polling check failed, will retry.');
-        return;
-      }
-
-      const { status, errorMessage, ref } = paymentData.confirm;
+      const { status, message, amount, phone, ref } = result.payments.confirm;
 
       if (status === 'COMPLETED') {
         this.stopPolling();
-        this.setState({ status: 'SUCCESS', message: `Payment successful! Receipt: ${ref}` });
-        // setTimeout(() => {
-        //   // this.hide();
-        //   window.location.reload(); // Or redirect
-        // }, 2000);
+        this.setState({ 
+            status: 'SUCCESS', 
+            message: (
+                <div>
+                    <strong>Payment Received!</strong>
+                    <div style={{fontSize: '0.9em', marginTop: '4px'}}>
+                        Ref: <b>{ref}</b><br/>
+                        Amount: KES {amount}
+                    </div>
+                </div>
+            )
+        });
+        
+        if (this.props.onPaymentSuccess) this.props.onPaymentSuccess();
+        setTimeout(() => { this.hide(); }, 4000);
 
-      } else if (status.startsWith('FAILED') || status.startsWith('FLAGGED')) {
+      } else if (status.includes('FAILED') || status.includes('FLAGGED')) {
         this.stopPolling();
-        this.setState({ status: 'ERROR', message: errorMessage || 'The payment could not be completed.' });
-      
-      } // If status is 'PENDING', do nothing and let the interval poll again.
+        
+        // Construct a nice error view using the data from the API
+        const errorView = (
+            <div>
+                <strong>Transaction Failed</strong>
+                <div style={{fontSize: '0.95em', marginTop: '5px', marginBottom: '5px'}}>
+                    {message}
+                </div>
+                <div style={{fontSize: '0.85em', opacity: 0.8, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '5px'}}>
+                    KES {amount} • {phone}
+                </div>
+            </div>
+        );
 
-    } catch (error) {
-        console.error("Polling Error:", error);
-        // To avoid infinite loops on persistent network errors, you might add a retry counter
-        // For now, we'll let it continue trying.
+        this.setState({ 
+            status: 'ERROR', 
+            message: errorView 
+        });
+      }
+    } catch (e) {
+      console.error("Poll Error", e);
     }
   };
-  
-  renderForm = () => {
+
+  render() {
     const { status, form } = this.state;
     const isBusy = ['INITIATING', 'AWAITING_USER_ACTION', 'VERIFYING', 'SUCCESS'].includes(status);
 
     return (
-      <>
-        <div className="form-group">
-          <label htmlFor={`${modalId}-phone`}>M-Pesa Phone Number</label>
-          <input
-            id={`${modalId}-phone`}
-            type="tel"
-            className="form-control form-control-lg"
-            name="phone"
-            placeholder="2547XXXXXXXX"
-            value={form.phone}
-            onChange={this.handleInputChange}
-            disabled={isBusy}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor={`${modalId}-amount`}>Amount (KES)</label>
-          <input
-            id={`${modalId}-amount`}
-            type="number"
-            className="form-control form-control-lg"
-            name="amount"
-            placeholder="100"
-            min="1"
-            value={form.amount}
-            onChange={this.handleInputChange}
-            disabled={isBusy}
-          />
-        </div>
-      </>
-    );
-  };
-  
-  renderActions = () => {
-    const { status } = this.state;
-
-    if (status === 'ERROR') {
-      return (
-        <button type="button" className="btn btn-warning btn-lg btn-block" onClick={this.resetState}>
-          <i className="fas fa-redo" style={{ marginRight: '8px' }} />
-          Try Again
-        </button>
-      );
-    }
-
-    const isBusy = !['IDLE', 'ERROR'].includes(status);
-
-    return (
-      <button
-        type="button"
-        className="btn btn-success btn-lg btn-block"
-        onClick={this.initiatePayment}
-        disabled={isBusy}
-      >
-        {isBusy ? (
-          <>
-            <span className="spinner-border spinner-border-sm" style={{marginRight: '8px'}} role="status" aria-hidden="true"/>
-            Processing...
-          </>
-        ) : (
-          'Pay Securely'
-        )}
-      </button>
-    );
-  };
-
-  render() {
-    return (
-      <div>
-        <div className="modal fade" id={modalId} tabIndex={-1}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">M-Pesa Express Payment</h5>
-                <button type="button" className="close" onClick={this.hide}>
-                  <span>×</span>
-                </button>
+      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">M-Pesa Express</h5>
+              <button type="button" className="close" onClick={this.hide} disabled={isBusy}><span>×</span></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input type="text" className="form-control" name="phone" value={form.phone} onChange={this.handleInputChange} disabled={isBusy} placeholder="2547..." />
               </div>
-              <div className="modal-body" style={{ padding: '2rem' }}>
-                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                  <img src="/img/lipa-na-mpesa.svg" alt="Lipa na M-Pesa" style={{ maxWidth: '150px' }} />
-                </div>
-                
-                {this.renderForm()}
-                
-                <StatusDisplay status={this.state.status} message={this.state.message} />
-                
+              <div className="form-group">
+                <label>Amount</label>
+                <input type="number" className="form-control" name="amount" value={form.amount} onChange={this.handleInputChange} disabled={isBusy} />
               </div>
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <button type="button" className="btn btn-link" onClick={this.hide}>
-                    Cancel
-                 </button>
-                 <div style={{ width: '60%' }}>
-                    {this.renderActions()}
-                 </div>
-              </div>
+              <StatusDisplay status={status} message={this.state.message} />
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={this.hide} disabled={isBusy}>Close</button>
+              {!isBusy && status !== 'ERROR' && (
+                <button type="button" className="btn btn-success" onClick={this.initiatePayment}>Send Prompt</button>
+              )}
+              {status === 'ERROR' && (
+                <button type="button" className="btn btn-warning" onClick={this.resetState}>Retry</button>
+              )}
             </div>
           </div>
         </div>
@@ -369,4 +289,4 @@ class MpesaPaymentModalV2 extends React.Component {
   }
 }
 
-export default MpesaPaymentModalV2;
+export default MpesaPaymentModal;

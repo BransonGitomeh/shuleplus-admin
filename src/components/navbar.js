@@ -364,7 +364,7 @@ class Navbar extends React.Component {
                  <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                     <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                         <span className="kt-menu__link-text" style={topNavlinkStyle}>
-                           {(selectedSchool?.financial?.balanceFormated) || "KSH 0.00"}, Finance
+                           {(selectedSchool?.financial?.balanceFormated) || "~ SMS's"}, Finance
                         </span>
                         <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
                     </a>

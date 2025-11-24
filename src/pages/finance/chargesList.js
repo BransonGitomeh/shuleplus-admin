@@ -118,10 +118,10 @@ export default class BasicTable extends React.Component {
                     label: "Ref",
                     key: "id"
                   },
-                  {
-                    label: "Ammount",
-                    key: "ammount"
-                  },
+                  // {
+                  //   label: "Ammount",
+                  //   key: "ammount"
+                  // },
                   {
                     label: "Reason",
                     key: "reason"

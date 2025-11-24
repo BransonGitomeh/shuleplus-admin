@@ -592,12 +592,33 @@ var Data = (function () {
                     payment: { school: school.id, ammount, phone }
                 });
             },
-            verifyTx: ({ merchantRequestID, checkoutRequestID }) => {
-                const school = instance.schools.getSelected();
-                if (!school.id) return Promise.reject("No school selected");
-                return mutate(`mutation ($data: mpesaStartTxVerificationInput!) { payments { confirm(payment: $data) { success, message, id, amount, phone, status, ref, time } } }`, {
-                    data: { merchantRequestID, checkoutRequestID, school: school.id }
-                });
+            // In utils/data.js (inside publicApi -> school object)
+
+            verifyTx: ({ CheckoutRequestID, MerchantRequestID }) => {
+                // 1. Get the school ID
+                // Handle cases where this might be called via publicApi.schools.verifyTx or publicApi.school.verifyTx
+                // We use the internal _schoolData or try to find it from cache
+                const schoolId = instance.schools.getSelected()?.id;
+
+                if (!schoolId) return Promise.reject("No school selected for verification");
+
+                return mutate(
+                    `mutation ($data: mpesaStartTxVerificationInput!) { 
+            payments { 
+                confirm(payment: $data) { 
+                    success, message, id, amount, phone, status, ref, time 
+                } 
+            } 
+        }`,
+                    {
+                        data: {
+                            // 2. Ensure these keys match the GraphQL Input Type exactly (PascalCase)
+                            MerchantRequestID: MerchantRequestID,
+                            CheckoutRequestID: CheckoutRequestID,
+                            school: schoolId
+                        }
+                    }
+                );
             },
             delete: (data) => new Promise(async (resolve, reject) => {
                 try {
