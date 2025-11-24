@@ -52,6 +52,31 @@ export default function MessageComposer() {
     init();
   }, []);
 
+  // --- 1. INITIAL SETUP (FIXED WITH SUBSCRIPTIONS) ---
+  useEffect(() => {
+    // We subscribe instead of just listing. 
+    // This fixes the issue where data isn't ready when the component loads.
+    
+    const unsubClasses = Data.classes.subscribe(({ classes }) => {
+        if(classes) setClasses(classes);
+    });
+
+    const unsubRoutes = Data.routes.subscribe(({ routes }) => {
+        if(routes) setRoutes(routes);
+    });
+
+    const unsubTeachers = Data.teachers.subscribe(({ teachers }) => {
+        if(teachers) setTeachers(teachers);
+    });
+
+    // Cleanup subscriptions when component unmounts
+    return () => {
+        if(unsubClasses) unsubClasses();
+        if(unsubRoutes) unsubRoutes();
+        if(unsubTeachers) unsubTeachers();
+    };
+  }, []);
+
   // --- 2. DATA FETCHING LOGIC ---
   const fetchRecipients = useCallback(async (isLoadMore = false) => {
     setIsLoadingList(true);
@@ -143,12 +168,12 @@ export default function MessageComposer() {
   }, [activeTab, subFilterId, page, classes, routes, teachers, displayList.length]);
 
   // Trigger fetch when tabs/filters change (Not on pagination state change)
-  useEffect(() => {
+    useEffect(() => {
     // Reset selections and list when tab/filter changes
     setSelectedIds(new Set());
     setPage(1);
     fetchRecipients(false); 
-  }, [activeTab, subFilterId]);
+  }, [activeTab, subFilterId, classes, routes]); 
 
 
   // --- 3. FILTERING (Client-side Search on Loaded Data) ---
