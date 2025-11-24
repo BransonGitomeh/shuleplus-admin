@@ -232,7 +232,7 @@ var Data = (function () {
         const FRAGMENT_GRADES_OPTIONS_DATA = `fragment GradesOptionsData on school {
             grades { id subjects { id topics { id subtopics { id questions { id options { id value correct } } } } } }
         }`;
-        
+
         // --- CORRECTED FRAGMENT TO FETCH ATTEMPTS AND EVENTS ---
         const FRAGMENT_LESSON_DATA = `fragment LessonData on school {
             grades {
@@ -363,10 +363,10 @@ var Data = (function () {
             // Check if grades were part of the update, as lessonAttempts are nested within them.
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
                 console.log('[DataService] Processing lesson attempts from nested school structure...');
-                
+
                 // Flatten all lesson attempts from the entire school's grade/subject hierarchy
                 const allLessonAttempts = activeSchool.grades.flatMap(g => g.subjects || [])
-                                                              .flatMap(s => s.lessonAttempts || []);
+                    .flatMap(s => s.lessonAttempts || []);
 
                 if (allLessonAttempts.length > 0) {
                     console.log(`[DataService] Found ${allLessonAttempts.length} total lesson attempts. Caching.`);
@@ -446,8 +446,46 @@ var Data = (function () {
         { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'] },
         { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
         { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{name} route{id, name} parent{id, name} } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } }) },
-        { name: "parents", singularName: "parent", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'], updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") }); return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 }; }, invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { parents { invite(parent: $data) { id phone message } } }`, { data }); const invitation = response.parents.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
-        { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) }) },
+        {
+            name: "parents",
+            singularName: "parent",
+            createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'],
+            updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'],
+            customMethods: (allData, subs) => ({
+                getPage: async ({ page = 1, limit = 15 }) => {
+                    const offset = (page - 1) * limit;
+                    const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") });
+                    return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 };
+                },
+                invite: (data) => new Promise(async (resolve) => {
+                    const response = await mutate(`mutation ($data: Iinvite!) { parents { invite(parent: $data) { id phone message } } }`, { data });
+                    const invitation = response.parents.invite;
+                    allData.invitations.push(invitation);
+                    if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] }));
+                    resolve(invitation);
+                }),
+                // --- ADDED METHODS BELOW ---
+                getForClass: (classId) => {
+                    // 1. Find the class to get its list of student IDs
+                    const targetClass = allData.classes.find(c => c.id === classId);
+                    if (!targetClass || !Array.isArray(targetClass.students)) return [];
+
+                    // 2. Create a Set of student IDs for O(1) lookup
+                    const studentIds = new Set(targetClass.students.map(s => s.id));
+
+                    // 3. Filter parents who have a child in that Set
+                    return allData.parents.filter(p =>
+                        Array.isArray(p.students) && p.students.some(s => studentIds.has(s.id))
+                    );
+                },
+                getForRoute: (routeId) => {
+                    // The parents data fragment already includes nested route data for students
+                    return allData.parents.filter(p =>
+                        Array.isArray(p.students) && p.students.some(s => s.route && s.route.id === routeId)
+                    );
+                }
+            })
+        }, { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) }) },
         { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
         { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
         { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },

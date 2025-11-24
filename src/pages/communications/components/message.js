@@ -1,187 +1,444 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Handlebars from 'handlebars';
 
-// A simple utility to interact with localStorage for templates
-const TemplateStore = {
-  get: () => {
-    try {
-      const templates = localStorage.getItem("messageTemplatesV4");
-      return templates ? JSON.parse(templates) : [];
-    } catch (e) { return []; }
-  },
-  save: (templates) => {
-    localStorage.setItem("messageTemplatesV4", JSON.stringify(templates));
-  }
-};
+// --- STYLES: Modern "Campaign Manager" UI ---
+const MODERN_STYLES = `
+  /* Custom Scrollbar */
+  .custom-scroll::-webkit-scrollbar { width: 6px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  .custom-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-// V4: Custom CSS for a polished, Metronic-style selection list.
-// In a real app, this would go in a dedicated CSS/SCSS file.
-const V4_STYLES = `
-  .recipient-list-item {
-    transition: background-color 0.15s ease-in-out;
-    border-radius: 6px;
-    margin-bottom: 5px;
+  /* Contact Card */
+  .contact-card {
+    transition: all 0.2s ease;
+    border: 1px solid #ebedf2;
+    border-radius: 8px;
+    background: white;
+    margin-bottom: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
-  .recipient-list-item:hover {
-    background-color: #f7f8fa; /* Metronic hover color */
+  .contact-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-color: #d1d5db;
   }
-  .recipient-list-item.active {
-    background-color: #f0f1ff; /* Metronic light-brand color */
-    border-left: 3px solid #5d78ff; /* Metronic brand color */
+  .contact-card.selected {
+    border-color: #5d78ff;
+    background-color: #f7f9ff;
   }
-  .recipient-list-item.active .recipient-name {
-    color: #5d78ff !important;
+  .contact-card.selected::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: #5d78ff;
+  }
+
+  /* Variable Chips */
+  .var-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 0 5px 5px 0;
+    background: #eef2ff;
+    color: #5d78ff;
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .var-chip:hover {
+    background: #5d78ff;
+    color: white;
+    border-color: #5d78ff;
+  }
+
+  /* Load More Button */
+  .load-more-container {
+    padding: 15px 0;
+    text-align: center;
+    border-top: 1px dashed #ebedf2;
+    margin-top: 5px;
+  }
+  .btn-load-more {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 30px;
+    background: #f0f2f5;
+    color: #5e6278;
+    border: none;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .btn-load-more:hover {
+    background: #e4e6ef;
+    color: #5d78ff;
+    transform: translateY(-1px);
+  }
+  .btn-load-more:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Phone Preview Simulator */
+  .phone-mockup {
+    background: #fff;
+    border: 12px solid #2d3436;
+    border-radius: 30px;
+    height: 480px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-header {
+    background: #f7f7f7;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 600;
+  }
+  .phone-body {
+    background: #e5e5f7;
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .msg-bubble {
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 4px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #333;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    max-width: 90%;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+  }
+  .msg-meta {
+    font-size: 0.7rem;
+    color: #999;
+    margin-top: 4px;
+    display: block;
+    text-align: right;
   }
 `;
 
-const MessageViewV4 = (props) => {
+// --- HELPER: Mask Phone (0711***107) ---
+const maskPhone = (phone) => {
+  if (!phone) return '';
+  const p = phone.toString().replace(/\D/g, '');
+  if (p.length < 7) return p;
+  return `${p.slice(0, 4)}***${p.slice(-3)}`;
+};
+
+const MessageView = (props) => {
   const {
     activeTab, onTabChange, subFilterId, onSubFilterIdChange, searchTerm, onSearchChange,
-    classes, routes, displayList, selectedIds, onSelectAll, onSelectOne,
+    classes, routes, 
+    // Pagination Props
+    displayList, totalCount, isLoading, hasMore, onLoadMore,
+    // Selection Props
+    selectedIds, onSelectAll, onSelectOne,
+    // Message Props
     messageTemplate, onMessageChange, messageType, onMessageTypeChange,
     onSend, isSending, previewRecipient,
   } = props;
 
-  const [savedTemplates, setSavedTemplates] = useState([]);
-  const [newTemplateName, setNewTemplateName] = useState('');
   const [preview, setPreview] = useState('');
+  const textareaRef = useRef(null);
 
-  useEffect(() => setSavedTemplates(TemplateStore.get()), []);
+  // Logic: Auto-select first option if filter list exists but none selected
+  useEffect(() => {
+    if (activeTab === 'classes' && !subFilterId && classes.length > 0) {
+      onSubFilterIdChange({ target: { value: classes[0].id } });
+    }
+    if (activeTab === 'routes' && !subFilterId && routes.length > 0) {
+      onSubFilterIdChange({ target: { value: routes[0].id } });
+    }
+  }, [activeTab, classes, routes, subFilterId, onSubFilterIdChange]);
+
+  // Logic: Generate Live Preview
   useEffect(() => {
     if (previewRecipient) {
       try {
         const template = Handlebars.compile(messageTemplate || ' ');
-        const context = { recipient: previewRecipient, parent: previewRecipient, student: previewRecipient.students?.[0], school: { name: "Metronic School" } };
+        const context = {
+          recipient: previewRecipient,
+          parent: previewRecipient,
+          student: previewRecipient.students?.[0] || { names: 'Student' }
+        };
         setPreview(template(context));
-      } catch (error) { setPreview("<Invalid Template Syntax>"); }
+      } catch (error) { setPreview("Template Error"); }
     } else {
-      setPreview("Select a recipient to see a live preview.");
+      setPreview("Select a recipient to see preview.");
     }
   }, [messageTemplate, previewRecipient]);
 
-  const handleSaveTemplate = () => {
-    if (!newTemplateName.trim() || !messageTemplate.trim()) return alert("Please provide a name and content.");
-    const newTemplates = [...savedTemplates, { name: newTemplateName, content: messageTemplate }];
-    setSavedTemplates(newTemplates);
-    TemplateStore.save(newTemplates);
-    setNewTemplateName('');
+  // Helper: Insert Variable Tag
+  const insertVariable = (varCode) => {
+    const field = textareaRef.current;
+    if (field) {
+      const startPos = field.selectionStart;
+      const endPos = field.selectionEnd;
+      const text = messageTemplate;
+      const newText = text.substring(0, startPos) + varCode + text.substring(endPos);
+      
+      onMessageChange({ target: { value: newText } });
+      
+      setTimeout(() => {
+        field.focus();
+        field.setSelectionRange(startPos + varCode.length, startPos + varCode.length);
+      }, 0);
+    }
   };
 
-  const handleLoadTemplate = (e) => {
-    if (e.target.value) onMessageChange({ target: { value: e.target.value } });
-  };
-  
-  const allOnPageSelected = displayList.length > 0 && selectedIds.size === displayList.length;
-  const smsParts = messageTemplate ? Math.ceil(messageTemplate.length / 160) : 0;
   const getInitials = (name = '') => name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  
+  // "Select All" check state based on currently loaded items
+  const allOnPageSelected = displayList.length > 0 && 
+                            displayList.every(item => selectedIds.has(item.id));
 
   return (
     <>
-      <style>{V4_STYLES}</style>
-      <div className="row">
-        {/* ======================= COLUMN 1: RECIPIENT LIST & FILTERS ======================= */}
-        <div className="col-lg-4">
-          <div className="kt-portlet kt-portlet--height-fluid">
-            <div className="kt-portlet__head">
+      <style>{MODERN_STYLES}</style>
+      <div className="row h-100">
+        
+        {/* ======================= LEFT COLUMN: Audience Manager ======================= */}
+        <div className="col-lg-5 col-xl-4 d-flex flex-column" style={{maxHeight: '85vh'}}>
+          <div className="kt-portlet kt-portlet--height-fluid flex-grow-1 d-flex flex-column mb-0">
+            
+            {/* 1. Header & Tabs */}
+            <div className="kt-portlet__head kt-portlet__head--noborder pb-0">
               <div className="kt-portlet__head-label">
-                <h3 className="kt-portlet__head-title">Recipients</h3>
+                <h3 className="kt-portlet__head-title text-dark">Select Audience</h3>
               </div>
             </div>
-            <div className="kt-portlet__body">
-              <ul className="nav nav-tabs nav-tabs-line nav-tabs-bold nav-tabs-line-brand" role="tablist">
-                <li className="nav-item"><a className={`nav-link ${activeTab === 'parents' ? 'active' : ''}`} onClick={() => onTabChange('parents')} data-toggle="tab" href="#!">All Parents</a></li>
-                <li className="nav-item"><a className={`nav-link ${activeTab === 'classes' ? 'active' : ''}`} onClick={() => onTabChange('classes')} data-toggle="tab" href="#!">By Class</a></li>
-                <li className="nav-item"><a className={`nav-link ${activeTab === 'routes' ? 'active' : ''}`} onClick={() => onTabChange('routes')} data-toggle="tab" href="#!">By Route</a></li>
-                <li className="nav-item"><a className={`nav-link ${activeTab === 'staff' ? 'active' : ''}`} onClick={() => onTabChange('staff')} data-toggle="tab" href="#!">Staff</a></li>
-              </ul>
-              
-              {/* --- Consistent Filter Bar --- */}
-              <div className="pt-3">
-                {activeTab === 'classes' && <div className="form-group"><select className="form-control" value={subFilterId} onChange={onSubFilterIdChange}><option value="">-- Select a Class --</option>{classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>}
-                {activeTab === 'routes' && <div className="form-group"><select className="form-control" value={subFilterId} onChange={onSubFilterIdChange}><option value="">-- Select a Route --</option>{routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>}
-                <div className="kt-input-icon kt-input-icon--right">
-                  <input type="text" className="form-control" placeholder="Search recipients..." value={searchTerm} onChange={onSearchChange} />
-                  <span className="kt-input-icon__icon kt-input-icon__icon--right"><span><i className="la la-search"></i></span></span>
-                </div>
-              </div>
-
-              <div className="kt-separator kt-separator--space-lg kt-separator--border-dashed"></div>
-
-              {/* --- List Header --- */}
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <label className="kt-checkbox kt-checkbox--brand mb-0">
-                    <input type="checkbox" checked={allOnPageSelected} onChange={e => onSelectAll(e.target.checked)} disabled={displayList.length === 0} />
-                    Select All
-                    <span></span>
-                </label>
-                <small className="text-muted">Showing {displayList.length} recipients</small>
-              </div>
-
-              {/* --- V4 Recipient List --- */}
-              <div className="kt-scroll" style={{ height: '50vh', overflowY: 'auto' }}>
-                <ul className="list-unstyled">
-                  {displayList.map(item => (
-                    <li key={item.id} className={`recipient-list-item d-flex align-items-center p-2 ${selectedIds.has(item.id) ? 'active' : ''}`} onClick={() => onSelectOne(item.id, !selectedIds.has(item.id))} style={{cursor: 'pointer'}}>
-                      <div className="kt-user-card-v2__pic pr-3">
-                          <span className="kt-badge kt-badge--xl kt-badge--brand">{getInitials(item.name)}</span>
-                      </div>
-                      <div className="flex-grow-1">
-                          <div className="text-dark-75 font-weight-bold recipient-name">{item.name}</div>
-                          <div className="text-muted font-size-sm">{item.email || item.phone}</div>
-                      </div>
-                      <label className="kt-checkbox kt-checkbox--single kt-checkbox--tick kt-checkbox--brand align-self-center">
-                          <input type="checkbox" checked={selectedIds.has(item.id)} readOnly/>
-                          <span></span>
-                      </label>
-                    </li>
+            
+            <div className="px-4 pb-2">
+               {/* Segmented Control */}
+               <div className="btn-group btn-group-sm w-100 mb-3" role="group">
+                  {[
+                    { id: 'parents', label: 'All Parents' },
+                    { id: 'classes', label: 'By Class' },
+                    { id: 'routes', label: 'By Route' },
+                    { id: 'staff', label: 'Staff' }
+                  ].map(tab => (
+                    <button 
+                      key={tab.id}
+                      type="button" 
+                      className={`btn ${activeTab === tab.id ? 'btn-brand' : 'btn-outline-secondary'}`}
+                      onClick={() => onTabChange(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
                   ))}
-                </ul>
-                {displayList.length === 0 && <div className="text-center text-muted p-5">No recipients match criteria.</div>}
-              </div>
+               </div>
+
+               {/* Dropdowns for Sub-Filters */}
+               {activeTab === 'classes' && (
+                 <select className="form-control form-control-sm mb-3" style={{background:'#f7f9ff', borderColor:'#5d78ff', color:'#5d78ff', fontWeight:'600'}} value={subFilterId} onChange={onSubFilterIdChange}>
+                   {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                 </select>
+               )}
+               {activeTab === 'routes' && (
+                 <select className="form-control form-control-sm mb-3" style={{background:'#f7f9ff', borderColor:'#5d78ff', color:'#5d78ff', fontWeight:'600'}} value={subFilterId} onChange={onSubFilterIdChange}>
+                   {routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                 </select>
+               )}
+
+               {/* Search Bar */}
+               <div className="kt-input-icon kt-input-icon--right">
+                  <input type="text" className="form-control" placeholder="Search loaded contacts..." value={searchTerm} onChange={onSearchChange} />
+                  <span className="kt-input-icon__icon kt-input-icon__icon--right"><span><i className="la la-search"></i></span></span>
+               </div>
+            </div>
+
+            {/* 2. Recipient List */}
+            <div className="kt-portlet__body flex-grow-1 d-flex flex-column pt-2" style={{overflow:'hidden'}}>
+               <div className="d-flex justify-content-between align-items-center mb-2">
+                  <label className="kt-checkbox kt-checkbox--brand mb-0 font-weight-bold text-muted small">
+                      <input type="checkbox" checked={allOnPageSelected} onChange={e => onSelectAll(e.target.checked)} disabled={displayList.length === 0} />
+                      SELECT ALL
+                      <span></span>
+                  </label>
+                  <span className="badge badge-light text-muted">
+                    {displayList.length} {activeTab === 'parents' ? `of ${totalCount}` : ''} Loaded
+                  </span>
+               </div>
+
+               <div className="custom-scroll flex-grow-1 pr-2" style={{overflowY: 'auto'}}>
+                  {displayList.map(item => {
+                    const isSelected = selectedIds.has(item.id);
+                    const studentNames = item.students?.map(s => s.names).join(', ');
+
+                    return (
+                      <div 
+                        key={item.id} 
+                        className={`contact-card p-3 ${isSelected ? 'selected' : ''}`}
+                        onClick={() => onSelectOne(item.id, !isSelected)}
+                      >
+                        <div className="d-flex align-items-start">
+                          <div className="kt-user-card-v2__pic mr-3">
+                              <span className={`kt-badge kt-badge--lg ${isSelected ? 'kt-badge--brand' : 'kt-badge--secondary'}`}>
+                                {getInitials(item.name)}
+                              </span>
+                          </div>
+                          <div className="flex-grow-1" style={{minWidth: 0}}>
+                              <div className="d-flex justify-content-between">
+                                <h6 className={`mb-1 ${isSelected ? 'text-primary' : 'text-dark'}`} style={{fontSize: '0.95rem', fontWeight: 600}}>
+                                  {item.name}
+                                </h6>
+                                <label className="kt-checkbox kt-checkbox--single kt-checkbox--brand mb-0">
+                                    <input type="checkbox" checked={isSelected} readOnly/>
+                                    <span></span>
+                                </label>
+                              </div>
+                              
+                              {/* Display Child Names */}
+                              {studentNames && (
+                                <div className="text-muted small mb-1 text-truncate">
+                                  <i className="la la-child mr-1" style={{opacity: 0.7}}></i>
+                                  {studentNames}
+                                </div>
+                              )}
+                              
+                              {/* Display Masked Phone */}
+                              <div className="small font-weight-bold d-flex align-items-center" style={{color: '#9CA3AF', fontFamily: 'monospace', letterSpacing: '0.5px'}}>
+                                <i className="la la-mobile mr-1"></i>
+                                {maskPhone(item.phone)}
+                              </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Pagination / Load More UI */}
+                  {isLoading && (
+                     <div className="text-center py-3">
+                        <div className="kt-spinner kt-spinner--brand kt-spinner--sm"></div>
+                        <span className="ml-2 small text-muted">Loading contacts...</span>
+                     </div>
+                  )}
+
+                  {!isLoading && hasMore && !searchTerm && (
+                    <div className="load-more-container">
+                       <button className="btn-load-more" onClick={onLoadMore}>
+                         Load Next Batch <i className="la la-arrow-down ml-1"></i>
+                       </button>
+                    </div>
+                  )}
+
+                  {!isLoading && displayList.length === 0 && (
+                    <div className="text-center p-5 text-muted">
+                      <div className="mb-3"><i className="la la-search" style={{fontSize: '3rem', opacity: 0.3}}></i></div>
+                      No recipients found.
+                    </div>
+                  )}
+               </div>
             </div>
           </div>
         </div>
 
-        {/* ======================= COLUMN 2: MESSAGE COMPOSER ======================= */}
-        <div className="col-lg-8">
-          <div className="kt-portlet kt-portlet--height-fluid">
-            <div className="kt-portlet__head">
-              <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title">Compose Message</h3></div>
-              <div className="kt-portlet__head-toolbar"><div className="btn-group"><button type="button" onClick={() => onMessageTypeChange('sms')} className={`btn btn-sm btn-pill ${messageType === 'sms' ? 'btn-success' : 'btn-outline-secondary'}`}>SMS</button><button type="button" onClick={() => onMessageTypeChange('email')} className={`btn btn-sm btn-pill ${messageType === 'email' ? 'btn-brand' : 'btn-outline-secondary'}`}>EMAIL</button></div></div>
-            </div>
-            <div className="kt-portlet__body">
-              <div className="kt-section">
-                <div className="kt-section__content">
-                  <div className="row">
-                    <div className="col-md-6 form-group"><select className="form-control" onChange={handleLoadTemplate}><option value="">— Load Template —</option>{savedTemplates.map(t => <option key={t.name} value={t.content}>{t.name}</option>)}</select></div>
-                    <div className="col-md-6 form-group"><div className="input-group"><input type="text" className="form-control" placeholder="Save as New Template..." value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} /><div className="input-group-append"><button className="btn btn-secondary" type="button" onClick={handleSaveTemplate}><i className="la la-save"></i> Save</button></div></div></div>
-                  </div>
-                  <textarea className="form-control" rows="8" value={messageTemplate} onChange={onMessageChange}></textarea>
-                  <div className="d-flex justify-content-between mt-2"><small className="form-text text-muted">Variables: <code>{"{{recipient.name}}"}</code>, <code>{"{{fallback student.names 'your child'}}"}</code></small>{messageType === 'sms' && <small className="form-text text-muted">{messageTemplate.length} chars / {smsParts} SMS parts</small>}</div>
+        {/* ======================= RIGHT COLUMN: Composer & Preview ======================= */}
+        <div className="col-lg-7 col-xl-8 d-flex flex-column">
+          <div className="kt-portlet kt-portlet--height-fluid mb-0">
+            <div className="kt-portlet__body h-100 d-flex flex-column">
+              
+              {/* 1. Composer Tools */}
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                 <h3 className="kt-portlet__head-title text-dark m-0">Compose Message</h3>
+                 <div className="btn-group">
+                    <button onClick={() => onMessageTypeChange('sms')} className={`btn btn-sm btn-bold ${messageType === 'sms' ? 'btn-label-brand' : 'btn-secondary'}`}>
+                      <i className="la la-comment"></i> SMS
+                    </button>
+                    <button onClick={() => onMessageTypeChange('email')} className={`btn btn-sm btn-bold ${messageType === 'email' ? 'btn-label-brand' : 'btn-secondary'}`}>
+                      <i className="la la-envelope"></i> Email
+                    </button>
+                 </div>
+              </div>
+
+              <div className="row flex-grow-1">
+                {/* Editor Area */}
+                <div className="col-md-7 d-flex flex-column">
+                   <div className="form-group flex-grow-1 d-flex flex-column">
+                      <div className="mb-2">
+                        <span className="text-muted small text-uppercase font-weight-bold mr-2">Quick Variables:</span>
+                        <span className="var-chip" onClick={() => insertVariable('{{recipient.name}}')}>Parent Name</span>
+                        <span className="var-chip" onClick={() => insertVariable("{{fallback student.names 'your child'}}")}>Student Name</span>
+                      </div>
+                      
+                      <textarea 
+                        ref={textareaRef}
+                        className="form-control flex-grow-1 p-3" 
+                        style={{border: '1px solid #ebedf2', resize: 'none', borderRadius: '8px', fontSize: '1rem', lineHeight: '1.5'}}
+                        placeholder="Type your message here..."
+                        value={messageTemplate}
+                        onChange={onMessageChange}
+                      ></textarea>
+                      
+                      <div className="d-flex justify-content-between mt-2 text-muted small">
+                        <span>{messageTemplate.length} characters</span>
+                        {messageType === 'sms' && <span>approx {Math.ceil(messageTemplate.length / 160)} SMS parts</span>}
+                      </div>
+                   </div>
+                   
+                   <div className="mt-auto pt-3 border-top">
+                      <button 
+                        type="button" 
+                        className={`btn btn-brand btn-block btn-lg btn-elevate ${isSending ? 'kt-spinner kt-spinner--right kt-spinner--sm kt-spinner--light' : ''}`} 
+                        onClick={onSend} 
+                        disabled={selectedIds.size === 0 || isSending}
+                        style={{fontWeight: 600, letterSpacing: '0.5px'}}
+                      >
+                        SEND TO {selectedIds.size} RECIPIENT(S)
+                      </button>
+                   </div>
+                </div>
+
+                {/* Live Preview Area */}
+                <div className="col-md-5 d-flex align-items-center justify-content-center border-left">
+                    <div className="phone-mockup">
+                       <div className="phone-header">
+                         <i className="la la-signal mr-2"></i>
+                         {previewRecipient ? maskPhone(previewRecipient.phone) : 'Unknown'}
+                       </div>
+                       <div className="phone-body custom-scroll">
+                          <div className="text-center small text-muted mb-3">
+                             Today {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                          <div className="msg-bubble">
+                             {preview}
+                             <span className="msg-meta">Now</span>
+                          </div>
+                       </div>
+                    </div>
                 </div>
               </div>
 
-              <div className="kt-separator kt-separator--space-lg kt-separator--border-dashed"></div>
-
-              <div className="kt-section">
-                  <div className="kt-section__title kt-font-bold">Live Preview (for {previewRecipient?.name || '...'})</div>
-                  <div className="kt-section__content mt-3">
-                      <div className="kt-alert kt-alert--outline-brand" role="alert">
-                          <div className="kt-alert__icon"><i className="la la-mobile-phone"></i></div>
-                          <div className="kt-alert__text" style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9em'}}>{preview}</div>
-                      </div>
-                  </div>
-              </div>
-            </div>
-            <div className="kt-portlet__foot">
-              <div className="kt-form__actions"><button type="button" className={`btn btn-brand btn-lg btn-pill btn-elevate ${isSending ? 'kt-spinner kt-spinner--right kt-spinner--sm kt-spinner--light' : ''}`} onClick={onSend} disabled={selectedIds.size === 0 || isSending}><i className="la la-paper-plane"></i> Send to {selectedIds.size} Recipient(s)</button></div>
             </div>
           </div>
         </div>
+
       </div>
     </>
   );
 };
 
-export default MessageViewV4;
+export default MessageView;
