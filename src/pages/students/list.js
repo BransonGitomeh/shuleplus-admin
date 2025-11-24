@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Data from "../../utils/data";
 
-// Modals are used as before. No changes needed for them.
+// Modals
 import AddModal from "./add";
 import UploadModal from "./upload";
 import EditModal from "./edit";
@@ -21,17 +21,15 @@ const getNestedValue = (obj, path) => {
 // --- V8: PRODUCTION DATATABLE WITH FULL SERVER-SIDE PAGINATION ---
 export default function StudentDataTableV8() {
   // --- STATE MANAGEMENT ---
-  // `students` now holds only the data for the current page.
   const [students, setStudents] = useState([]);
-  // `totalStudents` holds the total count from the server.
   const [totalStudents, setTotalStudents] = useState(0);
   
-  // State for related data for modals/dropdowns (fetched once)
+  // State for related data for modals/dropdowns
   const [routes, setRoutes] = useState([]);
   const [parents, setParents] = useState([]);
   const [classes, setClasses] = useState([]);
 
-  // Loading states: `initialLoading` for the first skeleton screen, `isPaginating` for subsequent fetches
+  // Loading states
   const [initialLoading, setInitialLoading] = useState(true);
   const [isPaginating, setIsPaginating] = useState(false);
 
@@ -48,11 +46,8 @@ export default function StudentDataTableV8() {
   const [newlyAddedIds, setNewlyAddedIds] = useState(new Set());
   const newRecordTimers = useRef(new Map());
 
-  // --- DATA FETCHING & SUBSCRIPTIONS ---
-
-  // The core data fetching function, now responsible for all data loading.
+  // --- DATA FETCHING (PAGINATED STUDENTS) ---
   const fetchPageData = useCallback(async (page, limit, search, sort) => {
-    // Show overlay spinner for subsequent loads, but not the initial one.
     if (!initialLoading) {
       setIsPaginating(true);
     }
@@ -70,32 +65,47 @@ export default function StudentDataTableV8() {
       setTotalStudents(totalCount);
     } catch (error) {
       console.error("Failed to fetch student page:", error);
-      // Optionally, set an error state here to show a message to the user
       setStudents([]);
       setTotalStudents(0);
     } finally {
-      // Clear all loading states
       setInitialLoading(false);
       setIsPaginating(false);
     }
-  }, [initialLoading]); // Dependency on initialLoading is important for the spinner logic
+  }, [initialLoading]); 
 
-  // Effect to fetch data whenever pagination, sorting, or searching changes.
-  // This is the main driver of the component.
+  // Effect to fetch PAGE data (Students)
   useEffect(() => {
     fetchPageData(currentPage, rowsPerPage, activeSearch, sortConfig);
   }, [currentPage, rowsPerPage, activeSearch, sortConfig, fetchPageData]);
 
-  // Effect for one-time setup (like fetching data for modals)
+  // --- SUBSCRIPTIONS (DROPDOWN DATA) ---
+  // This replaces the old fetchRoutes/fetchClasses logic. 
+  // It ensures that as soon as data loads in the background, the dropdowns populate.
   useEffect(() => {
-    // This is the ideal place to fetch non-paginated data needed for modals.
-    // Assuming these `list` methods exist and return all items.
-    // setRoutes(Data.routes.list());
-    // setParents(Data.parents.list());
-    // setClasses(Data.classes.list());
+    
+    // 1. Subscribe to Classes
+    const unsubClasses = Data.classes.subscribe(({ classes }) => {
+        if(classes) setClasses(classes);
+    });
 
-    // Cleanup for the highlight-new-record timers on unmount
+    // 2. Subscribe to Routes
+    const unsubRoutes = Data.routes.subscribe(({ routes }) => {
+        if(routes) setRoutes(routes);
+    });
+
+    // 3. Subscribe to Parents (For the dropdown)
+    // Note: Data.parents.subscribe returns the cached list. 
+    // If you have 10k parents, you might want to fetch this differently (e.g. search on type),
+    // but for the Edit Modal dropdowns to work, this is necessary.
+    const unsubParents = Data.parents.subscribe(({ parents }) => {
+        if(parents) setParents(parents);
+    });
+
+    // Cleanup subscriptions and timers on unmount
     return () => {
+      if(unsubClasses) unsubClasses();
+      if(unsubRoutes) unsubRoutes();
+      if(unsubParents) unsubParents();
       newRecordTimers.current.forEach(timerId => clearTimeout(timerId));
     };
   }, []);
@@ -110,12 +120,11 @@ export default function StudentDataTableV8() {
   ], []);
 
   // --- DERIVED STATE ---
-  // Total pages are now calculated based on the server's total count.
   const totalPages = Math.ceil(totalStudents / rowsPerPage);
 
   // --- EVENT HANDLERS ---
   const handleSearch = () => {
-    setCurrentPage(1); // Reset to page 1 on new search
+    setCurrentPage(1); 
     setActiveSearch(searchTerm);
   };
   const handleClearSearch = () => {
@@ -131,28 +140,23 @@ export default function StudentDataTableV8() {
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
         direction = 'descending';
     }
-    setCurrentPage(1); // Reset to page 1 on sort change
+    setCurrentPage(1); 
     setSortConfig({ key, direction });
   };
 
   const [edit, setEdit] = useState(null);
   const [remove, setRemove] = useState(null);
+  
+  // Now when handleEdit is called, 'classes' and 'routes' state should be populated via subscription
   const handleEdit = (student) => { setEdit(student); editModalInstance.show(); };
   const handleDelete = (student) => { setRemove(student); deleteModalInstance.show(); };
 
-  // Handler for when a student is successfully created via the modal
   const handleStudentCreated = (newStudent) => {
     if (!newStudent || !newStudent.id) return;
-
-    // Go to the first page to see the new record.
     setCurrentPage(1);
-    
-    // Optimistic UI update: Prepend the new student for immediate feedback.
-    // The next fetch will correct this anyway.
     setStudents(prev => [newStudent, ...prev.slice(0, rowsPerPage - 1)]);
-    setTotalStudents(prev => prev + 1); // Increment total count
+    setTotalStudents(prev => prev + 1); 
 
-    // Highlight the new row
     setNewlyAddedIds(prev => new Set(prev).add(newStudent.id));
     const timerId = setTimeout(() => {
         setNewlyAddedIds(prev => {
@@ -171,25 +175,38 @@ export default function StudentDataTableV8() {
         handleStudentCreated(newStudent);
     } catch (error) {
         console.error("Failed to create student:", error);
-        // Add user feedback for failure (e.g., a toast notification)
     }
   };
   
-  // After an edit or delete, simply refetch the current page data.
   const handleAfterAction = () => {
     fetchPageData(currentPage, rowsPerPage, activeSearch, sortConfig);
   }
 
   return (
     <div className="v8-datatable-container">
-      {/* Modals are passed the necessary data and handlers */}
+      {/* Modals are passed the LIVE data from subscriptions */}
       <AddModal routes={routes} parents={parents} classes={classes} save={handleCreateStudent} />
-      <UploadModal save={() => { /* Upload logic would now post to backend and then refetch page 1 */ fetchPageData(1, rowsPerPage, "", sortConfig) }} />
-      {edit && <EditModal edit={edit} routes={routes} parents={parents} classes={classes} save={async student => { await Data.students.update(student); handleAfterAction(); }} />}
-      {remove && <DeleteModal remove={remove} save={async student => { await Data.students.delete(student); handleAfterAction(); }} />}
+      <UploadModal save={() => { fetchPageData(1, rowsPerPage, "", sortConfig) }} />
+      
+      {edit && (
+        <EditModal 
+            edit={edit} 
+            routes={routes} 
+            parents={parents} 
+            classes={classes} 
+            save={async student => { await Data.students.update(student); handleAfterAction(); }} 
+        />
+      )}
+      
+      {remove && (
+        <DeleteModal 
+            remove={remove} 
+            save={async student => { await Data.students.delete(student); handleAfterAction(); }} 
+        />
+      )}
 
       <style>{`
-        /* --- V8 STYLING (can be identical to V7) --- */
+        /* --- V8 STYLING --- */
         .v8-datatable-container {
             --v8-bg: #F9F9FB;
             --v8-content-bg: #FFFFFF;
@@ -212,7 +229,7 @@ export default function StudentDataTableV8() {
         .v8-header-stat .label { font-size: 0.8rem; font-weight: 500; color: var(--v8-text-secondary); }
         .v8-main { margin: 0 2rem 2rem; background-color: var(--v8-content-bg); border-radius: 0.75rem; box-shadow: 0 0 20px 0 rgba(76,87,125,.02); position: relative; }
         .v8-table-loader {
-            position: absolute; top: 70px; /* Below toolbar */ left: 0; right: 0; bottom: 68px; /* Above pagination */
+            position: absolute; top: 70px; left: 0; right: 0; bottom: 68px;
             background-color: rgba(255, 255, 255, 0.7);
             display: flex; align-items: center; justify-content: center;
             z-index: 10;
@@ -296,7 +313,6 @@ export default function StudentDataTableV8() {
             </thead>
             <tbody>
               {initialLoading ? (
-                // Skeleton loader for the initial page load
                 [...Array(rowsPerPage)].map((_, i) => <tr key={i}><td colSpan={headers.length + 1}><div style={{height: '2rem', backgroundColor: '#EFF2F5', borderRadius: '4px', margin: '1rem 0', animation: 'pulse 1.5s infinite ease-in-out'}}></div></td></tr>)
               ) : students.length > 0 ? (
                 students.map(row => (
@@ -309,7 +325,6 @@ export default function StudentDataTableV8() {
                     </tr>
                 ))
               ) : (
-                // Message for when no results are found
                 <tr><td colSpan={headers.length + 1} style={{ textAlign: 'center', padding: '4rem', color: '#B5B5C3' }}>No students found.</td></tr>
               )}
             </tbody>
