@@ -16,10 +16,10 @@ class Modal extends React.Component {
       names: "",
       registration: "",
       gender: "",
-      class: "",   // Object {id, name}
-      route: "",   // Object {id, name}
-      parent: "",  // Object {id, name, national_id}
-      parent2: ""  // Object {id, name, national_id}
+      class: null,
+      route: null,
+      parent: null,
+      parent2: null
     }
   };
 
@@ -37,7 +37,6 @@ class Modal extends React.Component {
 
   componentDidMount() {
     const _this = this;
-    // Initialize jQuery validation
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
@@ -54,18 +53,16 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
 
-          // --- PREPARE PAYLOAD FOR GRAPHQL (Ustudent) ---
-          // The schema expects IDs for relations, not objects.
           const payload = {
             id: _this.state.edit.id,
             names: _this.state.edit.names,
             registration: _this.state.edit.registration,
             gender: _this.state.edit.gender,
-            // Extract IDs safely. If null, send null or undefined.
-            class: _this.state.edit.class?.id || null,
-            route: _this.state.edit.route?.id || null,
-            parent: _this.state.edit.parent?.id || null,
-            parent2: _this.state.edit.parent2?.id || null
+            
+            class: _this.state.edit.class?.id || "",
+            route: _this.state.edit.route?.id || "",
+            parent: _this.state.edit.parent?.id || "",
+            parent2: _this.state.edit.parent2?.id || ""
           };
 
           await _this.props.save(payload);
@@ -85,12 +82,10 @@ class Modal extends React.Component {
   }
 
   static getDerivedStateFromProps(props, state) {
-    // This ensures data is preloaded when you click "Edit" on a different student
     if (props.edit && props.edit.id !== state.edit.id) {
       return {
         edit: {
           ...props.edit,
-          // Ensure these are null if undefined in the prop, to prevent controlled/uncontrolled errors
           class: props.edit.class || null,
           route: props.edit.route || null,
           parent: props.edit.parent || null,
@@ -105,8 +100,6 @@ class Modal extends React.Component {
   render() {
     const { edit } = this.state;
     
-    console.log(edit)
-    console.log(this.props)
     return (
       <div>
         <div
@@ -149,9 +142,13 @@ class Modal extends React.Component {
                           minLength="2"
                           required
                           value={edit.names || ""}
-                          onChange={(e) => this.setState({ 
-                            edit: { ...edit, names: e.target.value } 
-                          })}
+                          // FIX: Capture value outside setState
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({ 
+                              edit: { ...prevState.edit, names: val } 
+                            }));
+                          }}
                         />
                       </div>
 
@@ -165,9 +162,13 @@ class Modal extends React.Component {
                           minLength="2"
                           required
                           value={edit.registration || ""}
-                          onChange={(e) => this.setState({ 
-                            edit: { ...edit, registration: e.target.value } 
-                          })}
+                          // FIX: Capture value outside setState
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({ 
+                              edit: { ...prevState.edit, registration: val } 
+                            }));
+                          }}
                         />
                       </div>
 
@@ -178,12 +179,13 @@ class Modal extends React.Component {
                           className="form-control"
                           name="class"
                           required
-                          // Value is the ID of the nested object
                           value={edit.class?.id || ""}
                           onChange={(e) => {
-                            // Find the full object from props to keep state consistent
-                            const selectedObj = this.props.classes.find(c => c.id === e.target.value);
-                            this.setState({ edit: { ...edit, class: selectedObj } });
+                            const val = e.target.value;
+                            const selectedObj = this.props.classes.find(c => String(c.id) === String(val));
+                            this.setState(prevState => ({ 
+                                edit: { ...prevState.edit, class: selectedObj || null } 
+                            }));
                           }}
                         >
                           <option value="">Select class</option>
@@ -202,8 +204,11 @@ class Modal extends React.Component {
                           required
                           value={edit.route?.id || ""}
                           onChange={(e) => {
-                            const selectedObj = this.props.routes.find(r => r.id === e.target.value);
-                            this.setState({ edit: { ...edit, route: selectedObj } });
+                            const val = e.target.value;
+                            const selectedObj = this.props.routes.find(r => String(r.id) === String(val));
+                            this.setState(prevState => ({ 
+                                edit: { ...prevState.edit, route: selectedObj || null } 
+                            }));
                           }}
                         >
                           <option value="">Select route</option>
@@ -221,9 +226,13 @@ class Modal extends React.Component {
                           className="form-control"
                           required
                           value={edit.gender || ""}
-                          onChange={(e) => this.setState({ 
-                            edit: { ...edit, gender: e.target.value } 
-                          })}
+                          // FIX: Capture value outside setState
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({ 
+                              edit: { ...prevState.edit, gender: val } 
+                            }));
+                          }}
                         >
                           <option value="">Select gender</option>
                           {["MALE", "FEMALE"].map(g => (
@@ -241,8 +250,11 @@ class Modal extends React.Component {
                           required
                           value={edit.parent?.id || ""}
                           onChange={(e) => {
-                            const selectedObj = this.props.parents.find(p => p.id === e.target.value);
-                            this.setState({ edit: { ...edit, parent: selectedObj } });
+                            const val = e.target.value;
+                            const selectedObj = this.props.parents.find(p => String(p.id) === String(val));
+                            this.setState(prevState => ({ 
+                                edit: { ...prevState.edit, parent: selectedObj || null } 
+                            }));
                           }}
                         >
                           <option value="">Select parent</option>
@@ -262,8 +274,11 @@ class Modal extends React.Component {
                           className="form-control"
                           value={edit.parent2?.id || ""}
                           onChange={(e) => {
-                            const selectedObj = this.props.parents.find(p => p.id === e.target.value);
-                            this.setState({ edit: { ...edit, parent2: selectedObj } });
+                            const val = e.target.value;
+                            const selectedObj = this.props.parents.find(p => String(p.id) === String(val));
+                            this.setState(prevState => ({ 
+                                edit: { ...prevState.edit, parent2: selectedObj || null } 
+                            }));
                           }}
                         >
                           <option value="">Select parent (Optional)</option>
