@@ -534,7 +534,25 @@ var Data = (function () {
         },
         communication: {
             sms: {
-                create: sms => mutate(`mutation($sms : Isms!){ sms{ send(sms: $sms) } }`, { sms })
+                create: sms => mutate(`mutation SendSMS($sms: Isms!) {
+  sms {
+    send(sms: $sms) {
+      success
+      message
+      sentCount
+      failedCount
+      successfulSends {
+        parentId
+        phone
+      }
+      failedSends {
+        parentId
+        phone
+        error
+      }
+    }
+  }
+}`, { sms })
             }
         },
         schools: {
@@ -589,7 +607,7 @@ var Data = (function () {
                 const school = instance.schools.getSelected();
                 if (!school.id) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { school: school.id, ammount, phone }
+                    payment: { schoolId: school.id, ammount, phone }
                 });
             },
             // In utils/data.js (inside publicApi -> school object)
@@ -615,7 +633,7 @@ var Data = (function () {
                             // 2. Ensure these keys match the GraphQL Input Type exactly (PascalCase)
                             MerchantRequestID: MerchantRequestID,
                             CheckoutRequestID: CheckoutRequestID,
-                            school: schoolId
+                            schoolId: schoolId
                         }
                     }
                 );
