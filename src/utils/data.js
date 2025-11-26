@@ -261,7 +261,27 @@ var Data = (function () {
 
         const FRAGMENT_TEAMS_DATA = `fragment TeamsData on school { teams { id name members { id name phone email gender } } }`;
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } } }`;
-        const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { financial { balance, balanceFormated } charges { ammount reason time id } payments { amount type phone ref time } }`;
+        const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { 
+            financial { balance, balanceFormated } 
+            charges { ammount reason time id } 
+            payments { 
+                id 
+                amount 
+                phone 
+                status
+                mpesaReceiptNumber
+                merchantRequestID
+                checkoutRequestID
+                resultCode
+                resultDesc
+                createdAt
+                updatedAt
+                metadata
+                type 
+                ref 
+                time 
+            } 
+        }`;
         const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
         const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: 1000, offset: 0) { id names gender registration class { id, name, teacher { id, name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`;
         const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { id, names } } }`;
@@ -485,7 +505,8 @@ var Data = (function () {
                     );
                 }
             })
-        }, { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) }) },
+        }, 
+        { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) }) },
         { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
         { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
         { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },
@@ -496,9 +517,12 @@ var Data = (function () {
         { name: "team_members", singularName: "team_member", createFields: ['team', 'user'], updateFields: ['team', 'user'] },
         { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },
         { name: "trips", singularName: "trip", createFields: ['startedAt', 'completedAt', 'isCancelled', 'school', 'driver', 'schedule'], updateFields: ['startedAt', 'completedAt', 'isCancelled', 'schedule'] },
-        { name: "payments", singularName: "payment", createFields: ['school', 'phone', 'ammount', 'type', 'ref', 'time'], updateFields: ['phone', 'school', 'ammount', 'type', 'ref', 'time'] },
-        { name: "charges", singularName: "charge", createFields: ['school', 'ammount', 'reason', 'time'], updateFields: ['school', 'ammount', 'reason', 'time'] },
-        { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
+        {
+            name: "payments",
+            singularName: "payment",
+            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description'],
+            updateFields: ['phone', 'school', 'amount', 'type', 'ref', 'time', 'status', 'description']
+        }, { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
         {
             name: "lessonAttempts",
             singularName: "lessonAttempt",
@@ -535,24 +559,24 @@ var Data = (function () {
         communication: {
             sms: {
                 create: sms => mutate(`mutation SendSMS($sms: Isms!) {
-  sms {
-    send(sms: $sms) {
-      success
-      message
-      sentCount
-      failedCount
-      successfulSends {
-        parentId
-        phone
-      }
-      failedSends {
-        parentId
-        phone
-        error
-      }
-    }
-  }
-}`, { sms })
+                    sms {
+                        send(sms: $sms) {
+                        success
+                        message
+                        sentCount
+                        failedCount
+                        successfulSends {
+                            parentId
+                            phone
+                        }
+                        failedSends {
+                            parentId
+                            phone
+                            error
+                        }
+                        }
+                    }
+                }`, { sms })
             }
         },
         schools: {
@@ -624,8 +648,17 @@ var Data = (function () {
                     `mutation ($data: mpesaStartTxVerificationInput!) { 
             payments { 
                 confirm(payment: $data) { 
-                    success, message, id, amount, phone, status, ref, time 
-                } 
+    success
+    message
+    id
+    amount
+    phone
+    status
+    mpesaReceiptNumber  # Add this
+    resultDesc          # Add this
+    ref
+    time 
+}
             } 
         }`,
                     {
