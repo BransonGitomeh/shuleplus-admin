@@ -260,8 +260,6 @@ const PaymentRow = ({ payment }) => {
   );
 }
 
-
-// --- MAIN COMPONENT ---
 class PaymentsDashboard extends React.Component {
   constructor(props) {
     super(props);
@@ -269,13 +267,13 @@ class PaymentsDashboard extends React.Component {
     this.state = {
       payments: [],
       filteredPayments: [], 
+      expandedId: null, // Tracks which row is expanded
       searchTerm: "",
     };
   }
 
   componentDidMount() {
     this.fetchData();
-    // Poll every 5 seconds for that "Real Time" feel
     this.interval = setInterval(this.fetchData, 5000);
   }
 
@@ -285,12 +283,12 @@ class PaymentsDashboard extends React.Component {
 
   fetchData = () => {
     const payments = Data.payments.list() || [];
-    // Sort by Newest First
+    // Sort: Newest first
     payments.sort((a, b) => new Date(b.createdAt || b.time) - new Date(a.createdAt || a.time));
     
     this.setState(prevState => ({
       payments,
-      filteredPayments: this.filterPayments(payments, prevState.searchTerm),
+      filteredPayments: this.filterPayments(payments, prevState.searchTerm)
     }));
   };
 
@@ -299,8 +297,7 @@ class PaymentsDashboard extends React.Component {
     const lower = term.toLowerCase();
     return list.filter(p => 
       (p.phone || '').includes(lower) ||
-      (p.mpesaReceiptNumber || p.ref || '').toLowerCase().includes(lower) ||
-      (String(p.amount) || '').includes(lower)
+      (p.mpesaReceiptNumber || p.ref || '').toLowerCase().includes(lower)
     );
   };
 
@@ -312,75 +309,213 @@ class PaymentsDashboard extends React.Component {
     });
   };
 
+  toggleRow = (id) => {
+    this.setState(prev => ({
+      expandedId: prev.expandedId === id ? null : id
+    }));
+  };
+
+  // Helper to get border color based on status
+  getStatusColor = (status) => {
+    if (status === 'COMPLETED') return '#1dc9b7'; // Success Green
+    if (status === 'PENDING') return '#5d78ff';   // Brand Blue
+    if (status === 'FLAGGED_AMOUNT_MISMATCH') return '#fd3995'; // Danger Red
+    return '#c5cbe3'; // Grey
+  }
+
   render() {
-    const { filteredPayments, searchTerm } = this.state;
+    const { filteredPayments, expandedId, searchTerm } = this.state;
 
     return (
-      <div className="container-fluid" style={{padding: '20px'}}>
-        
-        {/* Header Section */}
-        <div className="d-flex align-items-center justify-content-between mb-4">
-            <div>
-                <h3 className="text-dark font-weight-bold mb-0">Transactions</h3>
-                <span className="text-muted font-size-sm">Monitor incoming M-Pesa payments in real-time</span>
+      <div className="kt-portlet kt-portlet--mobile">
+        {/* HEADER */}
+        <div className="kt-portlet__head kt-portlet__head--lg">
+          <div className="kt-portlet__head-label">
+            <span className="kt-portlet__head-icon">
+              <i className="kt-font-brand flaticon2-line-chart"></i>
+            </span>
+            <h3 className="kt-portlet__head-title">
+              Transactions Feed
+              <small>Real-time M-Pesa activity</small>
+            </h3>
+          </div>
+          <div className="kt-portlet__head-toolbar">
+            <div className="kt-portlet__head-wrapper">
+              <div className="kt-portlet__head-actions">
+                <button 
+                    className="btn btn-brand btn-elevate btn-icon-sm"
+                    onClick={() => this.modalRef.current.show()}
+                >
+                  <i className="la la-plus"></i> New Request
+                </button>
+              </div>
             </div>
-            <button className="btn btn-success font-weight-bold shadow-sm" onClick={() => this.modalRef.current.show()}>
-                <i className="fa fa-plus-circle"></i> New Payment
-            </button>
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="card shadow-sm border-0 mb-4" style={{borderRadius: '10px'}}>
-            <div className="card-body p-3">
-                <div className="input-group">
-                    <div className="input-group-prepend">
-                        <span className="input-group-text bg-transparent border-0">
-                            <i className="la la-search text-muted"></i>
-                        </span>
-                    </div>
-                    <input 
+        <div className="kt-portlet__body">
+          {/* SEARCH */}
+          <div className="kt-form kt-form--label-right kt-margin-b-20">
+            <div className="row align-items-center">
+              <div className="col-xl-8 order-2 order-xl-1">
+                <div className="row align-items-center">
+                  <div className="col-md-4 kt-margin-b-20-tablet-and-mobile">
+                    <div className="kt-input-icon kt-input-icon--left">
+                      <input 
                         type="text" 
-                        className="form-control border-0 font-weight-bold" 
-                        placeholder="Search by Phone, Ref Code, or Amount..." 
-                        value={searchTerm}
+                        className="form-control" 
+                        placeholder="Search..." 
+                        id="generalSearch" 
                         onChange={this.onSearch}
-                        style={{boxShadow: 'none', background: 'transparent'}}
-                    />
+                        value={searchTerm}
+                      />
+                      <span className="kt-input-icon__icon kt-input-icon__icon--left">
+                        <span><i className="la la-search" /></span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
+
+          {/* CREATIVE LIST */}
+          <div className="kt-section">
+             <div className="kt-section__content">
+                {filteredPayments.map(payment => {
+                    const isExpanded = expandedId === payment.id;
+                    const borderColor = this.getStatusColor(payment.status);
+
+                    return (
+                        <div key={payment.id} className="card mb-3 shadow-sm" style={{border: 'none', borderLeft: `5px solid ${borderColor}`}}>
+                            {/* MAIN ROW - ALWAYS VISIBLE */}
+                            <div 
+                                className="card-body p-4" 
+                                onClick={() => this.toggleRow(payment.id)}
+                                style={{cursor: 'pointer', background: isExpanded ? '#f9f9fc' : '#fff'}}
+                            >
+                                <div className="d-flex align-items-center justify-content-between flex-wrap">
+                                    
+                                    {/* Column 1: Amount & Status */}
+                                    <div className="d-flex align-items-center mr-5 mb-2">
+                                        <div className="symbol symbol-40 mr-3">
+                                            <span className="symbol-label" style={{background: 'rgba(0,0,0,0.05)', borderRadius: '50%', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                                <i className="flaticon-coins text-dark-50"></i>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div className="font-weight-bolder font-size-lg text-dark">
+                                                KES {payment.amount}
+                                            </div>
+                                            <div className="text-muted font-size-sm">
+                                                <PaymentStatusBadge status={payment.status} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 2: Payer Info */}
+                                    <div className="d-flex flex-column mr-5 mb-2" style={{minWidth: '150px'}}>
+                                        <span className="text-dark-75 font-weight-bold">
+                                            {payment.phone}
+                                        </span>
+                                        <span className="text-muted font-size-sm">
+                                            {payment.checkoutRequestID ? 'Automated Prompt' : 'Manual Pay'}
+                                        </span>
+                                    </div>
+
+                                    {/* Column 3: Reference & Time */}
+                                    <div className="d-flex flex-column mr-5 mb-2 text-right">
+                                        <span className="text-dark-75 font-weight-bold font-size-h6">
+                                            {payment.mpesaReceiptNumber || payment.ref || "---"}
+                                        </span>
+                                        <span className="text-muted font-size-sm">
+                                            {moment(payment.createdAt || payment.time).fromNow()}
+                                        </span>
+                                    </div>
+
+                                    {/* Column 4: Chevron */}
+                                    <div className="d-flex align-items-center">
+                                        <button className={`btn btn-icon btn-sm btn-clean ${isExpanded ? 'active' : ''}`}>
+                                            <i className={`la ${isExpanded ? 'la-angle-up' : 'la-angle-down'}`}></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* EXPANDED DETAILS - SLIDES DOWN */}
+                            {isExpanded && (
+                                <div className="card-footer bg-white p-0 animated fadeIn" style={{borderTop: '1px dashed #ebedf2'}}>
+                                    <div className="row no-gutters">
+                                        {/* Left Side: Timeline */}
+                                        <div className="col-lg-7 p-4 border-right">
+                                            <h6 className="text-uppercase text-muted mb-3 font-size-xs font-weight-bolder">Transaction Journey</h6>
+                                            <TransactionTimeline payment={payment} />
+                                        </div>
+                                        
+                                        {/* Right Side: Metadata / Tech Info */}
+                                        <div className="col-lg-5 p-4 bg-light">
+                                            <h6 className="text-uppercase text-muted mb-3 font-size-xs font-weight-bolder">Technical Details</h6>
+                                            
+                                            <div className="table-responsive">
+                                                <table className="table table-sm table-borderless text-muted font-size-sm">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td className="font-weight-bold">Internal ID:</td>
+                                                            <td className="text-right text-monospace">{payment.id}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="font-weight-bold">Merchant Req ID:</td>
+                                                            <td className="text-right text-monospace">{payment.merchantRequestID || 'N/A'}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="font-weight-bold">Checkout ID:</td>
+                                                            <td className="text-right text-monospace">{payment.checkoutRequestID || 'N/A'}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="font-weight-bold">Result Code:</td>
+                                                            <td className="text-right">
+                                                                <span className={`badge badge-${payment.resultCode === '0' ? 'success' : 'light'}`}>
+                                                                    {payment.resultCode || 'Pending'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {/* Raw Data Toggle */}
+                                            <div className="mt-4">
+                                                <details>
+                                                    <summary className="btn btn-xs btn-outline-secondary">View Raw Metadata</summary>
+                                                    <div className="mt-2 p-2 bg-white border rounded text-monospace text-dark-50" style={{fontSize: '0.75rem', maxHeight:'150px', overflowY:'auto'}}>
+                                                        {JSON.stringify(payment.metadata || {}, null, 2)}
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {filteredPayments.length === 0 && (
+                    <div className="alert alert-light alert-elevate text-center p-5">
+                        <div className="alert-text">
+                            No transactions found. <br/>
+                            <button className="btn btn-link btn-sm" onClick={() => this.modalRef.current.show()}>Start a new one?</button>
+                        </div>
+                    </div>
+                )}
+             </div>
+          </div>
         </div>
 
-        {/* The List */}
-        <div style={{minHeight: '400px'}}>
-            {filteredPayments.map(payment => (
-                <PaymentRow key={payment.id} payment={payment} />
-            ))}
-            
-            {filteredPayments.length === 0 && (
-                <div className="text-center p-5 text-muted">
-                    <i className="la la-inbox" style={{fontSize: '3rem', opacity: 0.5}}></i>
-                    <p className="mt-3">No transactions found.</p>
-                </div>
-            )}
-        </div>
-
-        {/* Hidden Modal */}
         <MpesaPaymentModal 
             ref={this.modalRef} 
             onPaymentSuccess={this.fetchData}
         />
-
-        {/* Simple animation styles */}
-        <style>{`
-            .hover-elevate:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-        `}</style>
       </div>
     );
   }
