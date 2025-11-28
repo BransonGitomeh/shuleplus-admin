@@ -162,7 +162,7 @@ class Navbar extends React.Component {
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up" },
-      { path: "/finance/charges", label: "Your Charges" },
+      { path: "/finance/charges", label: "Charge History" },
     ];
 
     const mobileMenuStyle = {

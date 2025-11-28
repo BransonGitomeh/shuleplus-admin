@@ -29,7 +29,9 @@ const allData = {
     invitations: [],
     team_members: [],
     lessonAttempts: [],
-    attemptEvents: []
+    attemptEvents: [],
+    smsEvents: [],
+    smsLogs: [],
 };
 
 // Centralized subscriptions object. Each key will hold an array of callbacks.
@@ -293,7 +295,28 @@ var Data = (function () {
         const FRAGMENT_ROUTES_DATA = `fragment RoutesData on school { routes { id name description path { lat lng } } }`;
         const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
-
+        // 1. Define the Fragment for SMS History (Add this near other fragments)
+        const FRAGMENT_SMS_EVENTS_DATA = `fragment SmsEventsData on school { 
+    smsEvents { 
+        id 
+        messageTemplate 
+        createdAt
+        status 
+        recipientCount 
+        successCount 
+        failureCount 
+        
+        # The nested relation
+        logs {
+            id
+            recipientName
+            recipientPhone
+            status
+            error
+            providerResponse # The raw JSON
+        }
+    } 
+}`;
         const deepMergeById = (target, source) => {
             for (const key in source) {
                 if (Object.prototype.hasOwnProperty.call(source, key)) {
@@ -364,6 +387,7 @@ var Data = (function () {
             notifyEntity('classes', c => ({ ...c, student_num: c.students?.length || 0, teacher_name: c.teacher?.name }));
             notifyEntity('teachers');
             notifyEntity('invitations');
+            notifyEntity('smsLogs');
 
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
                 allData.grades = activeSchool.grades;
@@ -421,6 +445,16 @@ var Data = (function () {
                 if (Array.isArray(subs.teams)) subs.teams.forEach(cb => cb({ teams: [...allData.teams] }));
                 if (Array.isArray(subs.team_members)) subs.team_members.forEach(cb => cb({ team_members: [...allData.team_members] }));
             }
+            // Inside the mergeAndNotify function logic
+            if (updatedSubEntities.has('smsEvents') && activeSchool.smsEvents) {
+                allData.smsEvents = activeSchool.smsEvents;
+                // Optionally flatten logs if you need a master list of all individual SMS sent ever
+                // allData.smsLogs = activeSchool.smsEvents.flatMap(e => e.logs || []);
+
+                if (Array.isArray(subs.smsEvents)) {
+                    subs.smsEvents.forEach(cb => cb({ smsEvents: [...allData.smsEvents] }));
+                }
+            }
         };
 
         const queries = [
@@ -443,6 +477,7 @@ var Data = (function () {
             { query: `query GetGradesOptions { schools { id ...GradesOptionsData } } ${FRAGMENT_GRADES_OPTIONS_DATA}` },
             // --- ADDED LESSON DATA QUERY ---
             { query: `query GetLessonAttempts { schools { id ...LessonData } } ${FRAGMENT_LESSON_DATA}` },
+            { query: `query GetSmsEvents { schools { id ...SmsEventsData } } ${FRAGMENT_SMS_EVENTS_DATA}` },
         ];
 
         queries.forEach(({ query: qStr, variables = {} }) => {
@@ -506,6 +541,14 @@ var Data = (function () {
                 }
             })
         },
+        {
+            name: "smsLogs",
+            singularName: "smsLog",
+            // Read-only usually, so create/update fields might be minimal
+            createFields: [],
+            updateFields: []
+        },
+        { name: "smsEvents", singularName: "smsEvent", createFields: [], updateFields: [] },
         { name: "drivers", singularName: "driver", createFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'school', 'experience', 'bus'], updateFields: ['names', 'phone', 'username', 'email', 'license_expiry', 'licence_number', 'home', 'experience', 'bus'], customMethods: (allData, subs, api) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { drivers { invite(driver: $data) { id phone message } } }`, { data }); const invitation = response.drivers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }), transfer: (data) => new Promise(async (resolve) => { await mutate(`mutation ($data: Itransfer!) { drivers { transfer(driver: $data) { id } } }`, { data }); init(); resolve(); }) }) },
         { name: "admins", singularName: "admin", createFields: ['names', 'phone', 'school', 'email', 'password'], updateFields: ['names', 'phone', 'email', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { admins { invite(admin: $data) { id phone message } } }`, { data }); const invitation = response.admins.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
         { name: "buses", singularName: "bus", createFields: ['make', 'plate', 'size', 'school', 'driver'], updateFields: ['make', 'plate', 'size', 'driver'] },
