@@ -13,6 +13,20 @@ const calculateStats = (logs) => {
     return { totalBatches, totalMessages, successRate };
 };
 
+// --- HELPER: Robust Date Parser ---
+// Fixes "Invalid Date" by converting string timestamps ("1623...") to numbers (1623...)
+const parseDate = (dateInput) => {
+    if (!dateInput) return moment(); 
+    
+    // Check if it is a string containing only digits (Unix timestamp)
+    if (typeof dateInput === 'string' && /^\d+$/.test(dateInput)) {
+        return moment(parseInt(dateInput, 10));
+    }
+    
+    // Otherwise handle ISO strings or Date objects normally
+    return moment(dateInput);
+};
+
 // --- COMPONENT: Stat Card ---
 const StatCard = ({ title, value, icon, color, subtext }) => (
     <div className="col-md-4">
@@ -33,22 +47,18 @@ const StatCard = ({ title, value, icon, color, subtext }) => (
     </div>
 );
 
-// --- COMPONENT: Interactive Log Details (The "Smart Accordion") ---
+// --- COMPONENT: Interactive Log Details ---
 const LogDetails = ({ log }) => {
-    const [tab, setTab] = useState('ALL'); // ALL, SUCCESS, FAILED
+    const [tab, setTab] = useState('ALL'); 
     const [innerSearch, setInnerSearch] = useState('');
 
-    const details = log.details || (log.logs || []); // Handle both data structures (flat or nested)
+    const details = log.details || (log.logs || []);
     
-    // Filter logic
     const filteredDetails = useMemo(() => {
         let data = details;
-        
-        // 1. Filter by Tab
         if (tab === 'SUCCESS') data = data.filter(d => d.status === 'DELIVERED');
         if (tab === 'FAILED') data = data.filter(d => d.status !== 'DELIVERED');
 
-        // 2. Filter by Search
         if (innerSearch) {
             const lower = innerSearch.toLowerCase();
             data = data.filter(d => 
@@ -64,7 +74,6 @@ const LogDetails = ({ log }) => {
 
     return (
         <div className="row no-gutters bg-light rounded overflow-hidden mt-3">
-            {/* LEFT: Context & Message */}
             <div className="col-lg-4 bg-white border-right p-4">
                 <h6 className="font-weight-bold text-uppercase text-muted font-size-xs mb-3">Message Content</h6>
                 <div className="p-3 bg-light-primary rounded text-dark-75 font-size-sm mb-4" style={{borderLeft: '4px solid #3699ff', fontStyle: 'italic'}}>
@@ -74,19 +83,14 @@ const LogDetails = ({ log }) => {
                 <h6 className="font-weight-bold text-uppercase text-muted font-size-xs mb-3">Timestamps</h6>
                 <div className="d-flex align-items-center mb-2">
                     <i className="fa fa-clock text-muted mr-2"></i>
-                    <span className="text-dark-75 font-size-sm">Sent: {moment(log.createdAt || log.time).format("DD MMM YYYY, hh:mm A")}</span>
+                    <span className="text-dark-75 font-size-sm">
+                        Sent: {parseDate(log.createdAt || log.time).format("DD MMM YYYY, hh:mm A")}
+                    </span>
                 </div>
-                {failureCount > 0 && (
-                    <button className="btn btn-light-danger btn-sm font-weight-bold mt-3 btn-block" onClick={() => alert("Resend logic here")}>
-                        <i className="fa fa-redo mr-1"></i> Retry {failureCount} Failed
-                    </button>
-                )}
             </div>
 
-            {/* RIGHT: Interactive Lists */}
             <div className="col-lg-8 p-4">
                 <div className="d-flex align-items-center justify-content-between mb-4">
-                    {/* Tabs */}
                     <div className="btn-group btn-group-sm">
                         <button className={`btn ${tab === 'ALL' ? 'btn-primary' : 'btn-light'}`} onClick={() => setTab('ALL')}>
                             All <span className="badge badge-light ml-1" style={{opacity: 0.7}}>{log.recipientCount}</span>
@@ -99,7 +103,6 @@ const LogDetails = ({ log }) => {
                         </button>
                     </div>
 
-                    {/* Mini Search */}
                     <div className="input-icon input-icon-sm input-icon-right" style={{width: '200px'}}>
                         <input 
                             type="text" 
@@ -112,7 +115,6 @@ const LogDetails = ({ log }) => {
                     </div>
                 </div>
 
-                {/* The List */}
                 <div className="table-responsive" style={{maxHeight: '300px', overflowY: 'auto', border: '1px solid #ebedf2', borderRadius: '4px', background: 'white'}}>
                     <table className="table table-head-custom table-vertical-center mb-0">
                         <thead className="bg-light">
@@ -188,7 +190,7 @@ class SmsHistoryDashboard extends React.Component {
     componentDidMount() {
         this.unsubscribe = Data.smsEvents.subscribe(this.handleDataUpdate);
         
-        // Fallback for flat structure if you haven't fully migrated to smsEvents yet
+        // Fallback for flat structure
         if (!Data.smsEvents.list().length) {
              this.unsubscribeLogs = Data.smsLogs?.subscribe(this.handleDataUpdate);
         }
@@ -200,14 +202,17 @@ class SmsHistoryDashboard extends React.Component {
     }
 
     handleDataUpdate = () => {
-        // Prefer smsEvents (relational), fallback to smsLogs (flat)
         let rawData = Data.smsEvents.list() || [];
         if (rawData.length === 0 && Data.smsLogs) {
             rawData = Data.smsLogs.list() || [];
         }
 
-        // Sort: Newest First
-        const sorted = [...rawData].sort((a, b) => new Date(b.createdAt || b.time) - new Date(a.createdAt || a.time));
+        // Sort: Newest First (Using the parseDate helper to safely compare)
+        const sorted = [...rawData].sort((a, b) => {
+            const dateA = parseDate(a.createdAt || a.time);
+            const dateB = parseDate(b.createdAt || b.time);
+            return dateB - dateA;
+        });
 
         this.setState(prev => ({
             logs: sorted,
@@ -220,8 +225,7 @@ class SmsHistoryDashboard extends React.Component {
         if (!term) return list;
         const lower = term.toLowerCase();
         return list.filter(log => 
-            (log.messageTemplate || log.message || '').toLowerCase().includes(lower) || 
-            (log.createdAt || log.time || '').includes(lower)
+            (log.messageTemplate || log.message || '').toLowerCase().includes(lower)
         );
     };
 
@@ -244,7 +248,7 @@ class SmsHistoryDashboard extends React.Component {
         return (
             <div className="d-flex flex-column">
                 
-                {/* 1. TOP STATS ROW */}
+                {/* TOP STATS ROW */}
                 <div className="row mb-2">
                     <StatCard 
                         title="Campaigns Sent" 
@@ -257,7 +261,7 @@ class SmsHistoryDashboard extends React.Component {
                         value={stats.totalMessages} 
                         icon="envelope-open-text" 
                         color="info" 
-                        subtext={`${stats.totalMessages * 2} Credits est.`} // Assuming 2 credits per SMS
+                        subtext={`${stats.totalMessages * 2} Credits est.`}
                     />
                     <StatCard 
                         title="Overall Success" 
@@ -267,7 +271,7 @@ class SmsHistoryDashboard extends React.Component {
                     />
                 </div>
 
-                {/* 2. MAIN CARD */}
+                {/* MAIN CARD */}
                 <div className="kt-portlet kt-portlet--mobile shadow-sm">
                     <div className="kt-portlet__head pt-4 border-bottom-0">
                         <div className="kt-portlet__head-label">
@@ -349,10 +353,10 @@ class SmsHistoryDashboard extends React.Component {
                                                     </td>
                                                     <td className="text-right">
                                                         <span className="text-dark-75 font-weight-bolder d-block font-size-sm">
-                                                            {moment(log.createdAt || log.time).format("HH:mm")}
+                                                            {parseDate(log.createdAt || log.time).format("HH:mm")}
                                                         </span>
                                                         <span className="text-muted font-size-xs">
-                                                            {moment(log.createdAt || log.time).fromNow()}
+                                                            {parseDate(log.createdAt || log.time).fromNow()}
                                                         </span>
                                                     </td>
                                                     <td className="text-right pr-4">
