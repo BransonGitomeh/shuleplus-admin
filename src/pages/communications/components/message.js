@@ -158,6 +158,81 @@ const maskPhone = (phone) => {
   return `${p.slice(0, 4)}***${p.slice(-3)}`;
 };
 
+// --- COMPONENT: Pre-Flight Check Modal ---
+const PreFlightModal = ({ isOpen, onClose, onConfirm, recipientCount, messageLength, currentBalance }) => {
+    if (!isOpen) return null;
+
+    // Billing Constants
+    const COST_PER_SMS = 1.85;
+    const CHARS_PER_SEGMENT = 160;
+
+    // Calculations
+    const segments = messageLength > 0 ? Math.ceil(messageLength / CHARS_PER_SEGMENT) : 1;
+    const totalCost = segments * recipientCount * COST_PER_SMS;
+    const remainingBalance = currentBalance - totalCost;
+    const isInsufficient = remainingBalance < 0;
+
+    return (
+        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+            <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h5 className="modal-title font-weight-bold">Confirm Campaign</h5>
+                        <button type="button" className="close" onClick={onClose}><span>&times;</span></button>
+                    </div>
+                    <div className="modal-body">
+                        <div className="d-flex justify-content-between mb-4 px-2">
+                            <div className="text-center">
+                                <h3 className="font-weight-bold mb-0">{recipientCount}</h3>
+                                <small className="text-muted">Recipients</small>
+                            </div>
+                            <div className="text-center border-left border-right px-4">
+                                <h3 className="font-weight-bold mb-0">{segments}</h3>
+                                <small className="text-muted">SMS Parts</small>
+                            </div>
+                            <div className="text-center">
+                                <h3 className="font-weight-bold mb-0 text-primary">KES {totalCost.toFixed(2)}</h3>
+                                <small className="text-muted">Total Cost</small>
+                            </div>
+                        </div>
+
+                        <div className={`alert alert-outline-${isInsufficient ? 'danger' : 'success'} alert-bold`} role="alert">
+                            <div className="alert-icon"><i className={`flaticon-${isInsufficient ? 'warning' : 'piggy-bank'}`}></i></div>
+                            <div className="alert-text">
+                                Current Balance: <strong>KES {currentBalance.toFixed(2)}</strong>
+                                {isInsufficient && (
+                                    <div className="mt-1">
+                                        You are short by <strong>KES {Math.abs(remainingBalance).toFixed(2)}</strong>.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {isInsufficient ? (
+                            <div className="text-muted small mt-3">
+                                <p><strong>Warning:</strong> Proceeding without sufficient funds will likely result in failed messages for some or all recipients.</p>
+                            </div>
+                        ) : (
+                            <p className="text-muted small mt-3 text-center">Your balance is sufficient to cover this campaign.</p>
+                        )}
+                    </div>
+                    <div className="modal-footer bg-light">
+                        {isInsufficient && (
+                            <button type="button" className="btn btn-warning shadow-sm mr-auto" onClick={() => window.open("/billing/topup", "_blank")}>
+                                <i className="fa fa-wallet"></i> Top Up Balance
+                            </button>
+                        )}
+                        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                        <button type="button" className={`btn btn-${isInsufficient ? 'danger' : 'brand'} btn-elevate`} onClick={onConfirm}>
+                            {isInsufficient ? 'Proceed Anyway' : 'Confirm & Send'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- COMPONENT: Delivery Report Modal ---
 const DeliveryReportModal = ({ isOpen, onClose, isLoading, reportData, onRetry, recipientMap }) => {
     const [retrySelection, setRetrySelection] = useState(new Set());
@@ -503,6 +578,7 @@ export default function MessageComposer() {
   const [classes, setClasses] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [schoolBalance, setSchoolBalance] = useState(0); // Added for billing
   
   // Recipient List State
   const [displayList, setDisplayList] = useState([]);
@@ -522,16 +598,24 @@ export default function MessageComposer() {
   const [messageTemplate, setMessageTemplate] = useState("Hello {{recipient.name}},\n\nThis is a message regarding {{fallback student.names 'your child'}}.");
   const [messageType, setMessageType] = useState('sms');
 
-  // Modal State
+  // Modal States
+  const [showPreFlight, setShowPreFlight] = useState(false); // New Modal State
   const [isSending, setIsSending] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState(null);
 
   useEffect(() => {
+    // Subscribe to school data to get live balance
+    const unsubSchool = Data.schools.subscribe(({ selectedSchool }) => {
+        if (selectedSchool && selectedSchool.financial) {
+            setSchoolBalance(selectedSchool.financial.balance || 0);
+        }
+    });
+    
     const unsubClasses = Data.classes.subscribe(({ classes }) => { if(classes) setClasses(classes); });
     const unsubRoutes = Data.routes.subscribe(({ routes }) => { if(routes) setRoutes(routes); });
     const unsubTeachers = Data.teachers.subscribe(({ teachers }) => { if(teachers) setTeachers(teachers); });
-    return () => { if(unsubClasses) unsubClasses(); if(unsubRoutes) unsubRoutes(); if(unsubTeachers) unsubTeachers(); };
+    return () => { if(unsubClasses) unsubClasses(); if(unsubRoutes) unsubRoutes(); if(unsubTeachers) unsubTeachers(); if(unsubSchool) unsubSchool(); };
   }, []);
 
   const fetchRecipients = useCallback(async (isLoadMore = false) => {
@@ -651,8 +735,13 @@ export default function MessageComposer() {
     }
   };
 
-  const handleSend = () => {
+  const onPreFlightClick = () => {
     if (selectedIds.size === 0) return alert("Please select recipients.");
+    setShowPreFlight(true);
+  }
+
+  const onConfirmSend = () => {
+    setShowPreFlight(false);
     setShowReportModal(true);
     performSend(Array.from(selectedIds));
   };
@@ -684,8 +773,18 @@ export default function MessageComposer() {
         onMessageChange={e => setMessageTemplate(e.target.value)}
         messageType={messageType}
         onMessageTypeChange={setMessageType}
-        onSend={handleSend}
+        onSend={onPreFlightClick} // Updated to open PreFlight
       />
+      
+      <PreFlightModal
+        isOpen={showPreFlight}
+        onClose={() => setShowPreFlight(false)}
+        onConfirm={onConfirmSend}
+        recipientCount={selectedIds.size}
+        messageLength={messageTemplate.length}
+        currentBalance={schoolBalance}
+      />
+
       <DeliveryReportModal 
         isOpen={showReportModal}
         onClose={() => { setShowReportModal(false); setReportData(null); }}

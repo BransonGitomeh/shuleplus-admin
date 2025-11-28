@@ -364,8 +364,8 @@ class Navbar extends React.Component {
                  <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                     <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
                         <span className="kt-menu__link-text" style={topNavlinkStyle}>
-                           {`${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `}{' '}
-                           <span style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}> Finance</span>
+                           
+                           <span > Finance</span>
                         </span>
                         <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
                     </a>
@@ -386,7 +386,7 @@ class Navbar extends React.Component {
           <div className="kt-header__topbar">
             <div className="kt-header__topbar-item kt-header__topbar-item--user" id="kt_offcanvas_toolbar_profile_toggler_btn" style={{ cursor: 'pointer' }}>
               <div className="kt-header__topbar-welcome" style={{ color: effectiveTopBarTextColor }}>Hi,</div>
-              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user}</div>
+              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user} {`${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `}{' '}</div>
               <div className="kt-header__topbar-wrapper" style={{ marginLeft: '10px' }}>
                 <img alt="User avatar" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '30px', height: '30px', borderRadius: '50%' }} />
               </div>
