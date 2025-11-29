@@ -4,7 +4,7 @@ import MpesaPaymentModal from "./deposit";
 import Data from "../../utils/data"; 
 import moment from "moment";
 
-// --- HELPER: Get effective date ---
+// --- HELPERS ---
 const getTxTime = (payment) => {
     return payment.createdAt || payment.metadata?.initiatedAt || payment.time || new Date();
 };
@@ -13,7 +13,32 @@ const getCompletionTime = (payment) => {
     return payment.updatedAt || payment.metadata?.updatedAt || payment.time;
 };
 
-// --- COMPONENT: Status Badge ---
+// --- SUB-COMPONENT: Stat Card ---
+const StatCard = ({ title, value, icon, color, subtext, action }) => (
+    <div className="col-md-3">
+        <div className="card card-custom bg-white border-0 shadow-sm mb-4" style={{height: '100%', minHeight: '120px'}}>
+            <div className="card-body p-4 d-flex flex-column justify-content-center">
+                <div className="d-flex align-items-center mb-3">
+                    <div className={`symbol symbol-40 symbol-light-${color} mr-3`}>
+                        <span className="symbol-label">
+                            <i className={`fa fa-${icon} text-${color} icon-md`}></i>
+                        </span>
+                    </div>
+                    <div>
+                        <div className="text-dark font-weight-bolder font-size-h5 mb-0">{value}</div>
+                        <div className="text-muted font-size-xs font-weight-bold">{title}</div>
+                    </div>
+                </div>
+                <div className="d-flex justify-content-between align-items-center">
+                    {subtext && <span className={`text-${color} font-size-sm font-weight-bold opacity-70`}>{subtext}</span>}
+                    {action && action}
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// --- SUB-COMPONENT: Status Badge ---
 const StatusBadge = ({ status }) => {
   const map = {
     COMPLETED: { css: 'success', label: 'Paid', icon: 'check' },
@@ -34,7 +59,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// --- COMPONENT: Loading Skeleton ---
+// --- SUB-COMPONENT: Loading Skeleton ---
 const TableSkeleton = () => (
     <tr className="animated fadeIn">
         <td colSpan="7">
@@ -54,7 +79,7 @@ const TableSkeleton = () => (
     </tr>
 );
 
-// --- COMPONENT: Accordion Details ---
+// --- SUB-COMPONENT: Transaction Timeline (Accordion) ---
 const TransactionDetails = ({ payment }) => {
     const isCompleted = payment.status === 'COMPLETED';
     const metadata = payment.metadata || {};
@@ -63,11 +88,10 @@ const TransactionDetails = ({ payment }) => {
 
     return (
         <div className="row p-3">
-            {/* LEFT: Audit Trail */}
+            {/* Audit Trail */}
             <div className="col-md-7 border-right">
                 <h6 className="text-uppercase text-muted font-size-xs font-weight-bold mb-4">Transaction Lifecycle</h6>
                 <div className="timeline-minimal">
-                    {/* 1. Initiated */}
                     <div className="d-flex mb-4">
                         <div className="symbol symbol-35 symbol-light-primary mr-3">
                             <span className="symbol-label font-weight-bold">1</span>
@@ -79,7 +103,6 @@ const TransactionDetails = ({ payment }) => {
                         </div>
                     </div>
 
-                    {/* 2. STK Push */}
                     {payment.checkoutRequestID && (
                         <div className="d-flex mb-4">
                             <div className="symbol symbol-35 symbol-light-info mr-3">
@@ -92,7 +115,6 @@ const TransactionDetails = ({ payment }) => {
                         </div>
                     )}
 
-                    {/* 3. Outcome */}
                     <div className="d-flex">
                         <div className={`symbol symbol-35 symbol-light-${isCompleted ? 'success' : 'danger'} mr-3`}>
                             <span className="symbol-label font-weight-bold">3</span>
@@ -110,14 +132,13 @@ const TransactionDetails = ({ payment }) => {
                 </div>
             </div>
 
-            {/* RIGHT: Technical Metadata */}
+            {/* Technical Metadata */}
             <div className="col-md-5 pl-md-4 mt-3 mt-md-0">
                 <h6 className="text-uppercase text-muted font-size-xs font-weight-bold mb-4">Technical Details</h6>
                 <table className="table table-sm table-borderless text-muted font-size-sm">
                     <tbody>
                         <tr><td>M-Pesa Ref:</td><td className="text-right text-dark font-weight-bold text-monospace">{payment.mpesaReceiptNumber || payment.ref || "---"}</td></tr>
                         <tr><td>Checkout ID:</td><td className="text-right text-monospace text-truncate" style={{maxWidth: '150px'}} title={payment.checkoutRequestID}>{payment.checkoutRequestID || 'N/A'}</td></tr>
-                        <tr><td>Merchant ID:</td><td className="text-right text-monospace text-truncate" style={{maxWidth: '150px'}} title={payment.merchantRequestID}>{payment.merchantRequestID || 'N/A'}</td></tr>
                         <tr><td>Result Code:</td><td className="text-right"><code>{stkResponse.ResponseCode || payment.resultCode || '...'}</code></td></tr>
                     </tbody>
                 </table>
@@ -132,6 +153,7 @@ const TransactionDetails = ({ payment }) => {
     );
 };
 
+// --- MAIN DASHBOARD COMPONENT ---
 class PaymentsDashboard extends React.Component {
   constructor(props) {
     super(props);
@@ -139,6 +161,7 @@ class PaymentsDashboard extends React.Component {
     this.state = {
       payments: [],
       filteredPayments: [], 
+      schoolData: null, // Stores balance info
       expandedId: null,
       searchTerm: "",
       isLoading: true
@@ -146,20 +169,23 @@ class PaymentsDashboard extends React.Component {
   }
 
   componentDidMount() {
-    this.unsubscribe = Data.payments.subscribe(this.handleDataUpdate);
+    this.collectData();
+    // Subscribe to both data sources
+    this.unsubscribePayments = Data.payments.subscribe(this.handleDataUpdate);
+    this.unsubscribeSchools = Data.schools.subscribe(this.handleDataUpdate);
   }
 
   componentWillUnmount() {
-    if (this.unsubscribe) this.unsubscribe();
+    if (this.unsubscribePayments) this.unsubscribePayments();
+    if (this.unsubscribeSchools) this.unsubscribeSchools();
   }
 
-  handleDataUpdate = (data) => {
-    const rawPayments = data.payments || [];
-    
-    // SMART LOADING CHECK:
-    // If we have 0 payments, verify if we have loaded schools yet.
-    // If Schools list is also empty, it means Data.js is still initializing.
-    const isActuallyLoading = rawPayments.length === 0 && Data.schools.list().length === 0;
+  collectData = () => {
+    const rawPayments = Data.payments.list() || [];
+    const schoolData = Data.schools.getSelected();
+
+    // Smart Loading Logic
+    const isActuallyLoading = rawPayments.length === 0 && (!schoolData || !schoolData.id);
 
     const sortedPayments = [...rawPayments].sort((a, b) => {
         const timeA = new Date(getTxTime(a));
@@ -169,9 +195,14 @@ class PaymentsDashboard extends React.Component {
 
     this.setState(prevState => ({
       payments: sortedPayments,
+      schoolData: schoolData,
       filteredPayments: this.filterPayments(sortedPayments, prevState.searchTerm),
       isLoading: isActuallyLoading
     }));
+  }
+
+  handleDataUpdate = () => {
+    this.collectData();
   };
 
   filterPayments = (list, term) => {
@@ -198,143 +229,203 @@ class PaymentsDashboard extends React.Component {
     }));
   };
 
-  handlePaymentSuccess = () => {
-    // Force refresh logic if needed
+  // --- Calculations for Top Cards ---
+  getMetrics = () => {
+    const { payments, schoolData } = this.state;
+    
+    // 1. Balance (From School Data)
+    const currentBalance = schoolData?.financial?.balance || 0;
+    
+    // 2. Total Collected (From Payments History)
+    const totalCollected = payments
+        .filter(p => p.status === 'COMPLETED')
+        .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+    // 3. SMS Estimate
+    const smsCost = 2.0;
+    const smsCapacity = Math.floor(currentBalance / smsCost);
+
+    // 4. Success Rate
+    const totalTx = payments.length;
+    const successTx = payments.filter(p => p.status === 'COMPLETED').length;
+    const successRate = totalTx > 0 ? Math.round((successTx / totalTx) * 100) : 0;
+
+    return { currentBalance, totalCollected, smsCapacity, successRate };
   }
 
   render() {
     const { filteredPayments, expandedId, searchTerm, isLoading } = this.state;
+    const metrics = this.getMetrics();
 
     return (
-      <div className="kt-portlet kt-portlet--mobile shadow-sm">
-        {/* HEADER */}
-        <div className="kt-portlet__head border-bottom-0 pt-4">
-          <div className="kt-portlet__head-label">
-            <h3 className="kt-portlet__head-title font-weight-bolder text-dark">
-              Transactions
-              <small className="text-muted ml-2">Live Feed</small>
-            </h3>
-          </div>
-          <div className="kt-portlet__head-toolbar">
-            <button className="btn btn-primary btn-sm font-weight-bold" onClick={() => this.modalRef.current.show()}>
-              <i className="fa fa-plus-circle mr-1"></i> New Deposit
-            </button>
-          </div>
+      <div className="d-flex flex-column">
+        
+        {/* === TOP METRICS ROW === */}
+        <div className="row mb-2">
+            <StatCard 
+                title="Wallet Balance" 
+                value={`KES ${metrics.currentBalance.toLocaleString()}`} 
+                icon="wallet" 
+                color="success"
+                subtext="Available Funds"
+                action={
+                    <button className="btn btn-xs btn-light-success font-weight-bold" onClick={() => this.modalRef.current.show()}>Top Up</button>
+                }
+            />
+            <StatCard 
+                title="SMS Capacity" 
+                value={`~${metrics.smsCapacity.toLocaleString()}`} 
+                icon="comment-alt" 
+                color="primary"
+                subtext="Messages Left"
+            />
+            <StatCard 
+                title="Total Deposits" 
+                value={`KES ${metrics.totalCollected.toLocaleString()}`} 
+                icon="piggy-bank" 
+                color="info"
+                subtext="Lifetime Collected"
+            />
+            <StatCard 
+                title="Payment Success" 
+                value={`${metrics.successRate}%`} 
+                icon="chart-line" 
+                color={metrics.successRate > 80 ? 'success' : 'warning'}
+                subtext="Conversion Rate"
+            />
         </div>
 
-        <div className="kt-portlet__body pt-2">
-          {/* SEARCH */}
-          <div className="mb-4 d-flex align-items-center">
-            <div className="input-icon input-icon-right" style={{width: '300px'}}>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Search phone, ref..." 
-                value={searchTerm}
-                onChange={this.onSearch}
-                style={{background: '#f3f6f9', border: 'none'}}
-              />
-              <span className="input-icon__icon input-icon__icon--right">
-                <span><i className="la la-search"></i></span>
-              </span>
+        {/* === MAIN TABLE PORTLET === */}
+        <div className="kt-portlet kt-portlet--mobile shadow-sm">
+            <div className="kt-portlet__head border-bottom-0 pt-4">
+            <div className="kt-portlet__head-label">
+                <span className="kt-portlet__head-icon"><i className="flaticon2-list-3 text-dark"></i></span>
+                <h3 className="kt-portlet__head-title font-weight-bolder text-dark">
+                Transactions
+                <small className="text-muted ml-2">Live M-Pesa Feed</small>
+                </h3>
             </div>
-          </div>
+            <div className="kt-portlet__head-toolbar">
+                <button className="btn btn-brand btn-sm font-weight-bold btn-elevate" onClick={() => this.modalRef.current.show()}>
+                <i className="fa fa-plus mr-1"></i> New Deposit
+                </button>
+            </div>
+            </div>
 
-          {/* TABLE */}
-          <div className="table-responsive">
-            <table className="table table-hover table-vertical-center">
-              <thead className="thead-light">
-                <tr className="text-uppercase text-muted font-size-sm letter-spacing-1">
-                  <th style={{width: '50px'}}>#</th>
-                  <th>Status</th>
-                  <th>Amount</th>
-                  <th>Payer</th>
-                  <th>Reference</th>
-                  <th className="text-right">Time</th>
-                  <th style={{width: '50px'}}></th>
-                </tr>
-              </thead>
-              <tbody>
-                
-                {isLoading && (
-                    <>
-                       <TableSkeleton />
-                       <TableSkeleton />
-                       <TableSkeleton />
-                    </>
-                )}
+            <div className="kt-portlet__body pt-2">
+            {/* SEARCH */}
+            <div className="mb-4 d-flex align-items-center">
+                <div className="input-icon input-icon-right" style={{width: '300px'}}>
+                <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Search phone, ref..." 
+                    value={searchTerm}
+                    onChange={this.onSearch}
+                    style={{background: '#f3f6f9', border: 'none'}}
+                />
+                <span className="input-icon__icon input-icon__icon--right">
+                    <span><i className="la la-search"></i></span>
+                </span>
+                </div>
+            </div>
 
-                {!isLoading && filteredPayments.map((payment, index) => {
-                    const isExpanded = expandedId === payment.id;
-                    const isFraud = payment.status === 'FLAGGED_AMOUNT_MISMATCH';
-                    const txTime = getTxTime(payment);
+            {/* TABLE */}
+            <div className="table-responsive">
+                <table className="table table-hover table-vertical-center">
+                <thead className="thead-light">
+                    <tr className="text-uppercase text-muted font-size-sm letter-spacing-1">
+                    <th style={{width: '50px'}}>#</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                    <th>Payer</th>
+                    <th>Reference</th>
+                    <th className="text-right">Time</th>
+                    <th style={{width: '50px'}}></th>
+                    </tr>
+                </thead>
+                <tbody>
                     
-                    return (
-                        <React.Fragment key={payment.id}>
-                            <tr 
-                                onClick={() => this.toggleRow(payment.id)} 
-                                style={{
-                                    cursor: 'pointer', 
-                                    backgroundColor: isExpanded ? '#f8f9fb' : 'transparent', 
-                                    borderLeft: isFraud ? '4px solid #fd3995' : 'none'
-                                }}
-                            >
-                                <td className="text-muted font-size-xs">{index + 1}</td>
-                                <td><StatusBadge status={payment.status} /></td>
-                                <td>
-                                    <span className="text-dark font-weight-bolder font-size-lg">
-                                        KES {payment.amount}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className="text-dark-75 font-weight-bold d-block">{payment.phone}</span>
-                                    <span className="text-muted font-size-xs">
-                                        {payment.checkoutRequestID ? 'Automated' : 'Manual'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className="text-dark-50 font-weight-bold font-monospace">
-                                        {payment.mpesaReceiptNumber || payment.ref || '---'}
-                                    </span>
-                                </td>
-                                <td className="text-right">
-                                    <span className="text-muted font-weight-bold font-size-sm">
-                                        {moment(txTime).fromNow()}
-                                    </span>
-                                </td>
-                                <td className="text-center text-muted">
-                                    <i className={`fa fa-chevron-${isExpanded ? 'up' : 'down'} font-size-xs`}></i>
-                                </td>
-                            </tr>
+                    {isLoading && (
+                        <>
+                        <TableSkeleton />
+                        <TableSkeleton />
+                        <TableSkeleton />
+                        </>
+                    )}
 
-                            {isExpanded && (
-                                <tr className="animated fadeIn">
-                                    <td colSpan="7" className="p-0 bg-white" style={{borderTop: 'none', borderBottom: '2px solid #f0f3ff'}}>
-                                        <TransactionDetails payment={payment} />
+                    {!isLoading && filteredPayments.map((payment, index) => {
+                        const isExpanded = expandedId === payment.id;
+                        const isFraud = payment.status === 'FLAGGED_AMOUNT_MISMATCH';
+                        const txTime = getTxTime(payment);
+                        
+                        return (
+                            <React.Fragment key={payment.id}>
+                                <tr 
+                                    onClick={() => this.toggleRow(payment.id)} 
+                                    style={{
+                                        cursor: 'pointer', 
+                                        backgroundColor: isExpanded ? '#f8f9fb' : 'transparent', 
+                                        borderLeft: isFraud ? '4px solid #fd3995' : 'none'
+                                    }}
+                                >
+                                    <td className="text-muted font-size-xs">{index + 1}</td>
+                                    <td><StatusBadge status={payment.status} /></td>
+                                    <td>
+                                        <span className="text-dark font-weight-bolder font-size-lg">
+                                            KES {payment.amount}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className="text-dark-75 font-weight-bold d-block">{payment.phone}</span>
+                                        <span className="text-muted font-size-xs">
+                                            {payment.checkoutRequestID ? 'Automated' : 'Manual'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className="text-dark-50 font-weight-bold font-monospace">
+                                            {payment.mpesaReceiptNumber || payment.ref || '---'}
+                                        </span>
+                                    </td>
+                                    <td className="text-right">
+                                        <span className="text-muted font-weight-bold font-size-sm">
+                                            {moment(txTime).fromNow()}
+                                        </span>
+                                    </td>
+                                    <td className="text-center text-muted">
+                                        <i className={`fa fa-chevron-${isExpanded ? 'up' : 'down'} font-size-xs`}></i>
                                     </td>
                                 </tr>
-                            )}
-                        </React.Fragment>
-                    );
-                })}
 
-                {!isLoading && filteredPayments.length === 0 && (
-                    <tr>
-                        <td colSpan="7" className="text-center text-muted py-5">
-                            <span className="d-block font-size-lg">No transactions found</span>
-                            <span className="font-size-sm">Try adjusting your search or create a new deposit.</span>
-                        </td>
-                    </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                                {isExpanded && (
+                                    <tr className="animated fadeIn">
+                                        <td colSpan="7" className="p-0 bg-white" style={{borderTop: 'none', borderBottom: '2px solid #f0f3ff'}}>
+                                            <TransactionDetails payment={payment} />
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+
+                    {!isLoading && filteredPayments.length === 0 && (
+                        <tr>
+                            <td colSpan="7" className="text-center text-muted py-5">
+                                <span className="d-block font-size-lg">No transactions found</span>
+                                <span className="font-size-sm">Try adjusting your search or create a new deposit.</span>
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+                </table>
+            </div>
+            </div>
+
+            <MpesaPaymentModal 
+                ref={this.modalRef} 
+                onPaymentSuccess={this.handleDataUpdate} // Refresh data on success
+            />
         </div>
-
-        <MpesaPaymentModal 
-            ref={this.modalRef} 
-            onPaymentSuccess={this.handlePaymentSuccess}
-        />
       </div>
     );
   }
