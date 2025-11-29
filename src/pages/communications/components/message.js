@@ -2,151 +2,89 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Handlebars from 'handlebars';
 import Data from '../../../utils/data';
 
-// --- HANDLEBARS HELPERS ---
+// --- HANDLEBARS CONFIG ---
 Handlebars.registerHelper("fallback", (value, fallback) => {
     return value ? new Handlebars.SafeString(value) : fallback;
 });
 
 // --- STYLES ---
 const STYLES = `
-  /* Custom Scrollbar */
-  .custom-scroll::-webkit-scrollbar { width: 6px; }
-  .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
-  .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-  .custom-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+  /* Layout & Scroll */
+  .composer-container { height: calc(100vh - 140px); background: #f4f6f9; display: flex; flex-direction: column; }
+  .custom-scroll { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+  .custom-scroll::-webkit-scrollbar { width: 5px; }
+  .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 20px; }
 
-  /* Contact Card */
-  .contact-card {
-    transition: all 0.2s ease;
-    border: 1px solid #ebedf2;
-    border-radius: 8px;
-    background: white;
-    margin-bottom: 8px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
+  /* Audience Column */
+  .audience-panel { background: white; border-right: 1px solid #eef0f8; height: 100%; display: flex; flex-direction: column; }
+  .contact-item {
+    display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid #f8f9fa; cursor: pointer; transition: all 0.15s;
   }
-  .contact-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    border-color: #d1d5db;
+  .contact-item:hover { background: #fbfbfd; }
+  .contact-item.selected { background: #f0f7ff; border-left: 4px solid #5d78ff; }
+  .contact-avatar {
+    width: 35px; height: 35px; background: #f0f2f5; color: #5e6278;
+    border-radius: 6px; display: flex; align-items: center; justifyContent: center;
+    font-weight: 600; font-size: 0.9rem; margin-right: 12px;
   }
-  .contact-card.selected {
-    border-color: #5d78ff;
-    background-color: #f7f9ff;
+  .contact-item.selected .contact-avatar { background: #5d78ff; color: white; }
+
+  /* Editor Column */
+  .editor-panel { padding: 25px; height: 100%; overflow-y: hidden; }
+  .editor-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); height: 100%; display: flex; flex-direction: column; }
+  
+  /* Text Area */
+  .message-area {
+    border: 1px solid #eef0f8; border-radius: 8px; padding: 20px;
+    font-size: 1rem; line-height: 1.6; color: #3f4254;
+    resize: none; width: 100%; flex-grow: 1; transition: border 0.2s;
   }
-  .contact-card.selected::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 4px;
-    background: #5d78ff;
-  }
+  .message-area:focus { outline: none; border-color: #5d78ff; box-shadow: 0 0 0 3px rgba(93, 120, 255, 0.1); }
 
   /* Variable Chips */
   .var-chip {
-    display: inline-block;
-    padding: 4px 10px;
-    margin: 0 5px 5px 0;
-    background: #eef2ff;
-    color: #5d78ff;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.2s;
+    background: #e8f4ff; color: #007bff; padding: 6px 12px; border-radius: 50px;
+    font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent;
+    transition: 0.2s; user-select: none; margin-right: 8px; margin-bottom: 5px; display: inline-block;
   }
-  .var-chip:hover {
-    background: #5d78ff;
-    color: white;
-    border-color: #5d78ff;
-  }
+  .var-chip:hover { background: #007bff; color: white; transform: translateY(-1px); }
 
-  /* Load More Button */
-  .load-more-container {
-    padding: 15px 0;
-    text-align: center;
-    border-top: 1px dashed #ebedf2;
-    margin-top: 5px;
+  /* Phone Preview */
+  .phone-frame {
+    background: #1e1e2d; border-radius: 35px; padding: 10px;
+    width: 300px; height: 600px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+    display: flex; flex-direction: column; margin: auto;
   }
-  .btn-load-more {
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 10px 24px;
-    border-radius: 30px;
-    background: #f0f2f5;
-    color: #5e6278;
-    border: none;
-    transition: all 0.2s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  .phone-screen {
+    background: #eef0f8; border-radius: 25px; overflow: hidden;
+    flex-grow: 1; display: flex; flex-direction: column; position: relative;
   }
-  .btn-load-more:hover {
-    background: #e4e6ef;
-    color: #5d78ff;
-    transform: translateY(-1px);
-  }
-
-  /* Phone Preview Simulator */
-  .phone-mockup {
-    background: #fff;
-    border: 12px solid #2d3436;
-    border-radius: 30px;
-    height: 520px;
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    display: flex;
-    flex-direction: column;
+  .phone-notch {
+    height: 25px; background: white; text-align: center; font-size: 10px; color: #b5b5c3;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0;
   }
   .phone-header {
-    background: #f7f7f7;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #888;
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: white; border-bottom: 1px solid #ebedf2; padding: 10px 15px;
+    display: flex; align-items: center; flex-shrink: 0;
   }
   .phone-body {
-    background: #e5e5f7;
-    flex-grow: 1;
-    padding: 15px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Items start from top */
+    flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column;
   }
-  .msg-bubble-container {
-    margin-bottom: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+  /* Scrollbar inside phone */
+  .phone-body::-webkit-scrollbar { width: 4px; }
+  .phone-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  .msg-container {
+    display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 15px;
   }
-  .msg-recipient-label {
-    font-size: 0.65rem;
-    color: #888;
-    margin-bottom: 2px;
-    margin-right: 4px;
-    font-weight: 600;
+  .msg-label {
+    font-size: 0.65rem; color: #999; margin-bottom: 2px; margin-right: 5px; font-weight: 600;
   }
   .msg-bubble {
-    background: #fff;
-    padding: 10px 14px;
-    border-radius: 18px 18px 4px 18px;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: #333;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    max-width: 100%;
-    white-space: pre-wrap;
-    text-align: left;
+    background: white; padding: 10px 14px; border-radius: 15px 15px 4px 15px;
+    font-size: 0.85rem; color: #3f4254; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    white-space: pre-wrap; max-width: 100%; text-align: left;
   }
 `;
 
@@ -158,15 +96,15 @@ const maskPhone = (phone) => {
   return `${p.slice(0, 4)}***${p.slice(-3)}`;
 };
 
+const getInitials = (name = '') => name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
 // --- COMPONENT: Pre-Flight Check Modal ---
 const PreFlightModal = ({ isOpen, onClose, onConfirm, recipientCount, messageLength, currentBalance }) => {
     if (!isOpen) return null;
 
-    // Billing Constants
-    const COST_PER_SMS = 1.85;
+    const COST_PER_SMS = 2.0;
     const CHARS_PER_SEGMENT = 160;
 
-    // Calculations
     const segments = messageLength > 0 ? Math.ceil(messageLength / CHARS_PER_SEGMENT) : 1;
     const totalCost = segments * recipientCount * COST_PER_SMS;
     const remainingBalance = currentBalance - totalCost;
@@ -210,7 +148,7 @@ const PreFlightModal = ({ isOpen, onClose, onConfirm, recipientCount, messageLen
 
                         {isInsufficient ? (
                             <div className="text-muted small mt-3">
-                                <p><strong>Warning:</strong> Proceeding without sufficient funds will likely result in failed messages for some or all recipients.</p>
+                                <p><strong>Warning:</strong> Proceeding without sufficient funds will likely result in failed messages.</p>
                             </div>
                         ) : (
                             <p className="text-muted small mt-3 text-center">Your balance is sufficient to cover this campaign.</p>
@@ -218,7 +156,7 @@ const PreFlightModal = ({ isOpen, onClose, onConfirm, recipientCount, messageLen
                     </div>
                     <div className="modal-footer bg-light">
                         {isInsufficient && (
-                            <button type="button" className="btn btn-warning shadow-sm mr-auto" onClick={() => window.open("/billing/topup", "_blank")}>
+                            <button type="button" className="btn btn-warning shadow-sm mr-auto" onClick={() => window.open("/finance/topup", "_blank")}>
                                 <i className="fa fa-wallet"></i> Top Up Balance
                             </button>
                         )}
@@ -253,8 +191,8 @@ const DeliveryReportModal = ({ isOpen, onClose, isLoading, reportData, onRetry, 
     };
 
     const getName = (id) => {
-        const user = recipientMap.get(id);
-        return user ? user.name : 'Unknown';
+        if(recipientMap && recipientMap.has(id)) return recipientMap.get(id).name;
+        return 'Unknown Recipient';
     };
 
     return (
@@ -354,233 +292,215 @@ const DeliveryReportModal = ({ isOpen, onClose, isLoading, reportData, onRetry, 
     );
 };
 
-// --- COMPONENT: Message View (Presenter) ---
-const MessageView = (props) => {
-  const {
-    activeTab, onTabChange, subFilterId, onSubFilterIdChange, searchTerm, onSearchChange,
-    classes, routes, displayList, totalCount, isLoading, hasMore, onLoadMore,
-    selectedIds, onSelectAll, onSelectOne,
-    messageTemplate, onMessageChange, messageType, onMessageTypeChange,
-    onSend,
-  } = props;
+// --- SUB-COMPONENT: Audience Selector (Left Column) ---
+const AudienceSelector = ({ 
+    activeTab, onTabChange, displayList, selectedIds, onSelectOne, onSelectAll, 
+    searchTerm, onSearchChange, classes, routes, subFilterId, onSubFilterIdChange,
+    totalCount, isLoading, hasMore, onLoadMore
+}) => {
+    const allOnPageSelected = displayList.length > 0 && displayList.every(i => selectedIds.has(i.id));
 
-  const textareaRef = useRef(null);
-  const [previewMessages, setPreviewMessages] = useState([]);
+    return (
+        <div className="audience-panel">
+            <div className="p-4 border-bottom">
+                <h5 className="font-weight-bold text-dark mb-3">Select Audience</h5>
+                
+                {/* Tabs */}
+                <div className="btn-group w-100 mb-3 shadow-sm" role="group">
+                    {[
+                        { id: 'parents', label: 'All Parents' }, 
+                        { id: 'classes', label: 'By Class' }, 
+                        { id: 'routes', label: 'By Route' },
+                        { id: 'staff', label: 'Staff' }
+                    ].map(tab => (
+                        <button 
+                            key={tab.id} 
+                            className={`btn btn-sm ${activeTab === tab.id ? 'btn-success text-white' : 'btn-white text-muted'}`}
+                            onClick={() => onTabChange(tab.id)}
+                            style={{fontWeight: 600, border: '1px solid #ebedf2'}}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
 
-  // Logic: Auto-select first option for subfilters
-  useEffect(() => {
-    if (activeTab === 'classes' && !subFilterId && classes.length > 0) onSubFilterIdChange({ target: { value: classes[0].id } });
-    if (activeTab === 'routes' && !subFilterId && routes.length > 0) onSubFilterIdChange({ target: { value: routes[0].id } });
-  }, [activeTab, classes, routes, subFilterId, onSubFilterIdChange]);
+                {/* Sub-Filters */}
+                {(activeTab === 'classes' || activeTab === 'routes') && (
+                    <div className="mb-3">
+                        <select className="form-control form-control-sm bg-light border-0 font-weight-bold text-dark-50" value={subFilterId} onChange={onSubFilterIdChange}>
+                            {activeTab === 'classes' && classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {activeTab === 'routes' && routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                    </div>
+                )}
 
-  // Logic: Generate All Previews based on Selection
-  useEffect(() => {
-    if (selectedIds.size === 0) {
-        setPreviewMessages([]);
-        return;
-    }
-
-    try {
-        const template = Handlebars.compile(messageTemplate || ' ');
-        // Filter the displayList to find the full objects of selected IDs
-        const selectedRecipients = displayList.filter(item => selectedIds.has(item.id));
-        
-        const previews = selectedRecipients.map(recipient => {
-            const context = {
-                recipient: recipient,
-                parent: recipient, // alias
-                student: recipient.students?.[0] || { names: 'Student' }
-            };
-            return {
-                id: recipient.id,
-                name: recipient.name,
-                phone: recipient.phone,
-                text: template(context)
-            };
-        });
-        setPreviewMessages(previews);
-    } catch (error) {
-        setPreviewMessages([{ id: 'err', text: "Template Error" }]);
-    }
-  }, [messageTemplate, selectedIds, displayList]);
-
-  const insertVariable = (varCode) => {
-    const field = textareaRef.current;
-    if (field) {
-      const startPos = field.selectionStart;
-      const endPos = field.selectionEnd;
-      const text = messageTemplate;
-      const newText = text.substring(0, startPos) + varCode + text.substring(endPos);
-      onMessageChange({ target: { value: newText } });
-      setTimeout(() => { field.focus(); field.setSelectionRange(startPos + varCode.length, startPos + varCode.length); }, 0);
-    }
-  };
-
-  const getInitials = (name = '') => name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-  const allOnPageSelected = displayList.length > 0 && displayList.every(item => selectedIds.has(item.id));
-
-  return (
-    <>
-      <style>{STYLES}</style>
-      <div className="row h-100">
-        
-        {/* === LEFT COLUMN: Audience === */}
-        <div className="col-lg-5 col-xl-4 d-flex flex-column" style={{maxHeight: '85vh'}}>
-          <div className="kt-portlet kt-portlet--height-fluid flex-grow-1 d-flex flex-column mb-0">
-            <div className="kt-portlet__head kt-portlet__head--noborder pb-0">
-              <div className="kt-portlet__head-label"><h3 className="kt-portlet__head-title text-dark">Select Audience</h3></div>
-            </div>
-            
-            <div className="px-4 pb-2">
-               <div className="btn-group btn-group-sm w-100 mb-3" role="group">
-                  {[{ id: 'parents', label: 'All Parents' }, { id: 'classes', label: 'By Class' }, { id: 'routes', label: 'By Route' }, { id: 'staff', label: 'Staff' }].map(tab => (
-                    <button key={tab.id} type="button" className={`btn ${activeTab === tab.id ? 'btn-brand' : 'btn-outline-secondary'}`} onClick={() => onTabChange(tab.id)}>{tab.label}</button>
-                  ))}
-               </div>
-               {activeTab === 'classes' && (
-                 <select className="form-control form-control-sm mb-3" style={{background:'#f7f9ff', borderColor:'#5d78ff', color:'#5d78ff', fontWeight:'600'}} value={subFilterId} onChange={onSubFilterIdChange}>
-                   {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                 </select>
-               )}
-               {activeTab === 'routes' && (
-                 <select className="form-control form-control-sm mb-3" style={{background:'#f7f9ff', borderColor:'#5d78ff', color:'#5d78ff', fontWeight:'600'}} value={subFilterId} onChange={onSubFilterIdChange}>
-                   {routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                 </select>
-               )}
-               <div className="kt-input-icon kt-input-icon--right">
-                  <input type="text" className="form-control" placeholder="Search..." value={searchTerm} onChange={onSearchChange} />
-                  <span className="kt-input-icon__icon kt-input-icon__icon--right"><span><i className="la la-search"></i></span></span>
-               </div>
+                {/* Search */}
+                <div className="input-group">
+                    <div className="input-group-prepend"><span className="input-group-text bg-white border-right-0"><i className="la la-search"></i></span></div>
+                    <input type="text" className="form-control border-left-0 pl-0" placeholder="Search name..." value={searchTerm} onChange={onSearchChange} />
+                </div>
             </div>
 
-            <div className="kt-portlet__body flex-grow-1 d-flex flex-column pt-2" style={{overflow:'hidden'}}>
-               <div className="d-flex justify-content-between align-items-center mb-2">
-                  <label className="kt-checkbox kt-checkbox--brand mb-0 font-weight-bold text-muted small">
-                      <input type="checkbox" checked={allOnPageSelected} onChange={e => onSelectAll(e.target.checked)} disabled={displayList.length === 0} />
-                      SELECT ALL
-                      <span></span>
-                  </label>
-                  <span className="badge badge-light text-muted">{displayList.length} {activeTab === 'parents' ? `of ${totalCount}` : ''} Loaded</span>
-               </div>
+            {/* Header / Select All */}
+            <div className="d-flex justify-content-between align-items-center px-4 py-2 bg-light border-bottom">
+                <label className="checkbox checkbox-success mb-0 font-weight-bold font-size-sm">
+                    <input type="checkbox" checked={allOnPageSelected} onChange={(e) => onSelectAll(e.target.checked)} disabled={displayList.length === 0}/>
+                    <span></span> &nbsp; Select All ({displayList.length})
+                </label>
+                <span className="label label-light-success label-inline font-weight-bold">{selectedIds.size} Selected</span>
+            </div>
 
-               <div className="custom-scroll flex-grow-1 pr-2" style={{overflowY: 'auto'}}>
-                  {displayList.map(item => {
+            {/* List */}
+            <div className="flex-grow-1 custom-scroll" style={{overflowY: 'auto'}}>
+                {displayList.map(item => {
                     const isSelected = selectedIds.has(item.id);
                     return (
-                      <div key={item.id} className={`contact-card p-3 ${isSelected ? 'selected' : ''}`} onClick={() => onSelectOne(item.id, !isSelected)}>
-                        <div className="d-flex align-items-start">
-                          <div className="kt-user-card-v2__pic mr-3">
-                              <span className={`kt-badge kt-badge--lg ${isSelected ? 'kt-badge--brand' : 'kt-badge--secondary'}`}>{getInitials(item.name)}</span>
-                          </div>
-                          <div className="flex-grow-1" style={{minWidth: 0}}>
-                              <div className="d-flex justify-content-between">
-                                <h6 className={`mb-1 ${isSelected ? 'text-primary' : 'text-dark'}`} style={{fontSize: '0.95rem', fontWeight: 600}}>{item.name}</h6>
-                                <label className="kt-checkbox kt-checkbox--single kt-checkbox--brand mb-0"><input type="checkbox" checked={isSelected} readOnly/><span></span></label>
-                              </div>
-                              <div className="small font-weight-bold d-flex align-items-center" style={{color: '#9CA3AF', fontFamily: 'monospace'}}>{maskPhone(item.phone)}</div>
-                          </div>
+                        <div key={item.id} className={`contact-item ${isSelected ? 'selected' : ''}`} onClick={() => onSelectOne(item.id, !isSelected)}>
+                            <div className="contact-avatar">{getInitials(item.name)}</div>
+                            <div className="flex-grow-1" style={{minWidth: 0}}>
+                                <div className="text-dark-75 font-weight-bold font-size-sm text-truncate">{item.name}</div>
+                                <div className="text-muted font-size-xs">{maskPhone(item.phone)}</div>
+                            </div>
+                            {isSelected && <i className="la la-check-circle text-success icon-lg"></i>}
                         </div>
-                      </div>
                     );
-                  })}
-                  {isLoading && <div className="text-center py-3"><div className="kt-spinner kt-spinner--brand kt-spinner--sm"></div></div>}
-                  {!isLoading && hasMore && !searchTerm && (
-                    <div className="load-more-container">
-                       <button className="btn-load-more" onClick={onLoadMore}>Load Next Batch</button>
+                })}
+                
+                {isLoading && <div className="text-center py-3"><div className="kt-spinner kt-spinner--brand kt-spinner--sm"></div></div>}
+                
+                {!isLoading && hasMore && !searchTerm && (
+                    <div className="text-center py-3 border-top">
+                       <button className="btn btn-sm btn-light btn-pill font-weight-bold" onClick={onLoadMore}>Load More</button>
                     </div>
-                  )}
-               </div>
+                )}
+
+                {!isLoading && displayList.length === 0 && (
+                    <div className="text-center py-5 text-muted font-size-sm">No contacts found</div>
+                )}
             </div>
-          </div>
         </div>
+    );
+};
 
-        {/* === RIGHT COLUMN: Composer & Multi-Preview === */}
-        <div className="col-lg-7 col-xl-8 d-flex flex-column">
-          <div className="kt-portlet kt-portlet--height-fluid mb-0">
-            <div className="kt-portlet__body h-100 d-flex flex-column">
-              
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                 <h3 className="kt-portlet__head-title text-dark m-0">Compose Message</h3>
-                 <div className="btn-group">
-                    <button onClick={() => onMessageTypeChange('sms')} className={`btn btn-sm btn-bold ${messageType === 'sms' ? 'btn-label-brand' : 'btn-secondary'}`}>SMS</button>
-                    <button onClick={() => onMessageTypeChange('email')} className={`btn btn-sm btn-bold ${messageType === 'email' ? 'btn-label-brand' : 'btn-secondary'}`}>Email</button>
-                 </div>
-              </div>
-
-              <div className="row flex-grow-1">
-                {/* Editor */}
-                <div className="col-md-7 d-flex flex-column">
-                   <div className="form-group flex-grow-1 d-flex flex-column">
-                      <div className="mb-2">
-                        <span className="text-muted small text-uppercase font-weight-bold mr-2">Variables:</span>
-                        <span className="var-chip" onClick={() => insertVariable('{{recipient.name}}')}>Parent Name</span>
-                        <span className="var-chip" onClick={() => insertVariable("{{fallback student.names 'your child'}}")}>Student Name</span>
-                      </div>
-                      <textarea 
-                        ref={textareaRef}
-                        className="form-control flex-grow-1 p-3" 
-                        style={{border: '1px solid #ebedf2', resize: 'none', borderRadius: '8px', fontSize: '1rem', lineHeight: '1.5'}}
-                        placeholder="Type your message here..."
-                        value={messageTemplate}
-                        onChange={onMessageChange}
-                      ></textarea>
-                      <div className="d-flex justify-content-between mt-2 text-muted small">
-                        <span>{messageTemplate.length} chars</span>
-                        {messageType === 'sms' && <span>~{Math.ceil(messageTemplate.length / 160)} SMS parts</span>}
-                      </div>
-                   </div>
-                   <div className="mt-auto pt-3 border-top">
-                      <button type="button" className="btn btn-brand btn-block btn-lg btn-elevate" 
-                        onClick={onSend} disabled={selectedIds.size === 0} style={{fontWeight: 600}}>
-                        SEND TO {selectedIds.size} RECIPIENT(S)
-                      </button>
-                   </div>
-                </div>
-
-                {/* Multi-Preview Scrollable Phone */}
-                <div className="col-md-5 d-flex align-items-center justify-content-center border-left">
-                    <div className="phone-mockup">
-                       <div className="phone-header">
-                         <span><i className="la la-signal mr-1"></i> Preview</span>
-                         <span className="badge badge-secondary">{previewMessages.length} Msgs</span>
-                       </div>
-                       <div className="phone-body custom-scroll">
-                          {previewMessages.length === 0 ? (
-                              <div className="text-center text-muted mt-5">
-                                  <i className="la la-user-plus" style={{fontSize: '2rem', opacity: 0.5}}></i>
-                                  <p className="small mt-2">Select recipients to see message preview</p>
-                              </div>
-                          ) : (
-                              previewMessages.map((msg) => (
-                                  <div key={msg.id} className="msg-bubble-container">
-                                      <div className="msg-recipient-label">{msg.name} ({maskPhone(msg.phone)})</div>
-                                      <div className="msg-bubble">
-                                          {msg.text}
-                                      </div>
-                                  </div>
-                              ))
-                          )}
-                       </div>
+// --- SUB-COMPONENT: Workspace (Right Column) ---
+const Workspace = ({ 
+    messageTemplate, onMessageChange, onSend, selectedCount, previewMessages, 
+    messageType, onMessageTypeChange, schoolName, onInsertVariable 
+}) => {
+    
+    // Character Stats
+    const chars = messageTemplate.length;
+    const segments = Math.ceil(chars / 160);
+    
+    return (
+        <div className="editor-panel">
+            <div className="editor-card">
+                {/* Header */}
+                <div className="d-flex justify-content-between align-items-center p-4 border-bottom">
+                    <h3 className="font-weight-bold m-0 text-dark">Compose Message</h3>
+                    <div className="btn-group">
+                        <button className={`btn btn-sm font-weight-bold ${messageType === 'sms' ? 'btn-light-success text-success' : 'btn-light text-muted'}`} onClick={() => onMessageTypeChange('sms')}>SMS</button>
+                        <button className={`btn btn-sm font-weight-bold ${messageType === 'email' ? 'btn-light-primary text-primary' : 'btn-light text-muted'}`} onClick={() => onMessageTypeChange('email')}>Email</button>
                     </div>
                 </div>
-              </div>
+
+                <div className="row no-gutters flex-grow-1">
+                    
+                    {/* INPUT AREA */}
+                    <div className="col-lg-7 d-flex flex-column p-4 border-right">
+                        
+                        {/* Variable Chips */}
+                        <div className="mb-3">
+                            <span className="text-muted font-size-xs font-weight-bold text-uppercase mr-3">Variables:</span>
+                            <span className="var-chip" onClick={() => onInsertVariable('{{recipient.name}}')}>Parent Name</span>
+                            <span className="var-chip" onClick={() => onInsertVariable("{{fallback student.names 'your child'}}")}>Student Name</span>
+                            <span className="var-chip" onClick={() => onInsertVariable("{{school.name}}")}>School Name</span>
+                        </div>
+
+                        {/* Textarea */}
+                        <textarea 
+                            className="message-area"
+                            placeholder={`Type your ${messageType.toUpperCase()} here... e.g. Hello {{recipient.name}}`}
+                            value={messageTemplate}
+                            onChange={onMessageChange}
+                            spellCheck="false"
+                        ></textarea>
+
+                        {/* Footer / Stats */}
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                            <div className="text-muted font-size-sm">
+                                <strong>{chars}</strong> chars 
+                                {messageType === 'sms' && <span className="ml-2 pl-2 border-left">~{segments} Segment(s)</span>}
+                            </div>
+                            <button 
+                                className="btn btn-success font-weight-bold px-5 shadow-sm" 
+                                disabled={selectedCount === 0}
+                                onClick={onSend}
+                            >
+                                Send to {selectedCount} Recipients <i className="la la-paper-plane ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* PHONE PREVIEW (UPDATED: Scrollable List) */}
+                    <div className="col-lg-5 p-4 d-none d-lg-flex align-items-center justify-content-center bg-light">
+                        <div className="phone-frame">
+                            <div className="phone-screen">
+                                <div className="phone-notch">
+                                    <span>9:41</span>
+                                    <span><i className="fa fa-wifi font-size-xs mr-1"></i> <i className="fa fa-battery-full font-size-xs"></i></span>
+                                </div>
+                                <div className="phone-header">
+                                    <div className="symbol symbol-30 symbol-circle symbol-light-success mr-3"><span className="symbol-label">S</span></div>
+                                    <div>
+                                        <div className="font-size-sm font-weight-bold text-dark">{schoolName || "School Admin"}</div>
+                                        <div className="font-size-xs text-muted">{selectedCount} Recipient(s)</div>
+                                    </div>
+                                </div>
+                                
+                                <div className="phone-body bg-light-primary">
+                                    {selectedCount === 0 ? (
+                                        <div className="text-center text-muted mt-5 opacity-50">
+                                            <i className="flaticon2-group icon-2x mb-2"></i>
+                                            <div className="font-size-xs">Select recipients to preview messages</div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="text-center my-3"><span className="badge badge-light font-weight-normal text-muted p-2 rounded">Today</span></div>
+                                            
+                                            {/* Scrollable list of all preview messages */}
+                                            {previewMessages.map((msg) => (
+                                                <div key={msg.id} className="msg-container">
+                                                    <div className="msg-label">
+                                                        {msg.name} ({maskPhone(msg.phone)})
+                                                    </div>
+                                                    <div className="msg-bubble">
+                                                        {msg.text}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </>
-  );
+    );
 };
 
 // --- MAIN CONTAINER ---
 export default function MessageComposer() {
-  // Core Data
+  // Data
   const [classes, setClasses] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [schoolBalance, setSchoolBalance] = useState(0); // Added for billing
+  const [schoolName, setSchoolName] = useState("Our School");
+  const [schoolBalance, setSchoolBalance] = useState(0);
   
-  // Recipient List State
+  // List State
   const [displayList, setDisplayList] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoadingList, setIsLoadingList] = useState(false);
@@ -588,36 +508,43 @@ export default function MessageComposer() {
   const ROWS_PER_PAGE = 50;
   const [hasMore, setHasMore] = useState(false);
 
-  // Filters
+  // Filters & Selection
   const [activeTab, setActiveTab] = useState('parents'); 
   const [subFilterId, setSubFilterId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   
-  // Message State
-  const [messageTemplate, setMessageTemplate] = useState("Hello {{recipient.name}},\n\nThis is a message regarding {{fallback student.names 'your child'}}.");
+  // Message & Modals
+  const [messageTemplate, setMessageTemplate] = useState("Hello {{recipient.name}},\n\nThis is a message from {{school.name}} regarding {{fallback student.names 'your child'}}.");
   const [messageType, setMessageType] = useState('sms');
-
-  // Modal States
-  const [showPreFlight, setShowPreFlight] = useState(false); // New Modal State
+  const [showPreFlight, setShowPreFlight] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState(null);
 
+  // --- 1. Load Core Data ---
   useEffect(() => {
-    // Subscribe to school data to get live balance
+    // School Details
     const unsubSchool = Data.schools.subscribe(({ selectedSchool }) => {
-        if (selectedSchool && selectedSchool.financial) {
-            setSchoolBalance(selectedSchool.financial.balance || 0);
+        if (selectedSchool) {
+            setSchoolName(selectedSchool.name || "School");
+            if (selectedSchool.financial) setSchoolBalance(selectedSchool.financial.balance || 0);
         }
     });
+
+    const unsubClasses = Data.classes.subscribe(({ classes }) => setClasses(classes || []));
+    const unsubRoutes = Data.routes.subscribe(({ routes }) => setRoutes(routes || []));
+    const unsubTeachers = Data.teachers.subscribe(({ teachers }) => setTeachers(teachers || []));
     
-    const unsubClasses = Data.classes.subscribe(({ classes }) => { if(classes) setClasses(classes); });
-    const unsubRoutes = Data.routes.subscribe(({ routes }) => { if(routes) setRoutes(routes); });
-    const unsubTeachers = Data.teachers.subscribe(({ teachers }) => { if(teachers) setTeachers(teachers); });
-    return () => { if(unsubClasses) unsubClasses(); if(unsubRoutes) unsubRoutes(); if(unsubTeachers) unsubTeachers(); if(unsubSchool) unsubSchool(); };
+    return () => { 
+        if(unsubClasses) unsubClasses(); 
+        if(unsubRoutes) unsubRoutes(); 
+        if(unsubTeachers) unsubTeachers(); 
+        if(unsubSchool) unsubSchool();
+    };
   }, []);
 
+  // --- 2. Fetch Recipient List (Pagination) ---
   const fetchRecipients = useCallback(async (isLoadMore = false) => {
     setIsLoadingList(true);
     let newList = [];
@@ -627,6 +554,7 @@ export default function MessageComposer() {
         const result = await Data.parents.getPage({ page: isLoadMore ? page + 1 : 1, limit: ROWS_PER_PAGE });
         newList = result.parents;
         newTotal = result.totalCount;
+        
         if (isLoadMore) {
           setDisplayList(prev => [...prev, ...newList]);
           setPage(prev => prev + 1);
@@ -639,12 +567,10 @@ export default function MessageComposer() {
 
       } else if (activeTab === 'classes' && subFilterId) {
         const targetClass = classes.find(c => c.id === subFilterId);
-        if (targetClass && targetClass.students) {
-           const uniqueParents = new Map();
-           targetClass.students.forEach(student => {
-              if (student.parent) uniqueParents.set(student.parent.id, { ...student.parent, students: [student] });
-           });
-           newList = Array.from(uniqueParents.values());
+        if (targetClass?.students) {
+           const map = new Map();
+           targetClass.students.forEach(s => s.parent && map.set(s.parent.id, { ...s.parent, students: [s] }));
+           newList = Array.from(map.values());
         }
         setDisplayList(newList);
         setHasMore(false);
@@ -652,61 +578,100 @@ export default function MessageComposer() {
 
       } else if (activeTab === 'routes' && subFilterId) {
         const targetRoute = routes.find(r => r.id === subFilterId);
-        if (targetRoute && targetRoute.students) {
-            const uniqueParents = new Map();
-            targetRoute.students.forEach(student => {
-                 if (student.parent) uniqueParents.set(student.parent.id, { ...student.parent, students: [student] });
-            });
-            newList = Array.from(uniqueParents.values());
+        if (targetRoute?.students) {
+            const map = new Map();
+            targetRoute.students.forEach(s => s.parent && map.set(s.parent.id, { ...s.parent, students: [s] }));
+            newList = Array.from(map.values());
         }
         setDisplayList(newList);
         setHasMore(false);
         setTotalCount(newList.length);
 
       } else if (activeTab === 'staff') {
-        setDisplayList(teachers);
+        newList = teachers;
+        setDisplayList(newList);
         setHasMore(false);
-        setTotalCount(teachers.length);
+        setTotalCount(newList.length);
       } else {
         setDisplayList([]);
-        setHasMore(false);
       }
-    } catch (e) { console.error("Error fetching recipients", e); } finally { setIsLoadingList(false); }
+    } catch (e) { console.error(e); } finally { setIsLoadingList(false); }
   }, [activeTab, subFilterId, page, classes, routes, teachers, displayList.length]);
 
+  // --- 3. Reload List on Filter Change ---
   useEffect(() => {
     setSelectedIds(new Set());
     setPage(1);
-    fetchRecipients(false); 
+    
+    // Auto-select first item for sub-filters if empty
+    if (activeTab === 'classes' && !subFilterId && classes.length) setSubFilterId(classes[0].id);
+    else if (activeTab === 'routes' && !subFilterId && routes.length) setSubFilterId(routes[0].id);
+    
+    fetchRecipients(false);
   }, [activeTab, subFilterId, classes, routes]); 
 
+  // --- 4. Filtering Logic (Client-side search) ---
   const filteredList = useMemo(() => {
     if (!searchTerm) return displayList;
-    return displayList.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()) || (item.phone && item.phone.includes(searchTerm)));
+    return displayList.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [displayList, searchTerm]);
 
-  // Recipient Map for Modal to resolve IDs to Names
+  // --- 5. Generate Preview (ARRAY) ---
+  const previewMessages = useMemo(() => {
+    if (selectedIds.size === 0) return [];
+    try {
+        const template = Handlebars.compile(messageTemplate);
+        
+        // Map ALL selected IDs to preview objects
+        return Array.from(selectedIds).map(id => {
+            const contact = displayList.find(c => c.id === id);
+            if (!contact) return null;
+            
+            const context = {
+                recipient: contact,
+                parent: contact,
+                student: contact.students?.[0] || {},
+                school: { name: schoolName }
+            };
+            
+            return {
+                id: contact.id,
+                name: contact.name,
+                phone: contact.phone,
+                text: template(context)
+            };
+        }).filter(Boolean); // Remove nulls
+    } catch (e) { return [{ id: 'err', name: 'System', text: "Template Error" }]; }
+  }, [messageTemplate, selectedIds, displayList, schoolName]);
+
+  // --- 6. Recipient Map for Reports ---
   const recipientMap = useMemo(() => {
     const map = new Map();
     displayList.forEach(item => map.set(item.id, item));
     return map;
   }, [displayList]);
 
-  // Handlers
-  const handleLoadMore = () => fetchRecipients(true);
-
-  const handleSelectAll = (isChecked) => {
-    if (isChecked) setSelectedIds(new Set(filteredList.map(item => item.id)));
-    else setSelectedIds(new Set());
+  // --- ACTIONS ---
+  const handleSelectAll = (checked) => {
+    setSelectedIds(checked ? new Set(filteredList.map(i => i.id)) : new Set());
   };
 
-  const handleSelectOne = (itemId, isChecked) => {
+  const handleSelectOne = (id, checked) => {
     setSelectedIds(prev => {
-      const newSet = new Set(prev);
-      isChecked ? newSet.add(itemId) : newSet.delete(itemId);
-      return newSet;
+        const next = new Set(prev);
+        checked ? next.add(id) : next.delete(id);
+        return next;
     });
   };
+
+  const insertVariable = (varCode) => {
+    setMessageTemplate(prev => prev + " " + varCode);
+  };
+
+  const onPreFlightClick = () => {
+    if (selectedIds.size === 0) return alert("Please select recipients.");
+    setShowPreFlight(true);
+  }
 
   const performSend = async (idsToProcess) => {
     setIsSending(true);
@@ -720,7 +685,7 @@ export default function MessageComposer() {
       const result = await Data.communication.sms.create(payload);
       setReportData(result.sms.send);
       setIsSending(false);
-      // Only clear main selection if clean run (no failures) and not a retry subset
+      // Clear selection if successful run
       if (result.sms.send.failedCount === 0 && idsToProcess.length === selectedIds.size) {
         setSelectedIds(new Set());
       }
@@ -735,11 +700,6 @@ export default function MessageComposer() {
     }
   };
 
-  const onPreFlightClick = () => {
-    if (selectedIds.size === 0) return alert("Please select recipients.");
-    setShowPreFlight(true);
-  }
-
   const onConfirmSend = () => {
     setShowPreFlight(false);
     setShowReportModal(true);
@@ -751,49 +711,64 @@ export default function MessageComposer() {
   };
 
   return (
-    <>
-      <MessageView
-        activeTab={activeTab}
-        onTabChange={tab => { setActiveTab(tab); setSubFilterId(''); setSearchTerm(''); }}
-        subFilterId={subFilterId}
-        onSubFilterIdChange={e => setSubFilterId(e.target.value)}
-        searchTerm={searchTerm}
-        onSearchChange={e => setSearchTerm(e.target.value)}
-        classes={classes}
-        routes={routes}
-        displayList={filteredList}
-        totalCount={totalCount}
-        isLoading={isLoadingList}
-        hasMore={hasMore}
-        onLoadMore={handleLoadMore}
-        selectedIds={selectedIds}
-        onSelectAll={handleSelectAll}
-        onSelectOne={handleSelectOne}
-        messageTemplate={messageTemplate}
-        onMessageChange={e => setMessageTemplate(e.target.value)}
-        messageType={messageType}
-        onMessageTypeChange={setMessageType}
-        onSend={onPreFlightClick} // Updated to open PreFlight
-      />
-      
-      <PreFlightModal
-        isOpen={showPreFlight}
-        onClose={() => setShowPreFlight(false)}
-        onConfirm={onConfirmSend}
-        recipientCount={selectedIds.size}
-        messageLength={messageTemplate.length}
-        currentBalance={schoolBalance}
-      />
+    <div className="composer-container">
+        <style>{STYLES}</style>
+        <div className="row h-100 no-gutters">
+            {/* Left Column */}
+            <div className="col-lg-4 col-xl-3 h-100">
+                <AudienceSelector 
+                    activeTab={activeTab} 
+                    onTabChange={t => { setActiveTab(t); setSubFilterId(''); setSearchTerm(''); }}
+                    displayList={filteredList}
+                    selectedIds={selectedIds}
+                    onSelectAll={handleSelectAll}
+                    onSelectOne={handleSelectOne}
+                    searchTerm={searchTerm}
+                    onSearchChange={e => setSearchTerm(e.target.value)}
+                    classes={classes}
+                    routes={routes}
+                    subFilterId={subFilterId}
+                    onSubFilterIdChange={e => setSubFilterId(e.target.value)}
+                    totalCount={totalCount}
+                    isLoading={isLoadingList}
+                    hasMore={hasMore}
+                    onLoadMore={() => fetchRecipients(true)}
+                />
+            </div>
+            {/* Right Column */}
+            <div className="col-lg-8 col-xl-9 h-100">
+                <Workspace 
+                    messageTemplate={messageTemplate}
+                    onMessageChange={e => setMessageTemplate(e.target.value)}
+                    selectedCount={selectedIds.size}
+                    previewMessages={previewMessages} // Updated Prop
+                    messageType={messageType}
+                    onMessageTypeChange={setMessageType}
+                    schoolName={schoolName}
+                    onInsertVariable={insertVariable}
+                    onSend={onPreFlightClick} // Trigger PreFlight
+                />
+            </div>
+        </div>
 
-      <DeliveryReportModal 
-        isOpen={showReportModal}
-        onClose={() => { setShowReportModal(false); setReportData(null); }}
-        isLoading={isSending}
-        reportData={reportData}
-        onRetry={handleRetry}
-        recipientMap={recipientMap}
-        messageTemplate={messageTemplate} 
-      />
-    </>
+        {/* --- MODALS --- */}
+        <PreFlightModal
+            isOpen={showPreFlight}
+            onClose={() => setShowPreFlight(false)}
+            onConfirm={onConfirmSend}
+            recipientCount={selectedIds.size}
+            messageLength={messageTemplate.length}
+            currentBalance={schoolBalance}
+        />
+
+        <DeliveryReportModal 
+            isOpen={showReportModal}
+            onClose={() => { setShowReportModal(false); setReportData(null); }}
+            isLoading={isSending}
+            reportData={reportData}
+            onRetry={handleRetry}
+            recipientMap={recipientMap}
+        />
+    </div>
   );
 }
