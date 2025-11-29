@@ -288,7 +288,9 @@ class Navbar extends React.Component {
       { path: "/parents", label: "Parents", IconComponent: SvgParentsIcon }, { path: "/settings/school", label: "School Details", IconComponent: SvgSettingsIcon },
     ];
     const financeItems = [
-      { path: "/finance/topup", label: "Mpesa Top Up" }, { path: "/finance/charges", label: "Your Charges" },
+      { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `
+
+       }, { path: "/finance/charges", label: "Your Charges" },
     ];
 
     const customHoverStyle = `
@@ -342,42 +344,51 @@ class Navbar extends React.Component {
                     </div>
                   </li>
                 )}
-                <li className="kt-menu__item"><Link to="/home" className="kt-menu__link"><span className="kt-menu__link-text" style={topNavlinkStyle}>Reports</span></Link></li>
+                <li className="kt-menu__item">
+                  <Link to="/home" className="kt-menu__link">
+                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Reports</span>
+                  </Link>
+                </li>
                 <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                   <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                    <span className="kt-menu__link-text" style={topNavlinkStyle}>Manage Data</span>
-                    <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
+                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Manage Data</span>
+                    <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
                   </a>
                   <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
                     <ul className="kt-menu__subnav">
                       {manageDataItems.map(item => (
                         <li key={item.path} className="kt-menu__item" aria-haspopup="true">
                           <Link to={item.path} className="kt-menu__link">
-                            <span className="kt-menu__link-icon kt-menu__link-icon--md" style={{ marginRight: '8px' }}><item.IconComponent style={{ width: '18px', height: '18px', color: DEFAULT_TOP_NAV_ICON_COLOR }} /></span>
-                            <span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{item.label}</span>
+                            <span className="kt-menu__link-icon kt-menu__link-icon--md" style={{ marginRight: '8px' }}>
+                              <item.IconComponent style={{ width: '18px', height: '18px', color: effectiveTopBarTextColor }} />
+                            </span>
+                            <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
+                              {item.label}
+                            </span>
                           </Link>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </li>
-                 <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                        <span className="kt-menu__link-text" style={topNavlinkStyle}>
-                           
-                           <span > Finance</span>
-                        </span>
-                        <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
-                    </a>
-                    <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                        <ul className="kt-menu__subnav">
-                          {financeItems.map(item => (
-                            <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                              <Link to={item.path} className="kt-menu__link"><span className="kt-menu__link-text" style={{ color: DEFAULT_TOP_NAV_TEXT_COLOR }}>{item.label}</span></Link>
-                            </li>
-                          ))}
-                        </ul>
-                    </div>
+                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
+                  <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance</span>
+                    <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
+                  </a>
+                  <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                    <ul className="kt-menu__subnav">
+                      {financeItems.map(item => (
+                        <li key={item.path} className="kt-menu__item" aria-haspopup="true">
+                          <Link to={item.path} className="kt-menu__link">
+                            <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
+                              {item.label}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </li>
               </ul>
             </div>
@@ -386,7 +397,7 @@ class Navbar extends React.Component {
           <div className="kt-header__topbar">
             <div className="kt-header__topbar-item kt-header__topbar-item--user" id="kt_offcanvas_toolbar_profile_toggler_btn" style={{ cursor: 'pointer' }}>
               <div className="kt-header__topbar-welcome" style={{ color: effectiveTopBarTextColor }}>Hi,</div>
-              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user} {`${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `}{' '}</div>
+              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user} </div>
               <div className="kt-header__topbar-wrapper" style={{ marginLeft: '10px' }}>
                 <img alt="User avatar" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '30px', height: '30px', borderRadius: '50%' }} />
               </div>
