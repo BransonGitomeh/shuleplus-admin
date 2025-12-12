@@ -160,10 +160,7 @@ class BasicTable extends React.Component {
                   return Object.assign({}, schedule, {
                     route_name: route ? route.name : "",
                     bus_make: bus ? bus.make : "",
-                    days:
-                      typeof schedule.days === "string"
-                        ? schedule.days
-                        : schedule.days.join(", ")
+                    days:schedule.days
                   });
                 })}
                 edit={schedule => {
