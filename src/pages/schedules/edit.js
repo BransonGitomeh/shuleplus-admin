@@ -79,7 +79,9 @@ class Modal extends React.Component {
           // data.route_name = undefined
           // data.bus_make = undefined
           // data.id = undefined
-          data.days = data.days.join(",")
+          data.route = data.route.id
+          data.days = data.days
+          data.bus = data.bus.id
           await _this.props.save(data);
 
           _this.hide();
