@@ -245,7 +245,7 @@ class Modal extends React.Component {
                             <Select
                               name="parent"
                               value={this.state.setParent}
-                              options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
+                              options={this.state.parents?.map(({ id: value, name, phone }) => ({ value, label: `${name} (${phone || 'No Phone'})` }))}
                               onChange={({ value, label }) => this.setState({ parent: value, setParent: { value, label } })}
                             />
                           </div>
@@ -266,7 +266,7 @@ class Modal extends React.Component {
                               name="parent2"
                               isClearable
                               value={this.state.setParent2}
-                              options={this.state.parents?.map(({ id: value, name: label }) => ({ value, label }))}
+                              options={this.state.parents?.map(({ id: value, name, phone }) => ({ value, label: `${name} (${phone || 'No Phone'})` }))}
                               onChange={(selected) => this.setState({ parent2: selected ? selected.value : "", setParent2: selected })}
                             />
                           </div>

@@ -260,7 +260,7 @@ class Modal extends React.Component {
                           <option value="">Select parent</option>
                           {this.props.parents.map(parent => (
                             <option key={parent.id} value={parent.id}>
-                              {parent.name} ({parent.national_id})
+                              {parent.name} ({parent.phone || 'No Phone'})
                             </option>
                           ))}
                         </select>
@@ -284,7 +284,7 @@ class Modal extends React.Component {
                           <option value="">Select parent (Optional)</option>
                           {this.props.parents.map(parent => (
                             <option key={parent.id} value={parent.id}>
-                              {parent.name} ({parent.national_id})
+                              {parent.name} ({parent.phone || 'No Phone'})
                             </option>
                           ))}
                         </select>
