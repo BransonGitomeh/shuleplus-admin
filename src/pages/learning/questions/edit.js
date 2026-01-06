@@ -139,15 +139,25 @@ class EditQuestionModal extends React.Component {
     this.setState(this.getInitialState());
   }
 
-  initializeFromProps = (question) => {
-
-    console.log("initializeFromProps", question)
+  initializeFromProps = async (question) => {
+    // console.log("initializeFromProps", question)
     if (!question) return this.resetState();
+    this.setState({ loading: true });
+
+    let questionImages = [];
+    if (question.id) {
+        try {
+            questionImages = await Data.questions.getImages(question.id);
+        } catch (error) {
+            console.error("Error fetching question images:", error);
+        }
+    }
 
     const contentOrder = question.contentOrder || [];
     const reconstructedBlocks = [];
 
     if (contentOrder.length > 0) {
+        let imageIndex = 0;
       contentOrder.forEach(item => {
         if (item.type === 'TEXT') {
           const blocksFromHtml = htmlToDraft(question.name || '');
@@ -158,11 +168,12 @@ class EditQuestionModal extends React.Component {
             editorState: EditorState.createWithContent(contentState),
           });
         } else if (item.type === 'IMAGE') {
-          const imgData = (question.images || []).find(img => img.id === item.id);
-          if (imgData) {
+          const imgUrl = questionImages[imageIndex];
+          imageIndex++;
+          if (imgUrl) {
             reconstructedBlocks.push({
-              id: imgData.id, type: 'IMAGE', name: imgData.name || 'Existing Image',
-              preview: imgData.url, isExisting: true,
+              id: item.id || generateId('image'), type: 'IMAGE', name: 'Existing Image',
+              preview: imgUrl, isExisting: true,
             });
           }
         } else if (item.type === 'VIDEO') {
@@ -181,7 +192,7 @@ class EditQuestionModal extends React.Component {
         id: generateId('text'), type: 'TEXT',
         editorState: EditorState.createWithContent(ContentState.createFromBlockArray(blocksFromHtml.contentBlocks, blocksFromHtml.entityMap))
       });
-      (question.images || []).forEach(imgUrl => reconstructedBlocks.push({ id: generateId('image'), type: 'IMAGE', name: 'Legacy Image', preview: imgUrl, isExisting: true }));
+      (questionImages || []).forEach(imgUrl => reconstructedBlocks.push({ id: generateId('image'), type: 'IMAGE', name: 'Legacy Image', preview: imgUrl, isExisting: true }));
       (question.videos || []).forEach(vidUrl => reconstructedBlocks.push({ id: generateId('video'), type: 'VIDEO', embedUrl: vidUrl, isExisting: true }));
     }
 
@@ -193,6 +204,7 @@ class EditQuestionModal extends React.Component {
       subtopic: question.subtopic,
       addedOptions: question.options || [],
       attachments: (question.attachments || []).map(att => ({ ...att, id: generateId('attachment'), isExisting: true })),
+      loading: false,
     });
   }
 

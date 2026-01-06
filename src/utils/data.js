@@ -14,6 +14,7 @@ const allData = {
     routes: [],
     complaints: [],
     trips: [],
+    events: [],
     schedules: [],
     classes: [],
     teachers: [],
@@ -40,16 +41,16 @@ let schoolID = undefined;
 
 /**
  * =================================================================
- * The Generic Entity API Factory
+ * The Generic Entity API Factory (Safe Version)
  * =================================================================
  */
 const createEntityAPI = (config) => {
     const {
-        name,           // Plural name (e.g., "grades")
-        singularName,   // Singular name (e.g., "grade")
+        name,           // Plural name (e.g., "events")
+        singularName,   // Singular name (e.g., "event")
         isNested = false,
-        parentEntity = null, // e.g. "grades" for subjects
-        parentKey = null,    // e.g. "grade"
+        parentEntity = null, // e.g. "trips"
+        parentKey = null,    // e.g. "trip"
         createFields = [],
         updateFields = [],
     } = config;
@@ -65,9 +66,12 @@ const createEntityAPI = (config) => {
     };
 
     const findItemInTree = (itemId, startNodes = allData.schools) => {
+        // Safety check: ensure startNodes is iterable
+        if (!Array.isArray(startNodes)) return { item: null, parent: null, parentList: null };
+
         for (const node of startNodes) {
             if (node.id === itemId) return { item: node, parent: null, parentList: startNodes };
-            const keysToRecurse = ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options', 'members', 'students', 'classes', 'buses', 'drivers', 'admins', 'parents', 'teachers', 'routes', 'schedules', 'trips', 'complaints', 'charges', 'payments', 'teams', 'invitations'];
+            const keysToRecurse = ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options', 'members', 'students', 'classes', 'buses', 'drivers', 'admins', 'parents', 'teachers', 'routes', 'schedules', 'trips', 'events', 'complaints', 'charges', 'payments', 'teams', 'invitations'];
             for (const key of keysToRecurse) {
                 if (Array.isArray(node[key])) {
                     const found = findItemInTree(itemId, node[key]);
@@ -86,15 +90,19 @@ const createEntityAPI = (config) => {
 
     const notifySubscribers = (entity) => {
         if (Array.isArray(subs[entity])) {
-            const dataPayload = { [entity]: [...allData[entity]] };
+            // FIX: Ensure we default to [] if allData[entity] is undefined
+            const safeList = Array.isArray(allData[entity]) ? allData[entity] : [];
+            const dataPayload = { [entity]: [...safeList] };
             subs[entity].forEach(cb => cb(dataPayload));
         }
     };
 
     const notifySchoolSubscribers = () => {
         if (Array.isArray(subs.schools)) {
-            const selectedSchool = allData.schools.find(s => s.id === schoolID) || {};
-            subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
+            // FIX: Ensure we default to [] if allData.schools is undefined
+            const safeSchools = Array.isArray(allData.schools) ? allData.schools : [];
+            const selectedSchool = safeSchools.find(s => s.id === schoolID) || {};
+            subs.schools.forEach(cb => cb({ selectedSchool, schools: [...safeSchools] }));
         }
     };
 
@@ -108,15 +116,27 @@ const createEntityAPI = (config) => {
 
                 const sanitizedData = filterPayload(payload, createFields);
                 const mutationName = `I${singularName}`;
+                
+                // 1. Perform Network Request
                 const response = await mutate(
                     `mutation ($data: ${mutationName}!) { ${name} { create(${singularName}: $data) { id } } }`,
                     { data: sanitizedData }
                 );
 
+                if (!response[name] || !response[name].create) {
+                    throw new Error(`Failed to create ${singularName}: No ID returned.`);
+                }
+
                 const createdItem = response[name].create;
                 const newItem = { ...data, id: createdItem.id };
 
+                // 2. Safely Update Flat Cache
+                if (!Array.isArray(allData[name])) {
+                    allData[name] = [];
+                }
                 allData[name].push(newItem);
+
+                // 3. Safely Update Nested Cache
                 if (isNested && payload[parentKey]) {
                     const { item: parentItem } = findItemInTree(payload[parentKey]);
                     if (parentItem) {
@@ -133,6 +153,7 @@ const createEntityAPI = (config) => {
                     }
                 }
 
+                // 4. Notify Subscribers (Safe versions called)
                 notifySubscribers(name);
                 notifySchoolSubscribers();
                 if (isNested) notifySubscribers(parentEntity);
@@ -156,9 +177,12 @@ const createEntityAPI = (config) => {
 
                 const { item: itemInTree } = findItemInTree(id, allData.schools);
                 if (itemInTree) Object.assign(itemInTree, data);
-                const itemIndexFlat = allData[name].findIndex(item => item.id === id);
-                if (itemIndexFlat > -1) {
-                    allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...data };
+                
+                if (Array.isArray(allData[name])) {
+                    const itemIndexFlat = allData[name].findIndex(item => item.id === id);
+                    if (itemIndexFlat > -1) {
+                        allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...data };
+                    }
                 }
 
                 notifySubscribers(name);
@@ -179,7 +203,11 @@ const createEntityAPI = (config) => {
                     `mutation ($data: ${mutationName}!) { ${name} { archive(${singularName}: $data) { id } } }`,
                     { data: { id } }
                 );
-                allData[name] = allData[name].filter(item => item.id !== id);
+                
+                if (Array.isArray(allData[name])) {
+                    allData[name] = allData[name].filter(item => item.id !== id);
+                }
+
                 const { parentList } = findItemInTree(id, allData.schools);
                 if (parentList) {
                     const itemIndex = parentList.findIndex(item => item.id === id);
@@ -197,18 +225,19 @@ const createEntityAPI = (config) => {
             }
         }),
 
-        list: () => allData[name],
+        list: () => allData[name] || [],
         subscribe: (cb) => {
             if (!Array.isArray(subs[name])) {
                 subs[name] = [];
             }
             subs[name].push(cb);
-            cb({ [name]: allData[name] });
+            // FIX: Ensure safe array spread here too
+            cb({ [name]: allData[name] || [] });
             return () => {
                 subs[name] = subs[name].filter(subscriber => subscriber !== cb);
             };
         },
-        getOne: (id) => allData[name].find(item => item.id === id),
+        getOne: (id) => (allData[name] || []).find(item => item.id === id),
     };
 
     if (config.customMethods) {
@@ -383,6 +412,14 @@ var Data = (function () {
             notifyEntity('routes');
             notifyEntity('complaints');
             notifyEntity('trips');
+            if (updatedSubEntities.has('trips') && activeSchool.trips) {
+                // FIX: Ensure flatMap is called safely and default to empty array
+                allData.events = activeSchool.trips.flatMap(t => Array.isArray(t.events) ? t.events : []) || [];
+                
+                if (Array.isArray(subs.events)) {
+                    subs.events.forEach(cb => cb({ events: [...allData.events] }));
+                }
+            }
             notifyEntity('schedules', s => ({ ...s, bus_make: s.bus?.make, route_name: s.route?.name }));
             notifyEntity('classes', c => ({ ...c, student_num: c.students?.length || 0, teacher_name: c.teacher?.name }));
             notifyEntity('teachers');
@@ -498,7 +535,7 @@ var Data = (function () {
         { name: "subjects", singularName: "subject", isNested: true, parentEntity: "grades", parentKey: "grade", createFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'], updateFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'] },
         { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder'] },
         { name: "subtopics", singularName: "subtopic", isNested: true, parentEntity: "topics", parentKey: "topic", createFields: ['name', 'topic', 'questionsOrder'], updateFields: ['name', 'topic', 'questionsOrder'] },
-        { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'] },
+        { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], customMethods: (allData, subs, api) => ({ getImages: (id) => new Promise(async (resolve, reject) => { try { const response = await query(`query GetQuestionImages($id: String!) { questionImages(id: $id) }`, { id }); resolve(response.questionImages || []); } catch (e) { console.error(e); resolve([]); } }) }) },
         { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
         { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{id, name} route{id, name} parent{id, name} } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } }) },
         {
@@ -561,6 +598,15 @@ var Data = (function () {
         { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },
         { name: "trips", singularName: "trip", createFields: ['startedAt', 'completedAt', 'isCancelled', 'school', 'driver', 'schedule'], updateFields: ['startedAt', 'completedAt', 'isCancelled', 'schedule'] },
         {
+            name: "events",
+            singularName: "event",
+            isNested: true,
+            parentEntity: "trips",
+            parentKey: "trip",
+            // REPLACE createFields with this:
+            createFields: ['school', 'title', 'description', 'startTime', 'endTime', 'type', 'student', 'time', 'trip'],
+            updateFields: ['school', 'title', 'description', 'startTime', 'endTime', 'type', 'time']
+        }, {
             name: "payments",
             singularName: "payment",
             createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description'],
