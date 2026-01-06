@@ -260,7 +260,7 @@ class EditQuestionModal extends React.Component {
         subtopic: this.state.subtopic,
         type: this.state.questionType,
         videos: videos.map(v => v.embedUrl),
-        images: images.map(i => i.url),
+        images: images.map(i => i.url || i.base64),
         attachments: serializedAttachments.map(a => a.url),
         contentOrder: contentOrder.map(co => co.id),
       };

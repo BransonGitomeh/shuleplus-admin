@@ -65,6 +65,7 @@ class CurriculumManagerV5 extends React.Component {
         gradeSearchTerm: '', subjectSearchTerm: '', topicSearchTerm: '', subtopicSearchTerm: '', questionSearchTerm: '', optionSearchTerm: '',
         activeTab: 'content', allLessonAttempts: [], subjectLessonAttempts: [], usersWithAttempts: [],
         selectedUserId: null, selectedAttemptId: null,
+        questionImagesMap: {}, // Cache for fetched question images
     };
 
     componentDidMount() {
@@ -193,7 +194,44 @@ class CurriculumManagerV5 extends React.Component {
 
     saveStateToLocalStorage = () => { if (this.state.isLoading || !this.state.school) return; const { selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, activeTab } = this.state; localStorage.setItem("learningState", JSON.stringify({ selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, activeTab })); };
     componentDidUpdate(prevProps, prevState) { const persistedStateKeys = ['selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion', 'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm', 'activeTab']; const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key])); if (hasPersistedStateChanged) { this.saveStateToLocalStorage(); } if (prevState.selectedSubject !== this.state.selectedSubject && this.state.selectedSubject) { this.processLessonAttemptsForSubject(this.state.selectedSubject); } }
-    refreshCurrentSelectionsAndFilters = () => { if (this.state.isLoading) return; const { _masterGradesList, school, selectedGrade, gradeSearchTerm, selectedSubject, subjectSearchTerm, selectedTopic, topicSearchTerm, selectedSubtopic, subtopicSearchTerm, selectedQuestion, questionSearchTerm, optionSearchTerm } = this.state; let newState = {}; const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder); newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name'); const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null; const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder); newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name'); const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null; const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder); newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name'); const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null; const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder); newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name'); const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null; const questionsList = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder); newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name'); const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null; const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder); newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value'); this.setState(newState); };
+    
+    fetchQuestionImages = async (questions) => {
+        if (!questions || questions.length === 0) return;
+        const missingImageIds = questions.filter(q => !this.state.questionImagesMap[q.id]).map(q => q.id);
+        if (missingImageIds.length === 0) return;
+        
+        // Fetch in parallel but limit concurrency if needed? For now, simple Promise.all
+        // console.log(`Fetching images for ${missingImageIds.length} questions...`);
+        
+        const newImages = {};
+        await Promise.all(missingImageIds.map(async (id) => {
+            try {
+                const images = await Data.questions.getImages(id);
+                if (images && images.length > 0) {
+                    newImages[id] = images;
+                }
+            } catch (e) { console.error(`Failed to fetch images for question ${id}`, e); }
+        }));
+        
+        if (Object.keys(newImages).length > 0) {
+            this.setState(prevState => ({
+                questionImagesMap: { ...prevState.questionImagesMap, ...newImages }
+            }), this.refreshCurrentSelectionsAndFilters); // Refresh filters to apply images
+        }
+    };
+
+    refreshCurrentSelectionsAndFilters = () => { if (this.state.isLoading) return; const { _masterGradesList, school, selectedGrade, gradeSearchTerm, selectedSubject, subjectSearchTerm, selectedTopic, topicSearchTerm, selectedSubtopic, subtopicSearchTerm, selectedQuestion, questionSearchTerm, optionSearchTerm, questionImagesMap } = this.state; let newState = {}; const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder); newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name'); const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null; const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder); newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name'); const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null; const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder); newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name'); const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null; const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder); newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name'); const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null; 
+    
+    // Process questions with images
+    const questionsListRaw = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder); 
+    const questionsList = questionsListRaw.map(q => ({ ...q, images: questionImagesMap[q.id] || [] }));
+
+    newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name'); const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null; const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder); newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value'); this.setState(newState, () => {
+        // Trigger fetch for displayed questions if we have any
+        if (newState.filteredQuestions && newState.filteredQuestions.length > 0) {
+            this.fetchQuestionImages(newState.filteredQuestions);
+        }
+    }); };
     clearSelectionsAndDataFromLevel = (levelName) => { const newState = {}; const levels = ['grade', 'subject', 'topic', 'subtopic', 'question', 'option']; const startIndex = levels.indexOf(levelName); if (startIndex === -1) return {}; if (startIndex <= 1) { newState.activeTab = 'content'; newState.selectedUserId = null; newState.selectedAttemptId = null; } for (let i = startIndex; i < levels.length; i++) { const level = levels[i]; const capitalizedLevel = level.charAt(0).toUpperCase() + level.slice(1); newState[`selected${capitalizedLevel}`] = null; const childIndex = i + 1; if (childIndex < levels.length) { const childLevel = levels[childIndex]; const capitalizedChildLevel = childLevel.charAt(0).toUpperCase() + childLevel.slice(1); newState[`filtered${capitalizedChildLevel}s`] = []; } } return newState; };
     
     // --- Event Handlers (CRUD, Select, Search) ---
