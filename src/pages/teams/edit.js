@@ -80,9 +80,6 @@ class Modal extends React.Component {
     return null;
   }
   render() {
-    const {
-      edit: { names, route = {}, parent = {}, gender } = {}
-    } = this.state;
     return (
       <div>
         <div
@@ -133,7 +130,6 @@ class Modal extends React.Component {
                 </div>
                 <div className="modal-footer">
                   <button
-                    type="button"
                     className="btn btn-outline-brand"
                     type="submit"
                     disabled={this.state.loading}

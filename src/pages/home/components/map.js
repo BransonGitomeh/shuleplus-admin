@@ -1,6 +1,6 @@
 import React, { Component, createRef } from 'react'
 
-const GOOGLE_MAP_API_KEY = 'AIzaSyAh3Dzo3-VFymDTgvQI28NVqfa0qOx05cc'
+const GOOGLE_MAP_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 export default class GoogleMap extends Component {
   googleMapRef = React.createRef()
   state = {
