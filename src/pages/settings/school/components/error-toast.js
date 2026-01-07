@@ -6,7 +6,7 @@ const toastNumber = Math.random()
   .split(".")[1];
 
 class Toast extends React.Component {
-  show({ message = "An error occured" } = {}) {
+  show({ message = "An error occured", type = "warning", title } = {}) {
     toastr.options = {
       closeButton: true,
       debug: false,
@@ -25,7 +25,15 @@ class Toast extends React.Component {
       hideMethod: "fadeOut"
     };
 
-    toastr.warning(message, "Something wrong happened");
+    if (type === "success") {
+        toastr.success(message, title || "Success");
+    } else if (type === "error") {
+        toastr.error(message, title || "Error");
+    } else if (type === "info") {
+        toastr.info(message, title || "Info");
+    } else {
+        toastr.warning(message, title || "Warning");
+    }
   }
 }
 
