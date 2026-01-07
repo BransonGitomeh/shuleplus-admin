@@ -33,6 +33,7 @@ const allData = {
     attemptEvents: [],
     smsEvents: [],
     smsLogs: [],
+    books: [],
 };
 
 // Centralized subscriptions object. Each key will hold an array of callbacks.
@@ -346,6 +347,7 @@ var Data = (function () {
         }
     } 
 }`;
+        const FRAGMENT_BOOKS_DATA = `fragment BooksData on school { books { id title author category coverUrl pdfUrl description isDeleted } }`;
         const deepMergeById = (target, source) => {
             for (const key in source) {
                 if (Object.prototype.hasOwnProperty.call(source, key)) {
@@ -425,6 +427,7 @@ var Data = (function () {
             notifyEntity('teachers');
             notifyEntity('invitations');
             notifyEntity('smsLogs');
+            notifyEntity('books');
 
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
                 allData.grades = activeSchool.grades;
@@ -515,6 +518,7 @@ var Data = (function () {
             // --- ADDED LESSON DATA QUERY ---
             { query: `query GetLessonAttempts { schools { id ...LessonData } } ${FRAGMENT_LESSON_DATA}` },
             { query: `query GetSmsEvents { schools { id ...SmsEventsData } } ${FRAGMENT_SMS_EVENTS_DATA}` },
+            { query: `query GetBooks { schools { id ...BooksData } } ${FRAGMENT_BOOKS_DATA}` },
         ];
 
         queries.forEach(({ query: qStr, variables = {} }) => {
@@ -627,6 +631,12 @@ var Data = (function () {
             createFields: ['lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect'],
             updateFields: ['id', 'lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect']
         },
+        {
+            name: "books",
+            singularName: "book",
+            createFields: ['title', 'author', 'category', 'coverUrl', 'pdfUrl', 'description', 'school'],
+            updateFields: ['title', 'author', 'category', 'coverUrl', 'pdfUrl', 'description']
+        }
     ];
 
     const generatedApis = {};

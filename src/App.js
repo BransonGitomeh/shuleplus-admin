@@ -19,6 +19,7 @@ import learning from "./pages/learning"
 import invitations from "./pages/invitations"
 import members from "./pages/members"
 import schools from "./pages/schools"
+import library from "./pages/library"
 
 import userSettings from "./pages/settings/user"
 import schoolSettings from "./pages/settings/school"
@@ -79,6 +80,7 @@ class App extends React.Component {
       <PrivateRoute path="/invitations" component={invitations} />
       <PrivateRoute path="/members" component={members} />
       <PrivateRoute path="/schools" component={schools} />
+      <PrivateRoute path="/library" component={library} />
      
 
       {/* super admin routes */}
