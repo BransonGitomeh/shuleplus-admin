@@ -164,7 +164,7 @@ class BasicTable extends React.Component {
                   });
                 })}
                 edit={schedule => {
-                  schedule.days = schedule.days.split(", ")
+                  schedule.days = schedule.days
                   this.setState({ edit: schedule }, () => {
                     editModalInstance.show();
                   });

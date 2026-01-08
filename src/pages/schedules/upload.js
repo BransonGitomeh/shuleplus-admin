@@ -65,7 +65,7 @@ class Modal extends React.Component {
       const schedules = rows.map(([
         name, time, end_time, days, route, bus
       ]) => ({
-        name, time, end_time, days: days.split(' '), route, bus
+        name, time, end_time, days, route, bus
       }))
 
       this.setState({ schedules })
