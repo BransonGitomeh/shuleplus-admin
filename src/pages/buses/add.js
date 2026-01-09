@@ -1,38 +1,81 @@
 import React from "react";
 import ErrorMessage from "./components/error-toast";
-
-import AddDriverModal from "../drivers/add";
-
-import Select from 'react-select';
 import Data from "../../utils/data";
 
 const IErrorMessage = new ErrorMessage();
-
-
-const addDriverModal = new AddDriverModal();
-
 const $ = window.$;
 
-const modalNumber = Math.random()
-  .toString()
-  .split(".")[1];
+// Generate a unique ID for this modal
+const modalNumber = "bus_modal_" + Math.random().toString().split(".")[1];
 
-var options = [
-  { value: 'one', label: 'One' },
-  { value: 'two', label: 'Two' }
-];
-
-function logChange(val) {
-  console.log("Selected: " + val);
-}
-
-class Modal extends React.Component {
+class BusModal extends React.Component {
   state = {
     loading: false,
+    // Form Data
+    id: null,
     make: "",
-    size: 14,
-    plate: ""
+    plate: "",
+    size: 14, // Default capacity
+    driverId: "", // Selected driver ID
+    
+    // Data Sources
+    driversList: []
   };
+
+  componentDidMount() {
+    const _this = this;
+
+    // 1. Initialize jQuery Validation
+    this.validator = $("#" + modalNumber + "form").validate({
+      errorClass: "invalid-feedback",
+      errorElement: "div",
+      highlight: (element) => $(element).addClass("is-invalid"),
+      unhighlight: (element) => $(element).removeClass("is-invalid"),
+      submitHandler: async (form, event) => {
+        event.preventDefault();
+        await _this.handleSubmit();
+      }
+    });
+
+    // 2. Load Drivers Data
+    this.setState({ driversList: Data.drivers.list() });
+
+    // 3. Subscribe to Driver updates (in case a new driver is added while this is open)
+    this.unsubscribe = Data.drivers.subscribe(({ drivers }) => {
+      this.setState({ driversList: drivers });
+    });
+  }
+
+  componentWillUnmount() {
+    if (this.unsubscribe) this.unsubscribe();
+  }
+
+  // Handle switching between Add and Edit modes based on props
+  static getDerivedStateFromProps(props, state) {
+    // If we are opening in Edit mode
+    if (props.edit && props.edit.id !== state.id) {
+      return {
+        id: props.edit.id,
+        make: props.edit.make || "",
+        plate: props.edit.plate || "",
+        size: props.edit.size || 14,
+        // Check if driver is an object (populated) or just an ID
+        driverId: props.edit.driver ? (typeof props.edit.driver === 'object' ? props.edit.driver.id : props.edit.driver) : ""
+      };
+    }
+
+    // If we are opening in Create mode (props.edit is null) but state still has an ID
+    if (!props.edit && state.id !== null) {
+      return {
+        id: null,
+        make: "",
+        plate: "",
+        size: 14,
+        driverId: ""
+      };
+    }
+    return null;
+  }
 
   show() {
     $("#" + modalNumber).modal({
@@ -41,152 +84,176 @@ class Modal extends React.Component {
       keyboard: false
     });
   }
+
   hide() {
     $("#" + modalNumber).modal("hide");
   }
-  componentDidMount() {
-    const _this = this;
-    this.validator = $("#" + modalNumber + "form").validate({
-      errorClass: "invalid-feedback",
-      errorElement: "div",
 
-      highlight: function (element) {
-        $(element).addClass("is-invalid");
-      },
+  handleSubmit = async () => {
+    try {
+      this.setState({ loading: true });
 
-      unhighlight: function (element) {
-        $(element).removeClass("is-invalid");
-      },
+      const payload = {
+        make: this.state.make,
+        plate: this.state.plate,
+        size: parseInt(this.state.size), // Ensure number
+        driver: this.state.driverId || null // Send null if empty string
+      };
 
-      async submitHandler(form, event) {
-        event.preventDefault();
-        try {
-          _this.setState({ loading: true });
-          _this.state.loading = undefined
-          _this.state.setDriver = undefined
-          await _this.props.save(_this.state);
-          _this.hide();
-          _this.setState({
+      // If editing, add ID
+      if (this.state.id) {
+        payload.id = this.state.id;
+      }
+
+      await this.props.save(payload);
+
+      this.hide();
+      
+      // Reset state if it was a create action
+      if (!this.state.id) {
+        this.setState({
             loading: false,
             make: "",
-            size: "",
-            plate: ""
-          });
-        } catch (error) {
-          _this.setState({ loading: false });
-          if (error) {
-            const { message } = error;
-            return IErrorMessage.show({ message });
-          }
-          IErrorMessage.show();
-        }
+            plate: "",
+            size: 14,
+            driverId: ""
+        });
+      } else {
+          this.setState({ loading: false });
       }
-    });
-  }
+
+    } catch (error) {
+      this.setState({ loading: false });
+      const message = error ? error.message : undefined;
+      IErrorMessage.show({ message });
+    }
+  };
+
   render() {
     return (
       <div>
-        <AddDriverModal save={drivers => Data.drivers.create(drivers)} />
         <div
-          className="modal"
+          className="modal fade"
           id={modalNumber}
           tabIndex={-1}
           role="dialog"
-          aria-labelledby="myLargeModalLabel"
+          aria-labelledby="busModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-dialog-centered modal-xl">
+          <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
-              <form
-                id={modalNumber + "form"}
-                className="kt-form kt-form--label-right"
-              >
+              <form id={modalNumber + "form"} className="kt-form kt-form--label-right">
+                
+                {/* Header */}
                 <div className="modal-header">
-                  <h5 className="modal-title">Create bus</h5>
-                  <button
-                    type="button"
-                    className="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
+                  <h5 className="modal-title">
+                    {this.state.id ? "Edit Bus" : "Create New Bus"}
+                  </h5>
+                  <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
+
+                {/* Body */}
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
+                      
+                      {/* Make */}
                       <div className="col-lg-6">
-                        <label>Bus Make:</label>
+                        <label>Bus Make / Model:</label>
                         <input
                           type="text"
                           className="form-control"
-                          id="busmake"
-                          name="busmake"
+                          name="make"
+                          placeholder="e.g. Toyota Coaster"
                           minLength="2"
                           required
                           value={this.state.make}
-                          onChange={(e) => this.setState({
-                            make: e.target.value
-                          })}
+                          onChange={(e) => this.setState({ make: e.target.value })}
                         />
                       </div>
+
+                      {/* Plate */}
                       <div className="col-lg-6">
                         <label>Plate Number:</label>
                         <input
                           type="text"
                           className="form-control"
-                          id="plate"
                           name="plate"
+                          placeholder="e.g. KAA 123B"
                           required
                           value={this.state.plate}
-                          onChange={(e) => this.setState({
-                            plate: e.target.value
-                          })}
+                          onChange={(e) => this.setState({ plate: e.target.value })}
                         />
-                      </div>
-                      <div className="col-lg-6">
-                        <label>Capacity:</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          id="plate"
-                          name="plate"
-                          min="14"
-                          required
-                          value={this.state.size}
-                          onChange={(e) => this.setState({
-                            size: Number(e.target.value)
-                          })}
-                        />
-                      </div>
-                      <div className="col-lg-6">
-                        
-
-
                       </div>
                     </div>
+
+                    <div className="form-group row">
+                      {/* Capacity */}
+                      <div className="col-lg-6">
+                        <label>Capacity (Seats):</label>
+                        <select
+                            className="form-control"
+                            name="size"
+                            required
+                            value={this.state.size}
+                            onChange={(e) => this.setState({ size: e.target.value })}
+                        >
+                            <option value="14">14 Seater</option>
+                            <option value="28">28 Seater</option>
+                            <option value="33">33 Seater</option>
+                            <option value="42">42 Seater</option>
+                            <option value="51">51 Seater</option>
+                            <option value="65">65 Seater</option>
+                        </select>
+                      </div>
+
+                      {/* Driver Assignment */}
+                      <div className="col-lg-6">
+                        <label>Assign Driver:</label>
+                        <select
+                          className="form-control"
+                          name="driver"
+                          value={this.state.driverId}
+                          onChange={(e) => this.setState({ driverId: e.target.value })}
+                        >
+                          <option value="">-- No Driver Assigned --</option>
+                          {this.state.driversList.map((driver) => (
+                            <option key={driver.id} value={driver.id}>
+                              {driver.names || driver.username} ({driver.phone})
+                            </option>
+                          ))}
+                        </select>
+                        <small className="form-text text-muted">
+                            Select a driver from the list. 
+                        </small>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
+
+                {/* Footer */}
                 <div className="modal-footer">
                   <button
-                    className="btn btn-outline-brand"
                     type="submit"
+                    className="btn btn-primary"
                     disabled={this.state.loading}
                   >
                     {this.state.loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      />
+                      <>
+                        <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true" />
+                        Saving...
+                      </>
                     ) : (
-                      "Save"
+                      "Save Bus"
                     )}
                   </button>
                   <button
-                    data-dismiss="modal"
                     type="button"
-                    className="btn btn-outline-brand"
+                    className="btn btn-secondary"
+                    data-dismiss="modal"
                   >
                     Cancel
                   </button>
@@ -200,4 +267,4 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+export default BusModal;
