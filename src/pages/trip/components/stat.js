@@ -1,26 +1,31 @@
 import React from "react";
 
-export default props => (
-  <div className="kt-portlet kt-portlet--height-fluid">
-    <div className="kt-portlet__head kt-portlet__head--noborder">
-      <div className="kt-portlet__head-label">
-        <h3 className="kt-portlet__head-title">{props.label}</h3>
-      </div>
-    </div>
-    <div className="kt-portlet__body kt-portlet__body--fluid">
-      <div className="kt-widget-19">
-        <div className="kt-widget-19__title">
-          <div className="kt-widget-19__label">
-            <small />
-            {props.number}
+const Stat = ({ label, number, icon = "chart-bar", color = "primary" }) => {
+  // Map bootstrap colors to hex for background tint if needed, 
+  // or just use bootstrap utility classes.
+  return (
+    <div className="card border-0 shadow-sm h-100">
+      <div className="card-body p-3 d-flex align-items-center">
+        {/* Icon Container */}
+        <div 
+          className={`rounded-circle d-flex align-items-center justify-content-center mr-3 bg-light-${color} text-${color}`}
+          style={{ width: '50px', height: '50px', fontSize: '20px' }}
+        >
+          <i className={`fas fa-${icon}`}></i>
+        </div>
+
+        {/* Text Container */}
+        <div>
+          <div className="text-muted text-uppercase small font-weight-bold" style={{ letterSpacing: '0.5px' }}>
+            {label}
           </div>
-          <img
-            className="kt-widget-19__bg"
-            src="./assets/media/misc/iconbox_bg.png"
-            alt="bg"
-          />
+          <h3 className="mb-0 font-weight-bold text-dark">
+            {number}
+          </h3>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
+export default Stat;
