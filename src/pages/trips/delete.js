@@ -1,97 +1,79 @@
 import React from "react";
-import ErrorMessage from "./components/error-toast";
-const IErrorMessage = new ErrorMessage();
 
-const $ = window.$;
+const $ = window.$; // Assuming jQuery is available globally as per your setup
 
-const modalNumber = Math.random()
-  .toString()
-  .split(".")[1];
-
-class Modal extends React.Component {
+class DeleteModal extends React.Component {
   state = {
     loading: false
   };
+
+  componentDidUpdate(prevProps) {
+    // If the 'remove' prop changes from null to an object, show the modal
+    if (this.props.remove && !prevProps.remove) {
+      this.show();
+    }
+  }
+
   show() {
-    $("#" + modalNumber).modal({
-      show: true,
-      backdrop: "static",
-      keyboard: false
-    });
+    $("#deleteModal").modal("show");
   }
+
   hide() {
-    $("#" + modalNumber).modal("hide");
+    $("#deleteModal").modal("hide");
   }
-  async deleteRecord() {
+
+  handleDelete = async () => {
+    if (!this.props.remove) return;
+
+    this.setState({ loading: true });
     try {
-      this.setState({ loading: true });
       await this.props.save(this.props.remove);
       this.setState({ loading: false });
       this.hide();
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       this.setState({ loading: false });
-
-      if (error) {
-        const { message } = error;
-        return IErrorMessage.show({ message });
-      }
-
-      IErrorMessage.show();
+      alert("Failed to delete item.");
     }
-  }
+  };
+
   render() {
+    const item = this.props.remove;
+    const name = item ? (item.name || item.names || "this item") : "this item";
+
     return (
-      <div>
-        <div
-          className="modal"
-          id={modalNumber}
-          tabIndex={-1}
-          role="dialog"
-          aria-labelledby="myLargeModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Delete</h5>
-                <button
-                  type="button"
-                  className="close"
-                  data-dismiss="modal"
-                  aria-label="Close"
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete this record?</p>
-              </div>
-              <div className="modal-footer">
-                {!this.state.loading ? (
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={() => this.deleteRecord()}
-                  >
-                    Yes i'm sure
-                  </button>
+      <div className="modal fade" id="deleteModal" tabIndex="-1" role="dialog" aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered" role="document">
+          <div className="modal-content border-0 shadow-lg">
+            <div className="modal-header bg-danger text-white">
+              <h5 className="modal-title font-weight-bold">
+                <i className="fas fa-exclamation-triangle mr-2"></i>
+                Confirm Deletion
+              </h5>
+              <button type="button" className="close text-white" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body p-4 text-center">
+              <p className="mb-0 text-muted" style={{ fontSize: '1.1rem' }}>
+                Are you sure you want to delete <strong>{name}</strong>?
+              </p>
+              <small className="text-danger d-block mt-2">This action cannot be undone.</small>
+            </div>
+            <div className="modal-footer bg-light">
+              <button type="button" className="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button 
+                type="button" 
+                className="btn btn-danger shadow-sm" 
+                onClick={this.handleDelete}
+                disabled={this.state.loading}
+              >
+                {this.state.loading ? (
+                   <span><i className="fas fa-spinner fa-spin mr-1"></i> Deleting...</span>
                 ) : (
-                  <button type="button" className="btn btn-danger">
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      role="status"
-                      aria-hidden="true"
-                    />
-                  </button>
+                   "Yes, Delete"
                 )}
-                <button
-                  type="button"
-                  className="btn btn-outline-brand"
-                  onClick={() => this.hide()}
-                >
-                  Cancel
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -100,4 +82,4 @@ class Modal extends React.Component {
   }
 }
 
-export default Modal;
+export default DeleteModal;

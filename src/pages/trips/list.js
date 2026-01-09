@@ -1,358 +1,245 @@
 import React from "react";
 import moment from "moment";
-import { Modal, ProgressBar } from "react-bootstrap"; // Assuming bootstrap is available based on classNames
-import Data from "../../utils/data";
 import DeleteModal from "./delete";
+import Data from "../../utils/data";
+import Stat from "../home/components/stat";
 
-// Icons (FontAwesome 5 assumed based on previous code)
-const Icon = ({ name, color, size }) => <i className={`fas fa-${name}`} style={{ color, fontSize: size || 'inherit' }}></i>;
+// Helper for Icons
+const Icon = ({ name, color }) => <i className={`fas fa-${name}`} style={{ color }}></i>;
 
-const deleteModalInstance = new DeleteModal();
-
-class DashboardV2 extends React.Component {
+class TripDashboard extends React.Component {
   state = {
     trips: [],
     schedules: [],
-    recentDropOffs: [], // New Insight Data
-    studentsOnBusCount: 0,
     loading: true,
-    selectedTrip: null, // For the Manifest Modal
-    filter: 'all'
+    remove: null,
+    filter: 'all' // 'all', 'running', 'completed', 'cancelled'
   };
 
   componentDidMount() {
     this.initData();
   }
 
+  componentWillUnmount() {
+    if (this.tripSub) this.tripSub();
+  }
+
   initData = () => {
-    // Initial Fetch
+    // Initial Load
     this.processTrips(Data.trips.list());
     this.setState({ schedules: Data.schedules.list() });
 
-    // Subscriptions
+    // Live Subscriptions
     this.tripSub = Data.trips.subscribe(({ trips }) => this.processTrips(trips));
-    this.schedSub = Data.schedules.subscribe(schedules => this.setState({ schedules }));
   };
 
-  componentWillUnmount() {
-    if (this.tripSub) this.tripSub();
-    if (this.schedSub) this.schedSub();
-  }
-
   processTrips = (rawTrips) => {
-    let globalStudentCount = 0;
-    let allDropOffEvents = [];
-
-    const processedTrips = rawTrips.map(trip => {
-      // Analyze Events
-      const onBoardEvents = trip.events?.filter(e => e.type === 'CHECKEDON') || [];
-      const dropOffEvents = trip.events?.filter(e => e.type === 'CHECKEDOFF') || [];
+    const processed = rawTrips.map(trip => {
+      const students = trip.schedule?.route?.students || [];
+      const dropOffs = trip.events?.filter(e => e.type === 'CHECKEDOFF') || [];
       
-      // Calculate current load
-      const currentLoad = onBoardEvents.length - dropOffEvents.length;
-      globalStudentCount += (currentLoad > 0 ? currentLoad : 0);
-
-      // Collect Drop-off insights
-      dropOffEvents.forEach(evt => {
-        allDropOffEvents.push({
-            id: evt.time + evt.student?.id, // Unique key
-            studentName: evt.student?.names || "Unknown Student",
-            busPlate: trip.bus?.plate || "Unknown Bus",
-            busMake: trip.bus?.make,
-            route: trip.schedule?.route?.name,
-            time: evt.time,
-            tripId: trip.id
-        });
-      });
-
       return {
         ...trip,
-        busName: trip.bus ? `${trip.bus.make} (${trip.bus.plate})` : 'Unassigned',
-        driverName: trip.driver ? trip.driver.names : 'Unassigned',
-        routeName: trip.schedule?.route?.name || 'No Route',
-        progress: this.calculateProgress(trip),
-        stats: {
-          total: trip.schedule?.route?.students?.length || 0,
-          dropped: dropOffEvents.length,
-          pending: (trip.schedule?.route?.students?.length || 0) - dropOffEvents.length
-        }
+        routeName: trip.schedule?.route?.name || "Unassigned Route",
+        driverName: trip.driver?.names || "No Driver",
+        busPlate: trip.bus?.plate || "No Plate",
+        busMake: trip.bus?.make || "",
+        progress: students.length > 0 ? (dropOffs.length / students.length) * 100 : 0,
+        droppedCount: dropOffs.length,
+        totalStudents: students.length,
+        status: this.getTripStatus(trip)
       };
     });
 
-    // Sort Drop-offs by most recent
-    allDropOffEvents.sort((a, b) => new Date(b.time) - new Date(a.time));
-
-    this.setState({
-      trips: processedTrips,
-      studentsOnBusCount: globalStudentCount,
-      recentDropOffs: allDropOffEvents.slice(0, 10), // Top 10 most recent
-      loading: false
+    // Sort: Running trips first, then by date descending
+    processed.sort((a, b) => {
+      if (a.status === 'Running' && b.status !== 'Running') return -1;
+      if (a.status !== 'Running' && b.status === 'Running') return 1;
+      return new Date(b.startedAt) - new Date(a.startedAt);
     });
+
+    this.setState({ trips: processed, loading: false });
   };
 
-  calculateProgress = (trip) => {
-    const total = trip.schedule?.route?.students?.length || 1;
-    const dropped = trip.events?.filter(e => e.type === 'CHECKEDOFF').length || 0;
-    return Math.round((dropped / total) * 100);
+  getTripStatus = (trip) => {
+    if (trip.isCancelled) return 'Cancelled';
+    if (trip.completedAt) return 'Completed';
+    return 'Running';
   };
 
-  openManifest = (trip) => {
-    this.setState({ selectedTrip: trip });
+  // --- Navigation Handler ---
+  goToTripDetails = (tripId) => {
+    // Matches the route expected by your Router (e.g., HashRouter)
+    window.location.hash = `#/trip/${tripId}`;
+  };
+
+  handleDelete = (e, trip) => {
+    e.stopPropagation(); // Prevent navigating to details when clicking delete
+    this.setState({ remove: trip });
   };
 
   render() {
-    const { trips, recentDropOffs, selectedTrip } = this.state;
+    const { trips, loading } = this.state;
+    
+    // Segmentation
+    const runningTrips = trips.filter(t => t.status === 'Running');
+    const recentHistory = trips.filter(t => t.status !== 'Running'); // Show all history or filter based on state
 
-    // Filtering
-    const displayedTrips = trips.filter(t => {
-        if (window.location.hash.includes('running')) return !t.completedAt && !t.isCancelled;
-        if (window.location.hash.includes('complete')) return t.completedAt;
-        if (window.location.hash.includes('cancelled')) return t.isCancelled;
-        return true;
-    });
+    const stats = {
+      total: trips.length,
+      running: runningTrips.length,
+      completed: trips.filter(t => t.status === 'Completed').length,
+      cancelled: trips.filter(t => t.status === 'Cancelled').length
+    };
 
     return (
       <div className="container-fluid p-4" style={{ backgroundColor: "#f4f6f9", minHeight: "100vh" }}>
         
-        {/* --- Top Stats Row --- */}
+        {/* --- 1. Top Statistics --- */}
         <div className="row mb-4">
-            <StatCard icon="bus" color="#5d78ff" label="Running Trips" value={trips.filter(t => !t.completedAt && !t.isCancelled).length} />
-            <StatCard icon="check-circle" color="#0abb87" label="Completed" value={trips.filter(t => t.completedAt).length} />
-            <StatCard icon="users" color="#fd3995" label="Students On-board" value={this.state.studentsOnBusCount} />
-            <StatCard icon="exclamation-triangle" color="#ffb822" label="Cancelled" value={trips.filter(t => t.isCancelled).length} />
+          <div className="col-6 col-md-3 mb-2"><Stat label="Total Trips" number={stats.total} icon="route" color="primary" /></div>
+          <div className="col-6 col-md-3 mb-2"><Stat label="Active Now" number={stats.running} icon="bus" color="success" /></div>
+          <div className="col-6 col-md-3 mb-2"><Stat label="Completed" number={stats.completed} icon="check-circle" color="info" /></div>
+          <div className="col-6 col-md-3 mb-2"><Stat label="Cancelled" number={stats.cancelled} icon="times-circle" color="danger" /></div>
         </div>
 
-        <div className="row">
-            {/* --- Left Column: Active Trips Table --- */}
-            <div className="col-lg-8">
-                <div className="card shadow-sm border-0">
-                    <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0 font-weight-bold text-dark">Trip Management</h5>
-                        <div className="dropdown">
-                            <button className="btn btn-sm btn-light dropdown-toggle" data-toggle="dropdown">Filter Status</button>
-                            <div className="dropdown-menu dropdown-menu-right">
-                                <a className="dropdown-item" href="#/trips/all">All Trips</a>
-                                <a className="dropdown-item" href="#/trips/running">Running</a>
-                                <a className="dropdown-item" href="#/trips/complete">Completed</a>
-                            </div>
+        {/* --- 2. Live Operations (Active Cards) --- */}
+        {runningTrips.length > 0 && (
+          <div className="mb-5">
+            <h5 className="font-weight-bold mb-3 text-dark">
+              <span className="mr-2 text-success">●</span> Live Operations
+            </h5>
+            <div className="row">
+              {runningTrips.map(trip => (
+                <div className="col-md-6 col-xl-4 mb-4" key={trip.id}>
+                  <div 
+                    className="card shadow-sm border-0 h-100 card-hover-effect" 
+                    onClick={() => this.goToTripDetails(trip.id)}
+                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                  >
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between mb-3">
+                        <span className="badge badge-light-success px-3 py-2">In Progress</span>
+                        <small className="text-muted font-weight-bold">{moment(trip.startedAt).format('h:mm A')}</small>
+                      </div>
+                      
+                      <h5 className="font-weight-bold text-dark mb-1">{trip.routeName}</h5>
+                      <div className="text-muted mb-4 small">
+                        <Icon name="bus" color="#5d78ff" /> {trip.busMake} ({trip.busPlate})
+                      </div>
+
+                      {/* Visual Progress of the Bus */}
+                      <div className="d-flex justify-content-between align-items-end mb-1">
+                        <span className="font-weight-bold h4 mb-0 text-primary">{Math.round(trip.progress)}%</span>
+                        <span className="text-muted small">{trip.droppedCount} / {trip.totalStudents} Dropped</span>
+                      </div>
+                      <div className="progress" style={{ height: '6px' }}>
+                        <div className="progress-bar bg-primary" style={{ width: `${trip.progress}%` }}></div>
+                      </div>
+                    </div>
+                    
+                    <div className="card-footer bg-white border-top-0 pt-0 pb-3">
+                      <div className="d-flex align-items-center">
+                        <div className="symbol symbol-30 mr-2 bg-light-info rounded-circle d-flex align-items-center justify-content-center" style={{width:30, height:30}}>
+                          <span className="text-info font-weight-bold">{trip.driverName.charAt(0)}</span>
                         </div>
+                        <span className="text-dark font-weight-bold small">{trip.driverName}</span>
+                        <button className="btn btn-sm btn-light-primary ml-auto font-weight-bold">Track Map</button>
+                      </div>
                     </div>
-                    <div className="card-body p-0 table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light text-muted">
-                                <tr>
-                                    <th className="pl-4">Route / Bus</th>
-                                    <th>Driver</th>
-                                    <th>Progress</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {displayedTrips.map(trip => (
-                                    <tr key={trip.id} style={{ cursor: 'pointer' }} onClick={() => this.openManifest(trip)}>
-                                        <td className="pl-4">
-                                            <div className="d-flex align-items-center">
-                                                <div className="symbol symbol-40 flex-shrink-0 mr-3">
-                                                    <div className="symbol-label bg-light-primary"><Icon name="route" color="#5d78ff"/></div>
-                                                </div>
-                                                <div>
-                                                    <div className="font-weight-bold text-dark">{trip.routeName}</div>
-                                                    <div className="text-muted small">{trip.busName}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="d-flex align-items-center">
-                                                <div className="symbol symbol-30 flex-shrink-0 mr-2">
-                                                    <div className="symbol-label bg-light-info text-info font-weight-bold">
-                                                        {trip.driverName.charAt(0)}
-                                                    </div>
-                                                </div>
-                                                <span className="text-dark font-weight-500">{trip.driverName}</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ minWidth: '120px' }}>
-                                            <div className="d-flex flex-column">
-                                                <span className="text-muted small mb-1">
-                                                    {trip.stats.dropped} / {trip.stats.total} Dropped
-                                                </span>
-                                                <div className="progress" style={{ height: '6px' }}>
-                                                    <div 
-                                                        className={`progress-bar ${trip.isCancelled ? 'bg-danger' : trip.completedAt ? 'bg-success' : 'bg-primary'}`} 
-                                                        role="progressbar" 
-                                                        style={{ width: `${trip.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {trip.isCancelled ? <span className="badge badge-light-danger">Cancelled</span> :
-                                             trip.completedAt ? <span className="badge badge-light-success">Completed</span> :
-                                             <span className="badge badge-light-primary">Running</span>}
-                                        </td>
-                                        <td>
-                                            <button className="btn btn-icon btn-light-primary btn-sm mr-2">
-                                                <Icon name="eye" size="12px" />
-                                            </button>
-                                            <button className="btn btn-icon btn-light-danger btn-sm" onClick={(e) => { e.stopPropagation(); this.setState({remove: trip}, () => deleteModalInstance.show())}}>
-                                                <Icon name="trash" size="12px" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {displayedTrips.length === 0 && (
-                                    <tr><td colSpan="5" className="text-center py-5 text-muted">No trips found matching filter.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                  </div>
                 </div>
+              ))}
             </div>
+          </div>
+        )}
 
-            {/* --- Right Column: Live Drop-off Insights --- */}
-            <div className="col-lg-4">
-                <div className="card shadow-sm border-0 h-100">
-                    <div className="card-header bg-white py-3">
-                        <h5 className="mb-0 font-weight-bold text-dark">
-                            <Icon name="satellite-dish" color="#ffb822" className="mr-2"/>
-                            Live Drop-off Feed
-                        </h5>
-                        <small className="text-muted">Real-time student drop-offs</small>
-                    </div>
-                    <div className="card-body p-0" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                        {recentDropOffs.length === 0 ? (
-                             <div className="text-center p-4 text-muted">Waiting for activity...</div>
-                        ) : (
-                            <div className="timeline timeline-3 p-4">
-                                {recentDropOffs.map(event => (
-                                    <div className="timeline-item d-flex mb-4" key={event.id}>
-                                        <div className="timeline-badge bg-success flex-shrink-0 mt-1" style={{ width: '10px', height: '10px', borderRadius: '50%' }}></div>
-                                        <div className="timeline-content ml-3 border-left pl-3" style={{ borderColor: '#ebedf2' }}>
-                                            <div className="d-flex align-items-center justify-content-between mb-1">
-                                                <span className="font-weight-bold text-dark">{event.studentName}</span>
-                                                <span className="text-muted small">{moment(event.time).fromNow()}</span>
-                                            </div>
-                                            <p className="mb-0 text-muted small">
-                                                Dropped by <span className="text-primary font-weight-bold">{event.busPlate}</span>
-                                            </p>
-                                            <span className="badge badge-light-secondary mt-1" style={{ fontSize: '0.7rem' }}>{event.route}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+        {/* --- 3. Recent History Table --- */}
+        <div className="card shadow-sm border-0">
+          <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 className="mb-0 font-weight-bold">Trip History</h5>
+            <div className="input-group" style={{ width: '250px' }}>
+                <div className="input-group-prepend">
+                    <span className="input-group-text bg-light border-0"><Icon name="search" color="#ccc"/></span>
                 </div>
+                <input type="text" className="form-control bg-light border-0" placeholder="Search route or driver..." />
             </div>
+          </div>
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="bg-light text-muted text-uppercase small">
+                <tr>
+                  <th className="pl-4">Route</th>
+                  <th>Vehicle</th>
+                  <th>Driver</th>
+                  <th>Timeline</th>
+                  <th>Status</th>
+                  <th className="text-right pr-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentHistory.map(trip => (
+                  <tr 
+                    key={trip.id} 
+                    onClick={() => this.goToTripDetails(trip.id)} 
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td className="pl-4 font-weight-bold text-dark">
+                      {trip.routeName}
+                    </td>
+                    <td>
+                      <span className="d-block text-dark font-weight-500">{trip.busPlate}</span>
+                      <small className="text-muted">{trip.busMake}</small>
+                    </td>
+                    <td>
+                      {trip.driverName}
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column small">
+                         <span className="text-success"><Icon name="play" color="green"/> {moment(trip.startedAt).format('MMM Do, h:mm A')}</span>
+                         {trip.completedAt && (
+                           <span className="text-danger mt-1"><Icon name="stop" color="red"/> {moment(trip.completedAt).format('h:mm A')}</span>
+                         )}
+                      </div>
+                    </td>
+                    <td>
+                      {trip.status === 'Completed' && <span className="badge badge-light-success">Completed</span>}
+                      {trip.status === 'Cancelled' && <span className="badge badge-light-danger">Cancelled</span>}
+                      {trip.status === 'Running' && <span className="badge badge-light-primary">Running</span>}
+                    </td>
+                    <td className="text-right pr-4">
+                      <button 
+                        className="btn btn-icon btn-light-secondary btn-sm rounded-circle mr-2"
+                        title="View Details"
+                      >
+                        <Icon name="arrow-right" color="#6c757d" />
+                      </button>
+                      <button 
+                        className="btn btn-icon btn-light-danger btn-sm rounded-circle"
+                        onClick={(e) => this.handleDelete(e, trip)}
+                        title="Delete Trip"
+                      >
+                        <Icon name="trash" color="#f64e60" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {recentHistory.length === 0 && (
+                    <tr><td colSpan="6" className="text-center py-5 text-muted">No history found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* --- Modal: Trip Manifest & Insights --- */}
-        {selectedTrip && (
-            <ManifestModal 
-                trip={selectedTrip} 
-                onClose={() => this.setState({ selectedTrip: null })} 
-            />
-        )}
-        
-        <DeleteModal remove={this.state.remove} save={trip => Data.trips.delete(trip)} />
+        {/* Delete Confirmation Modal */}
+        <DeleteModal 
+            remove={this.state.remove} 
+            save={trip => Data.trips.delete(trip)} 
+        />
       </div>
     );
   }
 }
 
-// --- Helper Components ---
-
-const StatCard = ({ icon, color, label, value }) => (
-    <div className="col-6 col-md-3 mb-3">
-        <div className="card shadow-sm border-0 h-100 p-3 d-flex flex-row align-items-center">
-            <div className="d-flex align-items-center justify-content-center rounded mr-3" style={{ width: 50, height: 50, backgroundColor: `${color}20` }}>
-                <Icon name={icon} color={color} size="20px" />
-            </div>
-            <div>
-                <h3 className="font-weight-bold mb-0 text-dark">{value}</h3>
-                <span className="text-muted small text-uppercase font-weight-bold">{label}</span>
-            </div>
-        </div>
-    </div>
-);
-
-// --- The Insight Modal ---
-const ManifestModal = ({ trip, onClose }) => {
-    // Re-process events specifically for this modal
-    const allStudents = trip.schedule?.route?.students || [];
-    const dropOffs = trip.events?.filter(e => e.type === 'CHECKEDOFF') || [];
-    const droppedIds = new Set(dropOffs.map(e => e.student?.id));
-
-    return (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-lg modal-dialog-centered">
-                <div className="modal-content shadow-lg">
-                    <div className="modal-header border-0 pb-0">
-                        <div>
-                            <h5 className="modal-title font-weight-bold">Trip Manifest</h5>
-                            <p className="text-muted mb-0">
-                                {trip.routeName} • {trip.busName} • {moment(trip.startedAt).format('h:mm A')}
-                            </p>
-                        </div>
-                        <button className="close" onClick={onClose}>×</button>
-                    </div>
-                    <div className="modal-body">
-                        <div className="row mb-3">
-                            <div className="col-12">
-                                <div className="alert alert-light-primary d-flex align-items-center">
-                                    <div className="flex-grow-1">
-                                        <strong>Bus Insight:</strong> {dropOffs.length} out of {allStudents.length} students dropped off.
-                                    </div>
-                                    <div className="font-weight-bold h4 mb-0 text-primary">
-                                        {Math.round((dropOffs.length / allStudents.length) * 100)}%
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                            <table className="table table-borderless table-striped">
-                                <thead className="bg-light text-uppercase small text-muted">
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Registration</th>
-                                        <th>Status</th>
-                                        <th>Drop-off Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allStudents.map(student => {
-                                        const isDropped = droppedIds.has(student.id);
-                                        const event = dropOffs.find(e => e.student?.id === student.id);
-                                        
-                                        return (
-                                            <tr key={student.id}>
-                                                <td className="font-weight-bold">{student.names}</td>
-                                                <td className="text-muted">{student.registration}</td>
-                                                <td>
-                                                    {isDropped ? 
-                                                        <span className="badge badge-success">Dropped Off</span> : 
-                                                        <span className="badge badge-secondary">Pending</span>
-                                                    }
-                                                </td>
-                                                <td className="text-muted small">
-                                                    {isDropped ? moment(event.time).format('h:mm:ss A') : '-'}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div className="modal-footer border-0 pt-0">
-                        <button className="btn btn-secondary" onClick={onClose}>Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default DashboardV2;
+export default TripDashboard;

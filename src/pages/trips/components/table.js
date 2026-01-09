@@ -1,78 +1,59 @@
-import React from "react";
+import React from 'react';
 
-export default props => {
-  if (!props.headers || !props.data) return null;
-  const { options = { deleteable: true, editable: true } } = props;
+const Table = ({ headers, data, onDelete, onClick }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="p-5 text-center text-muted bg-white rounded shadow-sm">
+        <i className="fas fa-folder-open fa-3x mb-3 text-light-gray"></i>
+        <h5>No Data Available</h5>
+      </div>
+    );
+  }
+
   return (
-    <table
-      className="table"
-      // width="100%"
-    >
-      <thead>
-        <tr>
-          {props.headers.map(header => {
-            return <th key={header.label} title="Field #0">{header.label}</th>;
-          })}
-        </tr>
-      </thead>
-      <tbody>
-        {props.data.map(row => {
-          return (
-            <tr key={Math.random().toString()}>
-              {props.headers.map(header => {
-                return header.component(row);
-              })}
-
-              <td
-                data-field="Actions"
-                data-autohide-disabled="false"
-                className="kt-datatable__cell"
-              >
-                <span
-                  style={{
-                    overflow: "visible",
-                    position: "relative",
-                    width: "110px"
-                  }}
-                >
-                  {/* {options.editable === true ? (
-                    <button
-                      title="Edit details"
-                      type="button"
-                      className="btn btn-sm btn-clean btn-icon btn-icon-md"
-                      onClick={() => {
-                        props.edit(row);
-                      }}
-                    >
-                      <i className="la la-edit" />
-                    </button>
-                  ) : null} */}
-                  {options.deleteable === true ? (
-                    <button
-                      title="Delete"
-                      type="button"
-                      className="btn btn-sm btn-clean btn-icon btn-icon-md"
-                      onClick={() => {
-                        props.delete(row);
-                      }}
-                    >
-                      <i className="la la-trash" />
-                    </button>
-                  ) : null}
-                  <button
-                    title="View"
-                    type="button"
-                    className="btn btn-sm btn-clean"
-                    onClick={() => props.onClick(row)}
+    <div className="table-responsive bg-white rounded shadow-sm">
+      <table className="table table-hover mb-0 align-middle">
+        <thead className="bg-light text-muted text-uppercase small">
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} className="py-3 font-weight-bold border-top-0">
+                {h.label}
+              </th>
+            ))}
+            {onDelete && <th className="py-3 text-right border-top-0">Actions</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, index) => (
+            <tr 
+              key={row.id || index} 
+              style={{ cursor: onClick ? 'pointer' : 'default' }}
+              onClick={() => onClick && onClick(row)}
+            >
+              {headers.map((h, i) => (
+                <td key={i} className="py-3">
+                  {/* If 'component' (function) is passed, use it, else display raw 'key' value */}
+                  {h.component ? h.component(row) : (row[h.key] || '-')}
+                </td>
+              ))}
+              
+              {onDelete && (
+                <td className="text-right py-3" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    className="btn btn-icon btn-light-danger btn-sm rounded-circle"
+                    onClick={() => onDelete(row)}
+                    title="Delete"
                   >
-                    View More
-                    </button>
-                </span>
-              </td>
+                    <i className="fas fa-trash"></i>
+                  </button>
+                </td>
+              )}
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
+
+export default Table;

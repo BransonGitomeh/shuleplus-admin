@@ -79,51 +79,17 @@ class Home extends React.Component {
           >
             <div className="kt-container  kt-grid__item kt-grid__item--fluid">
               <div className="row">
-                <div className="col-lg-6 col-xl-4 order-lg-1 order-xl-1">
-                  <div className="row">
-                    <div className="col-lg-12 col-xl-12 order-lg-1 order-xl-1">
-                      <Stat
-                        label="Bus Trips this week"
-                        number={this.state.trips.filter(trip => {
-                          var now = moment();
-                          var input = moment(trip.startedAt);
-                          var isThisWeek = (now.isoWeek() == input.isoWeek())
-                          return isThisWeek;
-                        }).length}
-                        bars={["20", "20", "20", "30", "20", "5"]}
-                      />
-                    </div>
-                    <div className="col-lg-12 col-xl-12 order-lg-1 order-xl-1">
-                      <Stat
-                        label="Parent Feedback this week"
-                        number={this.state.complaints.filter(complaint => {
-                          var now = moment();
-                          var input = moment(complaint.time);
-                          var isThisWeek = (now.isoWeek() == input.isoWeek())
-                          return isThisWeek;
-                        }).length}
-                        bars={["0", "2", "3", "7", "4", "7"]}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-lg-6 col-xl-8 order-lg-1 order-xl-1">
+                {/* <div className="col-lg-6 col-xl-8 order-lg-1 order-xl-1">
                   <div className="row">
                     <div
                       className="col-lg-12 col-xl-12 order-lg-1 order-xl-1"
                       style={{ height: "460px" }}
                     >
                       {this.state.locations[0] ? <Map locations={this.state.locations} height={'420px'} /> : "no locations registered yet"}
-                      {/* <Map /> */}
+                      
                     </div>
-                    {/* <div className="col-lg-6 col-xl-6 order-lg-1 order-xl-1">
-                      <Tutorials />
-                    </div>
-                    <div className="col-lg-6 col-xl-6 order-lg-1 order-xl-1">
-                      <Questions />
-                    </div> */}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="col-lg-12 col-xl-12 order-lg-1 order-xl-1">
                   <List filter={this.props.match.params.filter} />
