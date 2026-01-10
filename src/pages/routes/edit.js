@@ -12,14 +12,14 @@ class RouteModal extends React.Component {
   state = {
     loading: false,
     // Form Data
-    id: null, // If present, we are editing
+    id: null, 
     name: "",
     description: "",
     
     // Student Selection Logic
-    allStudents: [],      // The full list from Data.students.list()
-    selectedStudentIds: [], // Array of strings (IDs) representing checked students
-    searchTerm: "",       // For filtering the UI list
+    allStudents: [],      
+    selectedStudentIds: [], 
+    searchTerm: "",       
   };
 
   componentDidMount() {
@@ -37,41 +37,72 @@ class RouteModal extends React.Component {
       }
     });
 
-    // 2. Subscribe to Student Data
-    // Initial Load
-    this.setState({ allStudents: Data.students.list() });
-    
-    // Live Updates
+    // 2. Load Initial Data
+    const initialStudents = Data.students.list();
+    this.setState({ allStudents: initialStudents });
+
+    // 3. Subscribe to Student Data (Live Updates)
     this.unsubscribe = Data.students.subscribe(({ students }) => {
-      this.setState({ allStudents: students });
+      this.setState((prevState) => {
+        // If we are currently editing (prevState.id exists) AND 
+        // we currently have 0 selected students, it might be because 
+        // the student data hadn't loaded when the modal opened. 
+        // Let's try to populate selections now that data arrived.
+        let updatedSelection = prevState.selectedStudentIds;
+
+        if (prevState.id && prevState.selectedStudentIds.length === 0) {
+           const studentsInThisRoute = students
+             .filter(s => s.route && s.route.id === prevState.id)
+             .map(s => s.id);
+           
+           if (studentsInThisRoute.length > 0) {
+             updatedSelection = studentsInThisRoute;
+           }
+        }
+
+        return { 
+          allStudents: students,
+          selectedStudentIds: updatedSelection
+        };
+      });
     });
   }
 
   componentWillUnmount() {
-    // Clean up subscription to prevent memory leaks
     if (this.unsubscribe) this.unsubscribe();
   }
 
-  // Detect when the parent passes "edit" props to switch modes
+  // --- LOGIC FIX HERE ---
   static getDerivedStateFromProps(props, state) {
-    // If we are opening the modal in "Edit" mode and haven't synced state yet
+    // If we are opening the modal in "Edit" mode (props.edit exists) 
+    // AND the ID is different from what is currently in state...
     if (props.edit && props.edit.id !== state.id) {
-      // Extract IDs from the student objects provided in props.edit.students
-      // Check if props.edit.students exists and is an array, otherwise empty array
-      const existingStudentIds = Array.isArray(props.edit.students) 
-        ? props.edit.students.map(s => s.id) 
-        : [];
+      
+      let existingStudentIds = [];
+
+      // Strategy 1: Check if the Route object itself has the students list
+      if (Array.isArray(props.edit.students) && props.edit.students.length > 0) {
+         existingStudentIds = props.edit.students.map(s => (typeof s === 'object' ? s.id : s));
+      }
+
+      // Strategy 2: If Strategy 1 failed (empty or undefined), look through the 
+      // allStudents list in state to find students pointing to this route.
+      if (existingStudentIds.length === 0 && state.allStudents.length > 0) {
+        existingStudentIds = state.allStudents
+          .filter(student => student.route && student.route.id === props.edit.id)
+          .map(student => student.id);
+      }
 
       return {
         id: props.edit.id,
         name: props.edit.name || "",
         description: props.edit.description || "",
-        selectedStudentIds: existingStudentIds,
-        searchTerm: "" // Reset search on new open
+        selectedStudentIds: existingStudentIds, // Apply the found IDs
+        searchTerm: "" 
       };
     }
     
-    // If props.edit is null (Add mode), but state has an ID, reset state
+    // If switching to Add Mode (props.edit is null), reset state
     if (!props.edit && state.id !== null) {
       return {
         id: null,
@@ -95,7 +126,6 @@ class RouteModal extends React.Component {
 
   hide() {
     $("#" + modalNumber).modal("hide");
-    // specific reset if needed, though getDerivedStateFromProps handles most
   }
 
   handleSubmit = async () => {
@@ -131,7 +161,6 @@ class RouteModal extends React.Component {
     }
   };
 
-  // Toggle selection of a student
   toggleStudent = (studentId) => {
     this.setState((prevState) => {
       const isSelected = prevState.selectedStudentIds.includes(studentId);
@@ -144,9 +173,7 @@ class RouteModal extends React.Component {
   };
 
   render() {
-    // FILTERING LOGIC
-    // 1. Filter by search term
-    // 2. Sort so Selected items appear at the top (optional, but good UX)
+    // Filter displayed list based on search term
     const filteredStudents = this.state.allStudents.filter(student => {
       const term = this.state.searchTerm.toLowerCase();
       const name = (student.names || "").toLowerCase();
@@ -195,7 +222,6 @@ class RouteModal extends React.Component {
                             required
                             value={this.state.name}
                             onChange={(e) => this.setState({ name: e.target.value })}
-                            placeholder="e.g. Westlands Bus"
                           />
                         </div>
                         <div className="form-group">
@@ -206,11 +232,9 @@ class RouteModal extends React.Component {
                             rows="6"
                             value={this.state.description}
                             onChange={(e) => this.setState({ description: e.target.value })}
-                            placeholder="Details about the route path..."
                           />
                         </div>
                         
-                        {/* Stats Summary */}
                         <div className="alert alert-secondary mt-3">
                             <strong>Selected Students:</strong> {this.state.selectedStudentIds.length}
                         </div>
@@ -228,13 +252,13 @@ class RouteModal extends React.Component {
                             <input 
                                 type="text" 
                                 className="form-control" 
-                                placeholder="Search by name or registration..." 
+                                placeholder="Search student..." 
                                 value={this.state.searchTerm}
                                 onChange={(e) => this.setState({ searchTerm: e.target.value })}
                             />
                         </div>
 
-                        {/* Scrollable List Container */}
+                        {/* List */}
                         <div 
                             className="border rounded p-2" 
                             style={{ 
@@ -264,6 +288,9 @@ class RouteModal extends React.Component {
                                                 <small className="text-muted">
                                                     {student.registration ? `Reg: ${student.registration}` : ''} 
                                                     {student.class_name ? ` | Class: ${student.class_name}` : ''}
+                                                    {/* Show if student is in another route currently */}
+                                                    {!isChecked && student.route && student.route.id !== this.state.id ? 
+                                                        <span className="text-danger ml-1">(In {student.route.name})</span> : ''}
                                                 </small>
                                             </div>
                                             
@@ -271,7 +298,7 @@ class RouteModal extends React.Component {
                                                 <input 
                                                     type="checkbox" 
                                                     checked={isChecked} 
-                                                    readOnly // handled by li onClick
+                                                    readOnly 
                                                 /> 
                                                 <span></span>
                                             </label>
@@ -281,7 +308,7 @@ class RouteModal extends React.Component {
                             </ul>
                         </div>
                         <small className="form-text text-muted">
-                            Click on a row to select/deselect the student.
+                            Click on a row to assign/unassign the student.
                         </small>
                       </div>
 
@@ -296,14 +323,7 @@ class RouteModal extends React.Component {
                     className="btn btn-primary"
                     disabled={this.state.loading}
                   >
-                    {this.state.loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Route"
-                    )}
+                    {this.state.loading ? "Saving..." : "Save Route"}
                   </button>
                   <button
                     type="button"
