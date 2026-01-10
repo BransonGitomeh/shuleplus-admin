@@ -1,29 +1,21 @@
 import React from "react";
-
-import Table from "./components/table";
-import AddModal from "./add";
-import EditModal from "./edit";
-import DeleteModal from "./delete";
-import Data from "../../utils/data";
-
-const $ = window.$;
-const addModalInstance = new AddModal();
-const editModalInstance = new EditModal();
-const deleteModalInstance = new DeleteModal();
+import Data from "../../utils/data"; // Adjust path as needed
+import BookModal from "./add"; // The new ref-based modal
+import "./Library.css"; // The Apple-style CSS
 
 class LibraryList extends React.Component {
   state = {
     books: [],
     filteredBooks: [],
+    searchTerm: "",
+    activeCategory: "All",
     loading: true,
-    edit: null,
-    remove: null
   };
 
   componentDidMount() {
-    this.fetchData();
+    // Subscribe to live data updates
     this._subscription = Data.books.subscribe(({ books }) => {
-      this.setState({ books, filteredBooks: books, loading: false });
+      this.setState({ books, loading: false }, this.filterBooks);
     });
   }
 
@@ -31,118 +23,213 @@ class LibraryList extends React.Component {
     if (this._subscription) this._subscription();
   }
 
-  fetchData = () => {
-    // Data.init() is called within Data.js, but we can trigger a refresh if needed
-    // For now, reliance on subscription is enough
+  // --- Filtering Logic ---
+
+  filterBooks = () => {
+    const { books, searchTerm, activeCategory } = this.state;
+    let filtered = books;
+
+    // 1. Filter by Category
+    if (activeCategory !== "All") {
+      filtered = filtered.filter((b) => b.category === activeCategory);
+    }
+
+    // 2. Filter by Search Term
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (b) =>
+          (b.title || "").toLowerCase().includes(lower) ||
+          (b.author || "").toLowerCase().includes(lower)
+      );
+    }
+
+    this.setState({ filteredBooks: filtered });
   };
 
-  onSearch = e => {
-    const searchTerm = e.target.value.toLowerCase();
-    const { books } = this.state;
-    const filteredBooks = books.filter(book => 
-      book.title.toLowerCase().includes(searchTerm) || 
-      book.author.toLowerCase().includes(searchTerm) ||
-      book.category.toLowerCase().includes(searchTerm)
-    );
-    this.setState({ filteredBooks });
+  handleSearch = (e) => {
+    this.setState({ searchTerm: e.target.value }, this.filterBooks);
   };
 
-  saveBook = (book) => {
-    Data.books.create(book)
-      .then(() => window.toastr.success("Book added successfully"))
-      .catch(() => window.toastr.error("Failed to add book"));
+  handleCategoryChange = (category) => {
+    this.setState({ activeCategory: category }, this.filterBooks);
   };
 
-  updateBook = (book) => {
-    Data.books.update(book)
-      .then(() => window.toastr.success("Book updated successfully"))
-      .catch(() => window.toastr.error("Failed to update book"));
+  // --- Modal & CRUD Actions ---
+
+  /**
+   * Opens the modal in "Add Mode" (clears form)
+   */
+  openAddModal = () => {
+    if (this.modalRef) {
+      this.modalRef.show(); 
+    }
+  };
+
+  /**
+   * Opens the modal in "Edit Mode" (populates form)
+   */
+  openEditModal = (book) => {
+    if (this.modalRef) {
+      this.modalRef.show(book); 
+    }
+  };
+
+  /**
+   * Handles both Create and Update logic based on ID existence
+   */
+  handleSaveBook = (bookData) => {
+    // If ID exists, we are updating. If empty, we are creating.
+    if (bookData.id) {
+      Data.books.update(bookData)
+        .then(() => window.toastr.success("Book updated successfully"))
+        .catch((err) => {
+          console.error(err);
+          window.toastr.error("Failed to update book");
+        });
+    } else {
+      // Remove the empty ID string so the backend generates a new one
+      const { id, ...newBook } = bookData;
+      Data.books.create(newBook)
+        .then(() => window.toastr.success("Book added successfully"))
+        .catch((err) => {
+          console.error(err);
+          window.toastr.error("Failed to add book");
+        });
+    }
+    // Note: The modal calls its own .hide() method after we execute this prop,
+    // or you can call this.modalRef.hide() here if you prefer manual control.
   };
 
   deleteBook = (book) => {
-    Data.books.delete(book)
-      .then(() => window.toastr.success("Book deleted successfully"))
-      .catch(() => window.toastr.error("Failed to delete book"));
+    if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
+      Data.books.delete(book) // Pass ID or object depending on your API
+        .then(() => window.toastr.success("Book deleted"))
+        .catch((err) => {
+          console.error(err);
+          window.toastr.error("Failed to delete book");
+        });
+    }
   };
 
-  render() {
-    const { filteredBooks, loading, edit, remove } = this.state;
-    return (
-      <div className="kt-portlet kt-portlet--mobile">
-        <AddModal save={this.saveBook} />
-        <DeleteModal remove={remove} save={this.deleteBook} />
-        <EditModal edit={edit} save={this.updateBook} />
+  // --- Render Helpers ---
+
+  renderBookCard = (book) => (
+    <div key={book.id} className="book-card">
+      <div className="book-cover-wrapper">
+        <img
+          src={book.coverUrl || "https://via.placeholder.com/150x200?text=No+Cover"}
+          alt={book.title}
+          className="book-cover-img"
+          onError={(e) => { e.target.onerror = null; e.target.src="https://via.placeholder.com/150x200?text=No+Cover"; }} 
+        />
         
-        <div className="kt-portlet__head kt-portlet__head--lg">
-          <div className="kt-portlet__head-label">
-            <span className="kt-portlet__head-icon">
-              <i className="kt-font-brand la la-book" />
-            </span>
-            <h3 className="kt-portlet__head-title">
-              Digital Library
-              <small>Manage school books and resources</small>
-            </h3>
+        {/* Overlay Actions (Edit/Delete/View) */}
+        <div className="book-actions-overlay">
+            <button 
+                className="btn-card-action"
+                onClick={() => this.openEditModal(book)}
+            >
+                Edit
+            </button>
+            <button 
+                className="btn-card-action delete"
+                onClick={() => this.deleteBook(book)}
+            >
+                Delete
+            </button>
+            {book.pdfUrl && (
+                <a 
+                    href={book.pdfUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn-card-action"
+                    style={{textDecoration: 'none', textAlign: 'center'}}
+                >
+                    View PDF
+                </a>
+            )}
+        </div>
+      </div>
+      <div className="book-info">
+        <div className="book-title" title={book.title}>
+          {book.title}
+        </div>
+        <div className="book-author">{book.author}</div>
+      </div>
+    </div>
+  );
+
+  render() {
+    const { filteredBooks, activeCategory, loading } = this.state;
+    const categories = ["All", "Science", "Mathematics", "History", "Storybooks", "Geography", "Languages", "Other"];
+
+    if (loading) {
+        return <div className="library-container text-center pt-5">Loading Library...</div>;
+    }
+
+    return (
+      <div className="library-container">
+        {/* 1. Header */}
+        <div className="library-header">
+          <div>
+            <h2 className="lib-title">Digital Library</h2>
+            <p className="lib-subtitle">Manage school books and resources</p>
           </div>
-          <div className="kt-portlet__head-toolbar">
-            <div className="kt-portlet__head-wrapper">
-              <button
-                className="btn btn-brand btn-elevate btn-icon-sm"
-                onClick={() => $("#add_book_modal").modal("show")}
-              >
-                <i className="la la-plus" />
-                New Book
-              </button>
-            </div>
-          </div>
+          
+          <button
+            className="btn-apple-add"
+            onClick={this.openAddModal}
+          >
+            <i className="la la-plus" /> New Book
+          </button>
         </div>
 
-        <div className="kt-portlet__body">
-          <div className="kt-form kt-fork--label-right kt-margin-t-20 kt-margin-b-10">
-            <div className="row align-items-center">
-              <div className="col-xl-8 order-2 order-xl-1">
-                <div className="row align-items-center">
-                  <div className="col-md-4 kt-margin-b-20-tablet-and-mobile">
-                    <div className="kt-input-icon kt-input-icon--left">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search books..."
-                        onChange={this.onSearch}
-                      />
-                      <span className="kt-input-icon__icon kt-input-icon__icon--left">
-                        <span><i className="la la-search" /></span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* 2. Filters & Controls */}
+        <div className="library-controls">
+            {/* Categories */}
+            <div className="category-pills">
+                {categories.map(cat => (
+                    <button 
+                        key={cat}
+                        className={`cat-pill ${activeCategory === cat ? 'active' : ''}`}
+                        onClick={() => this.handleCategoryChange(cat)}
+                    >
+                        {cat}
+                    </button>
+                ))}
             </div>
-          </div>
+
+            {/* Search */}
+            <div className="search-wrapper">
+                <i className="la la-search search-icon"></i>
+                <input
+                    type="text"
+                    className="apple-search"
+                    placeholder="Search Title or Author..."
+                    onChange={this.handleSearch}
+                />
+            </div>
         </div>
 
-        <div className="kt-portlet__body kt-portlet__body--flush">
-          <Table
-            headers={[
-              { label: "Cover", key: "coverUrl" },
-              { label: "Title", key: "title" },
-              { label: "Author", key: "author" },
-              { label: "Category", key: "category" },
-              { label: "Description", key: "description" }
-            ]}
-            loading={loading}
-            data={filteredBooks}
-            edit={book => {
-              this.setState({ edit: book }, () => {
-                $("#edit_book_modal").modal("show");
-              });
-            }}
-            delete={book => {
-              this.setState({ remove: book }, () => {
-                $("#delete_book_modal").modal("show");
-              });
-            }}
-          />
+        {/* 3. The Grid */}
+        <div className="book-shelf">
+            {filteredBooks.map(this.renderBookCard)}
         </div>
+
+        {/* Empty State */}
+        {filteredBooks.length === 0 && (
+            <div className="empty-state" style={{textAlign: 'center', padding: '4rem', color: '#999'}}>
+                <i className="la la-book" style={{fontSize: '3rem', marginBottom: '1rem', display: 'block'}}></i>
+                <p>No books found for this category or search.</p>
+            </div>
+        )}
+
+        {/* 4. The Modal (Rendered Once, controlled via Ref) */}
+        <BookModal 
+            ref={ref => this.modalRef = ref}
+            onSave={this.handleSaveBook}
+        />
       </div>
     );
   }
