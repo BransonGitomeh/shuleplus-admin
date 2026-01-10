@@ -5,54 +5,55 @@ import Data from "../../utils/data";
 const IErrorMessage = new ErrorMessage();
 const $ = window.$;
 
-// Generate a unique ID for this modal instance
-const modalNumber = "route_modal_" + Math.random().toString().split(".")[1];
-
 class RouteModal extends React.Component {
-  state = {
-    loading: false,
-    // Form Data
-    id: null, 
-    name: "",
-    description: "",
+  constructor(props) {
+    super(props);
+    // FIX 1: Generate a unique ID per instance, not globally.
+    // This prevents ID collisions if the component remounts.
+    this.modalId = "route_modal_" + Math.random().toString(36).substr(2, 9);
     
-    // Student Selection Logic
-    allStudents: [],      
-    selectedStudentIds: [], 
-    searchTerm: "",       
-  };
+    this.state = {
+      loading: false,
+      id: null, 
+      name: "",
+      description: "",
+      
+      allStudents: [],      
+      selectedStudentIds: [], 
+      searchTerm: "",       
+    };
+  }
 
   componentDidMount() {
     const _this = this;
     
-    // 1. Initialize jQuery Validation
-    this.validator = $("#" + modalNumber + "form").validate({
+    // Initialize jQuery Validation
+    this.validator = $("#" + this.modalId + "form").validate({
       errorClass: "invalid-feedback",
       errorElement: "div",
       highlight: (element) => $(element).addClass("is-invalid"),
       unhighlight: (element) => $(element).removeClass("is-invalid"),
       submitHandler: async (form, event) => {
-        event.preventDefault();
+        // FIX 2: Ensure default is prevented and return false to stop propagation
+        if (event) event.preventDefault();
         await _this.handleSubmit();
+        return false;
       }
     });
 
-    // 2. Load Initial Data
+    // Load Initial Data
     const initialStudents = Data.students.list();
     this.setState({ allStudents: initialStudents });
 
-    // 3. Subscribe to Student Data (Live Updates)
+    // Subscribe to Data
     this.unsubscribe = Data.students.subscribe(({ students }) => {
       this.setState((prevState) => {
-        // If we are currently editing (prevState.id exists) AND 
-        // we currently have 0 selected students, it might be because 
-        // the student data hadn't loaded when the modal opened. 
-        // Let's try to populate selections now that data arrived.
         let updatedSelection = prevState.selectedStudentIds;
 
+        // Auto-select students if we are editing and data just arrived
         if (prevState.id && prevState.selectedStudentIds.length === 0) {
            const studentsInThisRoute = students
-             .filter(s => s.route && s.route.id === prevState.id)
+             .filter(s => s.route && String(s.route.id) === String(prevState.id))
              .map(s => s.id);
            
            if (studentsInThisRoute.length > 0) {
@@ -70,39 +71,33 @@ class RouteModal extends React.Component {
 
   componentWillUnmount() {
     if (this.unsubscribe) this.unsubscribe();
+    // Optional: Destroy validator if needed, though usually not strictly required with jQuery validation
+    const $form = $("#" + this.modalId + "form");
+    if ($form.length && $form.data('validator')) {
+        $form.data('validator').destroy();
+    }
   }
 
-  // --- LOGIC FIX HERE ---
   static getDerivedStateFromProps(props, state) {
-    // If we are opening the modal in "Edit" mode (props.edit exists) 
-    // AND the ID is different from what is currently in state...
     if (props.edit && props.edit.id !== state.id) {
-      
+      const routeId = props.edit.id;
       let existingStudentIds = [];
 
-      // Strategy 1: Check if the Route object itself has the students list
-      if (Array.isArray(props.edit.students) && props.edit.students.length > 0) {
-         existingStudentIds = props.edit.students.map(s => (typeof s === 'object' ? s.id : s));
-      }
-
-      // Strategy 2: If Strategy 1 failed (empty or undefined), look through the 
-      // allStudents list in state to find students pointing to this route.
-      if (existingStudentIds.length === 0 && state.allStudents.length > 0) {
+      if (state.allStudents && state.allStudents.length > 0) {
         existingStudentIds = state.allStudents
-          .filter(student => student.route && student.route.id === props.edit.id)
+          .filter(student => student.route && String(student.route.id) === String(routeId))
           .map(student => student.id);
       }
 
       return {
-        id: props.edit.id,
+        id: routeId,
         name: props.edit.name || "",
         description: props.edit.description || "",
-        selectedStudentIds: existingStudentIds, // Apply the found IDs
+        selectedStudentIds: existingStudentIds, 
         searchTerm: "" 
       };
     }
     
-    // If switching to Add Mode (props.edit is null), reset state
     if (!props.edit && state.id !== null) {
       return {
         id: null,
@@ -117,7 +112,7 @@ class RouteModal extends React.Component {
   }
 
   show() {
-    $("#" + modalNumber).modal({
+    $("#" + this.modalId).modal({
       show: true,
       backdrop: "static",
       keyboard: false
@@ -125,20 +120,23 @@ class RouteModal extends React.Component {
   }
 
   hide() {
-    $("#" + modalNumber).modal("hide");
+    $("#" + this.modalId).modal("hide");
   }
 
   handleSubmit = async () => {
+    // FIX 3: Guard clause - if already loading, do absolutely nothing.
+    // This stops double-clicks or double-event triggers (Submit + Click)
+    if (this.state.loading) return;
+
     try {
       this.setState({ loading: true });
 
       const payload = {
         name: this.state.name,
         description: this.state.description,
-        students: this.state.selectedStudentIds // Send array of IDs
+        students: this.state.selectedStudentIds
       };
 
-      // If editing, include the ID
       if (this.state.id) {
         payload.id = this.state.id;
       }
@@ -173,7 +171,6 @@ class RouteModal extends React.Component {
   };
 
   render() {
-    // Filter displayed list based on search term
     const filteredStudents = this.state.allStudents.filter(student => {
       const term = this.state.searchTerm.toLowerCase();
       const name = (student.names || "").toLowerCase();
@@ -185,7 +182,7 @@ class RouteModal extends React.Component {
       <div>
         <div
           className="modal fade"
-          id={modalNumber}
+          id={this.modalId}
           tabIndex={-1}
           role="dialog"
           aria-labelledby="routeModalLabel"
@@ -193,9 +190,9 @@ class RouteModal extends React.Component {
         >
           <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
-              <form id={modalNumber + "form"} className="kt-form kt-form--label-right">
+              {/* Use unique ID for form */}
+              <form id={this.modalId + "form"} className="kt-form kt-form--label-right">
                 
-                {/* Header */}
                 <div className="modal-header">
                   <h5 className="modal-title">
                     {this.state.id ? "Edit Route" : "Create New Route"}
@@ -205,12 +202,10 @@ class RouteModal extends React.Component {
                   </button>
                 </div>
 
-                {/* Body */}
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="row">
                       
-                      {/* Left Column: Route Details */}
                       <div className="col-lg-5">
                         <div className="form-group">
                           <label>Route Name:</label>
@@ -240,11 +235,9 @@ class RouteModal extends React.Component {
                         </div>
                       </div>
 
-                      {/* Right Column: Student Selection */}
                       <div className="col-lg-7">
                         <label>Assign Students:</label>
                         
-                        {/* Search Bar */}
                         <div className="input-group mb-3">
                             <div className="input-group-prepend">
                                 <span className="input-group-text"><i className="fa fa-search"></i></span>
@@ -258,7 +251,6 @@ class RouteModal extends React.Component {
                             />
                         </div>
 
-                        {/* List */}
                         <div 
                             className="border rounded p-2" 
                             style={{ 
@@ -274,7 +266,8 @@ class RouteModal extends React.Component {
                             <ul className="list-group list-group-flush">
                                 {filteredStudents.map((student) => {
                                     const isChecked = this.state.selectedStudentIds.includes(student.id);
-                                    
+                                    const assignedToOther = !isChecked && student.route && String(student.route.id) !== String(this.state.id);
+
                                     return (
                                         <li 
                                             key={student.id} 
@@ -288,8 +281,7 @@ class RouteModal extends React.Component {
                                                 <small className="text-muted">
                                                     {student.registration ? `Reg: ${student.registration}` : ''} 
                                                     {student.class_name ? ` | Class: ${student.class_name}` : ''}
-                                                    {/* Show if student is in another route currently */}
-                                                    {!isChecked && student.route && student.route.id !== this.state.id ? 
+                                                    {assignedToOther ? 
                                                         <span className="text-danger ml-1">(In {student.route.name})</span> : ''}
                                                 </small>
                                             </div>
@@ -316,7 +308,6 @@ class RouteModal extends React.Component {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div className="modal-footer">
                   <button
                     type="submit"
