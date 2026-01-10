@@ -2,7 +2,7 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "17"
+  NODE_VERSION = "18"
   NODE_OPTIONS = "--openssl-legacy-provider"
 
 [[redirects]]
