@@ -390,7 +390,7 @@ var Data = (function () {
             }
 
             if (Array.isArray(subs.schools)) {
-                const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                const selectedSchool = allData.schools.find(s => s.id === schoolID) || {};
                 subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
             }
 
@@ -660,7 +660,7 @@ var Data = (function () {
         { name: "routes", singularName: "route", createFields: ['name', 'description', 'school', 'students', 'path'], updateFields: ['name', 'description', 'students', 'path'] },
         { name: "schedules", singularName: "schedule", createFields: ['name', 'message', 'time', 'end_time', 'school', 'route', 'type', 'days', 'bus', 'driver', 'actions'], updateFields: ['name', 'message', 'time', 'end_time', 'type', 'days', 'route', 'bus', 'driver', 'actions'] },
         { name: "classes", singularName: "class", createFields: ['name', 'teacher', 'school', 'feeAmount'], updateFields: ['name', 'teacher', 'feeAmount'] },
-        { name: "teachers", singularName: "teacher", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'gender', 'password'], updateFields: ['national_id', 'name', 'phone', 'email', 'gender', 'password'] },
+        { name: "teachers", singularName: "teacher", createFields: ['name', 'national_id', 'phone', 'email', 'school', 'gender', 'password'], updateFields: ['national_id', 'name', 'phone', 'email', 'gender', 'password'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { teachers { invite(teacher: $data) { id phone message } } }`, { data }); const invitation = response.teachers.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
         { name: "teams", singularName: "team", createFields: ['name', 'school'], updateFields: ['name', 'school'], customMethods: (allData, subs) => ({ invite: (data) => new Promise(async (resolve) => { const response = await mutate(`mutation ($data: Iinvite!) { teams { invite(team: $data) { id phone message } } }`, { data }); const invitation = response.teams.invite; allData.invitations.push(invitation); if (Array.isArray(subs.invitations)) subs.invitations.forEach(cb => cb({ invitations: [...allData.invitations] })); resolve(invitation); }) }) },
         { name: "team_members", singularName: "team_member", createFields: ['team', 'user'], updateFields: ['team', 'user'] },
         { name: "complaints", singularName: "complaint", createFields: ['parent', 'school', 'content', 'time'], updateFields: ['parent', 'content', 'time'] },

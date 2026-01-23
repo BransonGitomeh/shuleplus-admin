@@ -198,17 +198,17 @@ class Navbar extends React.Component {
         <div style={overlayStyle} onClick={this.toggleMobileMenu}></div>
         <div style={mobileMenuStyle}>
             <div style={{ padding: '0 15px 20px 15px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center' }}>
-                {selectedSchool.logo ? (
+                {selectedSchool?.logo ? (
                     <img src={selectedSchool.logo} alt={selectedSchool.name} style={{ maxHeight: '40px', maxWidth: '100%', marginRight: '10px' }} />
                 ) : (
-                    <span style={{ fontSize: '1.5rem', fontWeight: 500 }}>{selectedSchool.name}</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 500 }}>{selectedSchool?.name || 'Shule Plus'}</span>
                 )}
             </div>
             <ul style={{ listStyle: 'none', padding: '10px 0 0 0', margin: 0 }}>
                 {/* School Switcher */}
                 <li>
                     <button onClick={() => this.toggleMobileSubmenu('schools')} style={buttonStyle}>
-                        {selectedSchool.name || "Select School"} <i className={`la la-angle-${openMobileSubmenu === 'schools' ? 'down' : 'right'}`} style={{marginLeft: 'auto'}}></i>
+                        {selectedSchool?.name || "Select School"} <i className={`la la-angle-${openMobileSubmenu === 'schools' ? 'down' : 'right'}`} style={{marginLeft: 'auto'}}></i>
                     </button>
                     {openMobileSubmenu === 'schools' && (
                         <ul style={{listStyle: 'none', padding: 0, margin: '0 0 10px 0', backgroundColor: '#f9f9f9'}}>
@@ -338,7 +338,7 @@ class Navbar extends React.Component {
                 {availableSchools.length > 1 && (
                   <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                     <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>{selectedSchool.name || "Select School"}</span>
+                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>{selectedSchool?.name || "Select School"}</span>
                       <i className="kt-menu__hor-arrow la la-angle-down" style={topNavIconStyle} />
                     </a>
                     <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
@@ -425,8 +425,8 @@ class Navbar extends React.Component {
           </div>
           <div className="kt-header-mobile__logo" style={{ flexGrow: 1, textAlign: 'center' }}>
               <Link to="/home" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-                  {selectedSchool.logo && <img alt="School Logo" style={{ maxHeight: '35px', width: 'auto', borderRadius: '4px', marginRight: '10px' }} src={selectedSchool.logo} />}
-                  <span style={{ fontSize: '1rem', fontWeight: 500, color: effectiveTopBarTextColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}> {selectedSchool.name || 'Shule Plus'} </span>
+                  {selectedSchool?.logo && <img alt="School Logo" style={{ maxHeight: '35px', width: 'auto', borderRadius: '4px', marginRight: '10px' }} src={selectedSchool.logo} />}
+                  <span style={{ fontSize: '1rem', fontWeight: 500, color: effectiveTopBarTextColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}> {selectedSchool?.name || 'Shule Plus'} </span>
               </Link>
           </div>
           <div className="kt-header-mobile__toolbar" style={{ paddingRight: '15px' }}>
@@ -442,7 +442,7 @@ class Navbar extends React.Component {
         <div id="kt_header_secondary" className="d-none d-lg-flex" style={{ backgroundColor: BOTTOM_NAV_BG_COLOR, justifyContent: 'space-between', alignItems: 'center', height: `${secondaryNavbarEffectiveHeight}px`, position: 'relative', marginLeft: `${secondaryNavbarHorizontalMargin}px`, marginRight: `${secondaryNavbarHorizontalMargin}px`, marginBottom: `${gapBetweenNavbars}px`, borderRadius: '12px', boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)', padding: '0 25px', }}>
             <div className="kt-header__brand">
                 <Link to="/home">
-                    <div style={{ fontSize: '1.25rem', color: 'black', letterSpacing: '0.5px' }}>{selectedSchool.name}</div>
+                    <div style={{ fontSize: '1.25rem', color: 'black', letterSpacing: '0.5px' }}>{selectedSchool?.name || 'Shule Plus'}</div>
                 </Link>
             </div>
             <div id="kt_bottom_nav_menu_container" className="kt-header-menu-wrapper">

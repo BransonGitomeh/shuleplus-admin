@@ -181,6 +181,7 @@ const Register = () => {
             setSchoolMeta(null);
             setClasses([]);
             setStudentRegStatus('loading');
+            setIsFetchingSchoolMeta(false);
         }
     }, [location.search]);
 
@@ -283,11 +284,35 @@ const Register = () => {
             localStorage.setItem("authorization", registrationData.token);
             localStorage.setItem("user", JSON.stringify(registrationData.user));
             localStorage.setItem("school", registrationData.schoolId);
+            
+            // Re-initialize data with the new school ID and token
             await Data.init();
-            if (inviteStaff) { /* ... */ }
-            history.push('/trips/all');
-        } catch (err) { setError(err.message || "An error occurred.");
-        } finally { setLoading(false); }
+            
+            if (inviteStaff) {
+                const invitations = [];
+                driversToInvite.forEach(d => {
+                    invitations.push(Data.drivers.invite({ names: d.name, phone: d.phone, email: d.email, school: registrationData.schoolId }));
+                });
+                teachersToInvite.forEach(t => {
+                    invitations.push(Data.teachers.invite({ name: t.name, phone: t.phone, email: t.email, school: registrationData.schoolId }));
+                });
+                adminsToInvite.forEach(a => {
+                    invitations.push(Data.admins.invite({ names: a.name, phone: a.phone, email: a.email, school: registrationData.schoolId }));
+                });
+
+                if (invitations.length > 0) {
+                    await Promise.all(invitations);
+                    if (window.toastr) window.toastr.success(`Sent ${invitations.length} invitations!`);
+                }
+            }
+            
+            history.push('/home'); // Redirect to home/reports after registration
+        } catch (err) {
+            setError(err.message || "An error occurred while finishing setup.");
+            if (window.toastr) window.toastr.error("Setup Error", err.message);
+        } finally {
+            setLoading(false);
+        }
     };
     // ... other admin helpers ...
 
@@ -331,13 +356,110 @@ const Register = () => {
 
     const renderSchoolAdminRegistrationStep1 = () => (
         <>
-            {/* Admin registration form content... */}
+            <div className="text-center mb-4">
+                <h1 className="text-logo">Shule Plus</h1>
+            </div>
+            <h3 className="form-title">School Registration</h3>
+            <p className="text-muted mb-4">Create a new school profile and admin account to get started.</p>
+
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <form onSubmit={handleSchoolRegistration}>
+                <h5 className="form-section-title">School Details</h5>
+                <div className="form-group">
+                    <input type="text" className="form-control" placeholder="School Name" value={schoolName} onChange={e => setSchoolName(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                    <input type="text" className="form-control" placeholder="School Address/Location" value={schoolAddress} onChange={e => setSchoolAddress(e.target.value)} required />
+                </div>
+
+                <h5 className="form-section-title">Admin Account Details</h5>
+                <div className="form-group">
+                    <input type="text" className="form-control" placeholder="Full Name" value={adminName} onChange={e => setAdminName(e.target.value)} required />
+                </div>
+                <div className="form-row">
+                    <div className="form-group col-md-6">
+                        <input type="tel" className="form-control" placeholder="Phone Number" value={adminPhone} onChange={e => setAdminPhone(e.target.value)} required pattern="[0-9]{10,15}" />
+                    </div>
+                    <div className="form-group col-md-6">
+                        <input type="email" className="form-control" placeholder="Email Address" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} required />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <input type="password" className="form-control" placeholder="Password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} required minLength="6" />
+                </div>
+
+                <button type="submit" className="btn btn-brand btn-block btn-lg mt-4" disabled={loading}>
+                    {loading ? "Registering..." : "Create School & Admin"}
+                </button>
+                <div className="mt-4 text-center">
+                    Already have an account? <Link to="/" className="kt-link">Sign In</Link>
+                </div>
+            </form>
         </>
     );
 
     const renderSchoolAdminRegistrationStep2 = () => (
         <>
-            {/* Admin registration step 2 content... */}
+            <div className="text-center mb-4">
+                <h1 className="text-logo">Registration Successful!</h1>
+            </div>
+            <h3 className="form-title">Let's Get Started</h3>
+            <p className="text-muted mb-4">Your school <strong>{schoolName}</strong> has been created. Now you can invite your team or dive straight into your dashboard.</p>
+
+             <div className="mb-4">
+                <ul className="nav nav-tabs nav-tabs-line nav-tabs-bold nav-tabs-line-brand" role="tablist">
+                    <li className="nav-item">
+                        <a className={`nav-link ${activeStaffTab === 'drivers' ? 'active' : ''}`} onClick={() => setActiveStaffTab('drivers')} href="javascript:;">Drivers</a>
+                    </li>
+                    <li className="nav-item">
+                        <a className={`nav-link ${activeStaffTab === 'teachers' ? 'active' : ''}`} onClick={() => setActiveStaffTab('teachers')} href="javascript:;">Teachers</a>
+                    </li>
+                    <li className="nav-item">
+                        <a className={`nav-link ${activeStaffTab === 'admins' ? 'active' : ''}`} onClick={() => setActiveStaffTab('admins')} href="javascript:;">Admins</a>
+                    </li>
+                </ul>
+                <div className="tab-content pt-3">
+                    <StaffForm 
+                        type={activeStaffTab.slice(0, -1)} 
+                        onAddStaff={(type) => {
+                            if (!tempStaffMember.name || !tempStaffMember.phone) return setStaffFormError('Name and Phone are required');
+                            const list = activeStaffTab === 'drivers' ? driversToInvite : activeStaffTab === 'teachers' ? teachersToInvite : adminsToInvite;
+                            const setter = activeStaffTab === 'drivers' ? setDriversToInvite : activeStaffTab === 'teachers' ? setTeachersToInvite : setAdminsToInvite;
+                            setter([...list, { ...tempStaffMember }]);
+                            setTempStaffMember({ name: '', phone: '', email: '' });
+                            setStaffFormError('');
+                        }}
+                        tempStaff={tempStaffMember}
+                        setTempStaff={setTempStaffMember}
+                        error={staffFormError}
+                    />
+                    <StaffTable 
+                        type={activeStaffTab.slice(0, -1)} 
+                        staffList={activeStaffTab === 'drivers' ? driversToInvite : activeStaffTab === 'teachers' ? teachersToInvite : adminsToInvite}
+                        onRemoveStaff={(type, index) => {
+                            const list = activeStaffTab === 'drivers' ? driversToInvite : activeStaffTab === 'teachers' ? teachersToInvite : adminsToInvite;
+                            const setter = activeStaffTab === 'drivers' ? setDriversToInvite : activeStaffTab === 'teachers' ? setTeachersToInvite : setAdminsToInvite;
+                            const newList = [...list];
+                            newList.splice(index, 1);
+                            setter(newList);
+                        }}
+                    />
+                </div>
+            </div>
+
+            <div className="row">
+                <div className="col-md-6">
+                    <button className="btn btn-outline-secondary btn-block btn-lg mb-3" onClick={() => proceedToDashboard(false)} disabled={loading}>
+                        Skip & Go to Dashboard
+                    </button>
+                </div>
+                <div className="col-md-6">
+                    <button className="btn btn-brand btn-block btn-lg mb-3" onClick={() => proceedToDashboard(true)} disabled={loading || (driversToInvite.length === 0 && teachersToInvite.length === 0 && adminsToInvite.length === 0)}>
+                        Invite & Go to Dashboard
+                    </button>
+                </div>
+            </div>
         </>
     );
 
