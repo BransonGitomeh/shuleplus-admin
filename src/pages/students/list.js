@@ -115,7 +115,8 @@ export default function StudentDataTableV8() {
       { key: 'names', label: 'Student Name', sortable: true },
       { key: 'registration', label: 'Registration', sortable: true },
       { key: 'class_name', label: 'Class', sortable: true },
-      { key: 'route_name', label: 'Route', sortable: true },
+      { key: 'paidFees', label: 'Paid', sortable: true },
+      { key: 'feeStatus.balanceFormated', label: 'Balance', sortable: false },
       { key: 'parent_name', label: 'Parent', sortable: true },
   ], []);
 

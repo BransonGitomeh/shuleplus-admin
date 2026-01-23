@@ -19,7 +19,8 @@ class Modal extends React.Component {
       class: null,
       route: null,
       parent: null,
-      parent2: null
+      parent2: null,
+      paidFees: 0
     }
   };
 
@@ -62,7 +63,8 @@ class Modal extends React.Component {
             class: _this.state.edit.class?.id || "",
             route: _this.state.edit.route?.id || "",
             parent: _this.state.edit.parent?.id || "",
-            parent2: _this.state.edit.parent2?.id || ""
+            parent2: _this.state.edit.parent2?.id || "",
+            paidFees: parseFloat(_this.state.edit.paidFees) || 0
           };
 
           await _this.props.save(payload);
@@ -90,7 +92,8 @@ class Modal extends React.Component {
           route: props.edit.route || null,
           parent: props.edit.parent || null,
           parent2: props.edit.parent2 || null,
-          gender: props.edit.gender || ""
+          gender: props.edit.gender || "",
+          paidFees: props.edit.paidFees || 0
         }
       };
     }
@@ -288,6 +291,23 @@ class Modal extends React.Component {
                             </option>
                           ))}
                         </select>
+                      </div>
+
+                      {/* Paid Fees */}
+                      <div className="col-lg-6">
+                        <label>Paid Fees:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="paidFees"
+                          value={edit.paidFees || 0}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({ 
+                                edit: { ...prevState.edit, paidFees: val } 
+                            }));
+                          }}
+                        />
                       </div>
 
                     </div>

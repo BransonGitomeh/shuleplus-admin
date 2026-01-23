@@ -12,8 +12,8 @@ class Modal extends React.Component {
   state = {
     loading: false,
     edit: {
-      name: "",
-      teacher:""
+      teacher: "",
+      feeAmount: 0
     }
   };
 
@@ -114,6 +114,22 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-6">
+                        <label>Fee Amount:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="feeAmount"
+                          value={this.state.edit.feeAmount}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({
+                              edit: { ...prevState.edit, feeAmount: val }
+                            }));
+                          }}
+                          required
+                        />
+                      </div>
+                      <div className="col-lg-6 mt-3">
                         <label htmlFor="exampleSelect1">Teacher:</label>
                         <select
                           name="gender"

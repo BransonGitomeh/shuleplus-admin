@@ -189,6 +189,7 @@ class SmsHistoryDashboard extends React.Component {
 
     componentDidMount() {
         this.unsubscribe = Data.smsEvents.subscribe(this.handleDataUpdate);
+        this.unsubscribeSchool = Data.schools.subscribe(this.handleSchoolUpdate);
         
         // Fallback for flat structure
         if (!Data.smsEvents.list().length) {
@@ -199,7 +200,12 @@ class SmsHistoryDashboard extends React.Component {
     componentWillUnmount() {
         if (this.unsubscribe) this.unsubscribe();
         if (this.unsubscribeLogs) this.unsubscribeLogs();
+        if (this.unsubscribeSchool) this.unsubscribeSchool();
     }
+    
+    handleSchoolUpdate = ({ selectedSchool }) => {
+        this.setState({ school: selectedSchool });
+    };
 
     handleDataUpdate = () => {
         let rawData = Data.smsEvents.list() || [];
@@ -250,6 +256,13 @@ class SmsHistoryDashboard extends React.Component {
                 
                 {/* TOP STATS ROW */}
                 <div className="row mb-2">
+                    <StatCard 
+                        title="Wallet Balance" 
+                        value={this.state.school?.financial?.balanceFormated || `${this.state.school?.financial?.balance || 0} SMS`} 
+                        icon="wallet" 
+                        color="success" 
+                        subtext="Available"
+                    />
                     <StatCard 
                         title="Campaigns Sent" 
                         value={stats.totalBatches} 

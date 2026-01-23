@@ -160,6 +160,9 @@ class Navbar extends React.Component {
         { path: "/schedules", label: "Schedules" }, { path: "/classes", label: "Classes" },
         { path: "/teachers", label: "Teachers" }, { path: "/students", label: "Students" },
         { path: "/parents", label: "Parents" }, { path: "/settings/school", label: "School Details" },
+        { path: "/finance/fees", label: "Payment Management" },
+        { path: "/results", label: "Results Management" },
+        { path: "/terms", label: "Terms Management" },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up" },
@@ -288,6 +291,9 @@ class Navbar extends React.Component {
       { path: "/schedules", label: "Schedules", IconComponent: SvgSchedulesIcon }, { path: "/classes", label: "Classes", IconComponent: SvgClassesIcon },
       { path: "/teachers", label: "Teachers", IconComponent: SvgTeachersIcon }, { path: "/students", label: "Students", IconComponent: SvgStudentsIcon },
       { path: "/parents", label: "Parents", IconComponent: SvgParentsIcon }, { path: "/library", label: "Library", IconComponent: SvgLibraryIcon }, { path: "/settings/school", label: "School Details", IconComponent: SvgSettingsIcon },
+      { path: "/finance/fees", label: "Payment Management", IconComponent: SvgSettingsIcon },
+      { path: "/results", label: "Results Management", IconComponent: SvgClassesIcon },
+      { path: "/terms", label: "Terms Management", IconComponent: SvgSchedulesIcon },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `
@@ -408,6 +414,7 @@ class Navbar extends React.Component {
         </div>
 
         {/* MOBILE TOP NAVBAR (Remains Fixed) */}
+        {}
         <div id="kt_header_mobile" className="kt-header-mobile kt-header-mobile--fixed d-lg-none" style={{ backgroundColor: effectiveTopBarBgColor, height: `${mobileTopBarHeight}px`, top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)', zIndex: 1002, }}>
           <div className="kt-header-mobile__toolbar" style={{ paddingLeft: '15px' }}>
             <button className="kt-header-mobile__toolbar-toggler kt-header-mobile__toolbar-toggler--left" onClick={this.toggleMobileMenu}>
@@ -442,6 +449,8 @@ class Navbar extends React.Component {
                         <li className="kt-menu__item"><Link to="/comms" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>SMS & Email</span></Link></li>
                         <li className="kt-menu__item"><Link to="/learning" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Learning</span></Link></li>
                         <li className="kt-menu__item"><Link to="/library" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Library</span></Link></li>
+                        <li className="kt-menu__item"><Link to="/finance/fees" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Fee Management</span></Link></li>
+                        <li className="kt-menu__item"><Link to="/results" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Results Management</span></Link></li>
                     </ul>
                 </div>
             </div>

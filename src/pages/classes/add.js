@@ -18,7 +18,8 @@ class Modal extends React.Component {
   state = {
     loading: false,
     name: "",
-    teacher: ""
+    teacher: "",
+    feeAmount: 0
   };
 
   show() {
@@ -116,6 +117,19 @@ class Modal extends React.Component {
                         />
                       </div>
                       <div className="col-lg-6">
+                        <label>Fee Amount:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="feeAmount"
+                          value={this.state.feeAmount}
+                          onChange={(e) => this.setState({
+                            feeAmount: e.target.value
+                          })}
+                          required
+                        />
+                      </div>
+                      <div className="col-lg-6 mt-3">
 
                         <div className="row">
                           <div className="col-lg-8">

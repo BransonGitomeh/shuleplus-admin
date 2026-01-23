@@ -52,6 +52,7 @@ class App extends React.Component {
       <Route exact path="/" component={login} />
       <Route exact path="/register" component={register} />
       <Route exact path="/recover" component={recover} />
+      <Route exact path="/quick-topup" component={require("./pages/public/QuickTopUp").default} />
       <Route exact path="/auth" component={login} />
 
       {/* main admin stuff */}
@@ -76,11 +77,16 @@ class App extends React.Component {
       <PrivateRoute path="/settings/school" component={schoolSettings} />
       <PrivateRoute path="/finance/topup" component={topup} />
       <PrivateRoute path="/finance/charges" component={charges} />
+      <PrivateRoute path="/finance/fees" component={require("./pages/finance/fees").default} />
+      <PrivateRoute path="/results" component={require("./pages/results").default} />
+      <PrivateRoute path="/learning" component={learning} />
       <PrivateRoute path="/teams" component={teams} />
       <PrivateRoute path="/invitations" component={invitations} />
       <PrivateRoute path="/members" component={members} />
+
       <PrivateRoute path="/schools" component={schools} />
       <PrivateRoute path="/library" component={library} />
+      <PrivateRoute path="/terms" component={require("./pages/terms").default} />
      
 
       {/* super admin routes */}

@@ -542,7 +542,69 @@ var Data = (function () {
         { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder'], customMethods: (allData, subs, api) => ({ getImages: (id) => new Promise(async (resolve, reject) => { try { const response = await query(`query GetQuestionImages($id: String!) { questionImages(id: $id) }`, { id }); resolve(response.questionImages || []); } catch (e) { console.error(e); resolve([]); } }) }) },
         { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
         { name: "terms", singularName: "term", createFields: ['name', 'school', 'startDate', 'endDate'], updateFields: ['name', 'startDate', 'endDate'] },
-        { name: "assessments", singularName: "assessment", createFields: ['student', 'term', 'subject', 'score', 'outOf', 'teacher', 'school', 'remarks'], updateFields: ['score', 'remarks'] },
+        { 
+            name: "assessments", 
+            singularName: "assessment", 
+            createFields: ['student', 'term', 'subject', 'score', 'outOf', 'teacher', 'school', 'remarks'], 
+            updateFields: ['score', 'remarks'],
+            customMethods: (allData, subs, api) => ({
+                getForClass: (classId, termId) => new Promise(async (resolve, reject) => {
+                    try {
+                        const schoolId = localStorage.getItem("school");
+                        const queryStr = `
+                            query GetClassAssessments($schoolId: String, $classId: String, $termId: String) {
+                                school(id: $schoolId) {
+                                    assessments(class: $classId, term: $termId) {
+                                        id score outOf remarks
+                                        student { id }
+                                        subject { id }
+                                        term { id }
+                                    }
+                                }
+                            }
+                        `;
+                        const response = await query(queryStr, { schoolId, classId, termId });
+                        const fetchedAssessments = response.school?.assessments || [];
+                        
+                        // Merge into local cache
+                        const safeList = Array.isArray(allData.assessments) ? allData.assessments : [];
+                        // We need to be careful not to duplicate.
+                        // Ideally we replace or merge. 
+                        // Since this is a fresh fetch for a context, maybe we just upsert.
+                        
+                        fetchedAssessments.forEach(newAss => {
+                            const existingIdx = safeList.findIndex(a => a.id === newAss.id);
+                            // Normalize references for the flat cache
+                            const flatAss = {
+                                ...newAss,
+                                student: newAss.student?.id || newAss.student,
+                                subject: newAss.subject?.id || newAss.subject,
+                                term: newAss.term?.id || newAss.term,
+                            };
+                            
+                            if (existingIdx > -1) {
+                                safeList[existingIdx] = { ...safeList[existingIdx], ...flatAss };
+                            } else {
+                                safeList.push(flatAss);
+                            }
+                        });
+                        
+                        // Update cache ref (if it wasn't already)
+                        if (!Array.isArray(allData.assessments)) allData.assessments = safeList;
+
+                        // Notify subscribers
+                        if (Array.isArray(subs.assessments)) {
+                            subs.assessments.forEach(cb => cb({ assessments: [...allData.assessments] }));
+                        }
+                        
+                        resolve(fetchedAssessments);
+                    } catch (e) {
+                        console.error("Failed to fetch assessments:", e);
+                        reject(e);
+                    }
+                })
+            })
+        },
         { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{id, name} route{id, name} parent{id, name}  } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } }) },
         {
             name: "parents",
@@ -632,6 +694,12 @@ var Data = (function () {
             parentKey: "lessonAttempt",
             createFields: ['lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect'],
             updateFields: ['id', 'lessonAttempt', 'questionId', 'eventType', 'school', 'eventTimestamp', 'userAnswer', 'isCorrect']
+        },
+        {
+            name: "terms",
+            singularName: "term",
+            createFields: ['name', 'school', 'startDate', 'endDate'],
+            updateFields: ['name', 'school', 'startDate', 'endDate']
         },
         {
             name: "books",
@@ -728,20 +796,20 @@ var Data = (function () {
                 }
                 resolve(school);
             }),
-            charge: (phone, ammount) => {
-                const school = instance.schools.getSelected();
-                if (!school.id) return Promise.reject("No school selected");
+            charge: (phone, ammount, forcedSchoolId) => {
+                const schoolId = forcedSchoolId || instance.schools.getSelected()?.id;
+                if (!schoolId) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { schoolId: school.id, ammount, phone }
+                    payment: { schoolId, ammount, phone }
                 });
             },
             // In utils/data.js (inside publicApi -> school object)
 
-            verifyTx: ({ CheckoutRequestID, MerchantRequestID }) => {
+            verifyTx: ({ CheckoutRequestID, MerchantRequestID, schoolId: forcedId }) => {
                 // 1. Get the school ID
                 // Handle cases where this might be called via publicApi.schools.verifyTx or publicApi.school.verifyTx
                 // We use the internal _schoolData or try to find it from cache
-                const schoolId = instance.schools.getSelected()?.id;
+                const schoolId = forcedId || instance.schools.getSelected()?.id;
 
                 if (!schoolId) return Promise.reject("No school selected for verification");
 

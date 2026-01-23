@@ -27,6 +27,7 @@ const initialState = {
   class: "",
   parent: "",
   parent2: "",
+  paidFees: 0,
 
   // State for react-select value objects
   setClass: null,
@@ -71,6 +72,7 @@ class Modal extends React.Component {
       class: "",
       parent: "",
       parent2: "",
+      paidFees: 0,
       setClass: null,
       setRoute: null,
       setParent: null,
@@ -112,7 +114,7 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
 
-          const { names, route, gender, registration, class: className, parent, parent2 } = _this.state;
+          const { names, route, gender, registration, class: className, parent, parent2, paidFees } = _this.state;
           
           const payload = { 
             names, 
@@ -121,7 +123,8 @@ class Modal extends React.Component {
             registration, 
             class: className,
             parent, 
-            parent2 
+            parent2,
+            paidFees: parseFloat(paidFees) || 0
           };
 
           await _this.props.save(payload);
@@ -271,6 +274,12 @@ class Modal extends React.Component {
                             />
                           </div>
                         </div>
+                      </div>
+
+                      {/* Paid Fees */}
+                      <div className="col-lg-6">
+                        <label>Paid Fees:</label>
+                        <input type="number" className="form-control" name="paidFees" value={this.state.paidFees} onChange={(e) => this.setState({ paidFees: e.target.value })} />
                       </div>
 
                     </div>
