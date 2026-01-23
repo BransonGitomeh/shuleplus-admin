@@ -24,6 +24,8 @@ const SvgStudentsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3
 const SvgParentsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path> <circle cx="9" cy="7" r="4"></circle> <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path> <path d="M16 3.13a4 4 0 0 1 0 7.75"></path> </svg> );
 const SvgSettingsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <circle cx="12" cy="12" r="3"></circle> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path> </svg> );
 const SvgLibraryIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path> <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path> </svg> );
+const SvgResultsIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path> <path d="M22 12A10 10 0 0 0 12 2v10z"></path> </svg> );
+const SvgFinanceIcon = ({ style }) => ( <svg style={style} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <line x1="12" y1="1" x2="12" y2="23"></line> <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path> </svg> );
 
 
 const DEFAULT_TOP_NAV_BG_COLOR = '#FFFFFF';
@@ -160,9 +162,9 @@ class Navbar extends React.Component {
         { path: "/schedules", label: "Schedules" }, { path: "/classes", label: "Classes" },
         { path: "/teachers", label: "Teachers" }, { path: "/students", label: "Students" },
         { path: "/parents", label: "Parents" }, { path: "/settings/school", label: "School Details" },
-        { path: "/finance/fees", label: "Payment Management" },
-        { path: "/results", label: "Results Management" },
-        { path: "/terms", label: "Terms Management" },
+        { path: "/finance/fees", label: "Payment" },
+        { path: "/results", label: "Results" },
+        { path: "/terms", label: "Terms" },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up" },
@@ -291,9 +293,9 @@ class Navbar extends React.Component {
       { path: "/schedules", label: "Schedules", IconComponent: SvgSchedulesIcon }, { path: "/classes", label: "Classes", IconComponent: SvgClassesIcon },
       { path: "/teachers", label: "Teachers", IconComponent: SvgTeachersIcon }, { path: "/students", label: "Students", IconComponent: SvgStudentsIcon },
       { path: "/parents", label: "Parents", IconComponent: SvgParentsIcon }, { path: "/library", label: "Library", IconComponent: SvgLibraryIcon }, { path: "/settings/school", label: "School Details", IconComponent: SvgSettingsIcon },
-      { path: "/finance/fees", label: "Payment Management", IconComponent: SvgSettingsIcon },
-      { path: "/results", label: "Results Management", IconComponent: SvgClassesIcon },
-      { path: "/terms", label: "Terms Management", IconComponent: SvgSchedulesIcon },
+      { path: "/finance/fees", label: "Payment", IconComponent: SvgFinanceIcon },
+      { path: "/results", label: "Results", IconComponent: SvgResultsIcon },
+      { path: "/terms", label: "Terms", IconComponent: SvgSchedulesIcon },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `
@@ -449,8 +451,8 @@ class Navbar extends React.Component {
                         <li className="kt-menu__item"><Link to="/comms" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>SMS & Email</span></Link></li>
                         <li className="kt-menu__item"><Link to="/learning" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Learning</span></Link></li>
                         <li className="kt-menu__item"><Link to="/library" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Library</span></Link></li>
-                        <li className="kt-menu__item"><Link to="/finance/fees" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Fee Management</span></Link></li>
-                        <li className="kt-menu__item"><Link to="/results" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Results Management</span></Link></li>
+                        <li className="kt-menu__item"><Link to="/finance/fees" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Fee</span></Link></li>
+                        <li className="kt-menu__item"><Link to="/results" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Results</span></Link></li>
                     </ul>
                 </div>
             </div>

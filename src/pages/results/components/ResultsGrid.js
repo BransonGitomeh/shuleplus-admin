@@ -26,9 +26,9 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
                         <th style={{ minWidth: '200px', position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>
                             Student Name
                         </th>
-                        {subjects.map(subj => (
-                            <th key={subj.id} className="text-center" style={{ minWidth: '80px' }}>
-                                {subj.name.substring(0, 10)}
+                        {subjects && subjects.map(subj => (
+                            <th key={subj?.id} className="text-center" style={{ minWidth: '80px' }}>
+                                {(subj?.name || "Unknown").substring(0, 10)}
                             </th>
                         ))}
                         <th className="text-center">Avg</th>
@@ -43,45 +43,45 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
                         
                         return (
                             <tr key={student.id}>
-                                <td className="font-weight-bold" style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff' }}>
-                                    {student.names}
-                                </td>
-                                {subjects.map(subj => {
-                                    const val = getScore(student.id, subj.id);
-                                    const numVal = parseInt(val, 10);
-                                    if (!isNaN(numVal)) {
-                                        total += numVal;
-                                        count++;
-                                    }
+                            <td className="font-weight-bold" style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff' }}>
+                                 {student?.names || student?.id || "Unnamed Student"}
+                            </td>
+                            {(subjects || []).map(subj => {
+                                const val = getScore(student.id, subj.id);
+                                const numVal = parseInt(val, 10);
+                                if (!isNaN(numVal)) {
+                                    total += numVal;
+                                    count++;
+                                }
 
-                                    const isUpdated = updates && updates.hasOwnProperty(`${student.id}-${subj.id}`);
+                                const isUpdated = updates && updates.hasOwnProperty(`${student.id}-${subj.id}`);
 
-                                    return (
-                                        <td key={`${student.id}-${subj.id}`} className="p-1">
-                                            <input
-                                                type="number"
-                                                className={`form-control form-control-sm text-center ${isUpdated ? 'bg-light-warning' : ''}`}
-                                                value={val}
-                                                style={{ border: 'none', background: isUpdated ? '#fff8dd' : 'transparent' }}
-                                                onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
-                                                placeholder="-"
-                                            />
-                                        </td>
-                                    );
-                                })}
-                                <td className="text-center font-weight-bold bg-light">
-                                    {count > 0 ? (total / count).toFixed(0) : '-'}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                    {students.length === 0 && (
-                        <tr>
-                            <td colSpan={subjects.length + 2} className="text-center text-muted p-5">
-                                No students found.
+                                return (
+                                    <td key={`${student.id}-${subj.id}`} className="p-1">
+                                        <input
+                                            type="number"
+                                            className={`form-control form-control-sm text-center ${isUpdated ? 'bg-light-warning' : ''}`}
+                                            value={val}
+                                            style={{ border: 'none', background: isUpdated ? '#fff8dd' : 'transparent' }}
+                                            onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
+                                            placeholder="-"
+                                        />
+                                    </td>
+                                );
+                            })}
+                            <td className="text-center font-weight-bold bg-light">
+                                {count > 0 ? (total / count).toFixed(0) : '-'}
                             </td>
                         </tr>
-                    )}
+                    );
+                })}
+                {(!students || students.length === 0) && (
+                    <tr>
+                        <td colSpan={(subjects?.length || 0) + 2} className="text-center text-muted p-5">
+                            No students found.
+                        </td>
+                    </tr>
+                )}
                 </tbody>
             </table>
         </div>
