@@ -36,7 +36,9 @@ const BOTTOM_NAV_BG_COLOR = '#ffffff';
 const BOTTOM_NAV_TEXT_COLOR = '#212529';
 const BOTTOM_NAV_ICON_COLOR = '#212529';
 
-const LIGHT_GREY_HOVER_BG = '#f0f0f0'; // Example light grey
+const LIGHT_GREY_HOVER_BG = 'rgba(0, 0, 0, 0.03)'; // Subtle hover
+const GLASS_BACKDROP = 'blur(10px) saturate(180%)';
+const GLASS_BG = 'rgba(255, 255, 255, 0.75)';
 
 class Navbar extends React.Component {
   state = {
@@ -47,9 +49,9 @@ class Navbar extends React.Component {
     topNavbarHeight: 75,
     mobileTopBarHeight: 60,
     secondaryNavbarEffectiveHeight: 65,
-    gapBetweenNavbars: 20,
-    secondaryNavbarHorizontalMargin: 25,
-    isMobile: window.innerWidth < 992,
+    gapBetweenNavbars: 15,
+    secondaryNavbarHorizontalMargin: 20,
+    isMobile: window.innerWidth < 1024,
     isMobileMenuOpen: false, // State to control mobile menu
     openMobileSubmenu: null, // State for mobile accordion submenus
   };
@@ -145,6 +147,9 @@ class Navbar extends React.Component {
           { target: 'kt_header_mobile_topbar_toggler', state: 'kt-header-mobile__toolbar-topbar-toggler--active' }
         ]
       });
+      // Add custom styles for the offcanvas overlay to make it blurred
+      const overlay = document.querySelector('.kt-offcanvas-panel-overlay');
+      if (overlay) overlay.style.backdropFilter = 'blur(5px)';
     }
   }
 
@@ -183,17 +188,21 @@ class Navbar extends React.Component {
     ];
 
     const mobileMenuStyle = {
-      position: 'fixed', top: 0, left: 0, width: '300px', maxWidth: '80%', height: '100%', margin: '10px',
-      borderRadius: '12px', backgroundColor: '#fff', zIndex: 1005,
+      position: 'fixed', top: 0, left: 0, width: '280px', maxWidth: '85%', height: 'calc(100% - 20px)', margin: '10px',
+      borderRadius: '16px', backgroundColor: 'rgba(255, 255, 255, 0.95)', zIndex: 1005,
+      backdropFilter: GLASS_BACKDROP,
       transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(-110%)',
-      transition: 'transform 0.3s ease-in-out', boxShadow: '5px 0 15px rgba(0,0,0,0.1)',
-      overflowY: 'auto', padding: '20px', color: '#333'
+      transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+      boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+      overflowY: 'auto', padding: '25px', color: '#333'
     };
     const overlayStyle = {
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 1004,
-      display: isMobileMenuOpen ? 'block' : 'none', transition: 'opacity 0.3s ease',
+      backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: 1004,
+      display: isMobileMenuOpen ? 'block' : 'none', 
+      transition: 'opacity 0.4s ease',
       opacity: isMobileMenuOpen ? 1 : 0,
+      backdropFilter: 'blur(4px)',
     };
     const buttonStyle = {
       display: 'flex', alignItems: 'center', padding: '12px 15px', textDecoration: 'none',
@@ -208,12 +217,16 @@ class Navbar extends React.Component {
       <>
         <div style={overlayStyle} onClick={this.toggleMobileMenu}></div>
         <div style={mobileMenuStyle}>
-            <div style={{ padding: '0 15px 20px 15px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center' }}>
-                {selectedSchool?.logo ? (
-                    <img src={selectedSchool.logo} alt={selectedSchool.name} style={{ maxHeight: '40px', maxWidth: '100%', marginRight: '10px' }} />
-                ) : (
-                    <span style={{ fontSize: '1.5rem', fontWeight: 500 }}>{selectedSchool?.name || 'Shule Plus'}</span>
-                )}
+            <div style={{ padding: '0 5px 20px 5px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {selectedSchool?.logo ? (
+                        <img src={selectedSchool.logo} alt={selectedSchool.name} style={{ height: '32px', width: 'auto', borderRadius: '4px' }} />
+                    ) : null}
+                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>{selectedSchool?.name || 'Shule Plus'}</span>
+                </div>
+                <button onClick={this.toggleMobileMenu} style={{ border: 'none', background: '#f8fafc', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                    <i className="la la-close"></i>
+                </button>
             </div>
             <ul style={{ listStyle: 'none', padding: '10px 0 0 0', margin: 0 }}>
                 {/* School Switcher */}
@@ -232,35 +245,35 @@ class Navbar extends React.Component {
                     )}
                 </li>
                 {/* Main Links */}
-                <li><Link to="/home" style={linkStyle} onClick={this.toggleMobileMenu}>Reports</Link></li>
-                <li><Link to="/comms" style={linkStyle} onClick={this.toggleMobileMenu}>SMS & Email</Link></li>
-                <li><Link to="/learning" style={linkStyle} onClick={this.toggleMobileMenu}>Learning</Link></li>
-                <li><Link to="/library" style={linkStyle} onClick={this.toggleMobileMenu}>Library</Link></li>
+                <li><Link to="/home" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-dashboard" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Reports</Link></li>
+                <li><Link to="/comms" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-bullhorn" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> SMS & Email</Link></li>
+                <li><Link to="/learning" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-graduation-cap" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Learning</Link></li>
+                <li><Link to="/library" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-book" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Library</Link></li>
                  {/* Manage Data */}
                  <li>
                     <button onClick={() => this.toggleMobileSubmenu('manage')} style={buttonStyle}>
-                        Manage Data <i className={`la la-angle-${openMobileSubmenu === 'manage' ? 'down' : 'right'}`} style={{marginLeft: 'auto'}}></i>
+                        <i className="la la-database" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Manage Data <i className={`la la-angle-${openMobileSubmenu === 'manage' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
                     </button>
-                    {openMobileSubmenu === 'manage' && (
-                        <ul style={{listStyle: 'none', padding: 0, margin: '0 0 10px 0', backgroundColor: '#f9f9f9'}}>
+                    <div style={{ maxHeight: openMobileSubmenu === 'manage' ? '600px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
+                        <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
                             {manageDataItems.map(item => (
                                 <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
                             ))}
                         </ul>
-                    )}
+                    </div>
                 </li>
                 {/* Finance */}
                  <li>
                     <button onClick={() => this.toggleMobileSubmenu('finance')} style={buttonStyle}>
-                        Finance <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto'}}></i>
+                        <i className="la la-money" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Finance <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
                     </button>
-                    {openMobileSubmenu === 'finance' && (
-                        <ul style={{listStyle: 'none', padding: 0, margin: '0 0 10px 0', backgroundColor: '#f9f9f9'}}>
+                    <div style={{ maxHeight: openMobileSubmenu === 'finance' ? '200px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
+                        <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
                             {financeItems.map(item => (
                                 <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
                             ))}
                         </ul>
-                    )}
+                    </div>
                 </li>
             </ul>
         </div>
@@ -341,9 +354,9 @@ class Navbar extends React.Component {
         {fetchingSchools && <Pace color={paceLoaderColor} height={5} style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 2000 }} />}
 
         {/* DESKTOP TOP NAVBAR (Remains Fixed) */}
-        <div id="kt_header" className="kt-header kt-grid__item d-none d-lg-flex" style={{ backgroundColor: effectiveTopBarBgColor, alignItems: 'center', justifyContent: 'space-between', height: `${topNavbarHeight}px`, zIndex: 1002, position: 'fixed', top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)', padding: `0 25px` }}>
-          <div className="kt-header__brand">
-            {!selectedSchool || Object.keys(selectedSchool).length === 0 || !selectedSchool.name ? ( <div className="kt-spinner kt-spinner--sm kt-spinner--brand" /> ) : ( <Link to="/home"> <img alt="School Logo" style={{ maxHeight: '50px', width: 'auto', borderRadius: '6px' }} src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'} /> </Link> )}
+        <div id="kt_header" className="kt-header kt-grid__item d-none d-lg-flex" style={{ backgroundColor: useSchoolTheme ? effectiveTopBarBgColor : GLASS_BG, backdropFilter: GLASS_BACKDROP, alignItems: 'center', justifyContent: 'space-between', height: `${topNavbarHeight}px`, zIndex: 1002, position: 'fixed', top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '16px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)', padding: `0 30px`, border: '1px solid rgba(255, 255, 255, 0.4)' }}>
+          <div className="kt-header__brand" style={{ padding: 0 }}>
+            {!selectedSchool || Object.keys(selectedSchool).length === 0 || !selectedSchool.name ? ( <div className="kt-spinner kt-spinner--sm kt-spinner--brand" /> ) : ( <Link to="/home"> <img alt="School Logo" style={{ maxHeight: '42px', width: 'auto', borderRadius: '8px' }} src={selectedSchool.logo || '/assets/media/logos/ic_launcher.png'} /> </Link> )}
           </div>
           
           <div className="kt-header-menu-wrapper" style={{ flex: '1', display: 'flex', justifyContent: 'center' }}>
@@ -431,21 +444,21 @@ class Navbar extends React.Component {
 
         {/* MOBILE TOP NAVBAR (Remains Fixed) */}
         {}
-        <div id="kt_header_mobile" className="kt-header-mobile kt-header-mobile--fixed d-lg-none" style={{ backgroundColor: effectiveTopBarBgColor, height: `${mobileTopBarHeight}px`, top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '12px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.07)', zIndex: 1002, }}>
-          <div className="kt-header-mobile__toolbar" style={{ paddingLeft: '15px' }}>
-            <button className="kt-header-mobile__toolbar-toggler kt-header-mobile__toolbar-toggler--left" onClick={this.toggleMobileMenu}>
-              <span style={{backgroundColor: effectiveTopBarIconColor}} />
+        <div id="kt_header_mobile" className="kt-header-mobile kt-header-mobile--fixed d-lg-none" style={{ backgroundColor: useSchoolTheme ? effectiveTopBarBgColor : GLASS_BG, backdropFilter: GLASS_BACKDROP, height: `${mobileTopBarHeight}px`, top: `${gapBetweenNavbars}px`, left: `${secondaryNavbarHorizontalMargin}px`, right: `${secondaryNavbarHorizontalMargin}px`, borderRadius: '12px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)', zIndex: 1002, padding: '0 15px', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
+          <div className="kt-header-mobile__toolbar" style={{ padding: 0, width: '40px' }}>
+            <button className="kt-header-mobile__toolbar-toggler kt-header-mobile__toolbar-toggler--left" onClick={this.toggleMobileMenu} style={{ marginLeft: 0 }}>
+              <span style={{backgroundColor: useSchoolTheme ? '#fff' : '#1e293b'}} />
             </button>
           </div>
-          <div className="kt-header-mobile__logo" style={{ flexGrow: 1, textAlign: 'center' }}>
-              <Link to="/home" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-                  {selectedSchool?.logo && <img alt="School Logo" style={{ maxHeight: '35px', width: 'auto', borderRadius: '4px', marginRight: '10px' }} src={selectedSchool.logo} />}
-                  <span style={{ fontSize: '1rem', fontWeight: 500, color: effectiveTopBarTextColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}> {selectedSchool?.name || 'Shule Plus'} </span>
+          <div className="kt-header-mobile__logo" style={{ flexGrow: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Link to="/home" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
+                  {selectedSchool?.logo && <img alt="School Logo" style={{ maxHeight: '30px', width: 'auto', borderRadius: '6px' }} src={selectedSchool.logo} />}
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, color: effectiveTopBarTextColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}> {selectedSchool?.name || 'Shule Plus'} </span>
               </Link>
           </div>
-          <div className="kt-header-mobile__toolbar" style={{ paddingRight: '15px' }}>
-            <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler">
-              <img alt="User" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '30px', height: '30px', borderRadius: '50%' }}/>
+          <div className="kt-header-mobile__toolbar" style={{ padding: 0, width: '40px', justifyContent: 'flex-end' }}>
+            <button className="kt-header-mobile__toolbar-topbar-toggler" id="kt_header_mobile_topbar_toggler" style={{ marginRight: 0 }}>
+              <img alt="User" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)' }}/>
             </button>
           </div>
         </div>
@@ -453,10 +466,10 @@ class Navbar extends React.Component {
         <div style={{ height: `${(fixedContentSpacerHeight-60)}px` }} />
 
         {/* SECONDARY NAVBAR (Scrolling) */}
-        <div id="kt_header_secondary" className="d-none d-lg-flex" style={{ backgroundColor: BOTTOM_NAV_BG_COLOR, justifyContent: 'space-between', alignItems: 'center', height: `${secondaryNavbarEffectiveHeight}px`, position: 'relative', marginLeft: `${secondaryNavbarHorizontalMargin}px`, marginRight: `${secondaryNavbarHorizontalMargin}px`, marginBottom: `${gapBetweenNavbars}px`, borderRadius: '12px', boxShadow: '0 5px 25px rgba(0, 0, 0, 0.08)', padding: '0 25px', }}>
+        <div id="kt_header_secondary" className="d-none d-lg-flex" style={{ backgroundColor: GLASS_BG, backdropFilter: GLASS_BACKDROP, justifyContent: 'space-between', alignItems: 'center', height: `${secondaryNavbarEffectiveHeight}px`, position: 'relative', marginLeft: `${secondaryNavbarHorizontalMargin}px`, marginRight: `${secondaryNavbarHorizontalMargin}px`, marginBottom: `${gapBetweenNavbars}px`, borderRadius: '16px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.06)', padding: '0 30px', border: '1px solid rgba(255, 255, 255, 0.4)', }}>
             <div className="kt-header__brand">
                 <Link to="/home">
-                    <div style={{ fontSize: '1.25rem', color: 'black', letterSpacing: '0.5px' }}>{selectedSchool?.name || 'Shule Plus'}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#1e293b', letterSpacing: '0.2px' }}>{selectedSchool?.name || 'Shule Plus'}</div>
                 </Link>
             </div>
             <div id="kt_bottom_nav_menu_container" className="kt-header-menu-wrapper">

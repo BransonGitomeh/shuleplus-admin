@@ -447,16 +447,18 @@ class CurriculumManagerV5 extends React.Component {
         const subjectsLoading = selectedGrade && !selectedGradeObj?.subjects;
 
         return <>
-            <div className="cm-column">
-                <div className="cm-column-header"><h5>Grades</h5><button type="button" className="cm-add-btn" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus"></i></button></div>
+            <div className="cm-column horizontal-scroll-mask">
+                <div className="cm-column-header" style={{ padding: '0 20px' }}>
+                    <h5>Grades / Levels</h5>
+<button type="button" className="cm-add-btn" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus"></i></button></div>
                 <div className="cm-column-body">
                     <Search title="grades" onSearch={this.onGradeSearch} value={gradeSearchTerm} />
                     <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} noItemsText="No grades found." />
                 </div>
             </div>
             {selectedGrade && (
-                <div className="cm-column">
-                    <div className="cm-column-header"><h5>{selectedGradeObj?.name || '...'} Subjects</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubjectModalRef.current.show()} title="Add Subject"><i className="la la-plus"></i></button></div>
+                <div className="cm-column horizontal-scroll-mask">
+                    <div className="cm-column-header" style={{ padding: '0 20px' }}><h5>{selectedGradeObj?.name || '...'} Subjects</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubjectModalRef.current.show()} title="Add Subject"><i className="la la-plus"></i></button></div>
                     <div className="cm-column-body">
                         <Search title="subjects" onSearch={this.onSubjectSearch} value={subjectSearchTerm} />
                         <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} isLoading={subjectsLoading} onAdd={() => this.addSubjectModalRef.current.show()} addItemText="Add Subject" />
@@ -483,9 +485,9 @@ class CurriculumManagerV5 extends React.Component {
         const questionsLoading = selectedSubtopic && !currentSubtopicObj?.questions;
 
         return (
-            <div className="cm-column cm-column-large">
-                <div className="cm-tab-header">
-                    <button className={`cm-tab-btn ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')}>Content</button>
+            <div className="cm-column cm-column-large horizontal-scroll-mask">
+                <div className="cm-column-header" style={{ borderBottom: 'none', padding: '0 20px' }}>
+                 <button className={`cm-tab-btn ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')}>Content</button>
                     <button className={`cm-tab-btn ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')}>Student Attempts</button>
                 </div>
                 <div className="cm-column-body" style={{ padding: '0' }}>
