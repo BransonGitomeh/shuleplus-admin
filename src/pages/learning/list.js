@@ -260,18 +260,58 @@ class CurriculumManagerV5 extends React.Component {
         }
     };
 
-    refreshCurrentSelectionsAndFilters = () => { if (this.state.isLoading) return; const { _masterGradesList, school, selectedGrade, gradeSearchTerm, selectedSubject, subjectSearchTerm, selectedTopic, topicSearchTerm, selectedSubtopic, subtopicSearchTerm, selectedQuestion, questionSearchTerm, optionSearchTerm, questionImagesMap } = this.state; let newState = {}; const gradesList = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder); newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name'); const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null; const subjectsList = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder); newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name'); const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null; const topicsList = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder); newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name'); const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null; const subtopicsList = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder); newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name'); const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null; 
-    
-    // Process questions with images
-    const questionsListRaw = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder); 
-    const questionsList = questionsListRaw.map(q => ({ ...q, images: questionImagesMap[q.id] || [] }));
+    refreshCurrentSelectionsAndFilters = () => { 
+        if (this.state.isLoading) return; 
+        const { _masterGradesList, school, selectedGrade, gradeSearchTerm, selectedSubject, subjectSearchTerm, selectedTopic, topicSearchTerm, selectedSubtopic, subtopicSearchTerm, selectedQuestion, questionSearchTerm, optionSearchTerm, questionImagesMap } = this.state; 
+        let newState = {}; 
 
-    newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name'); const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null; const optionsList = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder); newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value'); this.setState(newState, () => {
-        // Trigger fetch for displayed questions if we have any
-        if (newState.filteredQuestions && newState.filteredQuestions.length > 0) {
-            this.fetchQuestionImages(newState.filteredQuestions);
-        }
-    }); };
+        // Filter and sort Grades
+        const gradesListRaw = this._sortListByOrderArray(_masterGradesList, school?.gradeOrder);
+        const gradesList = gradesListRaw.filter(g => g.name); // ONLY show if it has a name
+        newState.grades = this._applyFilter(gradesList, gradeSearchTerm, 'name'); 
+
+        const currentGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null; 
+        
+        // Filter and sort Subjects
+        const subjectsListRaw = this._sortListByOrderArray(currentGradeObj?.subjects, currentGradeObj?.subjectsOrder); 
+        const subjectsList = subjectsListRaw.filter(s => s.name);
+        newState.filteredSubjects = this._applyFilter(subjectsList, subjectSearchTerm, 'name'); 
+        
+        const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null; 
+        
+        // Filter and sort Topics
+        const topicsListRaw = this._sortListByOrderArray(currentSubjectObj?.topics, currentSubjectObj?.topicsOrder); 
+        const topicsList = topicsListRaw.filter(t => t.name);
+        newState.filteredTopics = this._applyFilter(topicsList, topicSearchTerm, 'name'); 
+        
+        const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null; 
+        
+        // Filter and sort Subtopics
+        const subtopicsListRaw = this._sortListByOrderArray(currentTopicObj?.subtopics, currentTopicObj?.subtopicOrder); 
+        const subtopicsList = subtopicsListRaw.filter(st => st.name);
+        newState.filteredSubtopics = this._applyFilter(subtopicsList, subtopicSearchTerm, 'name'); 
+        
+        const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null; 
+        
+        // Process questions with images
+        const questionsListRaw = this._sortListByOrderArray(currentSubtopicObj?.questions, currentSubtopicObj?.questionsOrder); 
+        const questionsList = questionsListRaw.filter(q => q.name).map(q => ({ ...q, images: questionImagesMap[q.id] || [] }));
+        newState.filteredQuestions = this._applyFilter(questionsList, questionSearchTerm, 'name'); 
+        
+        const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null; 
+        
+        // Filter and sort Options (use 'value' instead of 'name')
+        const optionsListRaw = this._sortListByOrderArray(currentQuestionObj?.options, currentQuestionObj?.optionsOrder); 
+        const optionsList = optionsListRaw.filter(o => o.value);
+        newState.filteredOptions = this._applyFilter(optionsList, optionSearchTerm, 'value'); 
+
+        this.setState(newState, () => {
+            // Trigger fetch for displayed questions if we have any
+            if (newState.filteredQuestions && newState.filteredQuestions.length > 0) {
+                this.fetchQuestionImages(newState.filteredQuestions);
+            }
+        }); 
+    };
     clearSelectionsAndDataFromLevel = (levelName) => { const newState = {}; const levels = ['grade', 'subject', 'topic', 'subtopic', 'question', 'option']; const startIndex = levels.indexOf(levelName); if (startIndex === -1) return {}; if (startIndex <= 1) { newState.activeTab = 'content'; newState.selectedUserId = null; newState.selectedAttemptId = null; } for (let i = startIndex; i < levels.length; i++) { const level = levels[i]; const capitalizedLevel = level.charAt(0).toUpperCase() + level.slice(1); newState[`selected${capitalizedLevel}`] = null; const childIndex = i + 1; if (childIndex < levels.length) { const childLevel = levels[childIndex]; const capitalizedChildLevel = childLevel.charAt(0).toUpperCase() + childLevel.slice(1); newState[`filtered${capitalizedChildLevel}s`] = []; } } return newState; };
     
     // --- Event Handlers (CRUD, Select, Search) ---
