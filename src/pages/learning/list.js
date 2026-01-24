@@ -192,17 +192,48 @@ class CurriculumManagerV5 extends React.Component {
         }, () => {
             this.refreshCurrentSelectionsAndFilters();
             if (this.state.selectedSubject) this.processLessonAttemptsForSubject(this.state.selectedSubject);
+            
+            // Restore scroll position once data is ready and rendered
+            if (isDataReady && stateSource.scrollLeft !== undefined && this.scrollContainerRef.current) {
+                this.scrollContainerRef.current.scrollLeft = stateSource.scrollLeft;
+            }
         });
     }
 
     getValidatedState = (sourceState, masterGradesList) => {
-        const validated = { selectedGrade: null, selectedSubject: null, selectedTopic: null, selectedSubtopic: null, selectedQuestion: null, gradeSearchTerm: sourceState.gradeSearchTerm || '', subjectSearchTerm: sourceState.subjectSearchTerm || '', topicSearchTerm: sourceState.topicSearchTerm || '', subtopicSearchTerm: sourceState.subtopicSearchTerm || '', questionSearchTerm: sourceState.questionSearchTerm || '', optionSearchTerm: sourceState.optionSearchTerm || '', activeTab: sourceState.activeTab || 'content', };
+        const validated = { 
+            selectedGrade: null, selectedSubject: null, selectedTopic: null, selectedSubtopic: null, selectedQuestion: null, 
+            gradeSearchTerm: sourceState.gradeSearchTerm || '', subjectSearchTerm: sourceState.subjectSearchTerm || '', 
+            topicSearchTerm: sourceState.topicSearchTerm || '', subtopicSearchTerm: sourceState.subtopicSearchTerm || '', 
+            questionSearchTerm: sourceState.questionSearchTerm || '', optionSearchTerm: sourceState.optionSearchTerm || '', 
+            activeTab: sourceState.activeTab || 'content',
+            scrollLeft: sourceState.scrollLeft || 0
+        };
         try { if (!sourceState) return validated; const grade = masterGradesList.find(g => g.id === sourceState.selectedGrade); if (!grade) return validated; validated.selectedGrade = grade.id; const subject = (grade.subjects || []).find(s => s.id === sourceState.selectedSubject); if (!subject) return validated; validated.selectedSubject = subject.id; const topic = (subject.topics || []).find(t => t.id === sourceState.selectedTopic); if (!topic) return validated; validated.selectedTopic = topic.id; const subtopic = (topic.subtopics || []).find(st => st.id === sourceState.selectedSubtopic); if (!subtopic) return validated; validated.selectedSubtopic = subtopic.id; const question = (subtopic.questions || []).find(q => q.id === sourceState.selectedQuestion); if (question) validated.selectedQuestion = question.id; } catch (error) { console.error("Failed to parse or validate state:", error); }
         return validated;
     }
 
-    saveStateToLocalStorage = () => { if (this.state.isLoading || !this.state.school) return; const { selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, activeTab } = this.state; localStorage.setItem("learningState", JSON.stringify({ selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, activeTab })); };
-    componentDidUpdate(prevProps, prevState) { const persistedStateKeys = ['selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion', 'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm', 'activeTab']; const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key])); if (hasPersistedStateChanged) { this.saveStateToLocalStorage(); } if (prevState.selectedSubject !== this.state.selectedSubject && this.state.selectedSubject) { this.processLessonAttemptsForSubject(this.state.selectedSubject); } }
+    saveStateToLocalStorage = () => { 
+        if (this.state.isLoading || !this.state.school) return; 
+        const { selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, activeTab } = this.state; 
+        const scrollLeft = this.scrollContainerRef.current ? this.scrollContainerRef.current.scrollLeft : 0;
+        localStorage.setItem("learningState", JSON.stringify({ 
+            selectedGrade, selectedSubject, selectedTopic, selectedSubtopic, selectedQuestion, 
+            gradeSearchTerm, subjectSearchTerm, topicSearchTerm, subtopicSearchTerm, 
+            questionSearchTerm, optionSearchTerm, activeTab, scrollLeft 
+        })); 
+    };
+
+    componentDidUpdate(prevProps, prevState) { 
+        const persistedStateKeys = ['selectedGrade', 'selectedSubject', 'selectedTopic', 'selectedSubtopic', 'selectedQuestion', 'gradeSearchTerm', 'subjectSearchTerm', 'topicSearchTerm', 'subtopicSearchTerm', 'questionSearchTerm', 'optionSearchTerm', 'activeTab']; 
+        const hasPersistedStateChanged = persistedStateKeys.some(key => JSON.stringify(prevState[key]) !== JSON.stringify(this.state[key])); 
+        if (hasPersistedStateChanged) { 
+            this.saveStateToLocalStorage(); 
+        } 
+        if (prevState.selectedSubject !== this.state.selectedSubject && this.state.selectedSubject) { 
+            this.processLessonAttemptsForSubject(this.state.selectedSubject); 
+        } 
+    }
     
     fetchQuestionImages = async (questions) => {
         if (!questions || questions.length === 0) return;
@@ -444,7 +475,7 @@ class CurriculumManagerV5 extends React.Component {
                 
                 <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                     <button onClick={() => this.scrollBy(-400)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
-                    <div ref={this.scrollContainerRef} className="scrolling-wrapper">
+                    <div ref={this.scrollContainerRef} className="scrolling-wrapper" onScroll={this.saveStateToLocalStorage}>
                         {this.renderContentColumns()}
                     </div>
                     <button onClick={() => this.scrollBy(400)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
