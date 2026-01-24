@@ -256,7 +256,7 @@ const DraggableListItem = ({
 
   const hasRichContent = safeVideos.length > 0 || safeImages.length > 0 || safeAttachments.length > 0;
   
-  const mainTextContent = item[primaryDisplayKey] || item.name || `Item ${item.id !== undefined ? item.id : index}`;
+  const mainTextContent = item[primaryDisplayKey] || item.name || (id && String(id).length > 20 ? "..." : `Item ${id !== undefined ? id : index}`);
   const isHTML = typeof mainTextContent === 'string' && /<[a-z][\s\S]*>/i.test(mainTextContent);
 
   return (

@@ -178,9 +178,18 @@ class CurriculumManagerV5 extends React.Component {
         const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
         if (!activeSchool) { this.setState({ isLoading: false, school: null, _masterGradesList: [] }); return; }
         const masterGradesList = activeSchool.grades || [];
+        
+        // Refined loading logic: Stay "loading" if we have placeholder grades (no names yet)
+        const isDataReady = masterGradesList.length === 0 || masterGradesList.some(g => g.name);
+        
         const stateSource = this.state.isLoading ? JSON.parse(localStorage.getItem("learningState") || '{}') : this.state;
         const validatedState = this.getValidatedState(stateSource, masterGradesList);
-        this.setState({ ...validatedState, school: activeSchool, _masterGradesList: masterGradesList, isLoading: false, }, () => {
+        this.setState({ 
+            ...validatedState, 
+            school: activeSchool, 
+            _masterGradesList: masterGradesList, 
+            isLoading: this.state.isLoading ? !isDataReady : false, 
+        }, () => {
             this.refreshCurrentSelectionsAndFilters();
             if (this.state.selectedSubject) this.processLessonAttemptsForSubject(this.state.selectedSubject);
         });
