@@ -265,10 +265,11 @@ var Data = (function () {
             grades { id subjects { id topics { id subtopics { id questions { id options { id value correct } } } } } }
         }`;
 
-        // --- CORRECTED FRAGMENT TO FETCH ATTEMPTS AND EVENTS ---
         const FRAGMENT_LESSON_DATA = `fragment LessonData on school {
             grades {
+                id
                 subjects {
+                    id
                     lessonAttempts {
                         id
                         lessonId
