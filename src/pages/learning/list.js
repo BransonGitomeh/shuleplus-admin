@@ -152,22 +152,23 @@ class CurriculumManagerV5 extends React.Component {
             .draggable-generic-list-item.selected { border-left: 4px solid var(--cm-primary-color) !important; background-color: var(--cm-primary-bg-light) !important; font-weight: 500; }
             
             /* Student Attempts Tab Styles */
-            .attempts-grid { display: grid; grid-template-columns: 320px 380px 1fr; gap: 0; flex-grow: 1; height: 100%; border-top: 1px solid #f1f5f9; }
-            .attempts-column { border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; background: #fff; overflow: hidden; }
-            .attempts-column:last-child { border-right: none; background: #f8fafc; }
+            .attempts-grid { display: grid; grid-template-columns: 280px 320px 1fr; gap: 0; flex-grow: 1; height: 100%; border-top: 1px solid #f1f5f9; }
+            .attempts-column { border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; background: #fff; overflow: hidden; min-width: 0; }
+            .attempts-column:last-child { border-right: none; background: #f8fafc; flex-grow: 1; }
             .attempts-column .list-group { border: none; padding: 1rem; overflow-y: auto; flex-grow: 1; }
-            .attempts-column .list-group-item { border: 1px solid transparent; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; padding: 1rem; }
+            .attempts-column .list-group-item { border: 1px solid transparent; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; padding: 1rem; position: relative; }
             .attempts-column .list-group-item:hover { background-color: #f1f5f9; }
-            .attempts-column .list-group-item.active { background-color: var(--cm-primary-bg-light); border-color: transparent; color: #1e293b; box-shadow: 0 2px 4px rgba(88, 103, 221, 0.1); }
-            .attempts-column h6 { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; padding: 1.25rem 1.5rem 0.5rem; margin: 0; flex-shrink: 0; }
+            .attempts-column .list-group-item.active { background-color: var(--cm-primary-bg-light); border-color: var(--cm-primary-color); color: #1e293b; box-shadow: 0 2px 4px rgba(88, 103, 221, 0.1); }
+            .attempts-column h6 { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; padding: 1.25rem 1.5rem 0.5rem; margin: 0; flex-shrink: 0; border-bottom: 1px solid #f1f5f9; background: #fff; }
             
             .user-list-item.active { font-weight: 600; }
-            .student-sub-item { padding-left: 1.5rem; font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+            .student-sub-item { font-size: 0.75rem; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+            .student-reg-badge { font-size: 10px; background: #f1f5f9; color: #64748b; padding: 0px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0; }
             
             .attempt-list-item-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-            .attempt-score-badge { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-            .attempt-score-badge.low-score { background-color: #fff1f2; color: #e11d48; }
-            .attempt-score-badge.high-score { background-color: #f0fdf4; color: #16a34a; }
+            .attempt-score-badge { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.05); flex-shrink: 0; }
+            .attempt-score-badge.low-score { background-color: #fff1f2; color: #e11d48; border: 1px solid #fecaca; }
+            .attempt-score-badge.high-score { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
             
             .attempt-details-container { width: 100%; padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
             .attempt-details-card { width: 100%; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
@@ -175,9 +176,25 @@ class CurriculumManagerV5 extends React.Component {
             .attempt-event-item { transition: transform 0.2s; display: flex; gap: 1rem; padding: 1rem 0; }
             .attempt-event-item:hover { transform: translateX(5px); }
 
-            image-answer { width: 70%; }
-            
             /* Answer Displays */
+            .answer-details { padding: 8px 1.5rem; background: #fff; }
+            .option-display { padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #64748b; }
+            .option-display i { font-size: 1rem; }
+            .option-display.selected-correct { background-color: #f0fdf4; border-color: #bbf7d0; color: #16a34a; font-weight: 600; }
+            .option-display.selected-incorrect { background-color: #fff1f2; border-color: #fecaca; color: #e11d48; font-weight: 600; }
+            .option-display.correct { border-style: dashed; border-color: #16a34a; color: #16a34a; }
+            
+            .text-answer { padding: 1rem; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+            .image-answer img { max-width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; cursor: zoom-in; margin-top: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+            
+            .attempt-event-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+            .attempt-event-icon.correct { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+            .attempt-event-icon.incorrect { background: #fff1f2; color: #e11d48; border: 1px solid #fecaca; }
+            .attempt-event-details { flex-grow: 1; }
+            .attempt-event-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+            .attempt-event-title { font-weight: 600; font-size: 0.85rem; color: #334155; }
+            .attempt-event-meta { font-size: 0.7rem; color: #94a3b8; display: flex; flex-direction: column; align-items: flex-end; }
+            .attempt-event-points { color: var(--cm-primary-color); font-weight: 700; margin-bottom: 2px; }
             .attempt-event-icon { flex-shrink: 0; width: 24px; text-align: center; }
             .attempt-event-icon.correct { color: #16a34a; }
             .attempt-event-icon.incorrect { color: #ef4444; }
@@ -470,21 +487,105 @@ class CurriculumManagerV5 extends React.Component {
     renderAnswerDetails = (question, event) => {
         if (!event || !event.userAnswer) return null;
         let answer;
-        try { answer = JSON.parse(event.userAnswer); } catch(e) { return <div className="text-danger">Error parsing answer data.</div> }
+        try { 
+            answer = typeof event.userAnswer === 'string' ? JSON.parse(event.userAnswer) : event.userAnswer; 
+        } catch(e) { 
+            return <div className="text-danger">Error parsing answer data.</div> 
+        }
+
         switch (question.type) {
             case 'SINGLECHOICE': case 'MULTICHOICE':
                 const selectedIds = new Set(answer.selectedOptionIds || [answer.selectedOptionId].filter(Boolean));
-                return ( <div className="answer-details"> {(question.options || []).map(option => { const isSelected = selectedIds.has(option.id); const isCorrect = option.correct; let className = 'option-display'; let icon = 'la-circle-thin'; if (isCorrect && isSelected) { className += ' selected-correct'; icon = 'la-check-circle'; } else if (isCorrect) { className += ' correct'; icon = 'la-check-circle-o'; } else if (isSelected && !isCorrect) { className += ' selected-incorrect'; icon = 'la-times-circle'; } return (<div key={option.id} className={className}><i className={`la ${icon}`}></i> {option.value}</div>); })} </div> );
-            case 'TEXT': return (<div className="answer-details text-answer"><p><strong>Student's Answer:</strong> {answer.inputText || 'N/A'}</p></div>);
-            case 'CAMERA': return ( <div className="answer-details image-answer"> <p><strong>Student's Submission:</strong></p> {answer.imageData ? <img src={answer.imageData} alt="Student submission" onClick={() => window.open(answer.imageData, '_blank')} /> : <p>No image submitted.</p> } </div> );
-            default: return <div className="answer-details"><p className="text-muted">Answer display not implemented for type: {question.type}</p></div>;
+                return (
+                    <div className="answer-details">
+                        {(question.options || []).map(option => {
+                            const isSelected = selectedIds.has(option.id);
+                            const isCorrect = option.correct;
+                            let className = 'option-display';
+                            let icon = 'la-circle-thin';
+                            if (isCorrect && isSelected) { className += ' selected-correct'; icon = 'la-check-circle'; }
+                            else if (isCorrect) { className += ' correct'; icon = 'la-check-circle-o'; }
+                            else if (isSelected && !isCorrect) { className += ' selected-incorrect'; icon = 'la-times-circle'; }
+                            return (<div key={option.id} className={className}><i className={`la ${icon}`}></i> {option.value}</div>);
+                        })}
+                    </div>
+                );
+            case 'TEXT': 
+                return (
+                    <div className="answer-details">
+                        <div className="text-answer">
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Student Answer</div>
+                            <div style={{ fontSize: '0.9rem', color: '#1e293b' }}>{answer.inputText || 'No text provided.'}</div>
+                        </div>
+                    </div>
+                );
+            case 'CAMERA': 
+                return (
+                    <div className="answer-details image-answer">
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Uploaded Submission</div>
+                        {answer.imageData ? 
+                            <img src={answer.imageData} alt="Student submission" onClick={() => window.open(answer.imageData, '_blank')} title="Click to view full size" /> 
+                            : <div className="text-muted italic">No image was captured.</div>
+                        }
+                    </div>
+                );
+            case 'INFORMATION':
+                return <div className="answer-details"><div className="text-muted small italic">Informational content - no answer required.</div></div>;
+            default: 
+                return <div className="answer-details"><p className="text-muted small">Display details for {question.type} coming soon.</p></div>;
         }
     }
     
     renderEventsForQuestion = (question, events) => {
-        if (!events || events.length === 0) return <div className="skipped-question">Question was skipped.</div>;
+        if (!events || events.length === 0) return <div className="p-4 text-center text-muted italic small border-top">This question was not reached or was skipped.</div>;
         const maxPoints = question.points || 5; 
-        return ( <div className="attempt-events-timeline"> {events.map(event => { const eventTime = moment(event.eventTimestamp); if (event.eventType === 'check_attempt') { const isCorrect = event.isCorrect; const pointsEarned = typeof event.pointsEarned === 'number' ? event.pointsEarned : (isCorrect ? maxPoints : 0); return ( <div key={event.id} className="attempt-event-item"> <div className={`attempt-event-icon ${isCorrect ? 'correct' : 'incorrect'}`}><i className={`la ${isCorrect ? 'la-check' : 'la-times'}`}></i></div> <div className="attempt-event-details"> <div className="attempt-event-header"> <span className="attempt-event-title">Answer Checked</span> <div className="attempt-event-meta"> <span className="attempt-event-points" title={`Earned ${pointsEarned} of ${maxPoints} points`}><i className="la la-diamond"></i> {pointsEarned}/{maxPoints}</span> <span title={eventTime.format('lll')}>{eventTime.fromNow()}</span> </div> </div> <div className="attempt-event-body">{this.renderAnswerDetails(question, event)}</div> </div> </div> ); } if (event.eventType === 'question_viewed') { return ( <div key={event.id} className="attempt-event-item"> <div className="attempt-event-icon"><i className="la la-eye"></i></div> <div className="attempt-event-details" style={{paddingTop: '2px'}}> <div className="attempt-event-header"> <span className="attempt-event-title">Question Viewed</span> <div className="attempt-event-meta"><span title={eventTime.format('lll')}>{eventTime.fromNow()}</span></div> </div> </div> </div> ); } return null; })} </div> );
+        
+        return (
+            <div className="attempt-events-timeline">
+                {events.map((event, idx) => {
+                    const eventTime = moment(event.eventTimestamp);
+                    if (event.eventType === 'check_attempt') {
+                        const isCorrect = event.isCorrect;
+                        const pointsEarned = typeof event.pointsEarned === 'number' ? event.pointsEarned : (isCorrect ? maxPoints : 0);
+                        return (
+                            <div key={event.id || idx} className="attempt-event-item">
+                                <div className={`attempt-event-icon ${isCorrect ? 'correct' : 'incorrect'}`}>
+                                    <i className={`la ${isCorrect ? 'la-check' : 'la-times'}`}></i>
+                                </div>
+                                <div className="attempt-event-details">
+                                    <div className="attempt-event-header">
+                                        <span className="attempt-event-title">Attempt #{events.filter((e, i) => i <= idx && e.eventType === 'check_attempt').length}</span>
+                                        <div className="attempt-event-meta">
+                                            <span className="attempt-event-points"><i className="la la-diamond"></i> {pointsEarned}/{maxPoints}</span>
+                                            <span title={eventTime.format('lll')}>{eventTime.fromNow()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="attempt-event-body">
+                                        {this.renderAnswerDetails(question, event)}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+                    if (event.eventType === 'question_viewed' && idx === 0) {
+                        return (
+                            <div key={event.id || idx} className="attempt-event-item" style={{ opacity: 0.6, padding: '0.5rem 0' }}>
+                                <div className="attempt-event-icon" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}><i className="la la-eye"></i></div>
+                                <div className="attempt-event-details">
+                                    <div className="attempt-event-header">
+                                        <span className="attempt-event-title" style={{ fontSize: '0.75rem' }}>First Viewed</span>
+                                        <div className="attempt-event-meta">
+                                            <span title={eventTime.format('lll')}>{eventTime.fromNow()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })}
+            </div>
+        );
     }
 
     renderContentColumns() {
@@ -618,8 +719,16 @@ class CurriculumManagerV5 extends React.Component {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: selectedUserId === user.id ? '#fff' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.8rem' }}>{user.name.charAt(0)}</div>
                                 <div>
-                                    <div style={{ fontSize: '0.9rem', color: selectedUserId === user.id ? '#1e293b' : '#334155' }}>{user.name}</div>
-                                    {user.students && user.students.map(student => (<div key={student.id} className="student-sub-item" style={{marginLeft: '-32px'}}>{student.names}</div>))}
+                                    <div style={{ fontSize: '0.9rem', color: selectedUserId === user.id ? '#1e293b' : '#334155', fontWeight: selectedUserId === user.id ? 700 : 500 }}>{user.name}</div>
+                                    <div className="student-list-metadata" style={{ marginTop: '4px' }}>
+                                        {user.students && user.students.map(student => (
+                                            <div key={student.id} className="student-sub-item">
+                                                <i className="la la-user-graduate" style={{ fontSize: '0.8rem' }}></i>
+                                                <span>{student.names}</span>
+                                                {student.registration && <span className="student-reg-badge">{student.registration}</span>}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>)) : (<div className="text-center p-5 text-muted"><i className="la la-users" style={{fontSize: '3rem', opacity: 0.2, marginBottom: '1rem'}}></i><br/>No student activity found yet.</div>)
@@ -631,11 +740,16 @@ class CurriculumManagerV5 extends React.Component {
                         <div key={attempt.id} className={`list-group-item ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}>
                             <div className="attempt-list-item-content">
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Submission {attemptsForSelectedUser.length - index}</div>
-                                    <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '2px' }}><i className="la la-calendar"></i> {moment(attempt.startedAt).format('MMM D, h:mm a')}</div>
-                                    <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: 500 }}><span style={{color: '#94a3b8'}}>Lesson:</span> {this.findLessonById(attempt.lessonId)?.name || '...'}</div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: selectedAttemptId === attempt.id ? 'var(--cm-primary-color)' : '#1e293b' }}>Submission {attemptsForSelectedUser.length - index}</div>
+                                    <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}><i className="la la-calendar"></i> {moment(attempt.startedAt).format('MMM D, h:mm a')}</div>
+                                    <div style={{ fontSize: '0.75rem', marginTop: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <i className="la la-book-open" style={{ color: 'var(--cm-primary-color)' }}></i>
+                                        <span>{this.findLessonById(attempt.lessonId)?.name || '...'}</span>
+                                    </div>
                                 </div>
-                                <div className={`attempt-score-badge ${attempt.finalScore >= 50 ? 'high-score' : 'low-score'}`}>{attempt.finalScore}%</div>
+                                <div className={`attempt-score-badge ${attempt.finalScore >= 50 ? 'high-score' : 'low-score'}`}>
+                                    {attempt.finalScore}%
+                                </div>
                             </div>
                         </div>)) : <div className="text-center p-5 text-muted">No submissions found.</div>}
                     </div>)}
@@ -644,11 +758,27 @@ class CurriculumManagerV5 extends React.Component {
                     <h6>{selectedAttempt ? `Reviewing Submission` : 'Submission Review'}</h6>
                     {selectedAttempt ? (
                         <div className="attempt-details-container">
-                            <div className="card-custom glass-panel p-4 mb-4" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                <h6 style={{ padding: 0, marginBottom: '5px', textTransform: 'none', color: '#1e293b' }}>Summary</h6>
-                                <div className="d-flex justify-content-between">
-                                    <span style={{ fontSize: '0.85rem' }}>Final Score: <strong>{selectedAttempt.finalScore}%</strong></span>
-                                    <span style={{ fontSize: '0.85rem' }}>Duration: <strong>{moment.duration(moment(selectedAttempt.updatedAt).diff(moment(selectedAttempt.startedAt))).humanize()}</strong></span>
+                            <div className="card-custom glass-panel p-4 mb-4" style={{ borderRadius: '16px', border: '1px solid #e2e8f0', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                <h6 style={{ padding: 0, marginBottom: '15px', textTransform: 'uppercase', color: '#64748b', fontSize: '0.75rem', fontWeight: 800, border: 'none' }}>Performance Summary</h6>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: selectedAttempt.finalScore >= 50 ? '#f0fdf4' : '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <i className={`la ${selectedAttempt.finalScore >= 50 ? 'la-trophy' : 'la-info-circle'}`} style={{ fontSize: '1.2rem', color: selectedAttempt.finalScore >= 50 ? '#16a34a' : '#e11d48' }}></i>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Final Score</div>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>{selectedAttempt.finalScore}%</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <i className="la la-clock" style={{ fontSize: '1.2rem', color: '#64748b' }}></i>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Time Spent</div>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>{moment.duration(moment(selectedAttempt.updatedAt).diff(moment(selectedAttempt.startedAt))).humanize()}</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             {originalLesson && sortedOriginalQuestions ? sortedOriginalQuestions.map(q => (
