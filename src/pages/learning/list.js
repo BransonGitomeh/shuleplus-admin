@@ -152,7 +152,7 @@ class CurriculumManagerV5 extends React.Component {
             .draggable-generic-list-item.selected { border-left: 4px solid var(--cm-primary-color) !important; background-color: var(--cm-primary-bg-light) !important; font-weight: 500; }
             
             /* Student Attempts Tab Styles */
-            .attempts-grid { display: grid; grid-template-columns: 280px 320px 1fr; gap: 0; flex-grow: 1; height: 100%; border-top: 1px solid #f1f5f9; }
+            .attempts-grid { display: grid; grid-template-columns: 1fr 1fr 450px; gap: 0; flex-grow: 1; height: 100%; border-top: 1px solid #f1f5f9; }
             .attempts-column { border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; background: #fff; overflow: hidden; min-width: 0; }
             .attempts-column:last-child { border-right: none; background: #f8fafc; flex-grow: 1; }
             .attempts-column .list-group { border: none; padding: 1rem; overflow-y: auto; flex-grow: 1; }
