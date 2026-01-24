@@ -442,16 +442,19 @@ class CurriculumManagerV5 extends React.Component {
     onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
     onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
     onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
-    handleGradeSelect = (gradeId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('grade'), selectedGrade: gradeId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(350); }); }
-    handleSubjectSelect = (subjectId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subject'), selectedSubject: subjectId }, () => { this.refreshCurrentSelectionsAndFilters(); if (subjectId) this.processLessonAttemptsForSubject(subjectId); this.scrollBy(600); }); }
-    handleTopicSelect = (topicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('topic'), selectedTopic: topicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(350); }); }
-    handleSubtopicSelect = (subtopicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subtopic'), selectedSubtopic: subtopicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(700); }); }
-    handleQuestionSelect = (questionId) => { this.setState({ selectedQuestion: questionId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(1000); }); }
+    handleGradeSelect = (gradeId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('grade'), selectedGrade: gradeId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }
+    handleSubjectSelect = (subjectId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subject'), selectedSubject: subjectId }, () => { this.refreshCurrentSelectionsAndFilters(); if (subjectId) this.processLessonAttemptsForSubject(subjectId); this.scrollBy(1000); }); }
+    handleTopicSelect = (topicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('topic'), selectedTopic: topicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(400); }); }
+    handleSubtopicSelect = (subtopicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subtopic'), selectedSubtopic: subtopicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(800); }); }
+    handleQuestionSelect = (questionId) => { this.setState({ selectedQuestion: questionId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(1200); }); }
     
     scrollToSub = (amount) => {
         const scroller = document.querySelector('.tab-inner-scroller');
         if (scroller) scroller.scrollTo({ left: amount, behavior: 'smooth' });
     }
+
+    scrollToStart = () => { if (this.scrollContainerRef.current) this.scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' }); }
+    scrollToEnd = () => { if (this.scrollContainerRef.current) this.scrollContainerRef.current.scrollTo({ left: this.scrollContainerRef.current.scrollWidth, behavior: 'smooth' }); }
     
     // --- Attempts Tab Logic ---
     processLessonAttemptsForSubject = (subjectId) => {
@@ -808,11 +811,11 @@ class CurriculumManagerV5 extends React.Component {
                 <div className="cm-header-main"></div>
                 
                 <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <button onClick={() => this.scrollBy(-400)} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll Left"><i className="la la-angle-left"></i></button>
+                    <button onClick={() => this.scrollToStart()} className="btn btn-sm btn-icon btn-light mr-2" title="Scroll to Start"><i className="la la-angle-double-left"></i></button>
                     <div ref={this.scrollContainerRef} className="scrolling-wrapper" onScroll={this.saveStateToLocalStorage}>
                         {this.renderContentColumns()}
                     </div>
-                    <button onClick={() => this.scrollBy(400)} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll Right"><i className="la la-angle-right"></i></button>
+                    <button onClick={() => this.scrollToEnd()} className="btn btn-sm btn-icon btn-light ml-2" title="Scroll to End"><i className="la la-angle-double-right"></i></button>
                 </div>
 
                 {/* --- Modals --- */}
