@@ -34,9 +34,10 @@ const Search = ({ onSearch, value, title }) => (
 );
 
 const SkeletonLoader = () => {
-    const SkeletonColumn = ({ rows = 8, width = "320px", isSub = false }) => ( <div style={{ flex: `0 0 ${width}`, display: 'flex', flexDirection: 'column', borderRight: isSub ? '1px solid #f1f5f9' : 'none' }}> <div className="skeleton-portlet-header"> <div className="skeleton-placeholder skeleton-title"></div> <div className="skeleton-placeholder skeleton-icon-placeholder"></div> </div> <div className="skeleton-portlet-body"> <div className="skeleton-placeholder skeleton-search"></div> {Array.from({ length: rows }).map((_, rowIndex) => ( <div className="skeleton-placeholder skeleton-list-item" key={rowIndex}> <div className="skeleton-item-icon"></div> <div className="skeleton-item-text"></div> <div className="skeleton-item-actions"> <div className="skeleton-action-icon"></div> <div className="skeleton-action-icon"></div> </div> </div> ))} </div> </div> );
-    const skeletonStyles = ` @keyframes skeleton-pulse { 0% { background-color: #f7f8fa; } 50% { background-color: #e9ecf2; } 100% { background-color: #f7f8fa; } } .skeleton-placeholder { animation: skeleton-pulse 1.8s infinite ease-in-out; background-color: #f7f8fa; border-radius: 4px; } .skeleton-portlet-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; } .skeleton-title { height: 18px; width: 55%; } .skeleton-icon-placeholder { height: 24px; width: 24px; border-radius: 50%; } .skeleton-portlet-body { padding: 0 1.25rem; } .skeleton-search { height: 36px; width: 100%; margin-bottom: 20px; border-radius: 8px; } .skeleton-list-item { height: 45px; width: 100%; margin-bottom: 12px; display: flex; align-items: center; padding: 0 12px; gap: 12px; } .skeleton-item-icon { height: 16px; width: 12px; flex-shrink: 0; } .skeleton-item-text { height: 14px; width: 70%; } .skeleton-item-actions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; } .skeleton-action-icon { height: 14px; width: 14px; } .skeleton-tab-container { flex-grow: 1; display: flex; flex-direction: column; background: #fff; border-left: 1px solid #f1f5f9; } .skeleton-tab-header { display: flex; padding: 0 1.5rem; margin-bottom: 0; border-bottom: 1px solid #f1f5f9; } .skeleton-tab { height: 20px; width: 120px; margin-right: 30px; margin-top: 1.25rem; padding-bottom: 1.25rem; } .skeleton-tab-content { display: flex; flex-grow: 1; overflow-x: hidden; } `;
-    return ( <><style>{skeletonStyles}</style><div className="cm-container" style={{ display: 'flex', gap: '1.5rem' }}><SkeletonColumn rows={9} width="320px" /><SkeletonColumn rows={4} width="320px" /><div className="cm-column cm-column-large skeleton-tab-container"><div className="skeleton-tab-header"><div className="skeleton-placeholder skeleton-tab"></div><div className="skeleton-placeholder skeleton-tab"></div></div><div className="skeleton-tab-content"><SkeletonColumn rows={6} width="350px" isSub={true} /><SkeletonColumn rows={5} width="350px" isSub={true} /></div></div></div></> );
+    // Skeleton loader remains the same, no changes needed here.
+    const SkeletonColumn = ({ rows = 8, widthClass = "col-md-3" }) => ( <div className={widthClass} style={{ flexShrink: 0 }}> <div className="skeleton-portlet-header"> <div className="skeleton-placeholder skeleton-title"></div> <div className="skeleton-placeholder skeleton-icon-placeholder"></div> </div> <div className="skeleton-portlet-body"> <div className="skeleton-placeholder skeleton-search"></div> {Array.from({ length: rows }).map((_, rowIndex) => ( <div className="skeleton-placeholder skeleton-list-item" key={rowIndex}> <div className="skeleton-item-icon"></div> <div className="skeleton-item-text"></div> <div className="skeleton-item-actions"> <div className="skeleton-action-icon"></div> <div className="skeleton-action-icon"></div> </div> </div> ))} </div> </div> );
+    const skeletonStyles = ` @keyframes skeleton-pulse { 0% { background-color: #f7f8fa; } 50% { background-color: #e9ecf2; } 100% { background-color: #f7f8fa; } } .skeleton-placeholder { animation: skeleton-pulse 1.8s infinite ease-in-out; background-color: #f7f8fa; border-radius: 4px; } .skeleton-portlet-header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px 20px 25px; } .skeleton-title { height: 18px; width: 55%; } .skeleton-icon-placeholder { height: 28px; width: 28px; border-radius: 50%; } .skeleton-portlet-body { padding: 0 25px; } .skeleton-search { height: 40px; width: 100%; margin-bottom: 25px; } .skeleton-list-item { height: 50px; width: 100%; margin-bottom: 15px; display: flex; align-items: center; padding: 0 15px; gap: 15px; } .skeleton-item-icon { height: 16px; width: 12px; flex-shrink: 0; } .skeleton-item-text { height: 14px; width: 70%; } .skeleton-item-actions { margin-left: auto; display: flex; gap: 10px; flex-shrink: 0; } .skeleton-action-icon { height: 16px; width: 16px; } .skeleton-tab-container { flex-shrink: 0; white-space: normal; padding-top: 15px; } .skeleton-tab-header { display: flex; margin-left: 25px; margin-bottom: 25px; } .skeleton-tab { height: 22px; width: 90px; margin-right: 25px; } .skeleton-tab.active { border-bottom: 2px solid #e9ecf2; } .skeleton-tab-content-wrapper { display: flex; flex-wrap: nowrap; overflow-x: hidden; gap: 30px; } `;
+    return ( <><style>{skeletonStyles}</style><div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}><button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-left"></i></button><div className="scrolling-wrapper" style={{ flexGrow: 1, minHeight: "calc(70vh + 100px)", gap: '30px' }}><SkeletonColumn rows={9} widthClass="col-md-2" /><SkeletonColumn rows={2} widthClass="col-md-3" /><div className="col-md-7 skeleton-tab-container"><div className="skeleton-tab-header"><div className="skeleton-placeholder skeleton-tab active"></div><div className="skeleton-placeholder skeleton-tab"></div></div><div className="skeleton-tab-content-wrapper"><div style={{ flex: '1 1 45%' }}><SkeletonColumn rows={5} widthClass="w-100" /></div><div style={{ flex: '1 1 35%' }}><SkeletonColumn rows={6} widthClass="w-100" /></div></div></div></div><button className="btn btn-sm btn-icon btn-clean btn-icon-md" disabled><i className="la la-angle-right"></i></button></div></> );
 };
 
 const toastr = window.toastr;
@@ -77,93 +78,72 @@ class CurriculumManagerV5 extends React.Component {
                 width: 100vw;
                 margin-left: calc(50% - 50vw);
                 box-sizing: border-box;
-                min-height: calc(100vh - 200px);
             }
 
             .cm-header-main { margin-bottom: 1rem; }
             .cm-header-main h3 { font-weight: 600; font-size: 1.5rem; color: var(--cm-text-main); }
-            .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 1.5rem; padding-bottom: 1rem; width:100%; scroll-behavior: smooth; }
-            .scrolling-wrapper::-webkit-scrollbar { height: 6px; }
-            .scrolling-wrapper::-webkit-scrollbar-track { background: transparent; }
-            .scrolling-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-            
-            .cm-column { 
-                flex: 0 0 auto; 
-                width: 320px; 
-                background: #fff; 
-                border: 1px solid var(--cm-border-color); 
-                border-radius: 16px; 
-                display: flex; 
-                flex-direction: column; 
-                box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-                overflow: hidden;
-            }
-            .cm-column.cm-column-large { 
-                width: auto; 
-                min-width: 350px; 
-                max-width: none;
-                flex-grow: 0;
-            }
-            
-            /* Sub-column refinement for flush look */
-            .cm-sub-column {
-                width: 350px;
-                flex-shrink: 0;
-                display: flex;
-                flex-direction: column;
-                border-right: 1px solid #f1f5f9;
-            }
-            .cm-sub-column:last-child { border-right: none; }
-            
-            .cm-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; background-color: #fafbfd; }
-            .cm-column-header h5 { margin: 0; font-size: 0.95rem; font-weight: 600; color: #1e293b; letter-spacing: 0.3px; }
-            .cm-add-btn { background: #f1f5f9; border: none; cursor: pointer; color: #64748b; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-            .cm-add-btn:hover { background: var(--cm-primary-color); color: #fff; transform: scale(1.1); }
-            .cm-add-btn i { font-size: 0.9rem; }
-            
-            .cm-column-body { padding: 1.25rem; flex-grow: 1; display: flex; flex-direction: column; }
-            .cm-search-wrapper { position: relative; margin-bottom: 1.25rem; }
-            .cm-search-input { padding-left: 2.5rem; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.85rem; height: 40px; }
-            .cm-search-input:focus { background: #fff; }
-            .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1rem; }
-            
-            .cm-tab-header { display: flex; gap: 2rem; padding: 0 1.5rem; border-bottom: 1px solid #f1f5f9; background-color: #fff; }
-            .cm-tab-btn { background: none; border: none; padding: 1.25rem 0; cursor: pointer; color: #64748b; font-weight: 600; position: relative; font-size: 0.9rem; transition: color 0.2s; }
-            .cm-tab-btn:hover { color: #1e293b; }
+            .scrolling-wrapper { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 1.5rem; padding-bottom: 1rem; width:100% }
+            .scrolling-wrapper::-webkit-scrollbar { height: 8px; }
+            .scrolling-wrapper::-webkit-scrollbar-track { background: #e2e8f0; }
+            .scrolling-wrapper::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+            .cm-column { flex: 0 0 24%; min-width: 300px; background: #fff; border: 1px solid var(--cm-border-color); border-radius: 8px; display: flex; flex-direction: column; }
+            .cm-column.cm-column-large { flex: 0 0 65%; min-width: 700px; } /* Wider column for tabs */
+            .cm-column-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; }
+            .cm-column-header h5 { margin: 0; font-size: 1rem; font-weight: 600; color: #334155; }
+            .cm-add-btn { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 5px; }
+            .cm-add-btn:hover { color: var(--cm-primary-color); }
+            .cm-add-btn i { font-size: 1.2rem; }
+            .cm-column-body { padding: 1rem; flex-grow: 1; display: flex; flex-direction: column; }
+            .cm-search-wrapper { position: relative; margin-bottom: 1rem; }
+            .cm-search-input { padding-left: 2.2rem; border-radius: 6px; }
+            .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+            .cm-tab-header { display: flex; gap: 1.5rem; padding: 0 1.25rem; border-bottom: 1px solid var(--cm-border-color); }
+            .cm-tab-btn { background: none; border: none; padding: 1rem 0.25rem; cursor: pointer; color: var(--cm-text-secondary); font-weight: 600; position: relative; font-size: 0.9rem; }
             .cm-tab-btn.active { color: var(--cm-primary-color); }
-            .cm-tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 3px; background-color: var(--cm-primary-color); border-radius: 3px 3px 0 0; }
-            
-            .tab-content { flex-grow: 1; display: flex; flex-direction: column; }
-            .tab-pane { display: none; flex-grow: 1; }
-            .tab-pane.active { display: flex; flex-direction: column; }
-            .tab-inner-scroller { display: flex; flex-wrap: nowrap; flex-grow: 1; overflow-x: auto; background: #fff; }
-            .tab-inner-scroller::-webkit-scrollbar { height: 4px; }
-            
-            .draggable-generic-list-item.selected { border-left: 4px solid var(--cm-primary-color) !important; background-color: var(--cm-primary-bg-light) !important; font-weight: 500; }
+            .cm-tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background-color: var(--cm-primary-color); }
+            .tab-pane { display: none; }
+            .tab-pane.active { display: block; }
+            .tab-inner-scroller { display: flex; flex-wrap: nowrap; gap: 1.5rem; }
+            .draggable-generic-list-item.selected { border-color: var(--cm-primary-color) !important; background-color: var(--cm-primary-bg-light) !important; box-shadow: 0 0 0 1px var(--cm-primary-color); }
             
             /* Student Attempts Tab Styles */
-            .attempts-grid { display: grid; grid-template-columns: 320px 380px 1fr; gap: 0; flex-grow: 1; min-height: 500px; border-top: 1px solid #f1f5f9; }
-            .attempts-column { border-right: 1px solid #f1f5f9; display: flex; flex-direction: column; background: #fff; }
-            .attempts-column:last-child { border-right: none; background: #f8fafc; }
-            .attempts-column .list-group { border: none; padding: 1rem; max-height: calc(100vh - 350px); overflow-y: auto; }
-            .attempts-column .list-group-item { border: 1px solid transparent; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s ease; cursor: pointer; padding: 1rem; }
-            .attempts-column .list-group-item:hover { background-color: #f1f5f9; }
-            .attempts-column .list-group-item.active { background-color: var(--cm-primary-bg-light); border-color: transparent; color: #1e293b; box-shadow: 0 2px 4px rgba(88, 103, 221, 0.1); }
-            .attempts-column h6 { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; padding: 1.25rem 1.5rem 0.5rem; margin: 0; }
-            
-            .user-list-item.active { font-weight: 600; }
-            .student-sub-item { padding-left: 1.5rem; font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+            .attempts-grid { display: grid; grid-template-columns: 2fr 3fr 7fr; gap: 1.5rem; }
+            .attempts-column .list-group { border: none; padding: 0; max-height: 70vh; overflow-y: auto; }
+            .attempts-column .list-group-item { border: 1px solid transparent; border-radius: 6px; margin-bottom: 5px; transition: all 0.2s ease; }
+            .attempts-column .list-group-item:hover { background-color: #f8fafc; border-color: #f1f5f9; }
+            .attempts-column .list-group-item.active { background-color: var(--cm-primary-bg-light); border-color: var(--cm-primary-color); color: var(--cm-text-main); }
+            .attempts-column h6 { font-weight: 600; margin-bottom: 1rem; padding: 0 0.5rem; }
+            .user-list-item.active { border-left: 3px solid var(--cm-primary-color); background-color: #f7f8fa; font-weight: 600; }
+            .student-sub-item { padding-left: 1.75rem; font-size: 0.85rem; color: #475569; position: relative; }
+            .student-sub-item::before { content: '└'; position: absolute; left: 0.75rem; top: 0.5rem; }
             
             .attempt-list-item-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-            .attempt-score-badge { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-            .attempt-score-badge.low-score { background-color: #fff1f2; color: #e11d48; }
-            .attempt-score-badge.high-score { background-color: #f0fdf4; color: #16a34a; }
-            
-            .attempt-details-container { padding: 1.5rem; max-height: calc(100vh - 350px); overflow-y: auto; }
-            .attempt-details-card { margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
-            .attempt-events-timeline { padding: 0 1.5rem 1.5rem; border-top: 1px solid #f1f5f9; background: #fcfdfe; }
-            .attempt-event-item { transition: transform 0.2s; }
-            .attempt-event-item:hover { transform: translateX(5px); }
+            .attempt-list-item-header { font-weight: 500; }
+            .attempt-list-item-meta { font-size: 0.75rem; color: var(--cm-text-secondary); }
+            .attempt-score-badge { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; color: #fff; }
+            .attempt-score-badge.low-score { background-color: #fb7185; } /* Rose 400 */
+            .attempt-score-badge.high-score { background-color: #4ade80; } /* Green 400 */
+            .btn-delete-attempt { opacity: 0; transition: opacity 0.2s; padding: 4px; color: var(--cm-text-secondary); }
+            .list-group-item:hover .btn-delete-attempt { opacity: 1; }
+            .btn-delete-attempt:hover { color: var(--cm-danger-color); }
+
+            .attempt-details-container { max-height: 70vh; overflow-y: auto; padding: 4px; }
+            .attempt-details-card { margin-bottom: 1rem; border: 1px solid var(--cm-border-color); border-radius: 8px; background: #fff; }
+            .attempt-details-card .draggable-generic-list-item { border: none !important; background: transparent !important; } /* Override table styles */
+            .attempt-events-timeline { padding: 0 1.25rem 1rem; border-top: 1px solid #f1f5f9; }
+            .attempt-event-item { display: flex; gap: 1rem; padding: 0.75rem 0; }
+            .attempt-event-icon { flex-shrink: 0; width: 24px; text-align: center; color: var(--cm-text-secondary); }
+            .attempt-event-icon .la { font-size: 1.2rem; }
+            .attempt-event-icon.correct { color: #22c55e; }
+            .attempt-event-icon.incorrect { color: var(--cm-danger-color); }
+            .attempt-event-details { flex-grow: 1; }
+            .attempt-event-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+            .attempt-event-title { font-weight: 500; font-size: 0.9rem; color: #334155; }
+            .attempt-event-meta { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--cm-text-secondary); }
+            .attempt-event-points { display: flex; align-items: center; gap: 4px; }
+            .attempt-event-body .answer-details { margin-top: 0.5rem; }
+            .attempt-event-body .answer-details img { max-width: 250px; border-radius: 6px; border: 1px solid var(--cm-border-color); cursor: pointer; }
+            .skipped-question { padding: 1rem 1.25rem; font-style: italic; color: var(--cm-text-secondary); text-align: center; }
         `;
         const styleTag = document.createElement("style");
         styleTag.innerHTML = customStyles;
@@ -195,13 +175,7 @@ class CurriculumManagerV5 extends React.Component {
     
     // --- Data Processing & State Management (largely unchanged) ---
     processDataUpdate = ({ schools }) => {
-        const activeId = localStorage.getItem("school");
-        const activeSchool = schools.find(school => school.id === activeId);
-        
-        // If we have schools but can't find our target, maybe we are still syncing.
-        // Don't mark as finished loading if we have 0 schools yet.
-        if (schools.length === 0) return; 
-
+        const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
         if (!activeSchool) { this.setState({ isLoading: false, school: null, _masterGradesList: [] }); return; }
         const masterGradesList = activeSchool.grades || [];
         
@@ -406,16 +380,11 @@ class CurriculumManagerV5 extends React.Component {
     onSubtopicSearch = e => { this.setState({ subtopicSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
     onQuestionSearch = e => { this.setState({ questionSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
     onOptionSearch = e => { this.setState({ optionSearchTerm: e.target.value }, this.refreshCurrentSelectionsAndFilters); }
-    handleGradeSelect = (gradeId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('grade'), selectedGrade: gradeId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(350); }); }
-    handleSubjectSelect = (subjectId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subject'), selectedSubject: subjectId }, () => { this.refreshCurrentSelectionsAndFilters(); if (subjectId) this.processLessonAttemptsForSubject(subjectId); this.scrollBy(600); }); }
-    handleTopicSelect = (topicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('topic'), selectedTopic: topicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(350); }); }
-    handleSubtopicSelect = (subtopicId) => { this.setState({ ...this.clearSelectionsAndDataFromLevel('subtopic'), selectedSubtopic: subtopicId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(700); }); }
-    handleQuestionSelect = (questionId) => { this.setState({ selectedQuestion: questionId }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollToSub(1000); }); }
-    
-    scrollToSub = (amount) => {
-        const scroller = document.querySelector('.tab-inner-scroller');
-        if (scroller) scroller.scrollTo({ left: amount, behavior: 'smooth' });
-    }
+    handleGradeSelect = (grade) => { this.setState(this.clearSelectionsAndDataFromLevel('subject'), () => { this.setState({ selectedGrade: grade.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+    handleSubjectSelect = (subject) => { this.setState(this.clearSelectionsAndDataFromLevel('topic'), () => { this.setState({ selectedSubject: subject.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+    handleTopicSelect = (topic) => { this.setState(this.clearSelectionsAndDataFromLevel('subtopic'), () => { this.setState({ selectedTopic: topic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+    handleSubtopicSelect = (subtopic) => { this.setState(this.clearSelectionsAndDataFromLevel('question'), () => { this.setState({ selectedSubtopic: subtopic.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(300); }); }); };
+    handleQuestionSelect = (question) => { this.setState(this.clearSelectionsAndDataFromLevel('option'), () => { this.setState({ selectedQuestion: question.id }, () => { this.refreshCurrentSelectionsAndFilters(); this.scrollBy(400); }); }); };
     
     // --- Attempts Tab Logic ---
     processLessonAttemptsForSubject = (subjectId) => {
@@ -473,26 +442,23 @@ class CurriculumManagerV5 extends React.Component {
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
 
-        const gradesLoading = _masterGradesList.length === 0;
-        const subjectsLoading = selectedGrade && !selectedGradeObj?.subjects;
+        // Check for specific loading states
+        const subjectsLoading = selectedGrade && filteredSubjects.length === 0 && selectedGradeObj && !(selectedGradeObj.subjects || []).some(s => s.name);
 
         return <>
-            <div className="cm-column horizontal-scroll-mask">
-                <div className="cm-column-header">
-                    <h5>Grades / Levels</h5>
-                    <button type="button" className="cm-add-btn" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus"></i></button>
-                </div>
+            <div className="cm-column">
+                <div className="cm-column-header"><h5>Grades</h5><button type="button" className="cm-add-btn" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus"></i></button></div>
                 <div className="cm-column-body">
                     <Search title="grades" onSearch={this.onGradeSearch} value={gradeSearchTerm} />
-                    <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} noItemsText="No grades found." isLoading={gradesLoading} onAdd={() => this.addGradeModalRef.current.show()} addItemText="Add Grade" />
+                    <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} noItemsText="No grades found." />
                 </div>
             </div>
             {selectedGrade && (
-                <div className="cm-column horizontal-scroll-mask">
+                <div className="cm-column">
                     <div className="cm-column-header"><h5>{selectedGradeObj?.name || '...'} Subjects</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubjectModalRef.current.show()} title="Add Subject"><i className="la la-plus"></i></button></div>
                     <div className="cm-column-body">
                         <Search title="subjects" onSearch={this.onSubjectSearch} value={subjectSearchTerm} />
-                        <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} isLoading={subjectsLoading} onAdd={() => this.addSubjectModalRef.current.show()} addItemText="Add Subject" />
+                        <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} isLoading={subjectsLoading} />
                     </div>
                 </div>
             )}
@@ -510,58 +476,30 @@ class CurriculumManagerV5 extends React.Component {
         const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null;
         const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
 
-        const topicsLoading = selectedSubject && !currentSubjectObj?.topics;
-        const subtopicsLoading = selectedTopic && !currentTopicObj?.subtopics;
-        const questionsLoading = selectedSubtopic && !currentSubtopicObj?.questions;
-        const optionsLoading = selectedQuestion && !filteredOptions;
+        // Individual Loading flags
+        const topicsLoading = selectedSubject && filteredTopics.length === 0 && currentSubjectObj && !(currentSubjectObj.topics || []).some(t => t.name);
+        const subtopicsLoading = selectedTopic && filteredSubtopics.length === 0 && currentTopicObj && !(currentTopicObj.subtopics || []).some(st => st.name);
+        const questionsLoading = selectedSubtopic && filteredQuestions.length === 0 && currentSubtopicObj && !(currentSubtopicObj.questions || []).some(q => q.name);
 
         return (
             <div className="cm-column cm-column-large">
                 <div className="cm-tab-header">
-                    <button className={`cm-tab-btn ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')}>Content & Curriculum</button>
-                    <button className={`cm-tab-btn ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')}>Student Submissions</button>
+                    <button className={`cm-tab-btn ${activeTab === 'content' ? 'active' : ''}`} onClick={() => this.handleTabChange('content')}>Content</button>
+                    <button className={`cm-tab-btn ${activeTab === 'responses' ? 'active' : ''}`} onClick={() => this.handleTabChange('responses')}>Student Attempts</button>
                 </div>
-                <div className="tab-content">
-                    <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`}>
-                        <div className="tab-inner-scroller">
-                            <div className="cm-sub-column">
-                                <div className="cm-column-header"><h5>Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addTopicModalRef.current.show()} title="Add Strand"><i className="la la-plus"></i></button></div>
-                                <div className="cm-column-body">
-                                    <Search title="strands" onSearch={this.onTopicSearch} value={topicSearchTerm} />
-                                    <Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} isLoading={topicsLoading} onAdd={() => this.addTopicModalRef.current.show()} addItemText="Add Strand" />
-                                </div>
+                <div className="cm-column-body" style={{ padding: '0' }}>
+                    <div className="tab-content">
+                        <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`}>
+                            <div className="tab-inner-scroller">
+                                <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addTopicModalRef.current.show()} title="Add Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="strands" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} isLoading={topicsLoading} /></div></div>
+                                {selectedTopic && <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Sub Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Sub Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="sub-strands" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} isLoading={subtopicsLoading} /></div></div>}
+                                {selectedSubtopic && <div className="cm-column cm-column-large" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Questions</h5><button type="button" className="cm-add-btn" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} isLoading={questionsLoading} /></div></div>}
+                                {selectedQuestion && <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Options</h5><button type="button" className="cm-add-btn" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} correctItemIds={correctOptionIds} /></div></div>}
                             </div>
-                            {selectedTopic && (
-                                <div className="cm-sub-column">
-                                    <div className="cm-column-header"><h5>Sub Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Sub Strand"><i className="la la-plus"></i></button></div>
-                                    <div className="cm-column-body">
-                                        <Search title="sub-strands" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} />
-                                        <Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} isLoading={subtopicsLoading} onAdd={() => this.addSubtopicModalRef.current.show()} addItemText="Add Sub Strand" />
-                                    </div>
-                                </div>
-                            )}
-                            {selectedSubtopic && (
-                                <div className="cm-sub-column" style={{ width: '450px' }}>
-                                    <div className="cm-column-header"><h5>Questions</h5><button type="button" className="cm-add-btn" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus"></i></button></div>
-                                    <div className="cm-column-body">
-                                        <Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} />
-                                        <Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} isLoading={questionsLoading} onAdd={() => this.addQuestionModalRef.current.show()} addItemText="Add Question" />
-                                    </div>
-                                </div>
-                            )}
-                            {selectedQuestion && (
-                                <div className="cm-sub-column">
-                                    <div className="cm-column-header"><h5>Options</h5><button type="button" className="cm-add-btn" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus"></i></button></div>
-                                    <div className="cm-column-body">
-                                        <Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} />
-                                        <Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} correctItemIds={correctOptionIds} isLoading={optionsLoading} onAdd={() => this.addOptionModalRef.current.show()} addItemText="Add Option" />
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                    <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`}>
-                        {this.renderStudentAttemptsTab()}
+                        <div className={`tab-pane ${activeTab === 'responses' ? 'active' : ''}`} style={{ padding: '1rem' }}>
+                            {this.renderStudentAttemptsTab()}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -590,55 +528,44 @@ class CurriculumManagerV5 extends React.Component {
         return (
             <div className="attempts-grid">
                 <div className="attempts-column">
-                    <h6>Students ({usersWithAttempts.length})</h6>
+                    <h6>Users ({usersWithAttempts.length})</h6>
                     <div className="list-group">{usersWithAttempts.length > 0 ? usersWithAttempts.map(user => (
                         <div key={user.id} className={`list-group-item user-list-item ${selectedUserId === user.id ? 'active' : ''}`} onClick={() => this.handleUserSelect(user.id)}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: selectedUserId === user.id ? '#fff' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.8rem' }}>{user.name.charAt(0)}</div>
-                                <div>
-                                    <div style={{ fontSize: '0.9rem', color: selectedUserId === user.id ? '#1e293b' : '#334155' }}>{user.name}</div>
-                                    {user.students && user.students.map(student => (<div key={student.id} className="student-sub-item" style={{marginLeft: '-32px'}}>{student.names}</div>))}
-                                </div>
-                            </div>
-                        </div>)) : (<div className="text-center p-5 text-muted"><i className="la la-users" style={{fontSize: '3rem', opacity: 0.2, marginBottom: '1rem'}}></i><br/>No student activity found yet.</div>)
+                            {user.name}
+                            {user.students && user.students.map(student => (<div key={student.id} className="student-sub-item">{student.names}</div>))}
+                        </div>)) : (<div className="text-center p-4 text-muted"><i className="la la-users" style={{fontSize: '2rem'}}></i><br/>No attempts found.</div>)
                     }</div>
                 </div>
                 <div className="attempts-column">
-                    <h6>{selectedUserName ? `Attempts: ${selectedUserName}` : 'Activity History'}</h6>
+                    <h6>{selectedUserName ? `${selectedUserName}'s Attempts` : 'Select a User'}</h6>
                     {selectedUserId && (<div className="list-group">{attemptsForSelectedUser.length > 0 ? attemptsForSelectedUser.map((attempt, index) => (
-                        <div key={attempt.id} className={`list-group-item ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}>
+                        <a key={attempt.id} className={`list-group-item list-group-item-action ${selectedAttemptId === attempt.id ? 'active' : ''}`} onClick={() => this.handleAttemptSelect(attempt.id)}>
                             <div className="attempt-list-item-content">
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Submission {attemptsForSelectedUser.length - index}</div>
-                                    <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '2px' }}><i className="la la-calendar"></i> {moment(attempt.startedAt).format('MMM D, h:mm a')}</div>
-                                    <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: 500 }}><span style={{color: '#94a3b8'}}>Lesson:</span> {this.findLessonById(attempt.lessonId)?.name || '...'}</div>
+                                    <div className="attempt-list-item-header">Session {index + 1}</div>
+                                    <div className="attempt-list-item-meta">{moment(attempt.startedAt).format('MMM D, YYYY')}</div>
+                                    <div className="attempt-list-item-meta">Lesson: {this.findLessonById(attempt.lessonId)?.name || 'Unknown'}</div>
                                 </div>
-                                <div className={`attempt-score-badge ${attempt.finalScore >= 50 ? 'high-score' : 'low-score'}`}>{attempt.finalScore}%</div>
+                                <div className="d-flex align-items-center">
+                                    <span className={`attempt-score-badge ${attempt.finalScore >= 50 ? 'high-score' : 'low-score'} mr-2`}>{attempt.finalScore}%</span>
+                                    <button type="button" className="btn btn-sm btn-icon btn-delete-attempt" onClick={(e) => { e.stopPropagation(); this.handleDeleteAttempt(attempt); }} title="Delete Session"><i className="la la-trash"></i></button>
+                                </div>
                             </div>
-                        </div>)) : <div className="text-center p-5 text-muted">No submissions found.</div>}
+                        </a>)) : <p className="text-muted p-2 text-center">No attempts by this user.</p>}
                     </div>)}
                 </div>
                 <div className="attempts-column">
-                    <h6>{selectedAttempt ? `Reviewing Submission` : 'Submission Review'}</h6>
+                    <h6>{selectedAttempt ? `Session Details` : 'Select a Session'}</h6>
                     {selectedAttempt ? (
                         <div className="attempt-details-container">
-                            <div className="card-custom glass-panel p-4 mb-4" style={{ borderRadius: '12px' }}>
-                                <h6 style={{ padding: 0, marginBottom: '5px', textTransform: 'none', color: '#1e293b' }}>Summary</h6>
-                                <div className="d-flex justify-content-between">
-                                    <span style={{ fontSize: '0.85rem' }}>Final Score: <strong>{selectedAttempt.finalScore}%</strong></span>
-                                    <span style={{ fontSize: '0.85rem' }}>Duration: <strong>{moment.duration(moment(selectedAttempt.updatedAt).diff(moment(selectedAttempt.startedAt))).humanize()}</strong></span>
-                                </div>
-                            </div>
                             {originalLesson && sortedOriginalQuestions ? sortedOriginalQuestions.map(q => (
                                 <div key={q.id} className="attempt-details-card">
-                                    <div style={{ backgroundColor: '#fafbfd', padding: '10px 0' }}>
-                                        <Table data={[q]} headers={[{key: 'name'}]} options={{reorderable: false, linkable: false, editable: false, deleteable: false}} listId={`q-disp-${q.id}`} />
-                                    </div>
+                                    <Table data={[q]} headers={[{key: 'name'}]} options={{reorderable: false, linkable: false, editable: false, deleteable: false}} listId={`q-disp-${q.id}`} />
                                     {this.renderEventsForQuestion(q, attemptEventsByQuestionId.get(q.id))}
                                 </div>
-                            )) : <div className="alert alert-light border text-center">Could not reconstruct lesson history.</div>}
+                            )) : <div className="alert alert-warning">Could not load original lesson questions.</div>}
                         </div>
-                    ) : (usersWithAttempts.length > 0 && !selectedUserId ? <div className="text-center p-5 text-muted" style={{marginTop: '10%'}}><i className="la la-arrow-left" style={{fontSize: '3rem', opacity: 0.1, marginBottom: '1rem'}}></i><br/>Select a student to view their work.</div> : null)}
+                    ) : (usersWithAttempts.length > 0 && !selectedUserId ? <div className="text-center p-5 text-muted"><i className="la la-user" style={{fontSize: '3rem'}}></i><br/>Select a user to view attempts.</div> : null)}
                 </div>
             </div>
         );
