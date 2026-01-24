@@ -175,7 +175,13 @@ class CurriculumManagerV5 extends React.Component {
     
     // --- Data Processing & State Management (largely unchanged) ---
     processDataUpdate = ({ schools }) => {
-        const activeSchool = schools.find(school => school.id === localStorage.getItem("school"));
+        const activeId = localStorage.getItem("school");
+        const activeSchool = schools.find(school => school.id === activeId);
+        
+        // If we have schools but can't find our target, maybe we are still syncing.
+        // Don't mark as finished loading if we have 0 schools yet.
+        if (schools.length === 0) return; 
+
         if (!activeSchool) { this.setState({ isLoading: false, school: null, _masterGradesList: [] }); return; }
         const masterGradesList = activeSchool.grades || [];
         
@@ -441,6 +447,10 @@ class CurriculumManagerV5 extends React.Component {
         const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
+        
+        // Grades are loading if they haven't been fetched yet (undefined)
+        // Or if the initial page load is still true
+        const gradesLoading = _masterGradesList.length === 0;
 
         // Check for specific loading states - only show skeleton if the array is missing/undefined
         // If it's an empty array [], it means we've loaded it and it's empty.
@@ -453,7 +463,7 @@ class CurriculumManagerV5 extends React.Component {
 <button type="button" className="cm-add-btn" onClick={() => this.addGradeModalRef.current.show()} title="Add Grade"><i className="la la-plus"></i></button></div>
                 <div className="cm-column-body">
                     <Search title="grades" onSearch={this.onGradeSearch} value={gradeSearchTerm} />
-                    <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} noItemsText="No grades found." />
+                    <Table listId="grades-list" headers={[{ label: "Name", key: "name" }]} data={grades} selectedItemId={selectedGrade} show={this.handleGradeSelect} edit={grade => this.setState({ gradeToEdit: grade }, () => this.editGradeModalRef.current.show())} delete={grade => this.setState({ gradeToDelete: grade }, () => this.deleteGradeModalRef.current.show())} onOrderChange={(list) => this._handleReorder('grades', list)} options={tableOptions} noItemsText="No grades found." isLoading={gradesLoading} onAdd={() => this.addGradeModalRef.current.show()} addItemText="Add Grade" />
                 </div>
             </div>
             {selectedGrade && (

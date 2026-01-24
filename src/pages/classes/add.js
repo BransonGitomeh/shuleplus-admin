@@ -53,13 +53,21 @@ class Modal extends React.Component {
         try {
           _this.setState({ loading: true });
 
-          _this.state.loading = undefined;
-          _this.state.setTeacher = undefined;
-          await _this.props.save(_this.state);
+          const payload = {
+            name: _this.state.name,
+            teacher: String(_this.state.teacher || ""),
+            feeAmount: Number(_this.state.feeAmount || 0),
+            grade: String(_this.state.grade || "")
+          };
+
+          await _this.props.save(payload);
           _this.hide();
           _this.setState({
             loading: false,
             name: "",
+            teacher: "",
+            setTeacher: null,
+            grade: ""
           });
         } catch (error) {
           _this.setState({ loading: false });

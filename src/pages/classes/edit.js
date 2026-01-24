@@ -48,7 +48,16 @@ class Modal extends React.Component {
         event.preventDefault();
         try {
           _this.setState({ loading: true });
-          await _this.props.save(_this.state.edit);
+          
+          const payload = {
+            id: _this.state.edit.id,
+            name: _this.state.edit.name,
+            teacher: typeof _this.state.edit.teacher === 'object' ? _this.state.edit.teacher.id : String(_this.state.edit.teacher || ""),
+            feeAmount: Number(_this.state.edit.feeAmount || 0),
+            grade: String(_this.state.edit.grade || "")
+          };
+
+          await _this.props.save(payload);
           _this.hide();
           _this.setState({ loading: false });
         } catch (error) {
@@ -63,12 +72,17 @@ class Modal extends React.Component {
     });
   }
   static getDerivedStateFromProps(props, state) {
-    if (props.edit)
-      if (props.edit.id !== state.edit.id) {
-        return {
-          edit: props.edit
-        };
-      }
+    if (props.edit && props.edit.id !== state.edit.id) {
+      // Ensure teacher and grade are strings (IDs) even if they come as objects
+      const sanitizedEdit = {
+        ...props.edit,
+        teacher: typeof props.edit.teacher === 'object' ? props.edit.teacher.id : props.edit.teacher,
+        grade: typeof props.edit.grade === 'object' ? props.edit.grade.id : props.edit.grade
+      };
+      return {
+        edit: sanitizedEdit
+      };
+    }
     return null;
   }
   render() {
@@ -136,18 +150,21 @@ class Modal extends React.Component {
                       <div className="col-lg-6 mt-3">
                         <label htmlFor="exampleSelect1">Teacher:</label>
                         <select
-                          name="gender"
+                          name="teacher"
                           className="form-control"
                           id="exampleSelect1"
                           required
-                          value={this.state.teacher}
-                          onChange={(e) => this.setState({
-                            teacher: e.target.value
-                          })}
+                          value={this.state.edit.teacher}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            this.setState(prevState => ({
+                              edit: { ...prevState.edit, teacher: val }
+                            }));
+                          }}
                         >
                           <option value="">Select teacher</option>
                           {this.props.teachers.map(teacher => {
-                            return <option value={teacher.id}>{teacher.name}</option>
+                            return <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
                           })}
                         </select>
                       </div>
