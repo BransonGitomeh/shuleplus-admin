@@ -174,6 +174,21 @@ const genericRichListStyles = `
   .draggable-generic-list-item:has(.list-item-expanded-media-container) .list-item-actions-panel {
     padding-top: 4px; /* Adjust padding to align with top text */
   }
+
+  /* --- SKELETON STYLES --- */
+  @keyframes table-skeleton-pulse {
+    0% { background-color: #f7f8fa; border-color: #f1f5f9; }
+    50% { background-color: #ebedf2; border-color: #e2e8f0; }
+    100% { background-color: #f7f8fa; border-color: #f1f5f9; }
+  }
+
+  .table-skeleton-item {
+    height: 48px;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+    animation: table-skeleton-pulse 1.8s infinite ease-in-out;
+  }
 `;
 
 // --- DraggableListItem (No changes needed in component logic) ---
@@ -399,6 +414,7 @@ const Table = ({
   className = "",
   noItemsText = "No items to display.",
   isItemSelectable = () => true,
+  isLoading = false,
 }) => {
   const handleMoveItem = useCallback((dragIndex, hoverIndex, LId) => {
     if (!options.reorderable || !onOrderChange) return;
@@ -425,7 +441,11 @@ const Table = ({
     <DndProvider backend={HTML5Backend}>
       <div className={`generic-rich-list-wrapper ${className}`}>
         <div className="generic-list-items-container">
-          {data && data.length > 0 ? (
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={`skeleton-${i}`} className="table-skeleton-item" />
+            ))
+          ) : data && data.length > 0 ? (
             data.map((item, index) => {
               if (item.id === undefined) {
                 console.warn("Table item is missing an 'id' property. D&D and selection may not work correctly.", item, "List ID:", listId);
@@ -471,6 +491,7 @@ Table.propTypes = {
   className: PropTypes.string,
   noItemsText: PropTypes.string,
   isItemSelectable: PropTypes.func,
+  isLoading: PropTypes.bool,
 };
 
 export default Table;

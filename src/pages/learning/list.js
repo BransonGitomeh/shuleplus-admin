@@ -184,6 +184,7 @@ class CurriculumManagerV5 extends React.Component {
         
         const stateSource = this.state.isLoading ? JSON.parse(localStorage.getItem("learningState") || '{}') : this.state;
         const validatedState = this.getValidatedState(stateSource, masterGradesList);
+        
         this.setState({ 
             ...validatedState, 
             school: activeSchool, 
@@ -194,22 +195,77 @@ class CurriculumManagerV5 extends React.Component {
             if (this.state.selectedSubject) this.processLessonAttemptsForSubject(this.state.selectedSubject);
             
             // Restore scroll position once data is ready and rendered
-            if (isDataReady && stateSource.scrollLeft !== undefined && this.scrollContainerRef.current) {
-                this.scrollContainerRef.current.scrollLeft = stateSource.scrollLeft;
+            // Use a slight delay to ensure the layout has stabilized
+            if (isDataReady && stateSource.scrollLeft !== undefined) {
+                setTimeout(() => {
+                    if (this.scrollContainerRef.current) {
+                        this.scrollContainerRef.current.scrollLeft = stateSource.scrollLeft;
+                    }
+                }, 100);
             }
         });
     }
 
     getValidatedState = (sourceState, masterGradesList) => {
         const validated = { 
-            selectedGrade: null, selectedSubject: null, selectedTopic: null, selectedSubtopic: null, selectedQuestion: null, 
-            gradeSearchTerm: sourceState.gradeSearchTerm || '', subjectSearchTerm: sourceState.subjectSearchTerm || '', 
-            topicSearchTerm: sourceState.topicSearchTerm || '', subtopicSearchTerm: sourceState.subtopicSearchTerm || '', 
-            questionSearchTerm: sourceState.questionSearchTerm || '', optionSearchTerm: sourceState.optionSearchTerm || '', 
+            selectedGrade: sourceState.selectedGrade || null, 
+            selectedSubject: sourceState.selectedSubject || null, 
+            selectedTopic: sourceState.selectedTopic || null, 
+            selectedSubtopic: sourceState.selectedSubtopic || null, 
+            selectedQuestion: sourceState.selectedQuestion || null, 
+            gradeSearchTerm: sourceState.gradeSearchTerm || '', 
+            subjectSearchTerm: sourceState.subjectSearchTerm || '', 
+            topicSearchTerm: sourceState.topicSearchTerm || '', 
+            subtopicSearchTerm: sourceState.subtopicSearchTerm || '', 
+            questionSearchTerm: sourceState.questionSearchTerm || '', 
+            optionSearchTerm: sourceState.optionSearchTerm || '', 
             activeTab: sourceState.activeTab || 'content',
             scrollLeft: sourceState.scrollLeft || 0
         };
-        try { if (!sourceState) return validated; const grade = masterGradesList.find(g => g.id === sourceState.selectedGrade); if (!grade) return validated; validated.selectedGrade = grade.id; const subject = (grade.subjects || []).find(s => s.id === sourceState.selectedSubject); if (!subject) return validated; validated.selectedSubject = subject.id; const topic = (subject.topics || []).find(t => t.id === sourceState.selectedTopic); if (!topic) return validated; validated.selectedTopic = topic.id; const subtopic = (topic.subtopics || []).find(st => st.id === sourceState.selectedSubtopic); if (!subtopic) return validated; validated.selectedSubtopic = subtopic.id; const question = (subtopic.questions || []).find(q => q.id === sourceState.selectedQuestion); if (question) validated.selectedQuestion = question.id; } catch (error) { console.error("Failed to parse or validate state:", error); }
+
+        // If we haven't loaded any grades with names yet, keep the full selection sourceState provided.
+        // Once names start appearing, we can begin validating.
+        const hasLoadedNames = masterGradesList.some(g => g.name);
+        if (!hasLoadedNames) return validated;
+
+        try { 
+            // Patient validation: only clear if we are SURE the parent exists and doesn't contain the child
+            const grade = masterGradesList.find(g => g.id === validated.selectedGrade); 
+            if (validated.selectedGrade && !grade) { validated.selectedGrade = null; }
+            
+            if (grade) {
+                const subjects = grade.subjects || [];
+                const subject = subjects.find(s => s.id === validated.selectedSubject);
+                // Only clear subject if we actually have subject names to compare against
+                if (validated.selectedSubject && subjects.some(s => s.name) && !subject) {
+                    validated.selectedSubject = null;
+                }
+
+                if (subject) {
+                    const topics = subject.topics || [];
+                    const topic = topics.find(t => t.id === validated.selectedTopic);
+                    if (validated.selectedTopic && topics.some(t => t.name) && !topic) {
+                        validated.selectedTopic = null;
+                    }
+
+                    if (topic) {
+                        const subtopics = topic.subtopics || [];
+                        const subtopic = subtopics.find(st => st.id === validated.selectedSubtopic);
+                        if (validated.selectedSubtopic && subtopics.some(st => st.name) && !subtopic) {
+                            validated.selectedSubtopic = null;
+                        }
+
+                        if (subtopic) {
+                            const questions = subtopic.questions || [];
+                            const question = questions.find(q => q.id === validated.selectedQuestion);
+                            if (validated.selectedQuestion && questions.some(q => q.name) && !question) {
+                                validated.selectedQuestion = null;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) { console.error("Failed to validate state:", error); }
         return validated;
     }
 
@@ -382,9 +438,12 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderContentColumns() {
-        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject } = this.state;
+        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
-        const selectedGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
+        const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
+
+        // Check for specific loading states
+        const subjectsLoading = selectedGrade && filteredSubjects.length === 0 && selectedGradeObj && !(selectedGradeObj.subjects || []).some(s => s.name);
 
         return <>
             <div className="cm-column">
@@ -399,7 +458,7 @@ class CurriculumManagerV5 extends React.Component {
                     <div className="cm-column-header"><h5>{selectedGradeObj?.name || '...'} Subjects</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubjectModalRef.current.show()} title="Add Subject"><i className="la la-plus"></i></button></div>
                     <div className="cm-column-body">
                         <Search title="subjects" onSearch={this.onSubjectSearch} value={subjectSearchTerm} />
-                        <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} />
+                        <Table listId={`subjects-list-${selectedGrade}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubjects} options={tableOptions} selectedItemId={selectedSubject} show={this.handleSubjectSelect} edit={subject => this.setState({ subjectToEdit: subject }, () => this.editSubjectModalRef.current.show())} delete={subject => this.setState({ subjectToDelete: subject }, () => this.deleteSubjectModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subjects', list)} isLoading={subjectsLoading} />
                     </div>
                 </div>
             )}
@@ -408,10 +467,20 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderMainContentArea() {
-        const { activeTab, topicSearchTerm, filteredTopics, selectedTopic, subtopicSearchTerm, filteredSubtopics, selectedSubtopic, questionSearchTerm, filteredQuestions, selectedQuestion, optionSearchTerm, filteredOptions, selectedSubject } = this.state;
+        const { activeTab, filteredTopics, selectedTopic, filteredSubtopics, selectedSubtopic, filteredQuestions, selectedQuestion, filteredOptions, selectedSubject, selectedGrade, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
         
+        const currentGradeObj = selectedGrade ? this.state._masterGradesList.find(g => g.id === selectedGrade) : null;
+        const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null;
+        const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null;
+        const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
+
+        // Individual Loading flags
+        const topicsLoading = selectedSubject && filteredTopics.length === 0 && currentSubjectObj && !(currentSubjectObj.topics || []).some(t => t.name);
+        const subtopicsLoading = selectedTopic && filteredSubtopics.length === 0 && currentTopicObj && !(currentTopicObj.subtopics || []).some(st => st.name);
+        const questionsLoading = selectedSubtopic && filteredQuestions.length === 0 && currentSubtopicObj && !(currentSubtopicObj.questions || []).some(q => q.name);
+
         return (
             <div className="cm-column cm-column-large">
                 <div className="cm-tab-header">
@@ -422,9 +491,9 @@ class CurriculumManagerV5 extends React.Component {
                     <div className="tab-content">
                         <div className={`tab-pane ${activeTab === 'content' ? 'active' : ''}`}>
                             <div className="tab-inner-scroller">
-                                <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addTopicModalRef.current.show()} title="Add Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="strands" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} /></div></div>
-                                {selectedTopic && <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Sub Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Sub Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="sub-strands" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} /></div></div>}
-                                {selectedSubtopic && <div className="cm-column cm-column-large" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Questions</h5><button type="button" className="cm-add-btn" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} /></div></div>}
+                                <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addTopicModalRef.current.show()} title="Add Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="strands" onSearch={this.onTopicSearch} value={topicSearchTerm} /><Table listId={`topics-list-${selectedSubject}`} headers={[{ label: "Name", key: "name" }]} data={filteredTopics} options={tableOptions} selectedItemId={selectedTopic} show={this.handleTopicSelect} edit={topic => this.setState({ topicToEdit: topic }, () => this.editTopicModalRef.current.show())} delete={topic => this.setState({ topicToDelete: topic }, () => this.deleteTopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('topics', list)} isLoading={topicsLoading} /></div></div>
+                                {selectedTopic && <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Sub Strands</h5><button type="button" className="cm-add-btn" onClick={() => this.addSubtopicModalRef.current.show()} title="Add Sub Strand"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="sub-strands" onSearch={this.onSubtopicSearch} value={subtopicSearchTerm} /><Table listId={`subtopics-list-${selectedTopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredSubtopics} options={tableOptions} selectedItemId={selectedSubtopic} show={this.handleSubtopicSelect} edit={subtopic => this.setState({ subtopicToEdit: subtopic }, () => this.editSubtopicModalRef.current.show())} delete={subtopic => this.setState({ subtopicToDelete: subtopic }, () => this.deleteSubtopicModalRef.current.show())} onOrderChange={(list) => this._handleReorder('subtopics', list)} isLoading={subtopicsLoading} /></div></div>}
+                                {selectedSubtopic && <div className="cm-column cm-column-large" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Questions</h5><button type="button" className="cm-add-btn" onClick={() => this.addQuestionModalRef.current.show()} title="Add Question"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="questions" onSearch={this.onQuestionSearch} value={questionSearchTerm} /><Table listId={`questions-list-${selectedSubtopic}`} headers={[{ label: "Name", key: "name" }]} data={filteredQuestions} options={tableOptions} selectedItemId={selectedQuestion} show={this.handleQuestionSelect} edit={question => this.setState({ questionToEdit: question }, () => this.editQuestionModalRef.current.show())} delete={question => this.setState({ questionToDelete: question }, () => this.deleteQuestionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('questions', list)} isLoading={questionsLoading} /></div></div>}
                                 {selectedQuestion && <div className="cm-column" style={{border: 'none', borderRadius: '0'}}><div className="cm-column-header"><h5>Options</h5><button type="button" className="cm-add-btn" onClick={() => this.addOptionModalRef.current.show()} title="Add Option"><i className="la la-plus"></i></button></div><div className="cm-column-body"><Search title="options" onSearch={this.onOptionSearch} value={optionSearchTerm} /><Table listId={`options-list-${selectedQuestion}`} headers={[{ label: "Answer", key: "value" }]} data={filteredOptions} options={{ ...tableOptions, linkable: false }} edit={option => this.setState({ optionToEdit: option }, () => this.editOptionModalRef.current.show())} delete={option => this.setState({ optionToDelete: option }, () => this.deleteOptionModalRef.current.show())} onOrderChange={(list) => this._handleReorder('options', list)} correctItemIds={correctOptionIds} /></div></div>}
                             </div>
                         </div>
