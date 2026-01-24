@@ -12,6 +12,7 @@ class FeesManagement extends Component {
         terms: [],
         students: [],
         payments: [],
+        parents: [],
         
         selectedClass: "",
         selectedTerm: "",
@@ -39,6 +40,7 @@ class FeesManagement extends Component {
              if(terms && terms.length) this.setState({ selectedTerm: terms[terms.length-1].id });
         });
         this.unsubStudents = Data.students.subscribe(({ students }) => this.setState({ students }));
+        this.unsubParents = Data.parents.subscribe(({ parents }) => this.setState({ parents }));
         if (Data.payments) {
             this.unsubPayments = Data.payments.subscribe(({ payments }) => this.setState({ payments }));
         }
@@ -49,6 +51,7 @@ class FeesManagement extends Component {
         if (this.unsubClasses) this.unsubClasses();
         if (this.unsubTerms) this.unsubTerms();
         if (this.unsubStudents) this.unsubStudents();
+        if (this.unsubParents) this.unsubParents();
         if (this.unsubPayments) this.unsubPayments();
     }
 
@@ -62,7 +65,13 @@ class FeesManagement extends Component {
         const term = terms?.find(t => t.id === selectedTerm);
         const classFee = this.getFeesForClass(student.class?.id || student.class); 
         
-        const parentPhone = student.parent?.phone;
+        let parentPhone = student.parent?.phone;
+        if (!parentPhone && student.parent?.id) {
+            // Lookup in parents list if missing from student object
+            const parent = this.state.parents.find(p => p.id === student.parent.id);
+            if (parent) parentPhone = parent.phone;
+        }
+
         if (!parentPhone) return { expected: classFee, paid: 0, balance: classFee, history: [] };
 
         let relatedPayments = payments.filter(p => p.phone === parentPhone);
@@ -219,7 +228,7 @@ class FeesManagement extends Component {
                                                 return (
                                                     <tr key={student.id}>
                                                         <td>{student.names}</td>
-                                                        <td>{student.parent?.phone || "N/A"}</td>
+                                                        <td>{student.parent?.phone || this.state.parents.find(p => p.id === student.parent?.id)?.phone || "N/A"}</td>
                                                         <td>{expected.toLocaleString()}</td>
                                                         <td className="text-success">{paid.toLocaleString()}</td>
                                                         <td className={balance > 0 ? "text-danger font-weight-bold" : "text-success"}>

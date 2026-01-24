@@ -181,7 +181,7 @@ class AddQuestionModal extends React.Component {
         videos: videos.map(v => v.embedUrl),
         images: images.map(i => i.base64),
         attachments: serializedAttachments,
-        contentOrder: contentOrder.map(co => co.type),
+        contentOrder: contentOrder,
       };
 
       const createdQuestion = await this.props.save(payload);

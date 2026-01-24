@@ -262,7 +262,7 @@ class EditQuestionModal extends React.Component {
         videos: videos.map(v => v.embedUrl),
         images: images.map(i => i.url || i.base64),
         attachments: serializedAttachments.map(a => a.url),
-        contentOrder: contentOrder.map(co => co.id),
+        contentOrder: contentOrder,
       };
 
       await this.props.edit(payload);
