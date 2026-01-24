@@ -189,6 +189,55 @@ const genericRichListStyles = `
     border: 1px solid #f1f5f9;
     animation: table-skeleton-pulse 1.8s infinite ease-in-out;
   }
+
+  .table-empty-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 30px 20px;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    background-color: #fafbfd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #64748b;
+    margin: 4px;
+  }
+
+  .table-empty-cta:hover {
+    border-color: #6366f1;
+    background-color: #f5f7ff;
+    color: #4f46e5;
+  }
+
+  .table-empty-cta-icon {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .table-empty-cta-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .table-empty-cta-plus {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #6366f1;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+  }
+
+  .table-empty-cta:hover .table-empty-cta-plus {
+    transform: scale(1.1);
+  }
 `;
 
 // --- DraggableListItem (No changes needed in component logic) ---
@@ -415,6 +464,8 @@ const Table = ({
   noItemsText = "No items to display.",
   isItemSelectable = () => true,
   isLoading = false,
+  onAdd = null,
+  addItemText = "Add Item",
 }) => {
   const handleMoveItem = useCallback((dragIndex, hoverIndex, LId) => {
     if (!options.reorderable || !onOrderChange) return;
@@ -469,7 +520,19 @@ const Table = ({
               );
             })
           ) : (
-            <p className="list-view-no-items-message">{noItemsText}</p>
+            <div className="table-empty-state-container">
+              {onAdd ? (
+                <div className="table-empty-cta" onClick={onAdd} title={addItemText}>
+                  <div className="table-empty-cta-icon">📂</div>
+                  <div className="table-empty-cta-text">{addItemText}</div>
+                  <div className="table-empty-cta-plus">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
+                  </div>
+                </div>
+              ) : (
+                <p className="list-view-no-items-message">{noItemsText}</p>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -492,6 +555,8 @@ Table.propTypes = {
   noItemsText: PropTypes.string,
   isItemSelectable: PropTypes.func,
   isLoading: PropTypes.bool,
+  onAdd: PropTypes.func,
+  addItemText: PropTypes.string,
 };
 
 export default Table;
