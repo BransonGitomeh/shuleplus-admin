@@ -473,10 +473,10 @@ class CurriculumManagerV5 extends React.Component {
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
 
-        // Use global app loading flag for grades level
-        const gradesLoading = isLoading;
-        // Check for undefined specifically; an empty array [] means it finished loading and is truly empty
-        const subjectsLoading = selectedGrade && selectedGradeObj?.subjects === undefined;
+        // If we have grades in state, we are definitely NOT loading the grades list
+        const gradesLoading = isLoading && grades.length === 0;
+        // Only show skeleton for subjects if we have a grade selected, it specifically has no subjects field, AND our derived list is empty
+        const subjectsLoading = selectedGrade && selectedGradeObj?.subjects === undefined && filteredSubjects.length === 0;
 
         return <>
             <div className="cm-column horizontal-scroll-mask">
@@ -513,11 +513,11 @@ class CurriculumManagerV5 extends React.Component {
         const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
         const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null;
 
-        // Proper loading flags: check for undefined source objects
-        const topicsLoading = selectedSubject && currentSubjectObj?.topics === undefined;
-        const subtopicsLoading = selectedTopic && currentTopicObj?.subtopics === undefined;
-        const questionsLoading = selectedSubtopic && currentSubtopicObj?.questions === undefined;
-        const optionsLoading = selectedQuestion && currentQuestionObj?.options === undefined;
+        // Data-aware loading: only show skeletons if the source is missing AND we have no items to show
+        const topicsLoading = selectedSubject && currentSubjectObj?.topics === undefined && filteredTopics.length === 0;
+        const subtopicsLoading = selectedTopic && currentTopicObj?.subtopics === undefined && filteredSubtopics.length === 0;
+        const questionsLoading = selectedSubtopic && currentSubtopicObj?.questions === undefined && filteredQuestions.length === 0;
+        const optionsLoading = selectedQuestion && currentQuestionObj?.options === undefined && filteredOptions.length === 0;
 
         return (
             <div className="cm-column cm-column-large">
