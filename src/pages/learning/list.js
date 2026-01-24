@@ -473,10 +473,9 @@ class CurriculumManagerV5 extends React.Component {
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
 
-        // If we have grades in state, we are definitely NOT loading the grades list
         const gradesLoading = isLoading && grades.length === 0;
-        // Only show skeleton for subjects if we have a grade selected, it specifically has no subjects field, AND our derived list is empty
-        const subjectsLoading = selectedGrade && selectedGradeObj?.subjects === undefined && filteredSubjects.length === 0;
+        // Respect global isLoading state: if app-level loading is finished, don't show skeletons
+        const subjectsLoading = isLoading && selectedGrade && selectedGradeObj?.subjects === undefined;
 
         return <>
             <div className="cm-column horizontal-scroll-mask">
@@ -503,7 +502,7 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderMainContentArea() {
-        const { activeTab, filteredTopics, selectedTopic, filteredSubtopics, selectedSubtopic, filteredQuestions, selectedQuestion, filteredOptions, selectedSubject, selectedGrade, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm } = this.state;
+        const { activeTab, filteredTopics, selectedTopic, filteredSubtopics, selectedSubtopic, filteredQuestions, selectedQuestion, filteredOptions, selectedSubject, selectedGrade, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, isLoading } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
         
@@ -513,11 +512,11 @@ class CurriculumManagerV5 extends React.Component {
         const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
         const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null;
 
-        // Data-aware loading: only show skeletons if the source is missing AND we have no items to show
-        const topicsLoading = selectedSubject && currentSubjectObj?.topics === undefined && filteredTopics.length === 0;
-        const subtopicsLoading = selectedTopic && currentTopicObj?.subtopics === undefined && filteredSubtopics.length === 0;
-        const questionsLoading = selectedSubtopic && currentSubtopicObj?.questions === undefined && filteredQuestions.length === 0;
-        const optionsLoading = selectedQuestion && currentQuestionObj?.options === undefined && filteredOptions.length === 0;
+        // Data-aware loading: only show skeletons if isLoading is true AND the source is missing
+        const topicsLoading = isLoading && selectedSubject && currentSubjectObj?.topics === undefined;
+        const subtopicsLoading = isLoading && selectedTopic && currentTopicObj?.subtopics === undefined;
+        const questionsLoading = isLoading && selectedSubtopic && currentSubtopicObj?.questions === undefined;
+        const optionsLoading = isLoading && selectedQuestion && currentQuestionObj?.options === undefined;
 
         return (
             <div className="cm-column cm-column-large">
