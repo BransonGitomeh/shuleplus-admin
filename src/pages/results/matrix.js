@@ -7,6 +7,7 @@ class ResultsMatrix extends React.Component {
     classes: [],
     terms: [],
     subjects: [],
+    grades: [],
     students: [],
     assessments: [], // Full list (or filtered list from getForClass)
 
@@ -50,7 +51,7 @@ class ResultsMatrix extends React.Component {
     // 1. Subscribe to necessary data
     this.unsubClasses = Data.classes.subscribe(({ classes }) => this.setState({ classes }));
     this.unsubTerms = Data.terms?.subscribe(({ terms }) => this.setState({ terms }));
-    
+    this.unsubGrades = Data.grades?.subscribe(({ grades }) => this.setState({ grades }));
     this.unsubSubjects = Data.subjects?.subscribe(({ subjects }) => this.setState({ subjects }));
     this.unsubStudents = Data.students.subscribe(({ students }) => this.setState({ students }));
     this.unsubAssessments = Data.assessments.subscribe(({ assessments }) => this.setState({ assessments }));
@@ -75,6 +76,7 @@ class ResultsMatrix extends React.Component {
   componentWillUnmount() {
       if (this.unsubClasses) this.unsubClasses();
       if (this.unsubTerms) this.unsubTerms();
+      if (this.unsubGrades) this.unsubGrades();
       if (this.unsubSubjects) this.unsubSubjects();
       if (this.unsubStudents) this.unsubStudents();
       if (this.unsubAssessments) this.unsubAssessments();
@@ -266,9 +268,21 @@ class ResultsMatrix extends React.Component {
   };
 
   render() {
-    const { classes, terms, subjects, selectedClass, selectedTerm, assessments, showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, showBulkModal } = this.state;
+    const { classes, terms, subjects, grades, selectedClass, selectedTerm, assessments, showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, showBulkModal } = this.state;
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
+
+    // Find the linked grade for the selected class to filter subjects
+    const cls = classes.find(c => c.id === selectedClass);
+    let filteredSubjectsList = subjects;
+    if (cls && cls.grade) {
+        const linkedGrade = grades.find(g => g.id === cls.grade);
+        if (linkedGrade && linkedGrade.subjects) {
+            // Get the list of subject IDs linked to that grade
+            const gradeSubjectIds = new Set(linkedGrade.subjects.map(s => s.id));
+            filteredSubjectsList = subjects.filter(s => gradeSubjectIds.has(s.id));
+        }
+    }
 
     // Filter assessments for the current view (important if we have mixed data)
     // Actually ResultsGrid handles lookup, passing full assessments array is fine if performance allows.
@@ -383,7 +397,7 @@ class ResultsMatrix extends React.Component {
                     {!fetchingAssessments && (
                         <ResultsGrid
                             students={students}
-                            subjects={subjects}
+                            subjects={filteredSubjectsList}
                             assessments={currentTermAssessments}
                             updates={edits}
                             onScoreChange={this.handleScoreChange}

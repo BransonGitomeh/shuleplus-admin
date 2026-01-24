@@ -97,21 +97,23 @@ class FeesManagement extends Component {
 
     openPaymentModal = (student) => {
         const bal = this.getStudentBalance(student);
+        const parentPhone = student.parent?.phone || this.state.parents.find(p => p.id === student.parent?.id)?.phone || "";
         this.setState({
             showPaymentModal: true,
             paymentStudent: student,
             paymentAmount: bal.balance > 0 ? bal.balance : 0,
-            parentPhone: student.parent?.phone || ""
+            parentPhone: parentPhone
         });
     };
     
     openManualPaymentModal = (student) => {
         const bal = this.getStudentBalance(student);
+        const parentPhone = student.parent?.phone || this.state.parents.find(p => p.id === student.parent?.id)?.phone || "";
         this.setState({
             showManualPaymentModal: true,
             paymentStudent: student,
             paymentAmount: bal.balance > 0 ? bal.balance : 0,
-            parentPhone: student.parent?.phone || "",
+            parentPhone: parentPhone,
             manualPaymentMethod: "CASH",
             manualPaymentNotes: ""
         });
