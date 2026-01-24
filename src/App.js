@@ -79,7 +79,6 @@ class App extends React.Component {
       <PrivateRoute path="/finance/charges" component={charges} />
       <PrivateRoute path="/finance/fees" component={require("./pages/finance/fees").default} />
       <PrivateRoute path="/results" component={require("./pages/results").default} />
-      <PrivateRoute path="/learning" component={learning} />
       <PrivateRoute path="/teams" component={teams} />
       <PrivateRoute path="/invitations" component={invitations} />
       <PrivateRoute path="/members" component={members} />

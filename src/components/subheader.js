@@ -34,7 +34,7 @@ class Subheader extends React.Component {
       selectedSchool &&
       selectedSchool.financial &&
       typeof selectedSchool.financial.balance === 'number' && // Make sure balance is a number
-      selectedSchool.financial.balance < MIN_BALANCE;
+      selectedSchool.financial.balance < MIN_BALANCE && false; // Disabled as requested
 
     if (!showBreadcrumbs && !showLowBalanceNotification) {
       return null; // Render nothing if there's nothing to show

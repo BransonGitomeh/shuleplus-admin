@@ -65,8 +65,6 @@ class Navbar extends React.Component {
     });
 
     Data.schools.subscribe(({ schools, selectedSchool }) => {
-      console.log("Schools updated:", schools, selectedSchool);
-      
       this.setState({
         availableSchools: schools,
         selectedSchool,
@@ -76,6 +74,8 @@ class Navbar extends React.Component {
           localStorage.setItem("school", selectedSchool.id);
           document.title = `${selectedSchool.name || 'Shule Plus'} | Shule Plus`;
         }
+        // Initialize menu after schools load
+        this.initDesktopMenu();
       });
     });
     
@@ -88,6 +88,8 @@ class Navbar extends React.Component {
 
     app.init();
     this.initProfileOffcanvas();
+    // Initial menu setup
+    setTimeout(() => this.initDesktopMenu(), 500);
     window.addEventListener('resize', this.handleResize);
   }
 
@@ -96,15 +98,24 @@ class Navbar extends React.Component {
   }
   
   componentDidUpdate(prevProps, prevState) {
-      if (!this.state.isMobile && (prevState.availableSchools !== this.state.availableSchools || prevState.selectedSchool !== this.state.selectedSchool)) {
-          const desktopTopMenu = KTUtil.get('kt_header_menu');
-          if (desktopTopMenu) new KTMenu(desktopTopMenu, {});
-      }
       if (prevProps.location.pathname !== this.props.location.pathname) {
           this.setState({ isMobileMenuOpen: false });
       }
+
+      // Re-init menu if switching from mobile to desktop or if number of schools changed
+      if (!this.state.isMobile && (prevState.isMobile || (prevState.availableSchools || []).length !== (this.state.availableSchools || []).length)) {
+          this.initDesktopMenu();
+      }
   }
 
+  initDesktopMenu = () => {
+    if (this.state.isMobile) return;
+    const desktopTopMenu = KTUtil.get('kt_header_menu');
+    if (desktopTopMenu) {
+        // KTMenu is part of Metronic's core JS. Re-initializing it ensures listeners are attached correctly to newly rendered DOM parts.
+        new KTMenu(desktopTopMenu, {});
+    }
+  }
 
   handleResize = () => {
     const isMobileNow = window.innerWidth < 992;
@@ -318,7 +329,10 @@ class Navbar extends React.Component {
         ` : ''}
         .kt-menu__submenu .kt-menu__item:hover > .kt-menu__link,
         .kt-menu__submenu .kt-menu__item.kt-menu__item--hover > .kt-menu__link { background-color: ${LIGHT_GREY_HOVER_BG} !important; }
+        .balance-dot { height: 8px; width: 8px; background-color: #FA064B; border-radius: 50%; display: inline-block; margin-left: 5px; vertical-align: middle; box-shadow: 0 0 4px rgba(250, 6, 75, 0.5); }
     `;
+
+    const showLowBalanceIndicator = selectedSchool && selectedSchool.financial && typeof selectedSchool.financial.balance === 'number' && selectedSchool.financial.balance < 300;
 
     return (
       <>
@@ -382,8 +396,8 @@ class Navbar extends React.Component {
                   </div>
                 </li>
                 <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                  <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance</span>
+                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>}</span>
                     <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
                   </a>
                   <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
