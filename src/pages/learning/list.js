@@ -469,13 +469,12 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderContentColumns() {
-        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList, isLoading } = this.state;
+        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
 
-        const gradesLoading = isLoading && grades.length === 0;
-        // Respect global isLoading state: if app-level loading is finished, don't show skeletons
-        const subjectsLoading = isLoading && selectedGrade && selectedGradeObj?.subjects === undefined;
+        const gradesLoading = _masterGradesList.length === 0;
+        const subjectsLoading = selectedGrade && !selectedGradeObj?.subjects;
 
         return <>
             <div className="cm-column horizontal-scroll-mask">
@@ -502,7 +501,7 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderMainContentArea() {
-        const { activeTab, filteredTopics, selectedTopic, filteredSubtopics, selectedSubtopic, filteredQuestions, selectedQuestion, filteredOptions, selectedSubject, selectedGrade, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm, isLoading } = this.state;
+        const { activeTab, filteredTopics, selectedTopic, filteredSubtopics, selectedSubtopic, filteredQuestions, selectedQuestion, filteredOptions, selectedSubject, selectedGrade, topicSearchTerm, subtopicSearchTerm, questionSearchTerm, optionSearchTerm } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const correctOptionIds = filteredOptions.filter(o => o.correct).map(o => o.id);
         
@@ -510,13 +509,11 @@ class CurriculumManagerV5 extends React.Component {
         const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null;
         const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null;
         const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
-        const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null;
 
-        // Data-aware loading: only show skeletons if isLoading is true AND the source is missing
-        const topicsLoading = isLoading && selectedSubject && currentSubjectObj?.topics === undefined;
-        const subtopicsLoading = isLoading && selectedTopic && currentTopicObj?.subtopics === undefined;
-        const questionsLoading = isLoading && selectedSubtopic && currentSubtopicObj?.questions === undefined;
-        const optionsLoading = isLoading && selectedQuestion && currentQuestionObj?.options === undefined;
+        const topicsLoading = selectedSubject && !currentSubjectObj?.topics;
+        const subtopicsLoading = selectedTopic && !currentTopicObj?.subtopics;
+        const questionsLoading = selectedSubtopic && !currentSubtopicObj?.questions;
+        const optionsLoading = selectedQuestion && !filteredOptions;
 
         return (
             <div className="cm-column cm-column-large">
