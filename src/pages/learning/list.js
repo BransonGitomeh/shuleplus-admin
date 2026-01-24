@@ -169,11 +169,13 @@ class CurriculumManagerV5 extends React.Component {
             .attempt-score-badge.low-score { background-color: #fff1f2; color: #e11d48; }
             .attempt-score-badge.high-score { background-color: #f0fdf4; color: #16a34a; }
             
-            .attempt-details-container { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
-            .attempt-details-card { margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
+            .attempt-details-container { width: 100%; padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
+            .attempt-details-card { width: 100%; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
             .attempt-events-timeline { padding: 0 1.5rem 1.5rem; border-top: 1px solid #f1f5f9; background: #fcfdfe; }
             .attempt-event-item { transition: transform 0.2s; display: flex; gap: 1rem; padding: 1rem 0; }
             .attempt-event-item:hover { transform: translateX(5px); }
+
+            image-answer { width: 70%; }
             
             /* Answer Displays */
             .attempt-event-icon { flex-shrink: 0; width: 24px; text-align: center; }
