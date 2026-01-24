@@ -469,12 +469,14 @@ class CurriculumManagerV5 extends React.Component {
     }
 
     renderContentColumns() {
-        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList } = this.state;
+        const { grades, gradeSearchTerm, filteredSubjects, subjectSearchTerm, selectedGrade, selectedSubject, _masterGradesList, isLoading } = this.state;
         const tableOptions = { reorderable: true, linkable: true, editable: true, deleteable: true };
         const selectedGradeObj = selectedGrade ? _masterGradesList.find(g => g.id === selectedGrade) : null;
 
-        const gradesLoading = _masterGradesList.length === 0;
-        const subjectsLoading = selectedGrade && !selectedGradeObj?.subjects;
+        // Use global app loading flag for grades level
+        const gradesLoading = isLoading;
+        // Check for undefined specifically; an empty array [] means it finished loading and is truly empty
+        const subjectsLoading = selectedGrade && selectedGradeObj?.subjects === undefined;
 
         return <>
             <div className="cm-column horizontal-scroll-mask">
@@ -509,11 +511,13 @@ class CurriculumManagerV5 extends React.Component {
         const currentSubjectObj = selectedSubject ? (currentGradeObj?.subjects || []).find(s => s.id === selectedSubject) : null;
         const currentTopicObj = selectedTopic ? (currentSubjectObj?.topics || []).find(t => t.id === selectedTopic) : null;
         const currentSubtopicObj = selectedSubtopic ? (currentTopicObj?.subtopics || []).find(st => st.id === selectedSubtopic) : null;
+        const currentQuestionObj = selectedQuestion ? (currentSubtopicObj?.questions || []).find(q => q.id === selectedQuestion) : null;
 
-        const topicsLoading = selectedSubject && !currentSubjectObj?.topics;
-        const subtopicsLoading = selectedTopic && !currentTopicObj?.subtopics;
-        const questionsLoading = selectedSubtopic && !currentSubtopicObj?.questions;
-        const optionsLoading = selectedQuestion && !filteredOptions;
+        // Proper loading flags: check for undefined source objects
+        const topicsLoading = selectedSubject && currentSubjectObj?.topics === undefined;
+        const subtopicsLoading = selectedTopic && currentTopicObj?.subtopics === undefined;
+        const questionsLoading = selectedSubtopic && currentSubtopicObj?.questions === undefined;
+        const optionsLoading = selectedQuestion && currentQuestionObj?.options === undefined;
 
         return (
             <div className="cm-column cm-column-large">
