@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import ErrorMessage from "../components/error-toast";
 
-// --- Draft.js and react-draft-wysiwyg Imports ---
-import { EditorState } from 'draft-js';
-import { Editor } from "react-draft-wysiwyg";
-import { stateToHTML } from 'draft-js-export-html';
-import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
+// --- React-Quill & Math Imports ---
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css'; // Quill styles
+import katex from "katex";
+import "katex/dist/katex.min.css"; // Math formula styles
 
 // --- Data, Utils, and Components ---
 import Data from "../../../utils/data";
@@ -17,6 +17,9 @@ import EditOptionModal from "../options/edit";
 import DeleteOptionModal from "../options/delete";
 import Table from "../components/table";
 import Search from "../components/search";
+
+// --- Bind Katex to window for Quill ---
+window.katex = katex;
 
 export const contentTypes = [
   { value: 'SINGLECHOICE', label: 'Single Choice', hasOptions: true },
@@ -34,11 +37,28 @@ const IErrorMessage = new ErrorMessage();
 const modalId = `modal-add-content-${Math.random().toString().split(".")[1]}`;
 const generateId = (prefix = 'item') => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
 
-export const inputTypes = [
-  { value: 'SINGLECHOICE', label: 'Single Choice', hasOptions: true },
-  { value: 'MULTICHOICE', label: 'Multiple Choice', hasOptions: true },
-  { value: 'TEXT', label: 'Text', hasOptions: false },
-  { value: 'CAMERA', label: 'Camera', hasOptions: false },
+// --- Quill Configuration ---
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    [{ 'script': 'sub' }, { 'script': 'super' }], // Subscript/Superscript
+    ['link', 'image', 'video', 'formula'], // Formula button added here
+    ['clean']
+  ],
+  clipboard: {
+    // Default matchVisual: false to prevent weird pasting issues
+    matchVisual: false, 
+  }
+};
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike', 'blockquote',
+  'list', 'bullet',
+  'script',
+  'link', 'image', 'video', 'formula'
 ];
 
 const getYoutubeEmbedUrl = (url) => {
@@ -48,7 +68,8 @@ const getYoutubeEmbedUrl = (url) => {
   const watchMatch = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
   if (watchMatch && watchMatch[2].length === 11) videoId = watchMatch[2];
   if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-  if (url.includes("youtube.com/embed/")) {
+  
+  if (url.includes("youtube.com/embed")) {
     const embedIdMatch = url.match(/embed\/([^#\&\?]+)/);
     if (embedIdMatch && embedIdMatch[1].length === 11) return url;
   }
@@ -62,7 +83,6 @@ const toBase64 = file => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-
 class AddQuestionModal extends React.Component {
   addOptionModalRef = React.createRef();
   editOptionModalRef = React.createRef();
@@ -75,12 +95,12 @@ class AddQuestionModal extends React.Component {
     this.state = this.getInitialState();
   }
 
-  // State initialization remains the same
   getInitialState = () => ({
     loading: false,
     isCompressingImages: false,
     contentBlocks: [
-      { id: generateId('text'), type: 'TEXT', editorState: EditorState.createEmpty() }
+      // Changed: 'editorState' is now 'htmlContent' (string)
+      { id: generateId('text'), type: 'TEXT', htmlContent: '' } 
     ],
     questionType: 'SINGLECHOICE',
     subtopic: this.props.subtopic || "",
@@ -93,7 +113,6 @@ class AddQuestionModal extends React.Component {
     attachments: [],
   });
 
-  // All class methods (componentDidMount, handleSubmit, etc.) remain unchanged as their logic is not tied to the layout.
   componentDidMount() {
     $(this.formRef.current).validate({
       errorClass: "invalid-feedback", errorElement: "div",
@@ -134,9 +153,13 @@ class AddQuestionModal extends React.Component {
     if (!$(this.formRef.current).valid()) return;
 
     const textBlock = this.state.contentBlocks.find(b => b.type === 'TEXT');
-    if (!textBlock || !textBlock.editorState.getCurrentContent().hasText()) {
-      IErrorMessage.show({ message: "Content description cannot be empty." });
-      return;
+    
+    // Check if HTML content is empty or just contains empty p tags
+    const isTextEmpty = !textBlock || !textBlock.htmlContent || textBlock.htmlContent.replace(/<(.|\n)*?>/g, '').trim().length === 0;
+
+    if (isTextEmpty && !textBlock.htmlContent.includes('<img')) { // Allow if it has images
+       IErrorMessage.show({ message: "Content description cannot be empty." });
+       return;
     }
 
     this.setState({ loading: true });
@@ -150,7 +173,8 @@ class AddQuestionModal extends React.Component {
       for (const block of this.state.contentBlocks) {
         switch (block.type) {
           case 'TEXT':
-            htmlContent = stateToHTML(block.editorState.getCurrentContent());
+            // Direct assignment - no conversion needed
+            htmlContent = block.htmlContent; 
             contentOrder.push({ type: 'TEXT' });
             break;
           case 'IMAGE':
@@ -194,10 +218,11 @@ class AddQuestionModal extends React.Component {
     }
   };
 
-  onEditorStateChange = (editorState) => {
+  // UPDATED: Handle change for React Quill
+  onTextEditorChange = (content) => {
     this.setState(prevState => ({
       contentBlocks: prevState.contentBlocks.map(block =>
-        block.type === 'TEXT' ? { ...block, editorState } : block
+        block.type === 'TEXT' ? { ...block, htmlContent: content } : block
       )
     }));
   };
@@ -299,8 +324,8 @@ class AddQuestionModal extends React.Component {
   renderContentBlock = (block) => {
     switch (block.type) {
       case 'TEXT':
-        const html = stateToHTML(block.editorState.getCurrentContent());
-        return <div className="content-preview" dangerouslySetInnerHTML={{ __html: html }} />;
+        // Render simple HTML for preview
+        return <div className="content-preview ql-editor" dangerouslySetInnerHTML={{ __html: block.htmlContent }} />;
       case 'IMAGE':
         return <img src={block.preview} alt="preview" className="img-fluid rounded" />;
       case 'VIDEO':
@@ -324,7 +349,6 @@ class AddQuestionModal extends React.Component {
 
     return (
       <div>
-        {/* --- STYLES - REMOVED FLEXBOX, KEPT COMPONENT-SPECIFIC STYLES --- */}
         <style>{`
             .modal-xl { max-width: 90%; }
             .modal-body {
@@ -333,23 +357,13 @@ class AddQuestionModal extends React.Component {
             }
             .disabled-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.7); z-index: 100; cursor: not-allowed; }
             
-            /* Styles for the Editor Card */
-            .rdw-editor-wrapper.editor-card {
-                border: 1px solid #E4E6EF;
-                border-radius: .42rem;
-            }
-            .rdw-editor-toolbar {
-                border-bottom: 1px solid #E4E6EF;
-                background-color: #f8f9fa;
-                border-top-left-radius: .42rem;
-                border-top-right-radius: .42rem;
-            }
-            .rdw-editor-main {
-                min-height: 250px;
-                padding: 1rem 1.5rem;
-            }
-
-            /* Styles for Draggable Preview Blocks */
+            /* Quill Overrides */
+            .quill { background-color: #fff; border-radius: 0.42rem; }
+            .ql-toolbar { border-top-left-radius: 0.42rem; border-top-right-radius: 0.42rem; background-color: #f8f9fa; border-color: #E4E6EF; }
+            .ql-container { border-bottom-left-radius: 0.42rem; border-bottom-right-radius: 0.42rem; border-color: #E4E6EF; font-family: inherit; font-size: 1rem; }
+            .ql-editor { min-height: 200px; }
+            
+            /* Preview Styles */
             .preview-block { position: relative; border: 1px dashed #ccc; background-color: #fff; border-radius: 5px; padding: 1rem; margin-bottom: 1rem; }
             .preview-block:hover { border-color: #007bff; }
             .drag-handle { position: absolute; top: 10px; left: -10px; background: #007bff; color: white; width: 20px; height: 30px; border-radius: 3px; cursor: grab; display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: opacity 0.2s; }
@@ -368,11 +382,9 @@ class AddQuestionModal extends React.Component {
                   <button type="button" className="close" onClick={this.hide} disabled={loading}>×</button>
                 </div>
 
-                {/* --- REDESIGNED MODAL BODY WITH BOOTSTRAP GRID --- */}
                 <div className="modal-body">
                   <div className="row">
-
-                    {/* --- Left Column: Form Inputs (Stacks on mobile) --- */}
+                    {/* --- Left Column --- */}
                     <div className="col-lg-7">
                       <div className="card card-custom shadow-sm mb-5 mb-lg-0">
                         <div className="card-header">
@@ -393,15 +405,17 @@ class AddQuestionModal extends React.Component {
                           
                           <div className="separator separator-dashed my-5"></div>
 
-                          {/* Text Editor */}
+                          {/* REPLACED: React Quill Editor */}
                           {textBlock && (
                             <div className="form-group mb-5">
                               <label className="font-weight-bold mb-2">Content Description <span className="text-danger">*</span></label>
-                              <Editor
-                                editorState={textBlock.editorState}
-                                onEditorStateChange={this.onEditorStateChange}
-                                wrapperClassName="editor-card"
-                                editorClassName="rdw-editor-main"
+                              <div className="text-muted small mb-2">You can drag and drop images directly into the editor below.</div>
+                              <ReactQuill 
+                                theme="snow"
+                                value={textBlock.htmlContent}
+                                onChange={this.onTextEditorChange}
+                                modules={quillModules}
+                                formats={quillFormats}
                               />
                             </div>
                           )}
@@ -412,15 +426,15 @@ class AddQuestionModal extends React.Component {
                           <div className="form-group mb-5">
                             <label className="font-weight-bold">Add Videos (YouTube)</label>
                             <p className="text-muted font-size-sm">Paste one YouTube URL per line.</p>
-                            <textarea className="form-control form-control-solid" rows="2" placeholder="https://www.youtube.com/watch?v=..." value={this.state.videoUrlsInput} onChange={this.handleVideoUrlsInputChange} />
+                            <textarea className="form-control form-control-solid" rows="2" placeholder="..." value={this.state.videoUrlsInput} onChange={this.handleVideoUrlsInputChange} />
                             <button type="button" className="btn btn-sm btn-light-primary font-weight-bolder mt-2" onClick={this.handleAddVideoUrls}>Add Videos</button>
                           </div>
 
                           <div className="separator separator-dashed my-5"></div>
 
-                          {/* Image Uploader */}
+                          {/* Image Uploader (Additional separate images) */}
                           <div className="form-group">
-                            <label className="font-weight-bold">Add Images {isCompressingImages && <span className="text-primary">(Processing...)</span>}</label>
+                            <label className="font-weight-bold">Add Additional Images {isCompressingImages && <span className="text-primary">(Processing...)</span>}</label>
                             <input type="file" multiple accept="image/*" ref={this.imageFileInputRef} onChange={this.handleImageFileSelect} style={{ display: 'none' }} />
                             <button type="button" className="btn btn-block btn-light-info font-weight-bolder" onClick={() => this.imageFileInputRef.current.click()}>
                               <i className="fa fa-image"></i> Select Images from Device
@@ -430,7 +444,7 @@ class AddQuestionModal extends React.Component {
                       </div>
                     </div>
 
-                    {/* --- Right Column: Live Content & Responses (Stacks on mobile) --- */}
+                    {/* --- Right Column: Live Content & Responses --- */}
                     <div className="col-lg-5">
                       {/* Live Preview Card */}
                       <div className="card card-custom shadow-sm mb-5">

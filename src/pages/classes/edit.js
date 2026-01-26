@@ -31,7 +31,9 @@ class Modal extends React.Component {
     $("#" + modalNumber).modal("hide");
   }
   componentDidMount() {
-    this.unsub = Data.grades.subscribe(({ grades }) => this.setState({ grades }));
+    this.unsub = Data.grades.subscribe(({ grades }) => {
+        this.setState({ grades: Array.isArray(grades) ? grades : [] });
+    });
     const _this = this;
     this.validator = $("#" + modalNumber + "form").validate({
       errorClass: "invalid-feedback",
@@ -179,10 +181,10 @@ class Modal extends React.Component {
                           })}
                           required
                         >
-                          <option value="">Select Grade (Linking to Curriculum)</option>
-                          {this.state.grades.map(grade => (
-                            <option key={grade.id} value={grade.id}>{grade.name}</option>
-                          ))}
+                           <option value="">Select Grade (Linking to Curriculum)</option>
+                           {this.state.grades && this.state.grades.map(grade => (
+                             <option key={grade.id} value={grade.id}>{grade.name || `Unnamed Level (${grade.id?.substring(0, 5)})`}</option>
+                           ))}
                         </select>
                         <p className="text-muted small mt-1">This links the class to a specific level in the learning module to show the correct subjects/results.</p>
                       </div>
