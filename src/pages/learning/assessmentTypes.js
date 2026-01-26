@@ -43,7 +43,8 @@ class AssessmentTypes extends Component {
         try {
             await Data.assessmentTypes.create({ 
                 name: typeName, 
-                percentage: parseFloat(percentage)
+                percentage: parseFloat(percentage),
+                school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Assessment type created successfully");
             this.closeModals();
@@ -64,7 +65,8 @@ class AssessmentTypes extends Component {
             await Data.assessmentTypes.update({ 
                 id: selectedType.id, 
                 name: typeName, 
-                percentage: parseFloat(percentage)
+                percentage: parseFloat(percentage),
+                school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Assessment type updated successfully");
             this.closeModals();

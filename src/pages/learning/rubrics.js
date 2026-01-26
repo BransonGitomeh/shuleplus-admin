@@ -44,7 +44,8 @@ class RubricsManagement extends Component {
             await Data.assessmentRubrics.create({ 
                 label, 
                 minScore: parseFloat(minScore),
-                maxScore: parseFloat(maxScore)
+                maxScore: parseFloat(maxScore),
+                school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Rubric created successfully");
             this.closeModals();
@@ -66,7 +67,8 @@ class RubricsManagement extends Component {
                 id: selectedRubric.id, 
                 label, 
                 minScore: parseFloat(minScore),
-                maxScore: parseFloat(maxScore)
+                maxScore: parseFloat(maxScore),
+                school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Rubric updated successfully");
             this.closeModals();

@@ -721,13 +721,13 @@ var Data = (function () {
         },
         {
             name: "assessmentTypes",
-            singularName: "assessmentType",
+            singularName: "assessmenttype",
             createFields: ['name', 'percentage', 'school'],
             updateFields: ['name', 'percentage']
         },
         {
             name: "assessmentRubrics",
-            singularName: "assessmentRubric",
+            singularName: "assessmentrubric",
             createFields: ['label', 'minScore', 'maxScore', 'school'],
             updateFields: ['label', 'minScore', 'maxScore']
         }
