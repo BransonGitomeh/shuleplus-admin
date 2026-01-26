@@ -181,6 +181,8 @@ class Navbar extends React.Component {
         { path: "/finance/fees", label: "Payment" },
         { path: "/results", label: "Results" },
         { path: "/terms", label: "Terms" },
+        { path: "/assessment-types", label: "Assessment Types" },
+        { path: "/rubrics", label: "Rubrics" },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up" },
@@ -320,6 +322,8 @@ class Navbar extends React.Component {
       { path: "/finance/fees", label: "Payment", IconComponent: SvgFinanceIcon },
       { path: "/results", label: "Results", IconComponent: SvgResultsIcon },
       { path: "/terms", label: "Terms", IconComponent: SvgSchedulesIcon },
+      { path: "/assessment-types", label: "Assessment Types", IconComponent: SvgSettingsIcon },
+      { path: "/rubrics", label: "Rubrics", IconComponent: SvgSettingsIcon },
     ];
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `

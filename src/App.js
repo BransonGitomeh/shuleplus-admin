@@ -86,6 +86,8 @@ class App extends React.Component {
       <PrivateRoute path="/schools" component={schools} />
       <PrivateRoute path="/library" component={library} />
       <PrivateRoute path="/terms" component={require("./pages/terms").default} />
+      <PrivateRoute path="/assessment-types" component={require("./pages/learning/assessmentTypes").default} />
+      <PrivateRoute path="/rubrics" component={require("./pages/learning/rubrics").default} />
      
 
       {/* super admin routes */}

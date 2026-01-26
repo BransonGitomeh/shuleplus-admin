@@ -13,6 +13,10 @@ class ResultsMatrix extends React.Component {
 
     selectedClass: "",
     selectedTerm: "",
+    selectedAssessmentType: "",
+    
+    assessmentTypes: [],
+    assessmentRubrics: [],
     
     // Grid View State
     edits: {}, // { "studentId-subjectId": score }
@@ -55,6 +59,13 @@ class ResultsMatrix extends React.Component {
     this.unsubSubjects = Data.subjects?.subscribe(({ subjects }) => this.setState({ subjects }));
     this.unsubStudents = Data.students.subscribe(({ students }) => this.setState({ students }));
     this.unsubAssessments = Data.assessments.subscribe(({ assessments }) => this.setState({ assessments }));
+    this.unsubAssessmentTypes = Data.assessmentTypes.subscribe(({ assessmentTypes }) => {
+        this.setState({ assessmentTypes });
+        if (assessmentTypes && assessmentTypes.length > 0 && !this.state.selectedAssessmentType) {
+            this.setState({ selectedAssessmentType: assessmentTypes[0].id });
+        }
+    });
+    this.unsubAssessmentRubrics = Data.assessmentRubrics.subscribe(({ assessmentRubrics }) => this.setState({ assessmentRubrics }));
 
     // Get school info for reports
     const schoolInfo = Data.schools.getSelected();
@@ -80,6 +91,8 @@ class ResultsMatrix extends React.Component {
       if (this.unsubSubjects) this.unsubSubjects();
       if (this.unsubStudents) this.unsubStudents();
       if (this.unsubAssessments) this.unsubAssessments();
+      if (this.unsubAssessmentTypes) this.unsubAssessmentTypes();
+      if (this.unsubAssessmentRubrics) this.unsubAssessmentRubrics();
   }
 
   fetchAssessments = async () => {
@@ -123,7 +136,7 @@ class ResultsMatrix extends React.Component {
   
   // Called by "Save Changes" button
   saveAllChanges = async () => {
-      const { edits, selectedTerm, assessments } = this.state;
+      const { edits, selectedTerm, selectedAssessmentType, assessments } = this.state;
       const editKeys = Object.keys(edits);
       
       if (editKeys.length === 0) {
@@ -141,6 +154,7 @@ class ResultsMatrix extends React.Component {
       const payloadBase = {
           school: localStorage.getItem('school'),
           term: selectedTerm,
+          assessmentType: selectedAssessmentType,
           outOf: 100
       };
 
@@ -162,7 +176,7 @@ class ResultsMatrix extends React.Component {
                   ...payloadBase,
                   student: studentId,
                   subject: subjectId,
-                  score: parseInt(scoreVal, 10),
+                  score: parseFloat(scoreVal),
               };
 
               try {
@@ -268,7 +282,7 @@ class ResultsMatrix extends React.Component {
   };
 
   render() {
-    const { classes, terms, subjects, grades, selectedClass, selectedTerm, assessments, showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, showBulkModal } = this.state;
+    const { classes, terms, subjects, grades, assessmentTypes, assessmentRubrics, selectedClass, selectedTerm, selectedAssessmentType, assessments, showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, showBulkModal } = this.state;
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
 
@@ -287,8 +301,9 @@ class ResultsMatrix extends React.Component {
     // Filter assessments for the current view (important if we have mixed data)
     // Actually ResultsGrid handles lookup, passing full assessments array is fine if performance allows.
     // Optimization: Filter passed assessments to only relevant ones for faster lookup.
-    const currentTermAssessments = (assessments || []).filter(a => 
-        (a.term === selectedTerm || a.term?.id === selectedTerm)
+    const currentViewAssessments = (assessments || []).filter(a => 
+        (a.term === selectedTerm || a.term?.id === selectedTerm) &&
+        (a.assessmentType === selectedAssessmentType || a.assessmentType?.id === selectedAssessmentType)
     );
 
     if (showPrintView) {
@@ -363,23 +378,29 @@ class ResultsMatrix extends React.Component {
         <div className="card-body">
             {/* --- FILTERS --- */}
             <div className="row mb-4">
-                <div className="col-md-4">
+                <div className="col-md-3">
                     <label>Term</label>
                     <select className="form-control" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}>
                         <option value="">Select Term...</option>
                         {terms && terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
                     <label>Class</label>
                     <select className="form-control" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
                         <option value="">Select Class...</option>
                         {(classes || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
-                <div className="col-md-4">
-                   {/* Subject filter removed/optional, we show all now */}
-                   <label className="text-muted">Mode: Grid View (All Subjects)</label>
+                <div className="col-md-3">
+                    <label>Assessment Type</label>
+                    <select className="form-control" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}>
+                        <option value="">Select Type...</option>
+                        {assessmentTypes && assessmentTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.percentage}%)</option>)}
+                    </select>
+                </div>
+                <div className="col-md-3">
+                   <label className="text-muted">Mode: Grid View</label>
                 </div>
             </div>
 
@@ -398,7 +419,8 @@ class ResultsMatrix extends React.Component {
                         <ResultsGrid
                             students={students}
                             subjects={filteredSubjectsList}
-                            assessments={currentTermAssessments}
+                            assessments={currentViewAssessments}
+                            rubrics={assessmentRubrics}
                             updates={edits}
                             onScoreChange={this.handleScoreChange}
                         />

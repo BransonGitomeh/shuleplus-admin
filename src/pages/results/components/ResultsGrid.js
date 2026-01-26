@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }) => {
+const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScoreChange }) => {
     
     // Helper to get score for a cell (either from updates or original data)
     const getScore = (studentId, subjectId) => {
@@ -18,6 +18,13 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
         return assessment ? assessment.score : "";
     };
 
+    const getRubric = (score) => {
+        if (score === "" || score === null || isNaN(score)) return "";
+        const s = parseFloat(score);
+        const rubric = (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
+        return rubric ? rubric.label : "";
+    };
+
     return (
         <div className="table-responsive">
             <table className="table table-bordered table-striped table-hover table-sm">
@@ -27,8 +34,8 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
                             Student Name
                         </th>
                         {subjects && subjects.map(subj => (
-                            <th key={subj?.id} className="text-center" style={{ minWidth: '80px' }}>
-                                {(subj?.name || "Unknown").substring(0, 10)}
+                            <th key={subj?.id} className="text-center" style={{ minWidth: '120px' }}>
+                                {(subj?.name || "Unknown").substring(0, 15)}
                             </th>
                         ))}
                         <th className="text-center">Avg</th>
@@ -36,8 +43,6 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
                 </thead>
                 <tbody>
                     {students.map(student => {
-                        // Calculate row average specific to what is displayed
-                        // Note: This is a rough client-side calc
                         let total = 0;
                         let count = 0;
                         
@@ -48,29 +53,33 @@ const ResultsGrid = ({ students, subjects, assessments, updates, onScoreChange }
                             </td>
                             {(subjects || []).map(subj => {
                                 const val = getScore(student.id, subj.id);
-                                const numVal = parseInt(val, 10);
+                                const numVal = parseFloat(val);
                                 if (!isNaN(numVal)) {
                                     total += numVal;
                                     count++;
                                 }
 
                                 const isUpdated = updates && updates.hasOwnProperty(`${student.id}-${subj.id}`);
+                                const rubric = getRubric(val);
 
                                 return (
                                     <td key={`${student.id}-${subj.id}`} className="p-1">
-                                        <input
-                                            type="number"
-                                            className={`form-control form-control-sm text-center ${isUpdated ? 'bg-light-warning' : ''}`}
-                                            value={val}
-                                            style={{ border: 'none', background: isUpdated ? '#fff8dd' : 'transparent' }}
-                                            onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
-                                            placeholder="-"
-                                        />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                            <input
+                                                type="number"
+                                                className={`form-control form-control-sm text-center ${isUpdated ? 'bg-light-warning' : ''}`}
+                                                value={val}
+                                                style={{ border: 'none', background: isUpdated ? '#fff8dd' : 'transparent', width: '60px' }}
+                                                onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
+                                                placeholder="-"
+                                            />
+                                            {rubric && <span className="badge badge-light-primary" style={{ fontSize: '0.7rem' }}>{rubric}</span>}
+                                        </div>
                                     </td>
                                 );
                             })}
                             <td className="text-center font-weight-bold bg-light">
-                                {count > 0 ? (total / count).toFixed(0) : '-'}
+                                {count > 0 ? (total / count).toFixed(1) : '-'}
                             </td>
                         </tr>
                     );
