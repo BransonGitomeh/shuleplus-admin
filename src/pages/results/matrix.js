@@ -328,6 +328,8 @@ class ResultsMatrix extends React.Component {
                             term={currentTerm}
                             assessments={assessments}
                             subjects={subjects}
+                            rubrics={assessmentRubrics}
+                            assessmentTypes={assessmentTypes}
                             school={schoolInfo}
                         />
                     ))}

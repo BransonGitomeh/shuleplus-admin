@@ -330,7 +330,7 @@ var Data = (function () {
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
         const FRAGMENT_TERMS_DATA = `fragment TermsData on school { terms { id name startDate endDate } }`;
         const FRAGMENT_ASSESSMENT_TYPES_DATA = `fragment AssessmentTypesData on school { assessmentTypes { id name percentage } }`;
-        const FRAGMENT_ASSESSMENT_RUBRICS_DATA = `fragment AssessmentRubricsData on school { assessmentRubrics { id label minScore maxScore } }`;
+        const FRAGMENT_ASSESSMENT_RUBRICS_DATA = `fragment AssessmentRubricsData on school { assessmentRubrics { id label minScore maxScore points teachersComment } }`;
         // 1. Define the Fragment for SMS History (Add this near other fragments)
         const FRAGMENT_SMS_EVENTS_DATA = `fragment SmsEventsData on school { 
     smsEvents { 
@@ -557,8 +557,8 @@ var Data = (function () {
         { 
             name: "assessments", 
             singularName: "assessment", 
-            createFields: ['student', 'term', 'subject', 'assessmentType', 'score', 'outOf', 'teacher', 'school', 'remarks'], 
-            updateFields: ['score', 'remarks'],
+            createFields: ['student', 'term', 'subject', 'assessmentType', 'score', 'outOf', 'teacher', 'school', 'remarks', 'teachersComment'], 
+            updateFields: ['score', 'remarks', 'teachersComment'],
             customMethods: (allData, subs, api) => ({
                 getForClass: (classId, termId) => new Promise(async (resolve, reject) => {
                     try {
@@ -567,10 +567,11 @@ var Data = (function () {
                             query GetClassAssessments($schoolId: String, $classId: String, $termId: String) {
                                 school(id: $schoolId) {
                                     assessments(class: $classId, term: $termId) {
-                                        id score outOf remarks
+                                        id score outOf remarks teachersComment
                                         student { id }
                                         subject { id }
                                         term { id }
+                                        assessmentType { id }
                                     }
                                 }
                             }
@@ -728,8 +729,8 @@ var Data = (function () {
         {
             name: "assessmentRubrics",
             singularName: "assessmentrubric",
-            createFields: ['label', 'minScore', 'maxScore', 'school'],
-            updateFields: ['label', 'minScore', 'maxScore']
+            createFields: ['label', 'minScore', 'maxScore', 'points', 'teachersComment', 'school'],
+            updateFields: ['label', 'minScore', 'maxScore', 'points', 'teachersComment']
         }
     ];
 

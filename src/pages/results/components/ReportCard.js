@@ -1,51 +1,66 @@
 import React from 'react';
 
-const ReportCard = ({ student, term, assessments, subjects, rubrics, school }) => {
+const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentTypes, school }) => {
     const themeColor = school?.themeColor || '#1a1a1a';
     
-    // Helper to find score
-    const getAssessment = (subjectId) => {
-        return assessments.find(a => 
+    // Helper to find score for a specific subject and assessment type
+    const getScore = (subjectId, typeId) => {
+        const a = assessments.find(a => 
             (a.student === student.id || a.student?.id === student.id) &&
             (a.subject === subjectId || a.subject?.id === subjectId) &&
-            (a.term === term.id || a.term?.id === term.id)
+            (a.term === term.id || a.term?.id === term.id) &&
+            (a.assessmentType === typeId || a.assessmentType?.id === typeId)
         );
+        return a ? parseFloat(a.score) : null;
     };
 
     const getRubric = (score) => {
-        if (score === "" || score === null || isNaN(score)) return "-";
+        if (score === "" || score === null || isNaN(score)) return null;
         const s = parseFloat(score);
-        const rubric = (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
-        return rubric ? rubric.label : "-";
+        return (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
     };
 
     // Calculate totals and averages
-    let totalScore = 0;
-    let subjectsTaken = 0;
+    let grandTotal = 0;
+    let scoresCount = 0;
 
     const subjectRows = subjects.map(subject => {
-        const assessment = getAssessment(subject.id);
-        const score = assessment ? parseFloat(assessment.score) : null;
-        const rubricLabel = getRubric(score);
+        const typeScores = (assessmentTypes || []).map(type => {
+            const score = getScore(subject.id, type.id);
+            if (score !== null) {
+                grandTotal += (score * (type.percentage / 100)); // Weighting if applicable, otherwise just sum
+            }
+            return { type, score };
+        });
+
+        // Calculate average for this subject (weighted sum)
+        const totalWeightedScore = typeScores.reduce((sum, ts) => sum + (ts.score !== null ? (ts.score * (ts.type.percentage / 100)) : 0), 0);
         
-        if (score !== null && !isNaN(score)) {
-            totalScore += score;
-            subjectsTaken++;
-        }
+        // Find if there's any student-specific comment for this subject in any assessment
+        const assessmentWithComment = assessments.find(a => 
+            (a.student === student.id || a.student?.id === student.id) &&
+            (a.subject === subject.id || a.subject?.id === subject.id) &&
+            (a.term === term.id || a.term?.id === term.id) &&
+            a.teachersComment
+        );
+
+        const rubric = getRubric(totalWeightedScore);
+        if (rubric) scoresCount++;
 
         return {
             subject,
-            score: score !== null ? score : '-',
-            rubric: rubricLabel,
-            remarks: assessment?.remarks || '-'
+            typeScores,
+            totalWeightedScore,
+            rubric,
+            teachersComment: assessmentWithComment?.teachersComment || rubric?.teachersComment || '-'
         };
     });
 
-    const average = subjectsTaken > 0 ? (totalScore / subjectsTaken).toFixed(1) : 0;
+    const overallAverage = subjects.length > 0 ? (subjectRows.reduce((a, b) => a + (b.totalWeightedScore || 0), 0) / subjects.length).toFixed(1) : 0;
 
     return (
         <div className="report-card-container" style={{ 
-            padding: '2.5cm', 
+            padding: '1.5cm 2.5cm', 
             backgroundColor: 'white', 
             minHeight: '29.7cm', 
             width: '21cm', 
@@ -75,74 +90,85 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, school }) =
             {/* Student Details Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px', marginBottom: '30px' }}>
                 <div>
-                    <div style={{ marginBottom: '8px' }}><span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Student Name</span></div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{student.names}</div>
+                    <div style={{ marginBottom: '4px' }}><span style={{ color: '#888', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Student Name</span></div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{student.names}</div>
                 </div>
                 <div>
-                    <div style={{ marginBottom: '8px' }}><span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Registration Number</span></div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{student.registration || 'N/A'}</div>
+                    <div style={{ marginBottom: '4px' }}><span style={{ color: '#888', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Registration Number</span></div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{student.registration || 'N/A'}</div>
                 </div>
                 <div>
-                    <div style={{ marginBottom: '8px' }}><span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Class / Grade</span></div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{student.class?.name || student.class_name || 'N/A'}</div>
+                    <div style={{ marginBottom: '4px' }}><span style={{ color: '#888', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Class / Grade</span></div>
+                    <div style={{ fontSize: '1rem', fontWeight: 600 }}>{student.class?.name || student.class_name || 'N/A'}</div>
                 </div>
                 <div>
-                    <div style={{ marginBottom: '8px' }}><span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Academic Period</span></div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{term?.name || 'N/A'} • {new Date().getFullYear()}</div>
+                    <div style={{ marginBottom: '4px' }}><span style={{ color: '#888', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Academic Period</span></div>
+                    <div style={{ fontSize: '1rem', fontWeight: 600 }}>{term?.name || 'N/A'} • {new Date().getFullYear()}</div>
                 </div>
             </div>
 
-            {/* Results Table */}
-            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginBottom: '40px' }}>
+            {/* Results Table */ }
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginBottom: '30px' }}>
                 <thead>
                     <tr style={{ backgroundColor: themeColor }}>
-                        <th style={{ padding: '15px', textAlign: 'left', color: 'white', borderRadius: '8px 0 0 0', fontSize: '0.9rem' }}>SUBJECT</th>
-                        <th style={{ padding: '15px', textAlign: 'center', color: 'white', fontSize: '0.9rem' }}>SCORE (%)</th>
-                        <th style={{ padding: '15px', textAlign: 'center', color: 'white', fontSize: '0.9rem' }}>ASSESSMENT</th>
-                        <th style={{ padding: '15px', textAlign: 'left', color: 'white', borderRadius: '0 8px 0 0', fontSize: '0.9rem' }}>TEACHER REMARKS</th>
+                        <th style={{ padding: '12px 15px', textAlign: 'left', color: 'white', borderRadius: '8px 0 0 0', fontSize: '0.85rem' }}>LEARNING AREA</th>
+                        {assessmentTypes?.map(type => (
+                            <th key={type.id} style={{ padding: '12px 15px', textAlign: 'center', color: 'white', fontSize: '0.8rem' }}>{type.name?.toUpperCase()}</th>
+                        ))}
+                        <th style={{ padding: '12px 15px', textAlign: 'center', color: 'white', fontSize: '0.85rem' }}>TOTAL (%)</th>
+                        <th style={{ padding: '12px 15px', textAlign: 'center', color: 'white', fontSize: '0.85rem' }}>ASSESSMENT</th>
+                        <th style={{ padding: '12px 15px', textAlign: 'left', color: 'white', borderRadius: '0 8px 0 0', fontSize: '0.85rem' }}>TEACHER COMMENTS</th>
                     </tr>
                 </thead>
                 <tbody>
                     {subjectRows.map((row, idx) => (
                         <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#fcfcfc' }}>
-                            <td style={{ padding: '12px 15px', borderBottom: '1px solid #eee', fontWeight: 600 }}>{row.subject.name}</td>
-                            <td style={{ padding: '12px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}>{row.score}</td>
-                            <td style={{ padding: '12px 15px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
-                                <span style={{ padding: '4px 10px', borderRadius: '20px', backgroundColor: '#eef2ff', color: themeColor, fontSize: '0.85rem', fontWeight: 600 }}>{row.rubric}</span>
+                            <td style={{ padding: '10px 15px', borderBottom: '1px solid #eee', fontWeight: 600, fontSize: '0.9rem' }}>{row.subject.name}</td>
+                            {row.typeScores.map((ts, tIdx) => (
+                                <td key={tIdx} style={{ padding: '10px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontSize: '0.9rem' }}>{ts.score !== null ? ts.score : '-'}</td>
+                            ))}
+                            <td style={{ padding: '10px 15px', borderBottom: '1px solid #eee', textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>{row.totalWeightedScore.toFixed(0)}</td>
+                            <td style={{ padding: '10px 15px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
+                                {row.rubric && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                        <span style={{ padding: '2px 8px', borderRadius: '12px', backgroundColor: '#eef2ff', color: themeColor, fontSize: '0.8rem', fontWeight: 600 }}>{row.rubric.label}</span>
+                                        {row.rubric.points > 0 && <span style={{ fontSize: '0.7rem', color: '#888', marginTop: '2px' }}>{row.rubric.points} Points</span>}
+                                    </div>
+                                )}
                             </td>
-                            <td style={{ padding: '12px 15px', borderBottom: '1px solid #eee', color: '#666', fontSize: '0.9rem', fontStyle: 'italic' }}>{row.remarks}</td>
+                            <td style={{ padding: '10px 15px', borderBottom: '1px solid #eee', color: '#555', fontSize: '0.85rem', fontStyle: 'italic', maxWidth: '180px' }}>{row.teachersComment}</td>
                         </tr>
                     ))}
                 </tbody>
                 <tfoot>
                     <tr style={{ backgroundColor: '#f4f7fe' }}>
-                        <td style={{ padding: '15px', borderRadius: '0 0 0 8px', fontWeight: 800 }}>SUMMARY</td>
-                        <td style={{ padding: '15px', textAlign: 'center', fontWeight: 800, fontSize: '1.2rem' }}>{average}%</td>
-                        <td style={{ padding: '15px', textAlign: 'center' }} colSpan="2">
-                            <span style={{ fontWeight: 600 }}>TOTAL MARKS:</span> {totalScore}
+                        <td style={{ padding: '12px 15px', borderRadius: '0 0 0 8px', fontWeight: 800 }} colSpan={1 + (assessmentTypes?.length || 0)}>SUMMARY</td>
+                        <td style={{ padding: '12px 15px', textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>{overallAverage}%</td>
+                        <td style={{ padding: '12px 15px', textAlign: 'center' }} colSpan="2">
+                           <span style={{ fontWeight: 600 }}>OVERALL:</span> {getRubric(overallAverage)?.label || '-'}
                         </td>
                     </tr>
                 </tfoot>
             </table>
 
             {/* Performance Summary and Trend */}
-            <div style={{ display: 'flex', gap: '30px', marginBottom: '60px' }}>
-                <div style={{ flex: 1, border: '1px solid #eee', padding: '20px', borderRadius: '12px' }}>
-                    <h5 style={{ margin: '0 0 15px 0', fontSize: '1rem', fontWeight: 700, color: '#444' }}>Performance Metrics</h5>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '40px' }}>
+                <div style={{ flex: 1, border: '1px solid #eee', padding: '15px', borderRadius: '12px' }}>
+                    <h5 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 700, color: '#444' }}>Performance Metrics</h5>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
                         <span>Mean Score:</span>
-                        <span style={{ fontWeight: 700 }}>{average}%</span>
+                        <span style={{ fontWeight: 700 }}>{overallAverage}%</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>Subjects Taken:</span>
-                        <span style={{ fontWeight: 700 }}>{subjectsTaken}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
+                        <span>Learning Areas:</span>
+                        <span style={{ fontWeight: 700 }}>{subjects.length}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                         <span>Overall Rating:</span>
-                        <span style={{ fontWeight: 700, color: themeColor }}>{getRubric(average)}</span>
+                        <span style={{ fontWeight: 700, color: themeColor }}>{getRubric(overallAverage)?.label || '-'}</span>
                     </div>
                 </div>
-                <div style={{ flex: 1.5, border: '1px solid #eee', padding: '20px', borderRadius: '12px' }}>
+                <div style={{ flex: 1.5, border: '1px solid #eee', padding: '15px', borderRadius: '12px' }}>
                      {(() => {
                          const historyMap = {};
                          if (assessments && Array.isArray(assessments)) {
@@ -157,7 +183,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, school }) =
                              });
                          }
                          const data = Object.values(historyMap).map(d => ({ name: d.name, value: d.count ? Math.round(d.total/d.count) : 0 }));
-                         if (data.length === 0) data.push({ name: term?.name || 'Current', value: parseInt(average) || 0 });
+                         if (data.length === 0) data.push({ name: term?.name || 'Current', value: parseInt(overallAverage) || 0 });
                          const width = 300, height = 100, padding = 20, maxVal = 100;
                          if (data.length < 2) return <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>Insufficient data for trend analysis</div>;
                          const points = data.map((d, i) => {

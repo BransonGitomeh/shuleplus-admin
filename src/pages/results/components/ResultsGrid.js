@@ -19,10 +19,9 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
     };
 
     const getRubric = (score) => {
-        if (score === "" || score === null || isNaN(score)) return "";
+        if (score === "" || score === null || isNaN(score)) return null;
         const s = parseFloat(score);
-        const rubric = (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
-        return rubric ? rubric.label : "";
+        return (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
     };
 
     return (
@@ -73,7 +72,11 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                                 onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
                                                 placeholder="-"
                                             />
-                                            {rubric && <span className="badge badge-light-primary" style={{ fontSize: '0.7rem' }}>{rubric}</span>}
+                                            {rubric && (
+                                                <span className="badge badge-light-primary" style={{ fontSize: '0.7rem' }}>
+                                                    {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                 );
