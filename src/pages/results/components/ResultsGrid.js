@@ -37,12 +37,12 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                 {(subj?.name || "Unknown").substring(0, 15)}
                             </th>
                         ))}
-                        <th className="text-center">Avg</th>
+                        <th className="text-center">Total Points</th>
                     </tr>
                 </thead>
                 <tbody>
                     {students.map(student => {
-                        let total = 0;
+                        let totalPoints = 0;
                         let count = 0;
                         
                         return (
@@ -52,14 +52,14 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                             </td>
                             {(subjects || []).map(subj => {
                                 const val = getScore(student.id, subj.id);
-                                const numVal = parseFloat(val);
-                                if (!isNaN(numVal)) {
-                                    total += numVal;
+                                const rubric = getRubric(val);
+                                
+                                if (rubric && rubric.points) {
+                                    totalPoints += parseFloat(rubric.points);
                                     count++;
                                 }
 
                                 const isUpdated = updates && updates.hasOwnProperty(`${student.id}-${subj.id}`);
-                                const rubric = getRubric(val);
 
                                 return (
                                     <td key={`${student.id}-${subj.id}`} className="p-1">
@@ -81,8 +81,8 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                     </td>
                                 );
                             })}
-                            <td className="text-center font-weight-bold bg-light">
-                                {count > 0 ? (total / count).toFixed(1) : '-'}
+                            <td className="text-center font-weight-bold bg-light" style={{ fontSize: '1.1rem' }}>
+                                {totalPoints > 0 ? totalPoints : '-'}
                             </td>
                         </tr>
                     );
