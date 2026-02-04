@@ -298,7 +298,7 @@ var Data = (function () {
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
         const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { 
             financial { balance, balanceFormated } 
-            charges { ammount reason time id } 
+            charges { amount reason time id } 
             payments { 
                 id 
                 amount 
@@ -820,11 +820,11 @@ var Data = (function () {
                 }
                 resolve(school);
             }),
-            charge: (phone, ammount, forcedSchoolId) => {
+            charge: (phone, amount, forcedSchoolId) => {
                 const schoolId = forcedSchoolId || instance.schools.getSelected()?.id;
                 if (!schoolId) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { schoolId, ammount, phone }
+                    payment: { schoolId, amount, phone }
                 });
             },
             // In utils/data.js (inside publicApi -> school object)
