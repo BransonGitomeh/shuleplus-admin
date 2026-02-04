@@ -68,17 +68,36 @@ class FeesManagement extends Component {
         const term = terms?.find(t => t.id === selectedTerm);
         const classFee = this.getFeesForClass(student.class?.id || student.class); 
         
+        // 1. Identify the parent context
         let parentPhone = student.parent?.phone;
         if (!parentPhone && student.parent?.id) {
-            // Lookup in parents list if missing from student object
             const parent = this.state.parents.find(p => p.id === student.parent.id);
             if (parent) parentPhone = parent.phone;
         }
 
         if (!parentPhone) return { expected: classFee, paid: 0, balance: classFee, history: [] };
 
-        let relatedPayments = payments.filter(p => p.phone === parentPhone);
+        // 2. Filter payments by THIS student specifically
+        // We check for: p.student (actual field), p.student.id (expanded field), or p.metadata.studentId (legacy/custom field)
+        let relatedPayments = payments.filter(p => {
+            const isParentPayment = p.phone === parentPhone;
+            if (!isParentPayment) return false;
+
+            const targetStudentId = student.id;
+            const paymentStudentId = p.student?.id || p.student || (p.metadata && p.metadata.studentId);
+            
+            // If the payment is explicitly linked to a different student, skip it
+            if (paymentStudentId && paymentStudentId !== targetStudentId) return false;
+            
+            // If the payment is unallocated (no student ID) and we are calculating for a specific student,
+            // we might want to skip it or eventually have a 'unallocated' bucket. 
+            // For now, let's only attribute payments that match the student ID or are completely unlinked 
+            // but come from this parent (optional: but that's what caused the double counting).
+            // BETTER: only count it if it matches this student.
+            return paymentStudentId === targetStudentId;
+        });
         
+        // 3. Apply Term filtering if active
         if (term && term.startDate && term.endDate) {
              const start = new Date(term.startDate).getTime();
              const end = new Date(term.endDate).getTime();
@@ -88,7 +107,11 @@ class FeesManagement extends Component {
              });
         }
 
-        const paid = relatedPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        // 4. Sum up the amounts (handling both amount and ammount for backward compatibility)
+        const paid = relatedPayments.reduce((sum, p) => {
+            const val = parseFloat(p.amount || p.ammount || 0);
+            return sum + val;
+        }, 0);
         
         return {
             expected: classFee,
