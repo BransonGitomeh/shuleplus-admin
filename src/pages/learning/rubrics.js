@@ -16,6 +16,8 @@ class RubricsManagement extends Component {
         label: '',
         minScore: '',
         maxScore: '',
+        points: '',
+        teachersComment: '',
         processing: false
     };
 
@@ -36,7 +38,7 @@ class RubricsManagement extends Component {
     }
 
     handleAdd = async () => {
-        const { label, minScore, maxScore } = this.state;
+        const { label, minScore, maxScore, points, teachersComment } = this.state;
         if (!label || minScore === '' || maxScore === '') return alert("Please fill all fields");
 
         this.setState({ processing: true });
@@ -45,6 +47,8 @@ class RubricsManagement extends Component {
                 label, 
                 minScore: parseFloat(minScore),
                 maxScore: parseFloat(maxScore),
+                points: parseFloat(points || 0),
+                teachersComment,
                 school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Rubric created successfully");
@@ -58,7 +62,7 @@ class RubricsManagement extends Component {
     }
 
     handleEdit = async () => {
-        const { selectedRubric, label, minScore, maxScore } = this.state;
+        const { selectedRubric, label, minScore, maxScore, points, teachersComment } = this.state;
         if (!selectedRubric) return;
 
         this.setState({ processing: true });
@@ -68,6 +72,8 @@ class RubricsManagement extends Component {
                 label, 
                 minScore: parseFloat(minScore),
                 maxScore: parseFloat(maxScore),
+                points: parseFloat(points || 0),
+                teachersComment,
                 school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Rubric updated successfully");
@@ -94,7 +100,7 @@ class RubricsManagement extends Component {
     openAddModal = () => {
         this.setState({ 
             showAddModal: true, 
-            label: '', minScore: '', maxScore: '', selectedRubric: null 
+            label: '', minScore: '', maxScore: '', points: '', teachersComment: '', selectedRubric: null 
         });
     }
 
@@ -104,7 +110,9 @@ class RubricsManagement extends Component {
             selectedRubric: item,
             label: item.label,
             minScore: item.minScore,
-            maxScore: item.maxScore
+            maxScore: item.maxScore,
+            points: item.points || '',
+            teachersComment: item.teachersComment || ''
         });
     }
 
@@ -113,7 +121,7 @@ class RubricsManagement extends Component {
     }
 
     render() {
-        const { assessmentRubrics, showAddModal, showEditModal, processing, label, minScore, maxScore } = this.state;
+        const { assessmentRubrics, showAddModal, showEditModal, processing, label, minScore, maxScore, points, teachersComment } = this.state;
 
         return (
             <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--ver kt-page">
@@ -140,6 +148,8 @@ class RubricsManagement extends Component {
                                                     <th>Label</th>
                                                     <th>Min Score (%)</th>
                                                     <th>Max Score (%)</th>
+                                                    <th>Points</th>
+                                                    <th>Comment</th>
                                                     <th style={{width: '150px'}}>Actions</th>
                                                 </tr>
                                             </thead>
@@ -149,6 +159,8 @@ class RubricsManagement extends Component {
                                                         <td>{item.label}</td>
                                                         <td>{item.minScore}%</td>
                                                         <td>{item.maxScore}%</td>
+                                                        <td>{item.points || 0}</td>
+                                                        <td>{item.teachersComment || '-'}</td>
                                                         <td>
                                                             <button className="btn btn-sm btn-light-primary mr-2" onClick={() => this.openEditModal(item)}>
                                                                 <i className="flaticon2-edit"></i>
@@ -159,7 +171,7 @@ class RubricsManagement extends Component {
                                                         </td>
                                                     </tr>
                                                 ))}
-                                                {assessmentRubrics.length === 0 && <tr><td colSpan="4" className="text-center">No rubrics found.</td></tr>}
+                                                {assessmentRubrics.length === 0 && <tr><td colSpan="6" className="text-center">No rubrics found.</td></tr>}
                                             </tbody>
                                         </table>
                                     </div>
@@ -212,6 +224,26 @@ class RubricsManagement extends Component {
                                                 placeholder="100"
                                             />
                                         </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Points</label>
+                                        <input 
+                                            type="number" 
+                                            className="form-control" 
+                                            value={points}
+                                            onChange={e => this.setState({ points: e.target.value })}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Default Teacher Comment</label>
+                                        <textarea 
+                                            className="form-control" 
+                                            value={teachersComment}
+                                            onChange={e => this.setState({ teachersComment: e.target.value })}
+                                            placeholder="Standard comment for this rubric level..."
+                                            rows="3"
+                                        />
                                     </div>
                                 </div>
                                 <div className="modal-footer">

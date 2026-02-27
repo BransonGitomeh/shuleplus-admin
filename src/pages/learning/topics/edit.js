@@ -107,6 +107,7 @@ class Modal extends React.Component {
         topic: {
           id: props.topic.id,
           name: props.topic.name || "",
+          isVisible: props.topic.isVisible !== false,
           icon: props.topic.icon || "book-open-variant",
         },
         iconSearchQuery: "",
@@ -203,6 +204,19 @@ class Modal extends React.Component {
                           onChange={(e) => this.handleTopicChange('name', e.target.value)}
                           required
                         />
+                      </div>
+                    </div>
+
+                    <div className="form-group row">
+                      <div className="col-lg-12">
+                        <label className="kt-checkbox kt-checkbox--brand">
+                          <input
+                            type="checkbox"
+                            checked={this.state.topic.isVisible !== false}
+                            onChange={(e) => this.handleTopicChange('isVisible', e.target.checked)}
+                          /> Visible to users
+                          <span></span>
+                        </label>
                       </div>
                     </div>
 

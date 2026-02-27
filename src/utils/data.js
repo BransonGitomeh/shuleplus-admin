@@ -73,7 +73,7 @@ const createEntityAPI = (config) => {
         if (!Array.isArray(startNodes)) return { item: null, parent: null, parentList: null };
 
         for (const node of startNodes) {
-            if (node.id === itemId) return { item: node, parent: null, parentList: startNodes };
+            if (String(node.id) === String(itemId)) return { item: node, parent: null, parentList: startNodes };
             const keysToRecurse = ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options', 'members', 'students', 'classes', 'buses', 'drivers', 'admins', 'parents', 'teachers', 'routes', 'schedules', 'trips', 'events', 'complaints', 'charges', 'payments', 'teams', 'invitations'];
             for (const key of keysToRecurse) {
                 if (Array.isArray(node[key])) {
@@ -313,6 +313,8 @@ var Data = (function () {
                 updatedAt
                 metadata
                 type 
+                paymentType
+                student { id names }
                 ref 
                 time 
             } 
@@ -359,18 +361,35 @@ var Data = (function () {
                 if (Object.prototype.hasOwnProperty.call(source, key)) {
                     const sourceVal = source[key];
                     const targetVal = target[key];
+
                     if (Array.isArray(sourceVal)) {
                         if (!Array.isArray(targetVal)) { target[key] = []; }
+                        
                         sourceVal.forEach(sourceItem => {
                             if (typeof sourceItem === 'object' && sourceItem !== null && sourceItem.id) {
-                                const targetItem = target[key].find(t => t.id === sourceItem.id);
-                                if (targetItem) { deepMergeById(targetItem, sourceItem); } else { target[key].push(sourceItem); }
-                            } else { target[key].push(sourceItem); }
+                                // Compare IDs as strings to handle numeric vs string ID mismatches
+                                const existingItem = target[key].find(t => String(t.id) === String(sourceItem.id));
+                                if (existingItem) { 
+                                    deepMergeById(existingItem, sourceItem); 
+                                } else { 
+                                    target[key].push(sourceItem); 
+                                }
+                            } else { 
+                                if (typeof sourceItem !== 'object' && !target[key].includes(sourceItem)) {
+                                    target[key].push(sourceItem);
+                                } else if (typeof sourceItem === 'object') {
+                                     target[key].push(sourceItem);
+                                }
+                            }
                         });
-                    } else if (typeof sourceVal === 'object' && sourceVal !== null && !Array.isArray(sourceVal)) {
-                        if (typeof target[key] !== 'object' || target[key] === null) { target[key] = {}; }
+                    } else if (typeof sourceVal === 'object' && sourceVal !== null) {
+                        if (typeof target[key] !== 'object' || target[key] === null) { 
+                            target[key] = {}; 
+                        }
                         deepMergeById(target[key], sourceVal);
-                    } else { target[key] = sourceVal; }
+                    } else { 
+                        target[key] = sourceVal; 
+                    }
                 }
             }
             return target;
@@ -379,15 +398,29 @@ var Data = (function () {
         const mergeAndNotify = (response) => {
             const incomingSchools = response?.schools;
             if (!incomingSchools || incomingSchools.length === 0) return;
+            
             const updatedSubEntities = new Set();
+            
             incomingSchools.forEach(incomingSchool => {
-                let school = allData.schools.find(s => s.id === incomingSchool.id);
+                // Use string comparison for school ID
+                let school = allData.schools.find(s => String(s.id) === String(incomingSchool.id));
                 if (!school) {
                     school = { id: incomingSchool.id };
                     allData.schools.push(school);
+                    console.log("New School Added to cache:", school.id);
                 }
+                
                 deepMergeById(school, incomingSchool);
-                Object.keys(incomingSchool).forEach(key => updatedSubEntities.add(key));
+                
+                Object.keys(incomingSchool).forEach(key => {
+                    if (incomingSchool[key] !== null) {
+                        updatedSubEntities.add(key);
+                    }
+                });
+
+                if (incomingSchool.payments) {
+                    console.log(`School ${school.id} update included ${incomingSchool.payments.length} payments`);
+                }
             });
 
             if (!schoolID && allData.schools.length > 0) {
@@ -395,24 +428,42 @@ var Data = (function () {
                 localStorage.setItem("school", schoolID);
             }
 
-            if (Array.isArray(subs.schools)) {
-                const selectedSchool = allData.schools.find(s => s.id === schoolID) || {};
-                subs.schools.forEach(cb => cb({ selectedSchool, schools: [...allData.schools] }));
+            // Standardize activeSchool lookup
+            const activeSchool = allData.schools.find(s => String(s.id) === String(schoolID));
+            if (!activeSchool) {
+                console.warn("No activeSchool found for ID:", schoolID);
+                return;
             }
 
-            const activeSchool = allData.schools.find(s => s.id === schoolID);
-            if (!activeSchool) return;
-
+            // Notify flat-list subscribers based on what was updated
             const notifyEntity = (entityName, dataMapper) => {
                 if (updatedSubEntities.has(entityName) && activeSchool[entityName]) {
-                    allData[entityName] = dataMapper ? activeSchool[entityName].map(dataMapper) : activeSchool[entityName];
+                    // Update flat list logic:
+                    // We map the activeSchool's array to a new array to ensure React triggers updates (referential change)
+                    const newData = dataMapper ? activeSchool[entityName].map(dataMapper) : activeSchool[entityName];
+                    
+                    // SAFETY CHECK: If this query returned an empty list for an entity that usually has data, 
+                    // we might want to be careful. But generally, if updatedSubEntities has it, it implies the API returned it.
+                    allData[entityName] = newData;
+
                     if (Array.isArray(subs[entityName])) {
                         subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
                     }
                 }
             };
 
-            notifyEntity('students', s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name, route_name: s.route?.name }));
+            // Call notifiers
+            notifyEntity('students', s => {
+                const classObj = s.class?.id ? s.class : (allData.classes.find(c => String(c.id) === String(s.class?.id || s.class)));
+                if (!classObj && s.class) console.warn(`Class not found for student ${s.id}:`, s.class);
+                
+                return { 
+                    ...s, 
+                    parent_name: s.parent?.name, 
+                    class_name: classObj?.name,
+                    route_name: s.route?.name 
+                };
+            });
             notifyEntity('parents');
             notifyEntity('terms');
             notifyEntity('assessmentTypes');
@@ -423,21 +474,60 @@ var Data = (function () {
             notifyEntity('routes');
             notifyEntity('complaints');
             notifyEntity('trips');
-            if (updatedSubEntities.has('trips') && activeSchool.trips) {
-                // FIX: Ensure flatMap is called safely and default to empty array
-                allData.events = activeSchool.trips.flatMap(t => Array.isArray(t.events) ? t.events : []) || [];
-                
-                if (Array.isArray(subs.events)) {
-                    subs.events.forEach(cb => cb({ events: [...allData.events] }));
-                }
-            }
             notifyEntity('schedules', s => ({ ...s, bus_make: s.bus?.make, route_name: s.route?.name }));
+            
+            // NOTE: Classes are crucial for fees. 
             notifyEntity('classes', c => ({ ...c, student_num: c.students?.length || 0, teacher_name: c.teacher?.name }));
+            
             notifyEntity('teachers');
             notifyEntity('invitations');
             notifyEntity('smsLogs');
             notifyEntity('books');
+            
+            // Financials
+            if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
+                if (updatedSubEntities.has('charges')) allData.charges = activeSchool.charges || [];
+                if (updatedSubEntities.has('payments')) {
+                    // Merge payments instead of overwriting to preserve recent local additions
+                    const serverPayments = activeSchool.payments || [];
+                    const existingPayments = allData.payments || [];
+                    
+                    // Create a map of existing payments by ID for quick lookup
+                    const existingMap = new Map(existingPayments.map(p => [String(p.id), p]));
+                    
+                    // Merge server payments with existing ones, preferring server data for duplicates
+                    const mergedPayments = [];
+                    
+                    // Add server payments first (they're the source of truth)
+                    serverPayments.forEach(serverPayment => {
+                        const existingPayment = existingMap.get(String(serverPayment.id));
+                        if (existingPayment) {
+                            // Merge with existing payment, preserving any local fields not in server response
+                            mergedPayments.push({ ...existingPayment, ...serverPayment });
+                            existingMap.delete(String(serverPayment.id)); // Remove from map
+                        } else {
+                            mergedPayments.push(serverPayment);
+                        }
+                    });
+                    
+                    // Add any remaining local payments that weren't in server response
+                    mergedPayments.push(...existingMap.values());
+                    
+                    // Sort by creation date (newest first)
+                    mergedPayments.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || b.createdAt));
+                    
+                    allData.payments = mergedPayments;
+                }
+                
+                if (Array.isArray(subs.charges) && updatedSubEntities.has('charges')) {
+                    subs.charges.forEach(cb => cb({ charges: [...allData.charges] }));
+                }
+                if (Array.isArray(subs.payments) && updatedSubEntities.has('payments')) {
+                    subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
+                }
+            }
 
+            // Grades hierarchy flattening
             if (updatedSubEntities.has('grades') && activeSchool.grades) {
                 allData.grades = activeSchool.grades;
                 allData.subjects = activeSchool.grades.flatMap(g => g.subjects || []);
@@ -445,61 +535,20 @@ var Data = (function () {
                 allData.subtopics = allData.topics.flatMap(t => t.subtopics || []);
                 allData.questions = allData.subtopics.flatMap(st => st.questions || []);
                 allData.options = allData.questions.flatMap(q => q.options || []);
-                ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options'].forEach(entityName => {
+                
+                // Lesson Attempts & Events (Flattened)
+                allData.lessonAttempts = allData.subjects.flatMap(s => s.lessonAttempts || []);
+                allData.attemptEvents = allData.lessonAttempts.flatMap(l => l.attemptEvents || []);
+
+                ['grades', 'subjects', 'topics', 'subtopics', 'questions', 'options', 'lessonAttempts', 'attemptEvents'].forEach(entityName => {
                     if (Array.isArray(subs[entityName])) {
                         subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
                     }
                 });
             }
 
-            // --- *** FIX & LOGGING ADDED HERE *** ---
-            // Check if grades were part of the update, as lessonAttempts are nested within them.
-            if (updatedSubEntities.has('grades') && activeSchool.grades) {
-                console.log('[DataService] Processing lesson attempts from nested school structure...');
-
-                // Flatten all lesson attempts from the entire school's grade/subject hierarchy
-                const allLessonAttempts = activeSchool.grades.flatMap(g => g.subjects || [])
-                    .flatMap(s => s.lessonAttempts || []);
-
-                if (allLessonAttempts.length > 0) {
-                    console.log(`[DataService] Found ${allLessonAttempts.length} total lesson attempts. Caching.`);
-                    allData.lessonAttempts = allLessonAttempts;
-
-                    // Flatten all nested attemptEvents
-                    allData.attemptEvents = allLessonAttempts.flatMap(l => l.attemptEvents || []);
-                    console.log(`[DataService] Found ${allData.attemptEvents.length} total attempt events. Caching.`);
-
-                    // Notify subscribers for both entities
-                    if (Array.isArray(subs.lessonAttempts)) {
-                        subs.lessonAttempts.forEach(cb => cb({ lessonAttempts: [...allData.lessonAttempts] }));
-                    }
-                    if (Array.isArray(subs.attemptEvents)) {
-                        subs.attemptEvents.forEach(cb => cb({ attemptEvents: [...allData.attemptEvents] }));
-                    }
-                } else {
-                    console.log('[DataService] No lesson attempts found in the updated data.');
-                }
-            }
-
-
-            if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
-                allData.charges = activeSchool.charges || [];
-                allData.payments = activeSchool.payments || [];
-                if (Array.isArray(subs.charges)) subs.charges.forEach(cb => cb({ charges: [...allData.charges] }));
-                if (Array.isArray(subs.payments)) subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
-            }
-            if (updatedSubEntities.has('teams') && activeSchool.teams) {
-                allData.teams = activeSchool.teams;
-                allData.team_members = activeSchool.teams?.flatMap(t => t.members || []) || [];
-                if (Array.isArray(subs.teams)) subs.teams.forEach(cb => cb({ teams: [...allData.teams] }));
-                if (Array.isArray(subs.team_members)) subs.team_members.forEach(cb => cb({ team_members: [...allData.team_members] }));
-            }
-            // Inside the mergeAndNotify function logic
             if (updatedSubEntities.has('smsEvents') && activeSchool.smsEvents) {
                 allData.smsEvents = activeSchool.smsEvents;
-                // Optionally flatten logs if you need a master list of all individual SMS sent ever
-                // allData.smsLogs = activeSchool.smsEvents.flatMap(e => e.logs || []);
-
                 if (Array.isArray(subs.smsEvents)) {
                     subs.smsEvents.forEach(cb => cb({ smsEvents: [...allData.smsEvents] }));
                 }
@@ -510,6 +559,8 @@ var Data = (function () {
             { query: `query GetschoolsAndUser { user { ...UserData } schools { ...schoolDetails } }${FRAGMENT_USER_DATA}${FRAGMENT_SCHOOL_DETAILS}` },
             { query: `query GetStudents { schools { id ...StudentsData } } ${FRAGMENT_STUDENTS_DATA}` },
             { query: `query GetParents { schools { id ...ParentsData } } ${FRAGMENT_PARENTS_DATA}` },
+            { query: `query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}` }, // Classes moved up to prioritize loading
+            { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
             { query: `query GetDrivers { schools { id ...DriversData } } ${FRAGMENT_DRIVERS_DATA}` },
             { query: `query GetAdmins { schools { id ...AdminsData } } ${FRAGMENT_ADMINS_DATA}` },
             { query: `query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}` },
@@ -517,14 +568,11 @@ var Data = (function () {
             { query: `query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}` },
             { query: `query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}` },
             { query: `query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}` },
-            { query: `query GetClasses { schools { id ...ClassesData } } ${FRAGMENT_CLASSES_DATA}` },
             { query: `query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}` },
-            { query: `query GetFinancials { schools { id ...FinancialData } } ${FRAGMENT_FINANCIAL_DATA}` },
             { query: `query GetTeams { schools { id ...TeamsData } } ${FRAGMENT_TEAMS_DATA}` },
             { query: `query GetInvitations { schools { id ...InvitationsData } } ${FRAGMENT_INVITATIONS_DATA}` },
             { query: `query GetGradesBase { schools { id ...GradesData } } ${FRAGMENT_GRADES_DATA}` },
             { query: `query GetGradesOptions { schools { id ...GradesOptionsData } } ${FRAGMENT_GRADES_OPTIONS_DATA}` },
-            // --- ADDED LESSON DATA QUERY ---
             { query: `query GetLessonAttempts { schools { id ...LessonData } } ${FRAGMENT_LESSON_DATA}` },
             { query: `query GetSmsEvents { schools { id ...SmsEventsData } } ${FRAGMENT_SMS_EVENTS_DATA}` },
             { query: `query GetBooks { schools { id ...BooksData } } ${FRAGMENT_BOOKS_DATA}` },
@@ -547,9 +595,9 @@ var Data = (function () {
     init();
 
     const entityConfigs = [
-        { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder'], updateFields: ['name', 'school', 'subjectsOrder'] },
+        { name: "grades", singularName: "grade", createFields: ['name', 'school', 'subjectsOrder', 'isVisible'], updateFields: ['name', 'school', 'subjectsOrder', 'isVisible'] },
         { name: "subjects", singularName: "subject", isNested: true, parentEntity: "grades", parentKey: "grade", createFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'], updateFields: ['name', 'grade', 'topicsOrder', 'teacher', 'aiGeneratedCurriculum', 'topicalImages'] },
-        { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder'] },
+        { name: "topics", singularName: "topic", isNested: true, parentEntity: "subjects", parentKey: "subject", createFields: ['name', 'subject', 'icon', 'subtopicOrder', 'isVisible'], updateFields: ['name', 'subject', 'icon', 'subtopicOrder', 'isVisible'] },
         { name: "subtopics", singularName: "subtopic", isNested: true, parentEntity: "topics", parentKey: "topic", createFields: ['name', 'topic', 'questionsOrder'], updateFields: ['name', 'topic', 'questionsOrder'] },
         { name: "questions", singularName: "question", isNested: true, parentEntity: "subtopics", parentKey: "subtopic", createFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder', 'contentOrder'], updateFields: ['name', 'type', 'subtopic', 'videos', 'attachments', 'images', 'optionsOrder', 'contentOrder'], customMethods: (allData, subs, api) => ({ getImages: (id) => new Promise(async (resolve, reject) => { try { const response = await query(`query GetQuestionImages($id: String!) { questionImages(id: $id) }`, { id }); resolve(response.questionImages || []); } catch (e) { console.error(e); resolve([]); } }) }) },
         { name: "options", singularName: "option", isNested: true, parentEntity: "questions", parentKey: "question", createFields: ['value', 'correct', 'question'], updateFields: ['value', 'correct', 'question'] },
@@ -586,7 +634,7 @@ var Data = (function () {
                         // Since this is a fresh fetch for a context, maybe we just upsert.
                         
                         fetchedAssessments.forEach(newAss => {
-                            const existingIdx = safeList.findIndex(a => a.id === newAss.id);
+                            const existingIdx = safeList.findIndex(a => String(a.id) === String(newAss.id));
                             // Normalize references for the flat cache
                             const flatAss = {
                                 ...newAss,
@@ -601,6 +649,7 @@ var Data = (function () {
                                 safeList.push(flatAss);
                             }
                         });
+                        console.log(`Assessments getForClass: fetched ${fetchedAssessments.length}, total in cache ${safeList.length}`);
                         
                         // Update cache ref (if it wasn't already)
                         if (!Array.isArray(allData.assessments)) allData.assessments = safeList;
@@ -640,7 +689,7 @@ var Data = (function () {
                 // --- ADDED METHODS BELOW ---
                 getForClass: (classId) => {
                     // 1. Find the class to get its list of student IDs
-                    const targetClass = allData.classes.find(c => c.id === classId);
+                    const targetClass = allData.classes.find(c => String(c.id) === String(classId));
                     if (!targetClass || !Array.isArray(targetClass.students)) return [];
 
                     // 2. Create a Set of student IDs for O(1) lookup
@@ -648,13 +697,16 @@ var Data = (function () {
 
                     // 3. Filter parents who have a child in that Set
                     return allData.parents.filter(p =>
-                        Array.isArray(p.students) && p.students.some(s => studentIds.has(s.id))
+                        Array.isArray(p.students) && p.students.some(s => {
+                            // Convert to string for set lookup
+                            return studentIds.has(String(s.id));
+                        })
                     );
                 },
                 getForRoute: (routeId) => {
                     // The parents data fragment already includes nested route data for students
                     return allData.parents.filter(p =>
-                        Array.isArray(p.students) && p.students.some(s => s.route && s.route.id === routeId)
+                        Array.isArray(p.students) && p.students.some(s => s.route && String(s.route.id) === String(routeId))
                     );
                 }
             })
@@ -690,8 +742,8 @@ var Data = (function () {
         }, {
             name: "payments",
             singularName: "payment",
-            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description'],
-            updateFields: ['phone', 'school', 'amount', 'type', 'ref', 'time', 'status', 'description']
+            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
+            updateFields: ['phone', 'school', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata']
         }, { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
         {
             name: "lessonAttempts",
@@ -778,7 +830,8 @@ var Data = (function () {
             subscribe: (cb) => {
                 if (!Array.isArray(subs.schools)) { subs.schools = []; }
                 subs.schools.push(cb);
-                const selectedSchool = allData.schools.find(s => s.id === (schoolID || localStorage.getItem("school")));
+                const currentSchoolId = schoolID || localStorage.getItem("school");
+                const selectedSchool = allData.schools.find(s => String(s.id) === String(currentSchoolId));
                 cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} });
                 return () => {
                     subs.schools = subs.schools.filter(subscriber => subscriber !== cb);
@@ -789,10 +842,10 @@ var Data = (function () {
                     const { id, ...payload } = data;
                     const response = await mutate(`mutation ($data: USchool!) { schools { update(school: $data) { id } } }`, { data: { id, ...payload } });
                     const updatedSchool = { ...data, id: response.schools.update.id };
-                    const itemIndexFlat = allData.schools.findIndex(item => item.id === id);
+                    const itemIndexFlat = allData.schools.findIndex(item => String(item.id) === String(id));
                     if (itemIndexFlat > -1) { allData.schools[itemIndexFlat] = updatedSchool; }
                     if (Array.isArray(subs.schools)) {
-                        const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                        const selectedSchool = allData.schools.find(s => String(s.id) === String(schoolID));
                         subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
                     resolve(updatedSchool);
@@ -804,38 +857,69 @@ var Data = (function () {
                     const newSchool = { ...data, id: response.schools.create.id };
                     allData.schools.push(newSchool);
                     if (Array.isArray(subs.schools)) {
-                        const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                        const selectedSchool = allData.schools.find(s => String(s.id) === String(schoolID));
                         subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
                     resolve(newSchool);
                 } catch (error) { console.error(`Error creating school:`, error); reject(error); }
             }),
-            getSelected: () => allData.schools.find(s => s.id === localStorage.getItem("school")) || {},
+            getSelected: () => {
+                const currentSchoolId = localStorage.getItem("school");
+                return allData.schools.find(s => String(s.id) === String(currentSchoolId)) || {};
+            },
             archive: () => new Promise(async (resolve, reject) => {
                 const school = instance.schools.getSelected();
                 if (!school.id) return reject("No school selected");
                 await mutate(`mutation ($data: Uschool!) { schools { archive(school: $data) { id } } }`, { data: { id: school.id } });
-                allData.schools = allData.schools.filter(s => s.id !== school.id);
+                allData.schools = allData.schools.filter(s => String(s.id) !== String(school.id));
                 if (Array.isArray(subs.schools)) {
                     subs.schools.forEach(sCb => sCb({ schools: [...allData.schools] }));
                 }
                 resolve(school);
             }),
-            charge: (phone, amount, forcedSchoolId) => {
+            charge: (phone, amount, metadata = {}, forcedSchoolId) => {
                 const schoolId = forcedSchoolId || instance.schools.getSelected()?.id;
                 if (!schoolId) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { schoolId, amount, phone }
+                    payment: { schoolId, amount, phone, metadata }
+                }).then(response => {
+                    const initRes = response.payments?.init;
+                    if (initRes) {
+                        // Manually inject into cache for immediate UI update
+                        const newPayment = {
+                            id: initRes.id,
+                            amount: String(amount),
+                            phone: phone,
+                            status: 'PENDING',
+                            merchantRequestID: initRes.MerchantRequestID,
+                            checkoutRequestID: initRes.CheckoutRequestID,
+                            createdAt: new Date().toISOString(),
+                            metadata: metadata,
+                            type: 'mpesa_init',
+                            student: metadata.studentId
+                        };
+                        if (!Array.isArray(allData.payments)) allData.payments = [];
+                        allData.payments.push(newPayment);
+
+                        // Also find school in cache and add it there
+                        const school = allData.schools.find(s => s.id === schoolId);
+                        if (school) {
+                            if (!Array.isArray(school.payments)) school.payments = [];
+                            school.payments.push(newPayment);
+                        }
+
+                        // Notify
+                        if (Array.isArray(subs.payments)) {
+                            subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
+                        }
+                    }
+                    return response;
                 });
             },
             // In utils/data.js (inside publicApi -> school object)
 
             verifyTx: ({ CheckoutRequestID, MerchantRequestID, schoolId: forcedId }) => {
-                // 1. Get the school ID
-                // Handle cases where this might be called via publicApi.schools.verifyTx or publicApi.school.verifyTx
-                // We use the internal _schoolData or try to find it from cache
                 const schoolId = forcedId || instance.schools.getSelected()?.id;
-
                 if (!schoolId) return Promise.reject("No school selected for verification");
 
                 return mutate(
@@ -848,8 +932,8 @@ var Data = (function () {
     amount
     phone
     status
-    mpesaReceiptNumber  # Add this
-    resultDesc          # Add this
+    mpesaReceiptNumber
+    resultDesc
     ref
     time 
 }
@@ -857,13 +941,33 @@ var Data = (function () {
         }`,
                     {
                         data: {
-                            // 2. Ensure these keys match the GraphQL Input Type exactly (PascalCase)
                             MerchantRequestID: MerchantRequestID,
                             CheckoutRequestID: CheckoutRequestID,
                             schoolId: schoolId
                         }
                     }
-                );
+                ).then(response => {
+                    const confirmRes = response.payments?.confirm;
+                    if (confirmRes && confirmRes.success) {
+                        // Update cache
+                        const payment = allData.payments.find(p => String(p.id) === String(confirmRes.id) || String(p.checkoutRequestID) === String(CheckoutRequestID));
+                        if (payment) {
+                            Object.assign(payment, {
+                                status: confirmRes.status || 'COMPLETED',
+                                mpesaReceiptNumber: confirmRes.mpesaReceiptNumber,
+                                resultDesc: confirmRes.resultDesc,
+                                ref: confirmRes.ref,
+                                time: confirmRes.time
+                            });
+                            
+                            // Notify
+                            if (Array.isArray(subs.payments)) {
+                                subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
+                            }
+                        }
+                    }
+                    return response;
+                });
             },
             delete: (data) => new Promise(async (resolve, reject) => {
                 try {
