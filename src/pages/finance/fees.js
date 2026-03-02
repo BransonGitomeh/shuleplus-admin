@@ -101,7 +101,7 @@ class FeesManagement extends Component {
         console.log("FeesManagement Mounted");
         this.unsubClasses = Data.classes.subscribe(({ classes }) => {
             console.log("Classes Update:", classes?.length);
-            this.updateData({ classes });
+            this.updateData({ classes, loading: !classes?.length });
         });
         this.unsubTerms = Data.terms?.subscribe(({ terms }) => {
             console.log("Terms Update:", terms?.length);
@@ -123,13 +123,14 @@ class FeesManagement extends Component {
         if (Data.payments) {
             this.unsubPayments = Data.payments.subscribe(({ payments }) => {
                 console.log("Payments Update:", payments?.length);
-                this.updateData({ payments });
+                // Only flip loading to false if we have other dependencies too
+                const { students, classes } = this.state;
+                const isReady = students.length > 0 && classes.length > 0 && payments.length > 0;
+                this.updateData({ payments, loading: !isReady });
             });
         } else {
             console.warn("Data.payments is NOT DEFINED");
         }
-        
-        setTimeout(() => this.setState({ loading: false }), 1000);
     }
 
     componentWillUnmount() {
@@ -143,10 +144,28 @@ class FeesManagement extends Component {
     // Centralized update handler to trigger recalculation
     updateData = (newData) => {
         console.log("Updating State with keys:", Object.keys(newData));
-        this.setState(newData, () => {
-            console.log("State updated, recalculating financials...");
-            this.recalculateFinancials();
+        
+        // Only update if new data actually contains items, 
+        // or if we don't have that data in state yet.
+        const cleanData = {};
+        Object.keys(newData).forEach(key => {
+            const val = newData[key];
+            if (Array.isArray(val)) {
+                // Prevent overwriting existing data with empty arrays from initial subscriptions
+                if (val.length > 0 || !this.state[key] || this.state[key].length === 0) {
+                    cleanData[key] = val;
+                }
+            } else {
+                cleanData[key] = val;
+            }
         });
+
+        if (Object.keys(cleanData).length > 0) {
+            this.setState(cleanData, () => {
+                console.log("State updated, recalculating financials...");
+                this.recalculateFinancials();
+            });
+        }
     };
 
     handleFilterChange = (key, value) => {
@@ -168,8 +187,10 @@ class FeesManagement extends Component {
             selectedTerm
         });
 
-        if (!students.length || !parents.length) {
-            console.log("Exiting early: missing students or parents");
+        // EXIT if any core piece is missing. 
+        // This prevents calculating balances before payments or fees are known.
+        if (!students.length || !parents.length || !classes.length || !payments.length) {
+            console.log("Exiting early: missing core data");
             return;
         }
 
@@ -246,7 +267,9 @@ class FeesManagement extends Component {
 
                 // Time filter
                 if (dateRange) {
-                    const t = new Date(p.transactionDate || p.createdAt || p.time).getTime();
+                    const rawDate = p.time || p.createdAt || p.transactionDate;
+                    if (!rawDate) return true; // Keep payment if it has no date (better to show it than hide it)
+                    const t = new Date(rawDate).getTime();
                     if (t < dateRange.start || t > dateRange.end) return false;
                 }
                 return true;
