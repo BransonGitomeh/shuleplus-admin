@@ -101,6 +101,47 @@ class LibraryList extends React.Component {
     // or you can call this.modalRef.hide() here if you prefer manual control.
   };
 
+  downloadBook = (book) => {
+    try {
+      let downloadUrl;
+      let filename;
+      
+      if (book.pdfUrl.startsWith('data:application/pdf;base64,')) {
+        // Create blob from base64
+        const base64Data = book.pdfUrl.split(',')[1];
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        downloadUrl = URL.createObjectURL(blob);
+        filename = `${book.title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      } else {
+        // Use regular URL
+        downloadUrl = book.pdfUrl;
+        filename = book.pdfUrl.split('/').pop() || `${book.title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      }
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup blob URL if created
+      if (downloadUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+      
+      window.toastr.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      window.toastr.error('Failed to download book');
+    }
+  };
+
   deleteBook = (book) => {
     if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
       Data.books.delete(book) // Pass ID or object depending on your API
@@ -124,7 +165,7 @@ class LibraryList extends React.Component {
           onError={(e) => { e.target.onerror = null; e.target.src="https://via.placeholder.com/150x200?text=No+Cover"; }} 
         />
         
-        {/* Overlay Actions (Edit/Delete/View) */}
+        {/* Overlay Actions (Edit/Delete/View/Download) */}
         <div className="book-actions-overlay">
             <button 
                 className="btn-card-action"
@@ -139,15 +180,23 @@ class LibraryList extends React.Component {
                 Delete
             </button>
             {book.pdfUrl && (
-                <a 
-                    href={book.pdfUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="btn-card-action"
-                    style={{textDecoration: 'none', textAlign: 'center'}}
-                >
-                    View PDF
-                </a>
+                <>
+                    <button 
+                        className="btn-card-action"
+                        onClick={() => this.downloadBook(book)}
+                    >
+                        Download
+                    </button>
+                    <a 
+                        href={book.pdfUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn-card-action"
+                        style={{textDecoration: 'none', textAlign: 'center'}}
+                    >
+                        View PDF
+                    </a>
+                </>
             )}
         </div>
       </div>

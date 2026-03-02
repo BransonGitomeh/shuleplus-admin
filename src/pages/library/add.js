@@ -84,23 +84,34 @@ class BookModal extends React.Component {
   handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const localUrl = URL.createObjectURL(file);
-      this.setState({
-        coverFile: file,
-        coverUrl: localUrl,
-        errors: { ...this.state.errors, cover: null }
-      });
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target.result;
+        this.setState({
+          coverFile: file,
+          coverUrl: base64String,
+          errors: { ...this.state.errors, cover: null }
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   handlePdfSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      this.setState({
-        pdfFile: file,
-        pdfUrl: file.name,
-        errors: { ...this.state.errors, pdf: null }
-      });
+      // Convert PDF to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target.result;
+        this.setState({
+          pdfFile: file,
+          pdfUrl: base64String,
+          errors: { ...this.state.errors, pdf: null }
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -153,9 +164,7 @@ class BookModal extends React.Component {
       description: this.state.description,
       coverUrl: this.state.coverUrl,
       pdfUrl: this.state.pdfUrl,
-      // Pass raw files so parent can handle FormData upload if needed
-      coverFile: this.state.coverFile,
-      pdfFile: this.state.pdfFile
+      // Note: Files are now converted to base64 strings in the URLs
     };
 
     // Save
