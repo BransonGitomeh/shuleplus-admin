@@ -206,6 +206,7 @@ class AddQuestionModal extends React.Component {
         images: images.map(i => i.base64),
         attachments: serializedAttachments,
         contentOrder: contentOrder,
+        optionsOrder: [],  // Always send explicitly so Waterline stores [] instead of ""
       };
 
       const createdQuestion = await this.props.save(payload);

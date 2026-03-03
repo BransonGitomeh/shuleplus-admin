@@ -53,15 +53,9 @@ const ErrorFallback = () => (
       boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
       maxWidth: '500px',
     }}>
-      <h1 style={{ fontSize: '3rem', color: '#d9534f', margin: '0 0 10px 0' }}>
-        Oops!
-      </h1>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 'normal', color: '#555', margin: '0 0 25px 0' }}>
-        Something Went Wrong
-      </h2>
       <p style={{ fontSize: '1rem', color: '#777', lineHeight: '1.6', marginBottom: '30px' }}>
-        We're sorry for the inconvenience. Our technical team has been automatically
-        notified. Please reload the page to continue.
+        We apologize for the inconvenience. Our technical team has been automatically
+        notified. Please refresh the page to continue.
       </p>
       <button
         onClick={() => window.location.reload()}
