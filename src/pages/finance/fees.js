@@ -308,7 +308,12 @@ class FeesManagement extends Component {
                 let pTerm = "Unknown Term";
                 const pTime = new Date(p.time || p.createdAt || p.transactionDate).getTime();
                 
-                if (!isNaN(pTime)) {
+                // 1. First check if a manual term was explicitly assigned
+                if (p.metadata && p.metadata.termId) {
+                    const explicitTerm = terms?.find(t => String(t.id) === String(p.metadata.termId));
+                    if (explicitTerm) pTerm = explicitTerm.name;
+                } else if (!isNaN(pTime)) {
+                    // 2. Fallback to automatic date-based assignment
                     const matchingTerm = terms?.find(t => {
                         const start = new Date(t.startDate).getTime();
                         const end = new Date(t.endDate).getTime();
@@ -329,9 +334,14 @@ class FeesManagement extends Component {
                 return { ...p, assignedTerm: pTerm, studentName };
             }).sort((a,b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
 
-            // Filter for term History based on dateRange
+            // Filter for term History based on dateRange OR explicit termId
             const relatedPayments = processedAllPayments.filter(p => {
-                // Time filter
+                // If the payment has an explicitly mapped term, trust that over the date filter
+                if (p.metadata?.termId) {
+                    return String(p.metadata.termId) === String(selectedTerm);
+                }
+
+                // Otherwise, use the Time filter
                 if (dateRange) {
                     const rawDate = p.time || p.createdAt || p.transactionDate;
                     if (!rawDate) return true; // Keep payment if it has no date (better to show it than hide it)
@@ -360,7 +370,7 @@ class FeesManagement extends Component {
 
                 const paid = studentPayments.reduce((sum, p) => {
                     const isValidStatus = p.status === 'COMPLETED' || p.status === 'PENDING';
-                    return isValidStatus ? sum + parseFloat(p.amount || 0) : sum;
+                    return isValidStatus ? sum + parseFloat(p.amount || p.ammount || 0) : sum;
                 }, 0);
                 
                 student.finances = { expected: classFee, paid, balance: classFee - paid, history: studentPayments };
@@ -368,7 +378,7 @@ class FeesManagement extends Component {
             });
 
             const allValidPayments = relatedPayments.filter(p => p.status === 'COMPLETED' || p.status === 'PENDING');
-            group.totalPaid = allValidPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            group.totalPaid = allValidPayments.reduce((sum, p) => sum + parseFloat(p.amount || p.ammount || 0), 0);
             group.totalBalance = group.totalExpected - group.totalPaid;
             
             group.history = relatedPayments;
@@ -447,6 +457,7 @@ class FeesManagement extends Component {
                 school: localStorage.getItem('school'),
                 phone: parentPhone,
                 amount: String(paymentAmount),
+                ammount: String(paymentAmount), // Added to fix backend schema mismatch
                 status: 'COMPLETED',
                 type: 'fees_manual',
                 paymentType: manualPaymentMethod,
