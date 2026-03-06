@@ -480,7 +480,6 @@ class FeesManagement extends Component {
                 school: localStorage.getItem('school'),
                 phone: parentPhone,
                 amount: String(paymentAmount),
-                ammount: String(paymentAmount), // Added to fix backend schema mismatch
                 status: 'COMPLETED',
                 type: 'fees_manual',
                 paymentType: manualPaymentMethod,
