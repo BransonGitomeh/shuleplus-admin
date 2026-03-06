@@ -505,9 +505,22 @@ class FeesManagement extends Component {
     };
 
     openEditPaymentModal = (payment) => {
+        let parsedMetadata = payment.metadata || {};
+        if (typeof parsedMetadata === 'string') {
+            try {
+                parsedMetadata = JSON.parse(parsedMetadata);
+            } catch (e) {
+                console.error("Failed to parse metadata in edit modal", e);
+                parsedMetadata = {};
+            }
+        }
+        
         this.setState({
             showEditPaymentModal: true,
-            editPaymentData: { ...payment }
+            editPaymentData: { 
+                ...payment,
+                metadata: parsedMetadata 
+            }
         });
     };
 
@@ -522,7 +535,11 @@ class FeesManagement extends Component {
                 paymentType: editPaymentData.paymentType,
                 ref: editPaymentData.ref || editPaymentData.mpesaReceiptNumber,
                 time: editPaymentData.time || editPaymentData.createdAt,
-                metadata: { ...editPaymentData.metadata, method: editPaymentData.paymentType }
+                metadata: { 
+                    ...editPaymentData.metadata, 
+                    method: editPaymentData.paymentType,
+                    termId: editPaymentData.metadata?.termId // Ensure termId is passed back
+                }
             });
             if(window.toastr) window.toastr.success("Payment updated successfully!");
             this.setState({ showEditPaymentModal: false, editPaymentData: null });
