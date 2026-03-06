@@ -306,12 +306,14 @@ class FeesManagement extends Component {
             // Assign terms to all payments based on terms configuration
             const processedAllPayments = allParentPayments.map(p => {
                 let metadata = p.metadata;
-                if (typeof metadata === 'string') {
+                if (typeof metadata === 'string' && metadata.trim().startsWith('{')) {
                     try {
                         metadata = JSON.parse(metadata);
                     } catch (e) {
-                        console.error("Failed to parse metadata", e);
+                        console.error("Failed to parse metadata string:", metadata, e);
                     }
+                } else if (metadata && typeof metadata === 'object' && metadata.manual) {
+                    // It's already an object, likely from a local update or a smart backend
                 }
 
                 let pTerm = "Unknown Term";
@@ -349,18 +351,26 @@ class FeesManagement extends Component {
                 const isFailed = p.status === 'FAILED' || p.status === 'FAILED_ON_CALLBACK';
                 if (isFailed) return false;
 
-                // If the payment has an explicitly mapped term, trust that over the date filter
+                // If "All Terms" is selected, we show everything (that isn't failed)
+                if (!selectedTerm) return true;
+
+                // If a specific term is selected:
+                // 1. If the payment has an explicitly mapped term, trust that
                 if (p.metadata?.termId) {
                     return String(p.metadata.termId) === String(selectedTerm);
                 }
 
-                // Otherwise, use the Time filter
+                // 2. Otherwise, use the Time filter fallback
                 if (dateRange) {
                     const rawDate = p.time || p.createdAt || p.transactionDate;
-                    if (!rawDate) return true; // Keep payment if it has no date (better to show it than hide it)
+                    if (!rawDate) return true; 
                     const t = new Date(rawDate).getTime();
                     if (t < dateRange.start || t > dateRange.end) return false;
                 }
+                
+                // If we have a selectedTerm but no dateRange and no termId, 
+                // we'll keep it just in case, but usually we filter it out.
+                // However, the above logic covers most cases.
                 return true;
             });
 
@@ -376,8 +386,8 @@ class FeesManagement extends Component {
                     const pStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
                     const targetStudentId = String(student.id);
                     
-                    if (pStudentId && pStudentId !== "undefined" && pStudentId !== targetStudentId) return false; 
-                    if (isSingleChild && (!pStudentId || pStudentId === "undefined")) return true; 
+                    if (pStudentId && pStudentId !== "undefined" && pStudentId !== "" && pStudentId !== "null" && pStudentId !== targetStudentId) return false; 
+                    if (isSingleChild && (!pStudentId || pStudentId === "undefined" || pStudentId === "null" || pStudentId === "")) return true; 
                     return pStudentId === targetStudentId;
                 });
 
