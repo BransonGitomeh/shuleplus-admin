@@ -335,7 +335,11 @@ class FeesManagement extends Component {
             }).sort((a,b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
 
             // Filter for term History based on dateRange OR explicit termId
+            // And exclude failed transactions to reduce noise in active term views
             const relatedPayments = processedAllPayments.filter(p => {
+                const isFailed = p.status === 'FAILED' || p.status === 'FAILED_ON_CALLBACK';
+                if (isFailed) return false;
+
                 // If the payment has an explicitly mapped term, trust that over the date filter
                 if (p.metadata?.termId) {
                     return String(p.metadata.termId) === String(selectedTerm);
@@ -920,22 +924,28 @@ class FeesManagement extends Component {
                                                                         <h6 className="font-weight-bold mb-3 pt-3 border-top">All Time Payments</h6>
                                                                         <div style={{maxHeight: '200px', overflowY: 'auto'}}>
                                                                             {(!group.allHistory || group.allHistory.length === 0) && <span className="text-muted small">No payments recorded.</span>}
-                                                                            {group.allHistory && group.allHistory.map(h => (
-                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                                                            {group.allHistory && group.allHistory.map(h => {
+                                                                                const isFailed = h.status === 'FAILED' || h.status === 'FAILED_ON_CALLBACK';
+                                                                                return (
+                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2" style={{ opacity: isFailed ? 0.35 : 1 }}>
                                                                                     <div className="d-flex flex-column">
                                                                                         <span className="text-dark-75 font-weight-bold font-size-sm">
                                                                                             {h.paymentType || h.type || 'M-Pesa'} 
                                                                                             <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
-                                                                                            <span className="badge badge-light-secondary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>
+                                                                                            {isFailed && <span className="badge badge-light-danger ml-2 py-0 px-1" style={{fontSize: '0.65rem'}}>FAILED</span>}
+                                                                                            {!isFailed && <span className="badge badge-light-secondary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>}
                                                                                         </span>
                                                                                         <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
                                                                                     </div>
                                                                                     <div className="d-flex align-items-center">
-                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount).toLocaleString()}</span>
-                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                        <span className={`${isFailed ? 'text-muted text-decoration-line-through' : 'text-success'} font-weight-bolder font-size-sm mr-3`}>
+                                                                                            +{parseFloat(h.amount).toLocaleString()}
+                                                                                        </span>
+                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit" disabled={isFailed}><i className="flaticon2-pen"></i></button>
                                                                                     </div>
                                                                                 </div>
-                                                                            ))}
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     </div>
                                                                 </div>
