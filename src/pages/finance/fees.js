@@ -110,15 +110,20 @@ class FeesManagement extends Component {
         
         loading: true,
         
-        // Modals & UI State
+        // Modals & UI
         expandedParentId: null, // For table row expansion
         showPaymentModal: false,
+        showManualPaymentModal: false,
+        showEditPaymentModal: false,
+        showStatementModal: false, // NEW
+        editPaymentData: null,
+        statementGroup: null, // NEW
+        statementTab: 'statement', // 'statement' or 'sms'
+        statementSmsMessage: '',
         paymentStudent: null,
-        paymentAmount: 0,
+        paymentAmount: 0, // Kept this as it was in the original state, not explicitly removed by instruction
         parentPhone: "",
         processingPayment: false,
-        
-        showManualPaymentModal: false,
         manualPaymentMethod: "CASH",
         manualPaymentNotes: "",
         sendingSms: false,
@@ -506,32 +511,90 @@ class FeesManagement extends Component {
         } catch(e) { console.error(e); } finally { this.setState({ sendingSms: false }); }
     };
 
-    // Note: Reusing printStatement logic from V1 exactly, just ensure it reads from passed group object
-    printStatement = (group) => {
-         const { students, parent } = group;
+    showStatementPreview = (group) => {
+        const { students, totalBalance } = group;
+        const studentNames = students.map(s => s.names).join(", ");
+        const defaultMsg = `Dear Parent, fee balance for ${studentNames} is KES ${totalBalance.toLocaleString()}. Please clear it.`;
+        
+        this.setState({
+            showStatementModal: true,
+            statementGroup: group,
+            statementTab: 'statement',
+            statementSmsMessage: defaultMsg
+        });
+    };
+
+    sendStatementSms = async () => {
+        const { statementGroup, statementSmsMessage } = this.state;
+        if (!statementGroup || !statementGroup.parent?.phone) return;
+        
+        this.setState({ sendingSms: true });
+        try {
+            await Data.communication.sms.create({ phone: statementGroup.parent.phone, message: statementSmsMessage });
+            if(window.toastr) window.toastr.success("SMS Sent successfully!");
+        } catch(e) { 
+            console.error(e); 
+            if(window.toastr) window.toastr.error("Failed to send SMS");
+        } finally { 
+            this.setState({ sendingSms: false }); 
+        }
+    };
+
+    executePrintStatement = () => {
+         const { statementGroup } = this.state;
+         if (!statementGroup) return;
+
+         const { students, parent } = statementGroup;
          const school = Data.schools.getSelected();
          const printWindow = window.open('', '_blank');
-         // ... (Keep existing Print HTML Logic, ensuring it uses student.finances.expected/paid/balance) ...
-         // For brevity in V2 response, I am assuming the V1 print logic is pasted here or imported
-         // I will implement a basic version here:
+
+         const isValidPayment = (p) => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED';
+
+         // Calculate manual & completed mpesa expected/paid/balances for print preview
+         const validStudentsData = students.map(s => {
+             const validHistory = s.finances.history.filter(isValidPayment);
+             const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+             return {
+                 names: s.names,
+                 expected: s.finances.expected, // Expected usually remains the same class fee
+                 paid: validPaid,
+                 balance: s.finances.expected - validPaid,
+                 history: validHistory
+             };
+         });
+         
+         const totalValidExpected = validStudentsData.reduce((sum, s) => sum + s.expected, 0);
+         const totalValidPaid = validStudentsData.reduce((sum, s) => sum + s.paid, 0);
+         const totalValidBalance = totalValidExpected - totalValidPaid;
+
          const content = `
-            <html><head><title>Statement</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}</style></head>
+            <html><head><title>Statement</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px} .text-right { text-align: right; }</style></head>
             <body>
-                <h2>${school.name} - Fee Statement</h2>
+                <h2>${school.name} - Official Fee Statement</h2>
                 <p><strong>Parent:</strong> ${parent.name} (${parent.phone})</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
                 <h3>Balances</h3>
                 <table>
-                    <thead><tr><th>Student</th><th>Expected</th><th>Paid</th><th>Balance</th></tr></thead>
+                    <thead><tr><th>Student</th><th>Expected</th><th>Total Paid</th><th>Balance</th></tr></thead>
                     <tbody>
-                        ${students.map(s => `<tr><td>${s.names}</td><td>${s.finances.expected}</td><td>${s.finances.paid}</td><td>${s.finances.balance}</td></tr>`).join('')}
+                        ${validStudentsData.map(s => `<tr><td>${s.names}</td><td>KES ${s.expected.toLocaleString()}</td><td>KES ${s.paid.toLocaleString()}</td><td>KES ${s.balance.toLocaleString()}</td></tr>`).join('')}
                     </tbody>
                 </table>
-                <h3 style="text-align:right">Total Outstanding: ${group.totalBalance.toLocaleString()}</h3>
+                <h3 class="text-right">Total Outstanding Balance: KES ${totalValidBalance.toLocaleString()}</h3>
+                
+                <h3>Recent Transactions</h3>
+                <table>
+                    <thead><tr><th>Date</th><th>Student</th><th>Method</th><th>Amount</th><th>Reference</th></tr></thead>
+                    <tbody>
+                        ${validStudentsData.flatMap(s => s.history.map(h => `<tr><td>${new Date(h.time || h.createdAt).toLocaleDateString()}</td><td>${s.names}</td><td>${h.paymentType || (h.type === 'fees_manual' ? 'Cash' : 'M-Pesa')}</td><td>KES ${parseFloat(h.amount).toLocaleString()}</td><td>${h.ref || h.mpesaReceiptNumber || 'N/A'}</td></tr>`)).join('')}
+                    </tbody>
+                </table>
                 <script>window.onload = function() { window.print(); }</script>
             </body></html>
          `;
          printWindow.document.write(content);
          printWindow.document.close();
+         this.setState({ showStatementModal: false, statementGroup: null });
     };
 
     render() {
@@ -668,7 +731,7 @@ class FeesManagement extends Component {
                                                             </button>
                                                             <button 
                                                                 className="btn btn-icon btn-light btn-hover-success btn-sm mx-1"
-                                                                onClick={() => this.printStatement(group)}
+                                                                onClick={() => this.showStatementPreview(group)}
                                                                 title="Print Statement"
                                                             >
                                                                 <i className="flaticon2-printer"></i>
@@ -968,6 +1031,125 @@ class FeesManagement extends Component {
                             <div className="modal-footer">
                                 <button className="btn btn-secondary" onClick={() => this.setState({ showEditPaymentModal: false, editPaymentData: null })}>Cancel</button>
                                 <button className="btn btn-success" disabled={this.state.processingPayment} onClick={this.updatePayment}>{this.state.processingPayment ? "Saving..." : "Update Payment"}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {this.state.showStatementModal && this.state.statementGroup && (
+                <div className="modal fade show" style={{display: 'block', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered" style={{ maxWidth: '800px' }}>
+                        <div className="modal-content">
+                            <div className="modal-header pb-0 border-0">
+                                <h5 className="modal-title">Fee Statement & Notification</h5>
+                                <button type="button" className="close" onClick={() => this.setState({ showStatementModal: false, statementGroup: null })}><span>&times;</span></button>
+                            </div>
+                            
+                            <div className="modal-body pt-0" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                <ul className="nav nav-tabs nav-tabs-line mb-5 mt-4 border-bottom-0">
+                                    <li className="nav-item">
+                                        <a className={`nav-link font-weight-bold ${this.state.statementTab === 'statement' ? 'active' : ''}`} style={{cursor: 'pointer'}} onClick={() => this.setState({ statementTab: 'statement' })}>Statement Preview</a>
+                                    </li>
+                                    <li className="nav-item">
+                                        <a className={`nav-link font-weight-bold ${this.state.statementTab === 'sms' ? 'active' : ''}`} style={{cursor: 'pointer'}} onClick={() => this.setState({ statementTab: 'sms' })}>Send SMS</a>
+                                    </li>
+                                </ul>
+
+                                {this.state.statementTab === 'statement' && (
+                                    <div>
+                                        <div className="alert alert-custom alert-light-info shadow-sm mb-5 border-0">
+                                            <div className="alert-icon"><i className="flaticon-information text-info"></i></div>
+                                            <div className="alert-text font-size-sm">
+                                                This statement includes <strong>manual payments</strong> and <strong>successful M-Pesa</strong> transactions. Failed payments are excluded.
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <h6>Parent: <strong>{this.state.statementGroup.parent.name}</strong> ({this.state.statementGroup.parent.phone})</h6>
+                                        </div>
+
+                                        <h6 className="font-weight-bold border-bottom pb-2">Student Balances</h6>
+                                        <table className="table table-bordered table-sm mb-5">
+                                            <thead className="thead-light">
+                                                <tr>
+                                                    <th>Student</th>
+                                                    <th>Expected</th>
+                                                    <th>Total Paid</th>
+                                                    <th>Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {this.state.statementGroup.students.map(s => {
+                                                    const validHistory = s.finances.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED');
+                                                    const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                                                    const balance = s.finances.expected - validPaid;
+                                                    return (
+                                                        <tr key={s.id}>
+                                                            <td>{s.names}</td>
+                                                            <td>KES {s.finances.expected.toLocaleString()}</td>
+                                                            <td className="text-success">KES {validPaid.toLocaleString()}</td>
+                                                            <td className={balance > 0 ? 'text-danger' : 'text-success'}>KES {balance.toLocaleString()}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+
+                                        <h6 className="font-weight-bold border-bottom pb-2">Valid Transaction History</h6>
+                                        <table className="table table-bordered table-sm">
+                                            <thead className="thead-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Student</th>
+                                                    <th>Method</th>
+                                                    <th>Amount</th>
+                                                    <th>Ref</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {this.state.statementGroup.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED').length === 0 && (
+                                                    <tr><td colSpan="5" className="text-center text-muted py-3">No valid payments recorded.</td></tr>
+                                                )}
+                                                {this.state.statementGroup.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED').map(h => (
+                                                    <tr key={h.id}>
+                                                        <td>{new Date(h.time || h.createdAt).toLocaleDateString()}</td>
+                                                        <td>{h.studentName}</td>
+                                                        <td>{h.paymentType || (h.type === 'fees_manual' ? 'Cash' : 'M-Pesa')}</td>
+                                                        <td className="text-success">+KES {parseFloat(h.amount).toLocaleString()}</td>
+                                                        <td>{h.ref || h.mpesaReceiptNumber || 'N/A'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {this.state.statementTab === 'sms' && (
+                                    <div className="pt-3">
+                                        <div className="form-group">
+                                            <label className="font-weight-bold">To: <strong>{this.state.statementGroup.parent.name}</strong> ({this.state.statementGroup.parent.phone})</label>
+                                            <textarea 
+                                                className="form-control mt-2" 
+                                                rows="5" 
+                                                value={this.state.statementSmsMessage} 
+                                                onChange={e => this.setState({ statementSmsMessage: e.target.value })}
+                                            ></textarea>
+                                            <span className="form-text text-muted">You can edit the message before sending.</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="modal-footer bg-light p-3">
+                                <button className="btn btn-secondary" onClick={() => this.setState({ showStatementModal: false, statementGroup: null })}>Close</button>
+                                {this.state.statementTab === 'statement' ? (
+                                    <button className="btn btn-info" onClick={this.executePrintStatement}><i className="flaticon2-printer mr-2"></i> Print Official Statement</button>
+                                ) : (
+                                    <button className="btn btn-primary" onClick={this.sendStatementSms} disabled={this.state.sendingSms}>
+                                        <i className="flaticon2-paper-plane mr-2"></i> {this.state.sendingSms ? "Sending..." : "Send SMS"}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
