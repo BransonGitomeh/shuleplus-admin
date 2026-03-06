@@ -5,6 +5,33 @@ import Subheader from "../../components/subheader";
 
 // --- HELPER COMPONENTS ---
 
+const SkeletonLoader = () => (
+    <div className="p-7">
+        <div className="d-flex justify-content-between mb-8">
+            <div className="skeleton-line rounded" style={{width: '250px', height: '30px', backgroundColor: '#f3f6f9'}}></div>
+            <div className="d-flex justify-content-end">
+                <div className="skeleton-line rounded mr-2" style={{width: '120px', height: '30px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '120px', height: '30px', backgroundColor: '#f3f6f9'}}></div>
+            </div>
+        </div>
+        {[1,2,3,4,5].map(i => (
+            <div key={i} className="d-flex justify-content-between py-6 border-bottom mb-2 align-items-center">
+                <div className="skeleton-line rounded" style={{width: '18%', height: '40px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '15%', height: '20px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '10%', height: '20px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '10%', height: '20px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '10%', height: '30px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '15%', height: '20px', backgroundColor: '#f3f6f9'}}></div>
+                <div className="skeleton-line rounded" style={{width: '12%', height: '30px', backgroundColor: '#f3f6f9'}}></div>
+            </div>
+        ))}
+        <style>{`
+            .skeleton-line { animation: pulse 1.5s infinite; }
+            @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 0.4; } 100% { opacity: 0.8; } }
+        `}</style>
+    </div>
+);
+
 const Pagination = ({ total, itemsPerPage, currentPage, onPageChange }) => {
     const totalPages = Math.ceil(total / itemsPerPage);
     if (totalPages <= 1) return null;
@@ -94,7 +121,10 @@ class FeesManagement extends Component {
         showManualPaymentModal: false,
         manualPaymentMethod: "CASH",
         manualPaymentNotes: "",
-        sendingSms: false
+        sendingSms: false,
+        
+        showEditPaymentModal: false,
+        editPaymentData: null
     };
     
     componentDidMount() {
@@ -261,10 +291,41 @@ class FeesManagement extends Component {
             const isSingleChild = group.students.length === 1;
 
             // Gather all relevant payments for this parent
-            const relatedPayments = payments.filter(p => {
-                const isParentPayment = normalizePhone(p.phone) === normParentPhone;
-                if (!isParentPayment) return false;
+            const allParentPayments = payments.filter(p => {
+                const paymentStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
+                const belongsToMyStudent = group.students.some(s => String(s.id) === paymentStudentId);
+                const isParentPhoneMatch = normalizePhone(p.phone) === normParentPhone;
+                return belongsToMyStudent || isParentPhoneMatch;
+            });
 
+            // Assign terms to all payments based on terms configuration
+            const processedAllPayments = allParentPayments.map(p => {
+                let pTerm = "Unknown Term";
+                const pTime = new Date(p.time || p.createdAt || p.transactionDate).getTime();
+                
+                if (!isNaN(pTime)) {
+                    const matchingTerm = terms?.find(t => {
+                        const start = new Date(t.startDate).getTime();
+                        const end = new Date(t.endDate).getTime();
+                        return pTime >= start && pTime <= end;
+                    });
+                    if (matchingTerm) pTerm = matchingTerm.name;
+                }
+                
+                // Also assign studentName
+                const pStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
+                const matchingStudent = group.students.find(s => String(s.id) === pStudentId);
+                let studentName = matchingStudent ? matchingStudent.names : 'Unallocated';
+                
+                if (isSingleChild && (studentName === 'Unallocated' || !pStudentId || pStudentId === "undefined")) {
+                    studentName = group.students[0].names;
+                }
+
+                return { ...p, assignedTerm: pTerm, studentName };
+            }).sort((a,b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
+
+            // Filter for term History based on dateRange
+            const relatedPayments = processedAllPayments.filter(p => {
                 // Time filter
                 if (dateRange) {
                     const rawDate = p.time || p.createdAt || p.transactionDate;
@@ -279,11 +340,10 @@ class FeesManagement extends Component {
                 console.log(`Parent ${group.parent.name} has ${relatedPayments.length} related payments`);
             }
 
-            // Distribute payments and calculate per-student balances
+            // Distribute payments and calculate per-student balances based ONLY on current term payments
             group.students.forEach(student => {
                 const classFee = getFees(student.class?.id || student.class);
                 
-                // Logic from V1: Attribute payment to specific student
                 const studentPayments = relatedPayments.filter(p => {
                     const pStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
                     const targetStudentId = String(student.id);
@@ -298,29 +358,16 @@ class FeesManagement extends Component {
                     return isValidStatus ? sum + parseFloat(p.amount || 0) : sum;
                 }, 0);
                 
-                // Attach calculated data to the student object for the view
                 student.finances = { expected: classFee, paid, balance: classFee - paid, history: studentPayments };
-                
                 group.totalExpected += classFee;
             });
 
-            // Calculate Group Totals (including unallocated payments)
             const allValidPayments = relatedPayments.filter(p => p.status === 'COMPLETED' || p.status === 'PENDING');
             group.totalPaid = allValidPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
             group.totalBalance = group.totalExpected - group.totalPaid;
             
-            // MAP HISTORY TO INCLUDE STUDENT NAMES (with Auto-Allocation for single child)
-            group.history = relatedPayments.map(p => {
-                const pStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
-                const matchingStudent = group.students.find(s => String(s.id) === pStudentId);
-                let studentName = matchingStudent ? matchingStudent.names : 'Unallocated';
-                
-                if (isSingleChild && (studentName === 'Unallocated' || !pStudentId || pStudentId === "undefined")) {
-                    studentName = group.students[0].names;
-                }
-                
-                return { ...p, studentName };
-            }).sort((a,b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
+            group.history = relatedPayments;
+            group.allHistory = processedAllPayments;
 
             return group;
         });
@@ -401,10 +448,44 @@ class FeesManagement extends Component {
                 time: new Date().toISOString(),
                 ref: manualPaymentNotes || 'Manual Entry',
                 resultDesc: `Manual: ${manualPaymentMethod}`,
-                metadata: { manual: true, studentId: selectedStudentId, method: manualPaymentMethod }
+                metadata: { 
+                    manual: true, 
+                    studentId: selectedStudentId, 
+                    method: manualPaymentMethod,
+                    studentName: this.state.paymentStudent?.names 
+                }
             });
             if(window.toastr) window.toastr.success("Recorded successfully!");
             this.setState({ showManualPaymentModal: false });
+        } catch (e) {
+            if(window.toastr) window.toastr.error(e.message || "Failed");
+        } finally {
+            this.setState({ processingPayment: false });
+        }
+    };
+
+    openEditPaymentModal = (payment) => {
+        this.setState({
+            showEditPaymentModal: true,
+            editPaymentData: { ...payment }
+        });
+    };
+
+    updatePayment = async () => {
+        const { editPaymentData } = this.state;
+        if (!editPaymentData || !editPaymentData.id) return;
+        
+        this.setState({ processingPayment: true });
+        try {
+            await Data.payments.update(editPaymentData.id, {
+                amount: String(editPaymentData.amount),
+                paymentType: editPaymentData.paymentType,
+                ref: editPaymentData.ref || editPaymentData.mpesaReceiptNumber,
+                time: editPaymentData.time || editPaymentData.createdAt,
+                metadata: { ...editPaymentData.metadata, method: editPaymentData.paymentType }
+            });
+            if(window.toastr) window.toastr.success("Payment updated successfully!");
+            this.setState({ showEditPaymentModal: false, editPaymentData: null });
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed");
         } finally {
@@ -464,8 +545,6 @@ class FeesManagement extends Component {
         const indexOfFirstItem = indexOfLastItem - itemsPerPage;
         const currentItems = processedParents.slice(indexOfFirstItem, indexOfLastItem);
 
-        if (loading) return <div className="d-flex justify-content-center align-items-center h-100">Loading Financial Data...</div>;
-
         return (
           <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--ver kt-page">
             <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor kt-wrapper" id="kt_wrapper">
@@ -497,6 +576,8 @@ class FeesManagement extends Component {
                         </div>
 
                         <div className="card-body py-0">
+                            {loading ? <SkeletonLoader /> : (
+                            <>
                             {/* SEARCH & FILTER */}
                             <div className="input-icon input-icon-right mb-5">
                                 <input 
@@ -738,21 +819,45 @@ class FeesManagement extends Component {
                                                                         ))}
                                                                     </div>
                                                                     <div className="col-md-5 border-left">
-                                                                        <h6 className="font-weight-bold mb-3">Recent Transactions</h6>
-                                                                        <div style={{maxHeight: '200px', overflowY: 'auto'}}>
-                                                                            {group.history.length === 0 && <span className="text-muted small">No recent payments.</span>}
+                                                                        <h6 className="font-weight-bold mb-3">Filtered Term Payments</h6>
+                                                                        <div style={{maxHeight: '200px', overflowY: 'auto', marginBottom: '20px'}}>
+                                                                            {group.history.length === 0 && <span className="text-muted small">No payments in this term.</span>}
                                                                             {group.history.map(h => (
-                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2">
+                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
                                                                                     <div className="d-flex flex-column">
                                                                                         <span className="text-dark-75 font-weight-bold font-size-sm">
-                                                                                            {h.paymentType || 'M-Pesa'} 
+                                                                                            {h.paymentType || h.type || 'M-Pesa'} 
                                                                                             <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
+                                                                                            <span className="badge badge-light-primary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>
+                                                                                        </span>
+                                                                                        <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
+                                                                                        <span className="text-muted font-size-xs">{h.mpesaReceiptNumber || h.ref}</span>
+                                                                                    </div>
+                                                                                    <div className="d-flex align-items-center">
+                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount).toLocaleString()}</span>
+                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+
+                                                                        <h6 className="font-weight-bold mb-3 pt-3 border-top">All Time Payments</h6>
+                                                                        <div style={{maxHeight: '200px', overflowY: 'auto'}}>
+                                                                            {(!group.allHistory || group.allHistory.length === 0) && <span className="text-muted small">No payments recorded.</span>}
+                                                                            {group.allHistory && group.allHistory.map(h => (
+                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                                                                    <div className="d-flex flex-column">
+                                                                                        <span className="text-dark-75 font-weight-bold font-size-sm">
+                                                                                            {h.paymentType || h.type || 'M-Pesa'} 
+                                                                                            <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
+                                                                                            <span className="badge badge-light-secondary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>
                                                                                         </span>
                                                                                         <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
                                                                                     </div>
-                                                                                    <span className="text-success font-weight-bolder font-size-sm">
-                                                                                        +{parseFloat(h.amount).toLocaleString()}
-                                                                                    </span>
+                                                                                    <div className="d-flex align-items-center">
+                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount).toLocaleString()}</span>
+                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                    </div>
                                                                                 </div>
                                                                             ))}
                                                                         </div>
@@ -780,6 +885,8 @@ class FeesManagement extends Component {
                                     onPageChange={(p) => this.setState({ currentPage: p })} 
                                 />
                             </div>
+                            </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -829,6 +936,38 @@ class FeesManagement extends Component {
                             <div className="modal-footer">
                                 <button className="btn btn-secondary" onClick={() => this.setState({ showManualPaymentModal: false })}>Cancel</button>
                                 <button className="btn btn-success" disabled={this.state.processingPayment} onClick={this.recordManualPayment}>{this.state.processingPayment ? "Saving..." : "Record"}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {this.state.showEditPaymentModal && this.state.editPaymentData && (
+                <div className="modal fade show" style={{display: 'block', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Edit Payment</h5>
+                                <button type="button" className="close" onClick={() => this.setState({ showEditPaymentModal: false, editPaymentData: null })}><span>&times;</span></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Editing payment for <strong>{this.state.editPaymentData.studentName}</strong></p>
+                                <div className="form-group">
+                                    <label>Method</label>
+                                    <select className="form-control" value={this.state.editPaymentData.paymentType || "CASH"} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, paymentType: e.target.value }})}>
+                                        <option value="M-Pesa">M-Pesa</option>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK">Bank</option>
+                                        <option value="CHEQUE">Cheque</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                                <div className="form-group"><label>Amount (KES)</label><input type="number" className="form-control" value={this.state.editPaymentData.amount} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, amount: e.target.value }})} /></div>
+                                <div className="form-group"><label>Reference / Notes</label><input type="text" className="form-control" value={this.state.editPaymentData.ref || this.state.editPaymentData.mpesaReceiptNumber || ''} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, ref: e.target.value }})} /></div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => this.setState({ showEditPaymentModal: false, editPaymentData: null })}>Cancel</button>
+                                <button className="btn btn-success" disabled={this.state.processingPayment} onClick={this.updatePayment}>{this.state.processingPayment ? "Saving..." : "Update Payment"}</button>
                             </div>
                         </div>
                     </div>
