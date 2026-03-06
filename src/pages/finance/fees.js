@@ -416,7 +416,8 @@ class FeesManagement extends Component {
             paymentAmount: bal > 0 ? bal : 0,
             parentPhone: parentGroup.parent.phone,
             manualPaymentMethod: "CASH",
-            manualPaymentNotes: ""
+            manualPaymentNotes: "",
+            manualPaymentTermId: ""
         });
     };
 
@@ -437,7 +438,7 @@ class FeesManagement extends Component {
     };
     
     recordManualPayment = async () => {
-        const { paymentAmount, parentPhone, manualPaymentMethod, manualPaymentNotes, selectedStudentId } = this.state;
+        const { paymentAmount, parentPhone, manualPaymentMethod, manualPaymentNotes, manualPaymentTermId, selectedStudentId } = this.state;
         if (!parentPhone) return window.toastr && window.toastr.error("Parent phone required");
         
         this.setState({ processingPayment: true });
@@ -457,6 +458,7 @@ class FeesManagement extends Component {
                     manual: true, 
                     studentId: selectedStudentId, 
                     method: manualPaymentMethod,
+                    termId: manualPaymentTermId || undefined,
                     studentName: this.state.paymentStudent?.names 
                 }
             });
@@ -992,6 +994,14 @@ class FeesManagement extends Component {
                                 <div className="form-group">
                                     <label>Method</label>
                                     <select className="form-control" value={this.state.manualPaymentMethod} onChange={e => this.setState({ manualPaymentMethod: e.target.value })}><option value="CASH">Cash</option><option value="BANK">Bank</option><option value="CHEQUE">Cheque</option><option value="OTHER">Other</option></select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Assign to Term</label>
+                                    <select className="form-control" value={this.state.manualPaymentTermId} onChange={e => this.setState({ manualPaymentTermId: e.target.value })}>
+                                        <option value="">Auto-assign by Date</option>
+                                        {this.state.terms && this.state.terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                    <span className="form-text text-muted">If unset, the payment is matched to a term based on its date.</span>
                                 </div>
                                 <div className="form-group"><label>Amount (KES)</label><input type="number" className="form-control" value={this.state.paymentAmount} onChange={e => this.setState({ paymentAmount: e.target.value })} /></div>
                                 <div className="form-group"><label>Reference / Notes</label><input type="text" className="form-control" value={this.state.manualPaymentNotes} onChange={e => this.setState({ manualPaymentNotes: e.target.value })} /></div>
