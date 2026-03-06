@@ -301,7 +301,8 @@ var Data = (function () {
             charges { amount reason time id } 
             payments { 
                 id 
-                amount 
+                amount
+                ammount
                 phone 
                 status
                 mpesaReceiptNumber
@@ -742,7 +743,7 @@ var Data = (function () {
         }, {
             name: "payments",
             singularName: "payment",
-            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
+            createFields: ['school', 'phone', 'amount', 'ammount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
             updateFields: [], // Removed to prevent auto-generating the broken update mutation
             customMethods: (allData, subs, api) => ({
                 update: (id, payload) => new Promise((resolve) => {

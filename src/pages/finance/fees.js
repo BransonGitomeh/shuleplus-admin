@@ -305,12 +305,21 @@ class FeesManagement extends Component {
 
             // Assign terms to all payments based on terms configuration
             const processedAllPayments = allParentPayments.map(p => {
+                let metadata = p.metadata;
+                if (typeof metadata === 'string') {
+                    try {
+                        metadata = JSON.parse(metadata);
+                    } catch (e) {
+                        console.error("Failed to parse metadata", e);
+                    }
+                }
+
                 let pTerm = "Unknown Term";
                 const pTime = new Date(p.time || p.createdAt || p.transactionDate).getTime();
                 
                 // 1. First check if a manual term was explicitly assigned
-                if (p.metadata && p.metadata.termId) {
-                    const explicitTerm = terms?.find(t => String(t.id) === String(p.metadata.termId));
+                if (metadata && metadata.termId) {
+                    const explicitTerm = terms?.find(t => String(t.id) === String(metadata.termId));
                     if (explicitTerm) pTerm = explicitTerm.name;
                 } else if (!isNaN(pTime)) {
                     // 2. Fallback to automatic date-based assignment
@@ -323,7 +332,7 @@ class FeesManagement extends Component {
                 }
                 
                 // Also assign studentName
-                const pStudentId = String(p.student?.id || p.student || p.metadata?.studentId || "");
+                const pStudentId = String(p.student?.id || p.student || metadata?.studentId || "");
                 const matchingStudent = group.students.find(s => String(s.id) === pStudentId);
                 let studentName = matchingStudent ? matchingStudent.names : 'Unallocated';
                 
@@ -331,7 +340,7 @@ class FeesManagement extends Component {
                     studentName = group.students[0].names;
                 }
 
-                return { ...p, assignedTerm: pTerm, studentName };
+                return { ...p, metadata, assignedTerm: pTerm, studentName };
             }).sort((a,b) => new Date(b.time || b.createdAt) - new Date(a.time || a.createdAt));
 
             // Filter for term History based on dateRange OR explicit termId
