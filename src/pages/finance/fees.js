@@ -864,7 +864,7 @@ class FeesManagement extends Component {
                                                                                                                 </span>
                                                                                                             </td>
                                                                                                             <td className="font-weight-bolder text-success">
-                                                                                                                KES {parseFloat(payment.amount || 0).toLocaleString()}
+                                                                                                                KES {parseFloat(payment.amount || payment.ammount || 0).toLocaleString()}
                                                                                                             </td>
                                                                                                             <td>
                                                                                                                 <span className={`badge badge-light-${
@@ -932,7 +932,7 @@ class FeesManagement extends Component {
                                                                                         <span className="text-muted font-size-xs">{h.mpesaReceiptNumber || h.ref}</span>
                                                                                     </div>
                                                                                     <div className="d-flex align-items-center">
-                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount).toLocaleString()}</span>
+                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount || h.ammount || 0).toLocaleString()}</span>
                                                                                         <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
                                                                                     </div>
                                                                                 </div>
@@ -957,7 +957,7 @@ class FeesManagement extends Component {
                                                                                     </div>
                                                                                     <div className="d-flex align-items-center">
                                                                                         <span className={`${isFailed ? 'text-muted text-decoration-line-through' : 'text-success'} font-weight-bolder font-size-sm mr-3`}>
-                                                                                            +{parseFloat(h.amount).toLocaleString()}
+                                                                                            +{parseFloat(h.amount || h.ammount || 0).toLocaleString()}
                                                                                         </span>
                                                                                         <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit" disabled={isFailed}><i className="flaticon2-pen"></i></button>
                                                                                     </div>
