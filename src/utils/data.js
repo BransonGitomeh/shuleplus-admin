@@ -743,7 +743,32 @@ var Data = (function () {
             name: "payments",
             singularName: "payment",
             createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
-            updateFields: ['phone', 'school', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata']
+            updateFields: [], // Removed to prevent auto-generating the broken update mutation
+            customMethods: (allData, subs, api) => ({
+                update: (id, payload) => new Promise((resolve) => {
+                    // M-Pesa/Payments do not have an update mutation on the backend
+                    // Simulate an update locally to allow frontend "Edit Payment" to work visually.
+                    const paymentIndex = allData.payments.findIndex(p => String(p.id) === String(id));
+                    if (paymentIndex > -1) {
+                        allData.payments[paymentIndex] = { ...allData.payments[paymentIndex], ...payload };
+                        
+                        // Also update inside the selected school if present
+                        const schoolId = localStorage.getItem("school");
+                        const school = allData.schools.find(s => String(s.id) === String(schoolId));
+                        if (school && Array.isArray(school.payments)) {
+                            const spIndex = school.payments.findIndex(p => String(p.id) === String(id));
+                            if (spIndex > -1) school.payments[spIndex] = { ...school.payments[spIndex], ...payload };
+                        }
+
+                        if (Array.isArray(subs.payments)) {
+                            subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
+                        }
+                        resolve(allData.payments[paymentIndex]);
+                    } else {
+                        resolve(null);
+                    }
+                })
+            })
         }, { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
         {
             name: "lessonAttempts",
