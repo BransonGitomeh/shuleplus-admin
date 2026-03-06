@@ -1025,6 +1025,14 @@ class FeesManagement extends Component {
                                         <option value="OTHER">Other</option>
                                     </select>
                                 </div>
+                                <div className="form-group">
+                                    <label>Assign to Term</label>
+                                    <select className="form-control" value={this.state.editPaymentData.metadata?.termId || ""} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, metadata: { ...this.state.editPaymentData.metadata, termId: e.target.value } }})}>
+                                        <option value="">Auto-assign by Date</option>
+                                        {this.state.terms && this.state.terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                    <span className="form-text text-muted">If unset, the payment is matched to a term based on its date.</span>
+                                </div>
                                 <div className="form-group"><label>Amount (KES)</label><input type="number" className="form-control" value={this.state.editPaymentData.amount} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, amount: e.target.value }})} /></div>
                                 <div className="form-group"><label>Reference / Notes</label><input type="text" className="form-control" value={this.state.editPaymentData.ref || this.state.editPaymentData.mpesaReceiptNumber || ''} onChange={e => this.setState({ editPaymentData: { ...this.state.editPaymentData, ref: e.target.value }})} /></div>
                             </div>
