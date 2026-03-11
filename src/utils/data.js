@@ -104,7 +104,8 @@ const createEntityAPI = (config) => {
         if (Array.isArray(subs.schools)) {
             // FIX: Ensure we default to [] if allData.schools is undefined
             const safeSchools = Array.isArray(allData.schools) ? allData.schools : [];
-            const selectedSchool = safeSchools.find(s => s.id === schoolID) || {};
+            // FIX: Use String() comparison for safety
+            const selectedSchool = safeSchools.find(s => String(s.id) === String(schoolID)) || {};
             subs.schools.forEach(cb => cb({ selectedSchool, schools: [...safeSchools] }));
         }
     };
@@ -149,7 +150,7 @@ const createEntityAPI = (config) => {
                         console.warn(`Could not find parent with ID ${payload[parentKey]} to append new ${singularName}`);
                     }
                 } else {
-                    const school = allData.schools.find(s => s.id === payload.school);
+                    const school = allData.schools.find(s => String(s.id) === String(payload.school));
                     if (school) {
                         if (!Array.isArray(school[name])) school[name] = [];
                         school[name].push(newItem);
@@ -433,6 +434,14 @@ var Data = (function () {
             if (!activeSchool) {
                 console.warn("No activeSchool found for ID:", schoolID);
                 return;
+            }
+
+            // >>> ADD THIS BLOCK: Notify subscribers that the school data has loaded/updated <<<
+            if (Array.isArray(subs.schools)) {
+                subs.schools.forEach(cb => cb({ 
+                    schools: [...allData.schools], 
+                    selectedSchool: activeSchool 
+                }));
             }
 
             // Notify flat-list subscribers based on what was updated
@@ -902,7 +911,7 @@ var Data = (function () {
                         allData.payments.push(newPayment);
 
                         // Also find school in cache and add it there
-                        const school = allData.schools.find(s => s.id === schoolId);
+                        const school = allData.schools.find(s => String(s.id) === String(schoolId));
                         if (school) {
                             if (!Array.isArray(school.payments)) school.payments = [];
                             school.payments.push(newPayment);
@@ -974,9 +983,9 @@ var Data = (function () {
                     const school = data;
                     if (!school.id) return reject("No school selected");
                     await mutate(`mutation ($data: USchool!) { schools { archive(school: $data) { id } } }`, { data: { id: school.id } });
-                    allData.schools = allData.schools.filter(s => s.id !== school.id);
+                    allData.schools = allData.schools.filter(s => String(s.id) !== String(school.id));
                     if (Array.isArray(subs.schools)) {
-                        const selectedSchool = allData.schools.find(s => s.id === schoolID);
+                        const selectedSchool = allData.schools.find(s => String(s.id) === String(schoolID));
                         subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
                     }
                     resolve(school);

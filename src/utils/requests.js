@@ -4,7 +4,7 @@ let API;
 
 // API endpoint logic remains the same.
 if (window.location.href.includes('localhost')) {
-    API = `http://localhost:4001`;
+    API = `https://cloud.shuleplus.co.ke/api`;
 } else {
     API = `https://cloud.shuleplus.co.ke/api`;
 }
@@ -17,7 +17,7 @@ const handleUnauthorized = () => {
     console.error("Unauthorized request (401). Clearing credentials and redirecting to login.");
 
     const keysToKeep = ['school', 'learningState'];
-    const preservedData = {};
+    const preservedData = {};  
     keysToKeep.forEach(key => {
         const value = localStorage.getItem(key);
         if (value) {

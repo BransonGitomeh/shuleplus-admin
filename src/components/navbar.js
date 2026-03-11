@@ -58,7 +58,7 @@ class Navbar extends React.Component {
 
   componentDidMount() {
     const userData = JSON.parse(localStorage.getItem("user"));
-    const schools = Data.schools.list();
+    const schools = Data.schools.list() || [];
     
     this.setState({ 
       schools,
@@ -67,12 +67,13 @@ class Navbar extends React.Component {
     });
 
     Data.schools.subscribe(({ schools, selectedSchool }) => {
+      const schoolsArray = schools || [];
       this.setState({
-        availableSchools: schools,
+        availableSchools: schoolsArray,
         selectedSchool,
-        fetchingSchools: !selectedSchool
+        fetchingSchools: schoolsArray.length === 0 // Only show loading when no schools are loaded
       }, () => {
-        if (selectedSchool.id) {
+        if (selectedSchool && selectedSchool.id) {
           localStorage.setItem("school", selectedSchool.id);
           document.title = `${selectedSchool.name || 'Shule Plus'} | Shule Plus`;
         }
@@ -80,8 +81,14 @@ class Navbar extends React.Component {
         this.initDesktopMenu();
       });
     });
-    
 
+    // Fallback: Hide loading indicator after 10 seconds max to prevent it from getting stuck
+    setTimeout(() => {
+      if (this.state.fetchingSchools) {
+        this.setState({ fetchingSchools: false });
+      }
+    }, 10000);
+    
     let role = "";
     if (userData && typeof userData === 'object' && Object.keys(userData).length > 0) {
       role = Object.keys(userData)[0];
