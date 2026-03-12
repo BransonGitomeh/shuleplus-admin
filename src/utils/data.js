@@ -20,6 +20,7 @@ const allData = {
     teachers: [],
     payments: [],
     charges: [],
+    chargeTypes: [],
     grades: [],
     subjects: [],
     topics: [],
@@ -299,7 +300,7 @@ var Data = (function () {
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
         const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { 
             financial { balance, balanceFormated } 
-            charges { amount reason time id } 
+            charges { amount reason time id parent { id name } chargeType { id name } term { id name } } 
             payments { 
                 id 
                 amount 
@@ -321,6 +322,7 @@ var Data = (function () {
             } 
         }`;
         const FRAGMENT_COMPLAINTS_DATA = `fragment ComplaintsData on school { complaints { id time content parent { id, name } } }`;
+        const FRAGMENT_CHARGE_TYPES_DATA = `fragment ChargeTypesData on school { chargeTypes { id name description amount } }`;
         const FRAGMENT_STUDENTS_DATA = `fragment StudentsData on school { students(limit: 1000, offset: 0) { id names gender registration class { id, name, teacher { id, name } } route { id, name } parent { id, national_id, name } parent2 { id, national_id, name } } }`;
         const FRAGMENT_BUSES_DATA = `fragment BusesData on school { buses { id plate make size driver { id, names } } }`;
         const FRAGMENT_DRIVERS_DATA = `fragment DriversData on school { drivers { id names phone license_expiry licence_number home } }`;
@@ -492,6 +494,7 @@ var Data = (function () {
             notifyEntity('invitations');
             notifyEntity('smsLogs');
             notifyEntity('books');
+            notifyEntity('chargeTypes');
             
             // Financials
             if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
@@ -575,6 +578,7 @@ var Data = (function () {
             { query: `query GetBuses { schools { id ...BusesData } } ${FRAGMENT_BUSES_DATA}` },
             { query: `query GetRoutes { schools { id ...RoutesData } } ${FRAGMENT_ROUTES_DATA}` },
             { query: `query GetSchedules { schools { id ...SchedulesData } } ${FRAGMENT_SCHEDULES_DATA}` },
+            { query: `query GetChargeTypes { schools { id ...ChargeTypesData } } ${FRAGMENT_CHARGE_TYPES_DATA}` },
             { query: `query GetTrips { schools { id ...TripsData } } ${FRAGMENT_TRIPS_DATA}` },
             { query: `query GetComplaints { schools { id ...ComplaintsData } } ${FRAGMENT_COMPLAINTS_DATA}` },
             { query: `query GetTeachers { schools { id ...TeachersData } } ${FRAGMENT_TEACHERS_DATA}` },
@@ -753,6 +757,11 @@ var Data = (function () {
             singularName: "payment",
             createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
             updateFields: ['phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata']
+        }, {
+            name: "charges",
+            singularName: "charge",
+            createFields: ['school', 'amount', 'reason', 'time', 'parent', 'chargeType', 'term'],
+            updateFields: ['amount', 'reason', 'time', 'parent', 'chargeType', 'term']
         }, { name: "invitations", singularName: "invitation", createFields: ['school', 'user', 'message', 'phone', 'email'], updateFields: ['school', 'user', 'message', 'phone', 'email'] },
         {
             name: "lessonAttempts",
@@ -792,6 +801,12 @@ var Data = (function () {
             singularName: "assessmentrubric",
             createFields: ['label', 'minScore', 'maxScore', 'points', 'teachersComment', 'school'],
             updateFields: ['label', 'minScore', 'maxScore', 'points', 'teachersComment']
+        },
+        { 
+            name: "chargeTypes", 
+            singularName: "chargeType", 
+            createFields: ['school', 'name', 'description', 'amount'], 
+            updateFields: ['name', 'description', 'amount'] 
         }
     ];
 

@@ -34,6 +34,7 @@ import register from "./pages/auth/register";
 
 import topup from "./pages/finance/topup"
 import charges from "./pages/finance/charges"
+import chargeTypes from "./pages/finance/chargeTypes"
 import admins from "./pages/admins";
 
 const PrivateRoute = ({ component: Component, ...rest }) => (
@@ -77,6 +78,7 @@ class App extends React.Component {
       <PrivateRoute path="/settings/school" component={schoolSettings} />
       <PrivateRoute path="/finance/topup" component={topup} />
       <PrivateRoute path="/finance/charges" component={charges} />
+      <PrivateRoute path="/finance/charge-types" component={chargeTypes} />
       <PrivateRoute path="/finance/fees" component={require("./pages/finance/fees").default} />
       <PrivateRoute path="/results" component={require("./pages/results").default} />
       <PrivateRoute path="/teams" component={teams} />

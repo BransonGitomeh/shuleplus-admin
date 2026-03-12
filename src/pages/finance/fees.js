@@ -95,6 +95,8 @@ class FeesManagement extends Component {
         students: [],
         payments: [],
         parents: [],
+        charges: [],
+        chargeTypes: [],
         
         // Filters & Search
         selectedClass: "",
@@ -129,7 +131,13 @@ class FeesManagement extends Component {
         sendingSms: false,
         
         showEditPaymentModal: false,
-        editPaymentData: null
+        showAddChargeModal: false,
+        showEditChargeModal: false,
+        selectedChargeType: "",
+        chargeNotes: "",
+        selectedChargeTermId: "",
+        editPaymentData: null,
+        editChargeData: null
     };
     
     componentDidMount() {
@@ -138,12 +146,16 @@ class FeesManagement extends Component {
             console.log("Classes Update:", classes?.length);
             this.updateData({ classes, loading: !classes?.length });
         });
+        this.unsubChargeTypes = Data.chargeTypes.subscribe(({ chargeTypes }) => {
+            this.updateData({ chargeTypes });
+        });
+        this.unsubCharges = Data.charges.subscribe(({ charges }) => {
+            this.updateData({ charges });
+        });
         this.unsubTerms = Data.terms?.subscribe(({ terms }) => {
             console.log("Terms Update:", terms?.length);
             const update = { terms };
-            if (terms && terms.length && !this.state.selectedTerm) {
-                update.selectedTerm = terms[terms.length - 1].id;
-            }
+            // Removed auto-selection of latest term to default to "All Terms"
             this.updateData(update);
         });
         this.unsubStudents = Data.students.subscribe(({ students }) => {
@@ -158,15 +170,19 @@ class FeesManagement extends Component {
         if (Data.payments) {
             this.unsubPayments = Data.payments.subscribe(({ payments }) => {
                 console.log("Payments Update:", payments?.length);
-                // Only flip loading to false if we have other dependencies too
-                const { students, classes } = this.state;
-                const isReady = students.length > 0 && classes.length > 0 && payments.length > 0;
-                this.updateData({ payments, loading: !isReady });
+                this.updateData({ payments });
             });
         } else {
             console.warn("Data.payments is NOT DEFINED");
         }
     }
+
+    checkReadyState = () => {
+        const { students, classes, loading } = this.state;
+        if (loading && students.length > 0 && classes.length > 0) {
+            this.setState({ loading: false });
+        }
+    };
 
     componentWillUnmount() {
         if (this.unsubClasses) this.unsubClasses();
@@ -174,6 +190,8 @@ class FeesManagement extends Component {
         if (this.unsubStudents) this.unsubStudents();
         if (this.unsubParents) this.unsubParents();
         if (this.unsubPayments) this.unsubPayments();
+        if (this.unsubChargeTypes) this.unsubChargeTypes();
+        if (this.unsubCharges) this.unsubCharges();
     }
 
     // Centralized update handler to trigger recalculation
@@ -199,6 +217,7 @@ class FeesManagement extends Component {
             this.setState(cleanData, () => {
                 console.log("State updated, recalculating financials...");
                 this.recalculateFinancials();
+                this.checkReadyState();
             });
         }
     };
@@ -212,20 +231,21 @@ class FeesManagement extends Component {
      * Running this only when data/filters change (not every render) is key for 500+ items.
      */
     recalculateFinancials = () => {
-        const { students, parents, payments, classes, terms, selectedClass, selectedTerm, searchTerm } = this.state;
+        const { students, parents, payments, classes, terms, expected, charges, selectedClass, selectedTerm, searchTerm } = this.state;
         
         console.log("Recalculate Stats:", { 
             students: students.length, 
             parents: parents.length, 
             payments: payments.length, 
             classes: classes.length,
+            charges: charges?.length || 0,
             selectedTerm
         });
 
         // EXIT if any core piece is missing. 
-        // This prevents calculating balances before payments or fees are known.
-        if (!students.length || !parents.length || !classes.length || !payments.length) {
-            console.log("Exiting early: missing core data");
+        // We allow payments to be empty, as students might not have paid yet.
+        if (!students.length || !parents.length || !classes.length) {
+            console.log("Exiting early: missing core data (students, parents, or classes)");
             return;
         }
 
@@ -271,7 +291,8 @@ class FeesManagement extends Component {
                     totalExpected: 0,
                     totalPaid: 0,
                     totalBalance: 0,
-                    history: []
+                    history: [],
+                    charges: []
                 };
 
                 // CRITICAL: If the parent object is missing a phone, try to find it in the flat parents list
@@ -284,6 +305,30 @@ class FeesManagement extends Component {
         });
 
         console.log("Parent Groups Created:", Object.keys(parentMap).length);
+
+        // Map charges to parents (filtered by term if selected)
+        if (charges && charges.length > 0) {
+            charges.forEach(charge => {
+                const parentId = String(charge.parent?.id || charge.parent);
+                if (parentMap[parentId]) {
+                    // Filter by term if selectedTerm is set
+                    if (selectedTerm) {
+                        const chargeTermId = String(charge.term?.id || charge.term || "");
+                        if (chargeTermId && chargeTermId !== String(selectedTerm)) {
+                            // Only filter out if it HAS a termId that doesn't match. 
+                            // If it has NO termId, check date range fallback.
+                            if (chargeTermId) return; 
+
+                            if (dateRange) {
+                                const chargeTime = new Date(charge.time || charge.createdAt).getTime();
+                                if (chargeTime < dateRange.start || chargeTime > dateRange.end) return;
+                            }
+                        }
+                    }
+                    parentMap[parentId].charges.push(charge);
+                }
+            });
+        }
 
         // 5. Calculate Finances per Parent Group
         let grandTotalExpected = 0;
@@ -402,6 +447,11 @@ class FeesManagement extends Component {
 
             const allValidPayments = relatedPayments.filter(p => p.status === 'COMPLETED' || p.status === 'PENDING');
             group.totalPaid = allValidPayments.reduce((sum, p) => sum + parseFloat(p.amount || p.ammount || 0), 0);
+            
+            // Add custom charges to total expected
+            const additionalCharges = group.charges.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+            group.totalExpected += additionalCharges;
+            
             group.totalBalance = group.totalExpected - group.totalPaid;
             
             group.history = relatedPayments;
@@ -450,8 +500,78 @@ class FeesManagement extends Component {
             parentPhone: parentGroup.parent.phone,
             manualPaymentMethod: "CASH",
             manualPaymentNotes: "",
-            manualPaymentTermId: ""
+            manualPaymentTermId: "",
+            parentGroup
         });
+    };
+
+    openAddChargeModal = (parentGroup) => {
+        this.setState({
+            showAddChargeModal: true,
+            parentGroup,
+            selectedChargeType: "",
+            chargeNotes: "",
+            selectedChargeTermId: this.state.selectedTerm || ""
+        });
+    };
+
+    openEditChargeModal = (charge, parentGroup) => {
+        this.setState({
+            showEditChargeModal: true,
+            parentGroup,
+            editChargeData: {
+                ...charge,
+                termId: charge.term?.id || charge.term || ""
+            }
+        });
+    };
+
+    recordCharge = async () => {
+        const { selectedChargeType, chargeNotes, parentGroup, selectedTerm } = this.state;
+        if (!selectedChargeType || !parentGroup) return;
+
+        const chargeType = this.state.chargeTypes.find(c => String(c.id) === String(selectedChargeType));
+        if (!chargeType) return;
+
+        this.setState({ processingPayment: true });
+        try {
+            await Data.charges.create({
+                school: localStorage.getItem('school'),
+                parent: parentGroup.id,
+                amount: String(chargeType.amount),
+                reason: chargeNotes || chargeType.name,
+                chargeType: selectedChargeType,
+                time: new Date().toISOString(),
+                term: this.state.selectedChargeTermId || undefined
+            });
+            if(window.toastr) window.toastr.success("Charge added successfully!");
+            this.setState({ showAddChargeModal: false });
+        } catch (e) {
+            if(window.toastr) window.toastr.error(e.message || "Failed to add charge");
+        } finally {
+            this.setState({ processingPayment: false });
+        }
+    };
+
+    updateCharge = async () => {
+        const { editChargeData } = this.state;
+        if (!editChargeData) return;
+
+        this.setState({ processingPayment: true });
+        try {
+            await Data.charges.update({
+                id: editChargeData.id,
+                reason: editChargeData.reason,
+                amount: String(editChargeData.amount),
+                term: editChargeData.termId || undefined
+            });
+            if(window.toastr) window.toastr.success("Charge updated successfully!");
+            this.setState({ showEditChargeModal: false, editChargeData: null });
+        } catch (e) {
+            if(window.toastr) window.toastr.error(e.message || "Failed to update charge");
+        } finally {
+            this.setState({ processingPayment: false });
+        }
     };
 
     initiatePayment = async () => {
@@ -775,23 +895,23 @@ class FeesManagement extends Component {
                                                         </td>
                                                         <td className="text-right pr-0">
                                                             <button 
-                                                                className="btn btn-icon btn-light btn-hover-primary btn-sm mx-1" 
+                                                                className="btn btn-icon btn-light-primary btn-sm mx-1" 
                                                                 onClick={() => this.toggleRow(group.id)}
                                                                 title="View Details"
                                                             >
                                                                 <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
                                                             </button>
                                                             <button 
-                                                                className="btn btn-icon btn-light btn-hover-success btn-sm mx-1"
+                                                                className="btn btn-icon btn-light-success btn-sm mx-1"
                                                                 onClick={() => this.showStatementPreview(group)}
                                                                 title="Print Statement"
                                                             >
                                                                 <i className="flaticon2-printer"></i>
                                                             </button>
                                                             <button 
-                                                                className="btn btn-icon btn-light btn-hover-info btn-sm mx-1"
+                                                                className="btn btn-icon btn-light-info btn-sm mx-1"
                                                                 onClick={() => this.sendBalanceSms(group)}
-                                                                title="Send SMS"
+                                                                title="Send SMS balance"
                                                             >
                                                                 <i className="flaticon2-paper-plane"></i>
                                                             </button>
@@ -933,56 +1053,126 @@ class FeesManagement extends Component {
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    <div className="col-md-5 border-left">
-                                                                        <h6 className="font-weight-bold mb-3">Filtered Term Payments</h6>
-                                                                        <div style={{maxHeight: '200px', overflowY: 'auto', marginBottom: '20px'}}>
-                                                                            {group.history.length === 0 && <span className="text-muted small">No payments in this term.</span>}
-                                                                            {group.history.map(h => (
-                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                                                                                    <div className="d-flex flex-column">
-                                                                                        <span className="text-dark-75 font-weight-bold font-size-sm">
-                                                                                            {h.paymentType || h.type || 'M-Pesa'} 
-                                                                                            <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
-                                                                                            <span className="badge badge-light-primary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>
-                                                                                        </span>
-                                                                                        <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
-                                                                                        <span className="text-muted font-size-xs">{h.mpesaReceiptNumber || h.ref}</span>
+                                                                    <div className="col-md-12">
+                                                                        <div className="row">
+                                                                            {/* LEFT COLUMN: Filtered Views */}
+                                                                            <div className="col-md-7">
+                                                                                <div className="row">
+                                                                                    {/* 1. Filtered Term Payments */}
+                                                                                    <div className="col-md-12 mb-6">
+                                                                                        <h6 className="font-weight-bold mb-3 d-flex justify-content-between align-items-center">
+                                                                                            Filtered Term Payments
+                                                                                            <div className="d-flex">
+                                                                                                <button className="btn btn-xs btn-light-success mr-1" onClick={() => this.setState({ showManualPaymentModal: true, statementGroup: group })} title="Record Cash Payment">
+                                                                                                    <i className="flaticon2-plus icon-xs"></i> Record
+                                                                                                </button>
+                                                                                                <button className="btn btn-xs btn-light-primary" onClick={() => this.setState({ showPaymentModal: true, statementGroup: group })} title="Request M-Pesa Payment">
+                                                                                                    <i className="fa fa-mobile-alt icon-xs"></i> M-Pesa
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </h6>
+                                                                                        <div style={{maxHeight: '250px', overflowY: 'auto'}} className="border rounded p-3 bg-white">
+                                                                                            {group.history.length === 0 && <span className="text-muted small">No payments in this term.</span>}
+                                                                                            {group.history.map(h => (
+                                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                                                                                                    <div className="d-flex flex-column">
+                                                                                                        <span className="text-dark-75 font-weight-bold font-size-sm">
+                                                                                                            {h.paymentType || h.type || 'M-Pesa'} 
+                                                                                                            <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
+                                                                                                        </span>
+                                                                                                        <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
+                                                                                                        <span className="text-muted font-size-xs">{h.mpesaReceiptNumber || h.ref}</span>
+                                                                                                    </div>
+                                                                                                    <div className="d-flex align-items-center">
+                                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-2">KES {parseFloat(h.amount || h.ammount || 0).toLocaleString()}</span>
+                                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className="d-flex align-items-center">
-                                                                                        <span className="text-success font-weight-bolder font-size-sm mr-3">+{parseFloat(h.amount || h.ammount || 0).toLocaleString()}</span>
-                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
 
-                                                                        <h6 className="font-weight-bold mb-3 pt-3 border-top">All Time Payments</h6>
-                                                                        <div style={{maxHeight: '200px', overflowY: 'auto'}}>
-                                                                            {(!group.allHistory || group.allHistory.length === 0) && <span className="text-muted small">No payments recorded.</span>}
-                                                                            {group.allHistory && group.allHistory.map(h => {
-                                                                                const isFailed = h.status === 'FAILED' || h.status === 'FAILED_ON_CALLBACK';
-                                                                                return (
-                                                                                <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2" style={{ opacity: isFailed ? 0.35 : 1 }}>
-                                                                                    <div className="d-flex flex-column">
-                                                                                        <span className="text-dark-75 font-weight-bold font-size-sm">
-                                                                                            {h.paymentType || h.type || 'M-Pesa'} 
-                                                                                            <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
-                                                                                            {isFailed && <span className="badge badge-light-danger ml-2 py-0 px-1" style={{fontSize: '0.65rem'}}>FAILED</span>}
-                                                                                            {!isFailed && <span className="badge badge-light-secondary ml-2 py-0 px-1">{h.assignedTerm || 'Term'}</span>}
-                                                                                        </span>
-                                                                                        <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
-                                                                                    </div>
-                                                                                    <div className="d-flex align-items-center">
-                                                                                        <span className={`${isFailed ? 'text-muted text-decoration-line-through' : 'text-success'} font-weight-bolder font-size-sm mr-3`}>
-                                                                                            +{parseFloat(h.amount || h.ammount || 0).toLocaleString()}
-                                                                                        </span>
-                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit" disabled={isFailed}><i className="flaticon2-pen"></i></button>
+                                                                                    {/* 2. Filtered Charges */}
+                                                                                    <div className="col-md-12">
+                                                                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                                            <h6 className="font-weight-bold mb-0">Filtered Charges</h6>
+                                                                                            <button className="btn btn-xs btn-light-primary font-weight-bolder" onClick={() => this.openAddChargeModal(group)}>
+                                                                                                <i className="flaticon2-plus icon-xs"></i> Add Charge
+                                                                                            </button>
+                                                                                        </div>
+                                                                                        <div style={{maxHeight: '250px', overflowY: 'auto'}} className="border rounded p-3 bg-white">
+                                                                                            {group.charges && group.charges.length === 0 ? (
+                                                                                                <div className="text-muted font-size-sm">No charges for this filter.</div>
+                                                                                            ) : (
+                                                                                                <div className="table-responsive">
+                                                                                                    <table className="table table-sm table-borderless table-vertical-center mb-0">
+                                                                                                        <thead className="thead-light">
+                                                                                                            <tr>
+                                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Charge/Notes</th>
+                                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase text-right" style={{ width: '100px'}}>Amount</th>
+                                                                                                                <th className="text-right" style={{ width: '40px'}}></th>
+                                                                                                            </tr>
+                                                                                                        </thead>
+                                                                                                        <tbody>
+                                                                                                            {group.charges && group.charges.map(c => (
+                                                                                                                <tr key={c.id} className="border-bottom">
+                                                                                                                    <td className="py-3">
+                                                                                                                        <span className="font-weight-bolder text-dark-75 d-block">{c.chargeType?.name || 'Manual Charge'}</span>
+                                                                                                                        <span className="text-muted font-size-xs d-block">{c.reason}</span>
+                                                                                                                        <span className="text-muted font-size-xs">{new Date(c.time || c.createdAt).toLocaleDateString()}</span>
+                                                                                                                    </td>
+                                                                                                                    <td className="text-right font-weight-bolder text-danger py-3">KES {parseFloat(c.amount).toLocaleString()}</td>
+                                                                                                                    <td className="text-right py-3">
+                                                                                                                        <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditChargeModal(c, group)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                                                    </td>
+                                                                                                                </tr>
+                                                                                                            ))}
+                                                                                                        </tbody>
+                                                                                                    </table>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                );
-                                                                            })}
+                                                                            </div>
+
+                                                                            {/* RIGHT COLUMN: All Payment History */}
+                                                                            <div className="col-md-5 border-left">
+                                                                                <h6 className="font-weight-bold mb-3 d-flex justify-content-between align-items-center">
+                                                                                    All Payments History
+                                                                                    <button className="btn btn-xs btn-light-primary" onClick={() => this.showStatementPreview(group)} title="Print Statement">
+                                                                                        <i className="flaticon2-printer icon-xs"></i>
+                                                                                    </button>
+                                                                                </h6>
+                                                                                <div style={{maxHeight: '520px', overflowY: 'auto'}} className="border rounded p-3 bg-white">
+                                                                                    {(!group.allHistory || group.allHistory.length === 0) && <span className="text-muted small">No payments recorded.</span>}
+                                                                                    {group.allHistory && group.allHistory.map(h => {
+                                                                                        const isFailed = h.status === 'FAILED' || h.status === 'FAILED_ON_CALLBACK';
+                                                                                        return (
+                                                                                        <div key={h.id} className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2" style={{ opacity: isFailed ? 0.35 : 1 }}>
+                                                                                            <div className="d-flex flex-column">
+                                                                                                <span className="text-dark-75 font-weight-bold font-size-sm">
+                                                                                                    {h.paymentType || h.type || 'M-Pesa'} 
+                                                                                                    <span className="text-muted font-weight-normal ml-2">- {h.studentName}</span>
+                                                                                                    {isFailed && <span className="badge badge-light-danger ml-2 py-0 px-1" style={{fontSize: '0.65rem'}}>FAILED</span>}
+                                                                                                    {!isFailed && <span className="badge badge-light-secondary ml-2 py-0 px-1 font-size-xs">{h.assignedTerm || 'Term'}</span>}
+                                                                                                </span>
+                                                                                                <span className="text-muted font-size-xs">{new Date(h.time || h.createdAt).toLocaleDateString()}</span>
+                                                                                            </div>
+                                                                                            <div className="d-flex align-items-center">
+                                                                                                <span className={`${isFailed ? 'text-muted text-decoration-line-through' : 'text-success'} font-weight-bolder font-size-sm mr-2`}>
+                                                                                                    KES {parseFloat(h.amount || h.ammount || 0).toLocaleString()}
+                                                                                                </span>
+                                                                                                <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit" disabled={isFailed}><i className="flaticon2-pen"></i></button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
+
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -1224,6 +1414,76 @@ class FeesManagement extends Component {
                                         <i className="flaticon2-paper-plane mr-2"></i> {this.state.sendingSms ? "Sending..." : "Send SMS"}
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {this.state.showAddChargeModal && (
+                <div className="modal fade show" style={{display: 'block', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Add Charge</h5>
+                                <button type="button" className="close" onClick={() => this.setState({ showAddChargeModal: false })}><span>&times;</span></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Adding charge for <strong>{this.state.parentGroup?.parent?.name}</strong></p>
+                                <div className="form-group">
+                                    <label>Charge Type</label>
+                                    <select className="form-control" value={this.state.selectedChargeType} onChange={e => this.setState({ selectedChargeType: e.target.value })}>
+                                        <option value="">Select Charge Type</option>
+                                        {this.state.chargeTypes && this.state.chargeTypes.map(c => <option key={c.id} value={c.id}>{c.name} (KES {c.amount})</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Assign to Term</label>
+                                    <select className="form-control" value={this.state.selectedChargeTermId} onChange={e => this.setState({ selectedChargeTermId: e.target.value })}>
+                                        <option value="">No Term</option>
+                                        {this.state.terms && this.state.terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group"><label>Notes (Optional)</label><input type="text" className="form-control" value={this.state.chargeNotes} onChange={e => this.setState({ chargeNotes: e.target.value })} /></div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => this.setState({ showAddChargeModal: false })}>Cancel</button>
+                                <button className="btn btn-primary" disabled={this.state.processingPayment || !this.state.selectedChargeType} onClick={this.recordCharge}>{this.state.processingPayment ? "Saving..." : "Add Charge"}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {this.state.showEditChargeModal && this.state.editChargeData && (
+                <div className="modal fade show" style={{display: 'block', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Edit Charge</h5>
+                                <button type="button" className="close" onClick={() => this.setState({ showEditChargeModal: false, editChargeData: null })}><span>&times;</span></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Editing charge for <strong>{this.state.parentGroup?.parent?.name}</strong></p>
+                                <div className="form-group">
+                                    <label>Reason / Notes</label>
+                                    <input type="text" className="form-control" value={this.state.editChargeData.reason} onChange={e => this.setState({ editChargeData: { ...this.state.editChargeData, reason: e.target.value }})} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Amount (KES)</label>
+                                    <input type="number" className="form-control" value={this.state.editChargeData.amount} onChange={e => this.setState({ editChargeData: { ...this.state.editChargeData, amount: e.target.value }})} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Assign to Term</label>
+                                    <select className="form-control" value={this.state.editChargeData.termId || ""} onChange={e => this.setState({ editChargeData: { ...this.state.editChargeData, termId: e.target.value }})}>
+                                        <option value="">No Term</option>
+                                        {this.state.terms && this.state.terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => this.setState({ showEditChargeModal: false, editChargeData: null })}>Cancel</button>
+                                <button className="btn btn-success" disabled={this.state.processingPayment} onClick={this.updateCharge}>{this.state.processingPayment ? "Saving..." : "Update Charge"}</button>
                             </div>
                         </div>
                     </div>
