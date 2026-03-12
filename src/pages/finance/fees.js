@@ -650,7 +650,8 @@ class FeesManagement extends Component {
         
         this.setState({ processingPayment: true });
         try {
-            await Data.payments.update(editPaymentData.id, {
+            await Data.payments.update({
+                id: editPaymentData.id,
                 amount: String(editPaymentData.amount),
                 paymentType: editPaymentData.paymentType,
                 ref: editPaymentData.ref || editPaymentData.mpesaReceiptNumber,
