@@ -923,9 +923,7 @@ class FeesManagement extends Component {
                                                         <tr>
                                                             <td colSpan="6" className="bg-light-primary pl-10 pr-10 pb-5">
                                                                 <div className="row mt-3">
-                                                                    <div className="col-md-7">
-                                                                        <h6 className="font-weight-bold mb-3">Student Breakdown</h6>
-                                                                        
+                                                                    <div className="col-md-12 mb-5">
                                                                         {/* UNALLOCATED ALERT for multi-child families */}
                                                                         {(() => {
                                                                             const unallocatedSum = group.history
@@ -933,7 +931,7 @@ class FeesManagement extends Component {
                                                                                 .reduce((sum, h) => sum + parseFloat(h.amount || 0), 0);
                                                                             if (unallocatedSum > 0 && group.students.length > 1) {
                                                                                 return (
-                                                                                    <div className="alert alert-custom alert-light-warning py-2 mb-3 shadow-sm border-0">
+                                                                                    <div className="alert alert-custom alert-light-warning py-2 mb-0 shadow-sm border-0">
                                                                                         <div className="alert-icon"><i className="flaticon-warning text-warning"></i></div>
                                                                                         <div className="alert-text font-size-sm">
                                                                                             <span className="font-weight-bolder">KES {unallocatedSum.toLocaleString()}</span> is unallocated.
@@ -943,115 +941,6 @@ class FeesManagement extends Component {
                                                                             }
                                                                             return null;
                                                                         })()}
-
-                                                                        {group.students.map(s => (
-                                                                            <div key={s.id} className="bg-white rounded mb-3 shadow-sm border">
-                                                                                {/* Student Header */}
-                                                                                <div className="p-3 border-bottom bg-light">
-                                                                                    <div className="d-flex justify-content-between align-items-center">
-                                                                                        <div>
-                                                                                            <div className="font-weight-bold text-dark">{s.names} <span className="text-muted font-size-sm">({s.class?.name || 'N/A'})</span></div>
-                                                                                            <div className="text-muted font-size-sm">
-                                                                                                Expected: <span className="font-weight-bolder text-primary">KES {s.finances.expected.toLocaleString()}</span> | 
-                                                                                                Paid: <span className="font-weight-bolder text-success">KES {s.finances.paid.toLocaleString()}</span> | 
-                                                                                                Balance: <span className={`font-weight-bolder ${s.finances.balance > 0 ? 'text-danger' : 'text-success'}`}>KES {s.finances.balance.toLocaleString()}</span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="d-flex align-items-center">
-                                                                                            <button className="btn btn-xs btn-outline-primary mr-1" onClick={() => this.openPaymentModal(s, group, false)}>MPesa</button>
-                                                                                            <button className="btn btn-xs btn-outline-secondary" onClick={() => this.openPaymentModal(s, group, true)}>Record</button>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                
-                                                                                {/* Payment History */}
-                                                                                <div className="p-3">
-                                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                                                                        <h6 className="font-weight-bold text-dark mb-0">Payment History</h6>
-                                                                                        <span className="badge badge-primary">{s.finances.history.length} payments</span>
-                                                                                    </div>
-                                                                                    
-                                                                                    {s.finances.history.length === 0 ? (
-                                                                                        <div className="text-center py-3 text-muted">
-                                                                                            <i className="flaticon2-receipt font-size-h2 mb-2 d-block"></i>
-                                                                                            <span className="font-size-sm">No payments recorded yet</span>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        <div className="table-responsive">
-                                                                                            <table className="table table-sm table-vertical-center">
-                                                                                                <thead>
-                                                                                                    <tr className="text-left">
-                                                                                                        <th className="font-size-xs font-weight-bolder text-uppercase">Date</th>
-                                                                                                        <th className="font-size-xs font-weight-bolder text-uppercase">Method</th>
-                                                                                                        <th className="font-size-xs font-weight-bolder text-uppercase">Amount</th>
-                                                                                                        <th className="font-size-xs font-weight-bolder text-uppercase">Status</th>
-                                                                                                        <th className="font-size-xs font-weight-bolder text-uppercase">Ref</th>
-                                                                                                    </tr>
-                                                                                                </thead>
-                                                                                                <tbody>
-                                                                                                    {s.finances.history.map((payment, index) => (
-                                                                                                        <tr key={payment.id || index}>
-                                                                                                            <td className="font-size-sm">
-                                                                                                                <div className="font-weight-bolder">{new Date(payment.time || payment.createdAt).toLocaleDateString()}</div>
-                                                                                                                <div className="text-muted font-size-xs">{new Date(payment.time || payment.createdAt).toLocaleTimeString()}</div>
-                                                                                                            </td>
-                                                                                                            <td>
-                                                                                                                <span className="badge badge-light-primary font-size-xs">
-                                                                                                                    {payment.paymentType || payment.type || 'M-Pesa'}
-                                                                                                                </span>
-                                                                                                            </td>
-                                                                                                            <td className="font-weight-bolder text-success">
-                                                                                                                KES {parseFloat(payment.amount || payment.ammount || 0).toLocaleString()}
-                                                                                                            </td>
-                                                                                                            <td>
-                                                                                                                <span className={`badge badge-light-${
-                                                                                                                    payment.status === 'COMPLETED' ? 'success' : 
-                                                                                                                    payment.status === 'PENDING' ? 'warning' : 
-                                                                                                                    payment.status === 'FAILED' ? 'danger' : 'secondary'
-                                                                                                                } font-size-xs`}>
-                                                                                                                    {payment.status || 'UNKNOWN'}
-                                                                                                                </span>
-                                                                                                            </td>
-                                                                                                            <td className="font-size-xs text-muted">
-                                                                                                                {payment.mpesaReceiptNumber || payment.ref || payment.checkoutRequestID?.slice(-8) || 'N/A'}
-                                                                                                            </td>
-                                                                                                        </tr>
-                                                                                                    ))}
-                                                                                                </tbody>
-                                                                                            </table>
-                                                                                        </div>
-                                                                                    )}
-                                                                                    
-                                                                                    {/* Payment Summary */}
-                                                                                    {s.finances.history.length > 0 && (
-                                                                                        <div className="mt-3 pt-3 border-top">
-                                                                                            <div className="row">
-                                                                                                <div className="col-md-4">
-                                                                                                    <div className="text-center">
-                                                                                                        <div className="text-muted font-size-xs text-uppercase">Total Paid</div>
-                                                                                                        <div className="font-weight-bolder text-success font-size-h4">KES {s.finances.paid.toLocaleString()}</div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div className="col-md-4">
-                                                                                                    <div className="text-center">
-                                                                                                        <div className="text-muted font-size-xs text-uppercase">Expected</div>
-                                                                                                        <div className="font-weight-bolder text-primary font-size-h4">KES {s.finances.expected.toLocaleString()}</div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div className="col-md-4">
-                                                                                                    <div className="text-center">
-                                                                                                        <div className="text-muted font-size-xs text-uppercase">Balance</div>
-                                                                                                        <div className={`font-weight-bolder font-size-h4 ${s.finances.balance > 0 ? 'text-danger' : 'text-success'}`}>
-                                                                                                            KES {s.finances.balance.toLocaleString()}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
                                                                     </div>
                                                                     <div className="col-md-12">
                                                                         <div className="row">
@@ -1168,6 +1057,47 @@ class FeesManagement extends Component {
                                                                                         </div>
                                                                                         );
                                                                                     })}
+                                                                                </div>
+                                                                            </div>
+                                                                            
+                                                                            {/* BOTTOM SECTION: Student stats (Financial Summary) */}
+                                                                            <div className="col-md-12 mt-8 border-top pt-5">
+                                                                                <h6 className="font-weight-bold mb-4">Financial Summary per Student</h6>
+                                                                                <div className="row">
+                                                                                    {group.students.map(s => (
+                                                                                        <div key={s.id} className="col-md-4 mb-4">
+                                                                                            <div className="bg-white border rounded p-4 shadow-sm h-100">
+                                                                                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                                                                                    <div>
+                                                                                                        <div className="font-weight-bold text-dark font-size-lg">{s.names}</div>
+                                                                                                        <div className="text-muted small">{s.class?.name || 'No Class'}</div>
+                                                                                                    </div>
+                                                                                                    <div className="d-flex">
+                                                                                                        <button className="btn btn-xs btn-light-primary mr-1" onClick={() => this.openPaymentModal(s, group, false)} title="Request MPesa Payment">
+                                                                                                            <i className="fa fa-mobile-alt icon-xs"></i>
+                                                                                                        </button>
+                                                                                                        <button className="btn btn-xs btn-light-success" onClick={() => this.openPaymentModal(s, group, true)} title="Record Manual Payment">
+                                                                                                            <i className="flaticon2-plus icon-xs"></i>
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="d-flex justify-content-between mb-2">
+                                                                                                    <span className="text-muted small">Expected Fees:</span>
+                                                                                                    <span className="font-weight-bold text-primary">KES {s.finances.expected.toLocaleString()}</span>
+                                                                                                </div>
+                                                                                                <div className="d-flex justify-content-between mb-2">
+                                                                                                    <span className="text-muted small">Total Paid:</span>
+                                                                                                    <span className="font-weight-bold text-success">KES {s.finances.paid.toLocaleString()}</span>
+                                                                                                </div>
+                                                                                                <div className="d-flex justify-content-between pt-2 border-top">
+                                                                                                    <span className="text-muted small font-weight-bold">Current Balance:</span>
+                                                                                                    <span className={`font-weight-bold font-size-h6 ${s.finances.balance > 0 ? 'text-danger' : 'text-success'}`}>
+                                                                                                        KES {s.finances.balance.toLocaleString()}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
