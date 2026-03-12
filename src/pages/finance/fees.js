@@ -546,6 +546,7 @@ class FeesManagement extends Component {
             });
             if(window.toastr) window.toastr.success("Charge added successfully!");
             this.setState({ showAddChargeModal: false });
+            this.recalculateFinancials();
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed to add charge");
         } finally {
@@ -567,8 +568,24 @@ class FeesManagement extends Component {
             });
             if(window.toastr) window.toastr.success("Charge updated successfully!");
             this.setState({ showEditChargeModal: false, editChargeData: null });
+            this.recalculateFinancials();
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed to update charge");
+        } finally {
+            this.setState({ processingPayment: false });
+        }
+    };
+
+    deletePayment = async (payment) => {
+        if (!window.confirm(`Are you sure you want to delete this payment of KES ${parseFloat(payment.amount || 0).toLocaleString()}?`)) return;
+
+        this.setState({ processingPayment: true });
+        try {
+            await Data.payments.delete(payment);
+            if (window.toastr) window.toastr.success("Payment deleted successfully");
+            this.recalculateFinancials();
+        } catch (e) {
+            if (window.toastr) window.toastr.error(e.message || "Failed to delete payment");
         } finally {
             this.setState({ processingPayment: false });
         }
@@ -583,6 +600,7 @@ class FeesManagement extends Component {
             await Data.schools.charge(parentPhone, paymentAmount, { studentId: selectedStudentId });
             if(window.toastr) window.toastr.success("STK Push sent!");
             this.setState({ showPaymentModal: false });
+            this.recalculateFinancials();
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed");
         } finally {
@@ -617,6 +635,7 @@ class FeesManagement extends Component {
             });
             if(window.toastr) window.toastr.success("Recorded successfully!");
             this.setState({ showManualPaymentModal: false });
+            this.recalculateFinancials();
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed");
         } finally {
@@ -664,6 +683,7 @@ class FeesManagement extends Component {
             });
             if(window.toastr) window.toastr.success("Payment updated successfully!");
             this.setState({ showEditPaymentModal: false, editPaymentData: null });
+            this.recalculateFinancials();
         } catch (e) {
             if(window.toastr) window.toastr.error(e.message || "Failed");
         } finally {
@@ -976,6 +996,7 @@ class FeesManagement extends Component {
                                                                                                     <div className="d-flex align-items-center">
                                                                                                         <span className="text-success font-weight-bolder font-size-sm mr-2">KES {parseFloat(h.amount || h.ammount || 0).toLocaleString()}</span>
                                                                                                         <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit"><i className="flaticon2-pen"></i></button>
+                                                                                                        <button className="btn btn-icon btn-xs btn-light-danger ml-1" onClick={() => this.deletePayment(h)} title="Delete"><i className="flaticon2-trash"></i></button>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             ))}
@@ -1054,6 +1075,7 @@ class FeesManagement extends Component {
                                                                                                     KES {parseFloat(h.amount || h.ammount || 0).toLocaleString()}
                                                                                                 </span>
                                                                                                 <button className="btn btn-icon btn-xs btn-light-primary" onClick={() => this.openEditPaymentModal(h)} title="Edit" disabled={isFailed}><i className="flaticon2-pen"></i></button>
+                                                                                                <button className="btn btn-icon btn-xs btn-light-danger ml-1" onClick={() => this.deletePayment(h)} title="Delete" disabled={isFailed}><i className="flaticon2-trash"></i></button>
                                                                                             </div>
                                                                                         </div>
                                                                                         );

@@ -178,6 +178,7 @@ class Navbar extends React.Component {
 
   renderMobileNav = () => {
     const { isMobileMenuOpen, availableSchools, selectedSchool, openMobileSubmenu } = this.state;
+    const isTeacher = this.state.userRole === 'teacher' || this.state.userRole === 'Teacher';
     const manageDataItems = [
         { path: "/schools", label: "Schools" }, { path: "/admins", label: "Admins" },
         { path: "/invitations", label: "Invitations" }, { path: "/drivers", label: "Drivers" },
@@ -191,7 +192,13 @@ class Navbar extends React.Component {
         { path: "/terms", label: "Terms" },
         { path: "/assessment-types", label: "Assessment Types" },
         { path: "/rubrics", label: "Rubrics" },
-    ];
+    ].filter(item => {
+        if (isTeacher) {
+            const forbidden = ["/schools", "/admins", "/invitations", "/finance/fees", "/finance/charge-types", "/settings/school", "/terms", "/assessment-types", "/rubrics"];
+            return !forbidden.includes(item.path);
+        }
+        return true;
+    });
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up" },
       { path: "/finance/charges", label: "Charge History" },
@@ -273,18 +280,20 @@ class Navbar extends React.Component {
                     </div>
                 </li>
                 {/* Finance */}
-                 <li>
-                    <button onClick={() => this.toggleMobileSubmenu('finance')} style={buttonStyle}>
-                        <i className="la la-money" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Finance <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
-                    </button>
-                    <div style={{ maxHeight: openMobileSubmenu === 'finance' ? '200px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
-                        <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
-                            {financeItems.map(item => (
-                                <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
-                            ))}
-                        </ul>
-                    </div>
-                </li>
+                 {!isTeacher && (
+                    <li>
+                        <button onClick={() => this.toggleMobileSubmenu('finance')} style={buttonStyle}>
+                            <i className="la la-money" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Finance <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
+                        </button>
+                        <div style={{ maxHeight: openMobileSubmenu === 'finance' ? '200px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
+                            <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
+                                {financeItems.map(item => (
+                                    <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
+                                ))}
+                            </ul>
+                        </div>
+                    </li>
+                 )}
             </ul>
         </div>
       </>
@@ -320,6 +329,7 @@ class Navbar extends React.Component {
     const paceLoaderColor = effectiveTopBarTextColor;
     const fixedContentSpacerHeight = firstBarHeight + gapBetweenNavbars;
 
+    const isTeacher = this.state.userRole === 'teacher' || this.state.userRole === 'Teacher';
     const manageDataItems = [
       { path: "/schools", label: "Schools", IconComponent: SvgSchoolsIcon }, { path: "/admins", label: "Admins", IconComponent: SvgAdminsIcon },
       { path: "/invitations", label: "Invitations", IconComponent: SvgInvitationsIcon }, { path: "/drivers", label: "Drivers", IconComponent: SvgDriversIcon },
@@ -333,7 +343,13 @@ class Navbar extends React.Component {
       { path: "/terms", label: "Terms", IconComponent: SvgSchedulesIcon },
       { path: "/assessment-types", label: "Assessment Types", IconComponent: SvgSettingsIcon },
       { path: "/rubrics", label: "Rubrics", IconComponent: SvgSettingsIcon },
-    ];
+    ].filter(item => {
+        if (isTeacher) {
+            const forbidden = ["/schools", "/admins", "/invitations", "/finance/fees", "/finance/charge-types", "/settings/school", "/terms", "/assessment-types", "/rubrics"];
+            return !forbidden.includes(item.path);
+        }
+        return true;
+    });
     const financeItems = [
       { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `
 
@@ -421,25 +437,27 @@ class Navbar extends React.Component {
                     </ul>
                   </div>
                 </li>
-                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>}</span>
-                    <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
-                  </a>
-                  <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                    <ul className="kt-menu__subnav">
-                      {financeItems.map(item => (
-                        <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                          <Link to={item.path} className="kt-menu__link">
-                            <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
-                              {item.label}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
+                {!isTeacher && (
+                    <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
+                        <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                        <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>}</span>
+                        <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
+                    </a>
+                    <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                        <ul className="kt-menu__subnav">
+                        {financeItems.map(item => (
+                            <li key={item.path} className="kt-menu__item" aria-haspopup="true">
+                            <Link to={item.path} className="kt-menu__link">
+                                <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
+                                {item.label}
+                                </span>
+                            </Link>
+                            </li>
+                        ))}
+                        </ul>
+                    </div>
+                    </li>
+                )}
               </ul>
             </div>
           </div>
@@ -491,7 +509,7 @@ class Navbar extends React.Component {
                         <li className="kt-menu__item"><Link to="/comms" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>SMS & Email</span></Link></li>
                         <li className="kt-menu__item"><Link to="/learning" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Learning</span></Link></li>
                         <li className="kt-menu__item"><Link to="/library" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Library</span></Link></li>
-                        <li className="kt-menu__item"><Link to="/finance/fees" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Fee</span></Link></li>
+                        {!isTeacher && <li className="kt-menu__item"><Link to="/finance/fees" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Fee</span></Link></li>}
                         <li className="kt-menu__item"><Link to="/results" className="kt-menu__link"><span className="kt-menu__link-text" style={bottomNavCommonLinkStyle}>Results</span></Link></li>
                     </ul>
                 </div>

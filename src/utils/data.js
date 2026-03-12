@@ -139,14 +139,19 @@ const createEntityAPI = (config) => {
                 if (!Array.isArray(allData[name])) {
                     allData[name] = [];
                 }
-                allData[name].push(newItem);
+                // CHECK FOR DUPLICATE BEFORE PUSHING
+                if (!allData[name].some(item => String(item.id) === String(newItem.id))) {
+                    allData[name].push(newItem);
+                }
 
                 // 3. Safely Update Nested Cache
                 if (isNested && payload[parentKey]) {
                     const { item: parentItem } = findItemInTree(payload[parentKey]);
                     if (parentItem) {
                         if (!Array.isArray(parentItem[name])) parentItem[name] = [];
-                        parentItem[name].push(newItem);
+                        if (!parentItem[name].some(item => String(item.id) === String(newItem.id))) {
+                            parentItem[name].push(newItem);
+                        }
                     } else {
                         console.warn(`Could not find parent with ID ${payload[parentKey]} to append new ${singularName}`);
                     }
@@ -154,7 +159,9 @@ const createEntityAPI = (config) => {
                     const school = allData.schools.find(s => String(s.id) === String(payload.school));
                     if (school) {
                         if (!Array.isArray(school[name])) school[name] = [];
-                        school[name].push(newItem);
+                        if (!school[name].some(item => String(item.id) === String(newItem.id))) {
+                            school[name].push(newItem);
+                        }
                     }
                 }
 
@@ -498,45 +505,33 @@ var Data = (function () {
             
             // Financials
             if (updatedSubEntities.has('financial') || updatedSubEntities.has('charges') || updatedSubEntities.has('payments')) {
-                if (updatedSubEntities.has('charges')) allData.charges = activeSchool.charges || [];
-                if (updatedSubEntities.has('payments')) {
-                    // Merge payments instead of overwriting to preserve recent local additions
-                    const serverPayments = activeSchool.payments || [];
-                    const existingPayments = allData.payments || [];
+                const mergeEntities = (entityName) => {
+                    const serverItems = activeSchool[entityName] || [];
+                    const existingItems = allData[entityName] || [];
+                    const existingMap = new Map(existingItems.map(p => [String(p.id), p]));
+                    const mergedItems = [];
                     
-                    // Create a map of existing payments by ID for quick lookup
-                    const existingMap = new Map(existingPayments.map(p => [String(p.id), p]));
-                    
-                    // Merge server payments with existing ones, preferring server data for duplicates
-                    const mergedPayments = [];
-                    
-                    // Add server payments first (they're the source of truth)
-                    serverPayments.forEach(serverPayment => {
-                        const existingPayment = existingMap.get(String(serverPayment.id));
-                        if (existingPayment) {
-                            // Merge with existing payment, preserving any local fields not in server response
-                            mergedPayments.push({ ...existingPayment, ...serverPayment });
-                            existingMap.delete(String(serverPayment.id)); // Remove from map
+                    serverItems.forEach(serverItem => {
+                        const existingItem = existingMap.get(String(serverItem.id));
+                        if (existingItem) {
+                            mergedItems.push({ ...existingItem, ...serverItem });
+                            existingMap.delete(String(serverItem.id));
                         } else {
-                            mergedPayments.push(serverPayment);
+                            mergedItems.push(serverItem);
                         }
                     });
                     
-                    // Add any remaining local payments that weren't in server response
-                    mergedPayments.push(...existingMap.values());
-                    
-                    // Sort by creation date (newest first)
-                    mergedPayments.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || b.createdAt));
-                    
-                    allData.payments = mergedPayments;
-                }
-                
-                if (Array.isArray(subs.charges) && updatedSubEntities.has('charges')) {
-                    subs.charges.forEach(cb => cb({ charges: [...allData.charges] }));
-                }
-                if (Array.isArray(subs.payments) && updatedSubEntities.has('payments')) {
-                    subs.payments.forEach(cb => cb({ payments: [...allData.payments] }));
-                }
+                    mergedItems.push(...existingMap.values());
+                    mergedItems.sort((a, b) => new Date(b.time || b.createdAt) - new Date(a.time || b.createdAt));
+                    allData[entityName] = mergedItems;
+
+                    if (Array.isArray(subs[entityName])) {
+                        subs[entityName].forEach(cb => cb({ [entityName]: [...allData[entityName]] }));
+                    }
+                };
+
+                if (updatedSubEntities.has('charges')) mergeEntities('charges');
+                if (updatedSubEntities.has('payments')) mergeEntities('payments');
             }
 
             // Grades hierarchy flattening
