@@ -12,15 +12,26 @@ const modalNumber = Math.random()
 class Modal extends React.Component {
   state = {
     loading: false,
+    teachers: [],
     subject: {
-      id: null, // Ensure ID is present for edit
+      id: null,
       name: "",
+      teacher: "",
     },
   };
 
-  // Fetch teachers when the component mounts
   async componentDidMount() {
     const _this = this;
+    
+    // Load teachers list
+    const teachers = Data.teachers.list();
+    this.setState({ teachers });
+    
+    // Subscribe to teacher updates
+    this._teacherSub = Data.teachers.subscribe(({ teachers }) => {
+      this.setState({ teachers });
+    });
+
     try {
       this.validator = $("#" + modalNumber + "form").validate({
         errorClass: "invalid-feedback",
@@ -34,7 +45,7 @@ class Modal extends React.Component {
         },
 
         rules: {
-          gradename: { // ID of the input for subject name
+          gradename: {
             required: true,
             minlength: 2,
           },
@@ -48,9 +59,8 @@ class Modal extends React.Component {
 
         async submitHandler(form, event) {
           event.preventDefault();
-          // Re-validate the form before submitting to ensure all rules pass
           if (!_this.validator.form()) {
-            return; // If validation fails, stop submission
+            return;
           }
 
           try {
@@ -58,12 +68,11 @@ class Modal extends React.Component {
             const data = {
               id: _this.state.subject.id,
               name: _this.state.subject.name,
+              teacher: _this.state.subject.teacher || undefined,
             };
             await _this.props.edit(data);
             _this.hide();
-            _this.setState({
-              loading: false,
-            });
+            _this.setState({ loading: false });
           } catch (error) {
             _this.setState({ loading: false });
             if (error) {
@@ -75,17 +84,21 @@ class Modal extends React.Component {
         }
       });
     } catch (error) {
-      console.error("Error fetching teachers:", error);
-      IErrorMessage.show({ message: "Could not load teachers. Please try again." });
+      console.error("Error setting up edit modal:", error);
+      IErrorMessage.show({ message: "Could not initialise edit form." });
     }
   }
 
+  componentWillUnmount() {
+    if (this._teacherSub) this._teacherSub();
+  }
+
   static getDerivedStateFromProps(props, state) {
-    // When the subject prop changes, update the state to populate the form
     if (props.subject && props.subject.id !== state.subject.id) {
       return {
         subject: {
           ...props.subject,
+          teacher: props.subject.teacher || "",
         },
       };
     }
@@ -102,10 +115,9 @@ class Modal extends React.Component {
 
   hide() {
     $("#" + modalNumber).modal("hide");
-    // Reset state when hiding the modal to ensure a clean slate for next opening
     this.setState({
       loading: false,
-      subject: { id: null, name: "" },
+      subject: { id: null, name: "", teacher: "" },
     });
   }
 
@@ -120,62 +132,83 @@ class Modal extends React.Component {
   };
 
   render() {
-    const { subject } = this.state;
+    const { subject, teachers } = this.state;
+    const userRole = localStorage.getItem('userRole');
+    const isTeacher = userRole === 'teacher';
 
     return (
       <div>
         <div
-          className="modal fade" // Added 'fade' class for smoother transition
+          className="modal fade"
           id={modalNumber}
           tabIndex="-1"
           role="dialog"
-          aria-labelledby="subjectEditModalLabel" // Changed aria-labelledby to be more specific
+          aria-labelledby="subjectEditModalLabel"
           aria-hidden="true"
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg"> {/* Added modal-lg for more space */}
+          <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <form
                 id={modalNumber + "form"}
                 className="kt-form kt-form--label-right"
               >
                 <div className="modal-header">
-                  <h5 className="modal-title" id="subjectEditModalLabel">Edit subject</h5> {/* Added ID */}
+                  <h5 className="modal-title" id="subjectEditModalLabel">Edit Subject</h5>
                   <button
                     type="button"
                     className="close"
                     data-dismiss="modal"
                     aria-label="Close"
                   >
-                    <span aria-hidden="true">×</span> {/* Corrected close symbol */}
+                    <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body">
                   <div className="kt-portlet__body">
                     <div className="form-group row">
-                      <div className="col-lg-6"> {/* Split layout for better organization */}
+                      <div className="col-lg-6">
                         <label>Subject name:</label>
                         <input
                           type="text"
                           className="form-control"
-                          id="gradename" // Original ID, keeping for validator compatibility
-                          name="name" // Name for state update
+                          id="gradename"
+                          name="name"
                           value={subject.name}
                           onChange={this.handleInputChange}
                           required
+                          disabled={isTeacher}
                         />
                       </div>
+                      {!isTeacher && (
+                        <div className="col-lg-6">
+                          <label>Assigned Teacher: <span className="text-muted">(optional)</span></label>
+                          <select
+                            className="form-control"
+                            name="teacher"
+                            value={subject.teacher || ""}
+                            onChange={this.handleInputChange}
+                          >
+                            <option value="">— No teacher assigned —</option>
+                            {teachers.map(t => (
+                              <option key={t.id} value={t.id}>
+                                {t.name || t.names}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
                   <button
-                    type="submit" // Changed to type="submit" to trigger the validator
-                    className="btn btn-brand" // Changed to btn-brand for consistency
+                    type="submit"
+                    className="btn btn-brand"
                     disabled={this.state.loading}
                   >
                     {this.state.loading ? (
                       <span
-                        className="spinner-border spinner-border-sm mr-2" // Added mr-2 for spacing
+                        className="spinner-border spinner-border-sm mr-2"
                         role="status"
                         aria-hidden="true"
                       />
@@ -184,7 +217,7 @@ class Modal extends React.Component {
                     )}
                   </button>
                   <button
-                    type="button" // Ensure type is button to not submit form
+                    type="button"
                     className="btn btn-outline-brand"
                     data-dismiss="modal"
                   >

@@ -283,7 +283,7 @@ class Navbar extends React.Component {
                  {!isTeacher && (
                     <li>
                         <button onClick={() => this.toggleMobileSubmenu('finance')} style={buttonStyle}>
-                            <i className="la la-money" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Finance <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
+                            <i className="la la-money" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> SMS Balance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>} <i className={`la la-angle-${openMobileSubmenu === 'finance' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
                         </button>
                         <div style={{ maxHeight: openMobileSubmenu === 'finance' ? '200px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
                             <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
@@ -351,9 +351,8 @@ class Navbar extends React.Component {
         return true;
     });
     const financeItems = [
-      { path: "/finance/topup", label: "Mpesa Top Up: " + `${selectedSchool?.financial?.balance || 0} KES (${selectedSchool?.financial?.balanceFormated || "~ SMS's:"}) `
-
-       }, { path: "/finance/charges", label: "Your Charges" },
+      { path: "/finance/topup", label: "Top Up SMS: " + `${selectedSchool?.financial?.balanceFormated || "0 SMS's"}`
+      }, { path: "/finance/charges", label: "SMS Usage History" },
     ];
 
     const customHoverStyle = `
@@ -440,7 +439,7 @@ class Navbar extends React.Component {
                 {!isTeacher && (
                     <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
                         <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                        <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Finance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>}</span>
+                        <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>SMS Balance {showLowBalanceIndicator && <span className="balance-dot" title="Low Balance Notice"></span>}</span>
                         <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
                     </a>
                     <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">

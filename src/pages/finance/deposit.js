@@ -164,16 +164,9 @@ class MpesaPaymentModal extends React.Component {
       let result;
       
       if (forcedSchoolId) {
-          // We assume a 'chargePublic' or similar method exists or we overload providing the ID
-          // Since we didn't add a specific public charge mutation, we might rely on the implementation plan's assumption
-          // that standard mutation might be open if configured? 
-          // ACTUALLY: The user said "page without auth".
-          // I should probably have added a public mutation.
-          // Let's assume for now we pass the ID and the Data layer handles the rest (maybe via openquery/mutate).
-          // OR: We simply call charge with the ID in the payload.
-          result = await Data.schools.charge(phone, amount, forcedSchoolId);
+          result = await Data.schools.charge(phone, amount, { type: 'bulksms' }, forcedSchoolId);
       } else {
-          result = await Data.schools.charge(phone, amount);
+          result = await Data.schools.charge(phone, amount, { type: 'bulksms' });
       }
       
       if (!this._isMounted) return;

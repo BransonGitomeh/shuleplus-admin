@@ -450,6 +450,7 @@ class FeesManagement extends Component {
             
             // Add custom charges to total expected
             const additionalCharges = group.charges.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
+            group.totalCharges = additionalCharges; // Stored so Financial Summary per student can distribute it
             group.totalExpected += additionalCharges;
             
             group.totalBalance = group.totalExpected - group.totalPaid;
@@ -1028,8 +1029,10 @@ class FeesManagement extends Component {
                                                                                                             {group.charges && group.charges.map(c => (
                                                                                                                 <tr key={c.id} className="border-bottom">
                                                                                                                     <td className="py-3">
-                                                                                                                        <span className="font-weight-bolder text-dark-75 d-block">{c.chargeType?.name || 'Manual Charge'}</span>
-                                                                                                                        <span className="text-muted font-size-xs d-block">{c.reason}</span>
+                                                                                                                        <span className="font-weight-bolder text-dark-75 d-block">{c.chargeType?.name || c.reason || 'Manual Charge'}</span>
+                                                                                                                        {c.reason && c.reason !== c.chargeType?.name && (
+                                                                                                                            <span className="text-muted font-size-xs d-block">{c.reason}</span>
+                                                                                                                        )}
                                                                                                                         <span className="text-muted font-size-xs">{new Date(c.time || c.createdAt).toLocaleDateString()}</span>
                                                                                                                     </td>
                                                                                                                     <td className="text-right font-weight-bolder text-danger py-3">KES {parseFloat(c.amount).toLocaleString()}</td>
@@ -1106,7 +1109,7 @@ class FeesManagement extends Component {
                                                                                                 </div>
                                                                                                 <div className="d-flex justify-content-between mb-2">
                                                                                                     <span className="text-muted small">Expected Fees:</span>
-                                                                                                    <span className="font-weight-bold text-primary">KES {s.finances.expected.toLocaleString()}</span>
+                                                                                                    <span className="font-weight-bold text-primary">KES {(s.finances.expected + (group.totalCharges || 0) / group.students.length).toLocaleString()}</span>
                                                                                                 </div>
                                                                                                 <div className="d-flex justify-content-between mb-2">
                                                                                                     <span className="text-muted small">Total Paid:</span>
@@ -1115,7 +1118,7 @@ class FeesManagement extends Component {
                                                                                                 <div className="d-flex justify-content-between pt-2 border-top">
                                                                                                     <span className="text-muted small font-weight-bold">Current Balance:</span>
                                                                                                     <span className={`font-weight-bold font-size-h6 ${s.finances.balance > 0 ? 'text-danger' : 'text-success'}`}>
-                                                                                                        KES {s.finances.balance.toLocaleString()}
+                                                                                                        KES {(s.finances.balance + (group.totalCharges || 0) / group.students.length).toLocaleString()}
                                                                                                     </span>
                                                                                                 </div>
                                                                                             </div>

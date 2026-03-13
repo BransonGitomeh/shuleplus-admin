@@ -115,6 +115,10 @@ const createEntityAPI = (config) => {
         create: (data) => new Promise(async (resolve, reject) => {
             try {
                 const payload = { ...data };
+                // Ensure amount is string for GraphQL
+                if (payload.amount !== undefined && typeof payload.amount === 'number') {
+                    payload.amount = String(payload.amount);
+                }
                 if (!isNested && !payload.school && name !== 'schools') {
                     payload.school = localStorage.getItem("school");
                 }
@@ -180,6 +184,10 @@ const createEntityAPI = (config) => {
         update: (data) => new Promise(async (resolve, reject) => {
             try {
                 const { id, ...payload } = data;
+                // Ensure amount is string for GraphQL
+                if (payload.amount !== undefined && typeof payload.amount === 'number') {
+                    payload.amount = String(payload.amount);
+                }
                 const sanitizedPayload = filterPayload(payload, updateFields);
                 const mutationName = `U${singularName}`;
                 await mutate(
@@ -307,8 +315,8 @@ var Data = (function () {
         const FRAGMENT_INVITATIONS_DATA = `fragment InvitationsData on school { invitations { id message user email phone } }`;
         const FRAGMENT_FINANCIAL_DATA = `fragment FinancialData on school { 
             financial { balance, balanceFormated } 
-            charges { amount reason time id parent { id name } chargeType { id name } term { id name } } 
-            payments { 
+            charges(limit: 5000) { amount reason time id parent { id name } chargeType { id name } term { id name } } 
+            payments(limit: 5000) { 
                 id 
                 amount 
                 phone 
@@ -750,8 +758,8 @@ var Data = (function () {
         }, {
             name: "payments",
             singularName: "payment",
-            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata'],
-            updateFields: ['phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata']
+            createFields: ['school', 'phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata', 'resultDesc', 'resultCode'],
+            updateFields: ['phone', 'amount', 'type', 'ref', 'time', 'status', 'description', 'student', 'paymentType', 'metadata', 'resultDesc', 'resultCode']
         }, {
             name: "charges",
             singularName: "charge",
@@ -900,7 +908,13 @@ var Data = (function () {
                 const schoolId = forcedSchoolId || instance.schools.getSelected()?.id;
                 if (!schoolId) return Promise.reject("No school selected");
                 return mutate(`mutation ($payment: mpesaStartTxInput!) { payments { init(payment: $payment){ id, CheckoutRequestID, MerchantRequestID } } }`, {
-                    payment: { schoolId, amount, phone, metadata }
+                    payment: { 
+                        schoolId, 
+                        amount: String(amount), 
+                        ammount: String(amount), // Also provide the misspelled one just in case
+                        phone, 
+                        metadata 
+                    }
                 }).then(response => {
                     const initRes = response.payments?.init;
                     if (initRes) {
