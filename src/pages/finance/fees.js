@@ -854,7 +854,7 @@ class FeesManagement extends Component {
                                         <tr className="text-left">
                                             <th style={{minWidth: "200px"}}>Parent Details</th>
                                             <th style={{minWidth: "150px"}}>Students</th>
-                                            <th style={{minWidth: "120px"}}>Class Fee</th>
+                                            <th style={{minWidth: "120px"}}>Total Expected Payment</th>
                                             <th style={{minWidth: "120px"}}>Total Paid</th>
                                             <th style={{minWidth: "120px"}}>Balance</th>
                                             <th style={{minWidth: "150px"}}>Last Payment</th>
@@ -1087,45 +1087,7 @@ class FeesManagement extends Component {
                                                                             </div>
                                                                             
                                                                             {/* BOTTOM SECTION: Student stats (Financial Summary) */}
-                                                                            <div className="col-md-12 mt-8 border-top pt-5">
-                                                                                <h6 className="font-weight-bold mb-4">Financial Summary per Student</h6>
-                                                                                <div className="row">
-                                                                                    {group.students.map(s => (
-                                                                                        <div key={s.id} className="col-md-4 mb-4">
-                                                                                            <div className="bg-white border rounded p-4 shadow-sm h-100">
-                                                                                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                                                                                    <div>
-                                                                                                        <div className="font-weight-bold text-dark font-size-lg">{s.names}</div>
-                                                                                                        <div className="text-muted small">{s.class?.name || 'No Class'}</div>
-                                                                                                    </div>
-                                                                                                    <div className="d-flex">
-                                                                                                        <button className="btn btn-xs btn-light-primary mr-1" onClick={() => this.openPaymentModal(s, group, false)} title="Request MPesa Payment">
-                                                                                                            <i className="fa fa-mobile-alt icon-xs"></i>
-                                                                                                        </button>
-                                                                                                        <button className="btn btn-xs btn-light-success" onClick={() => this.openPaymentModal(s, group, true)} title="Record Manual Payment">
-                                                                                                            <i className="flaticon2-plus icon-xs"></i>
-                                                                                                        </button>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div className="d-flex justify-content-between mb-2">
-                                                                                                    <span className="text-muted small">Expected Fees:</span>
-                                                                                                    <span className="font-weight-bold text-primary">KES {(s.finances.expected + (group.totalCharges || 0) / group.students.length).toLocaleString()}</span>
-                                                                                                </div>
-                                                                                                <div className="d-flex justify-content-between mb-2">
-                                                                                                    <span className="text-muted small">Total Paid:</span>
-                                                                                                    <span className="font-weight-bold text-success">KES {s.finances.paid.toLocaleString()}</span>
-                                                                                                </div>
-                                                                                                <div className="d-flex justify-content-between pt-2 border-top">
-                                                                                                    <span className="text-muted small font-weight-bold">Current Balance:</span>
-                                                                                                    <span className={`font-weight-bold font-size-h6 ${s.finances.balance > 0 ? 'text-danger' : 'text-success'}`}>
-                                                                                                        KES {(s.finances.balance + (group.totalCharges || 0) / group.students.length).toLocaleString()}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
+                                                                            
                                                                         </div>
                                                                     </div>
 
