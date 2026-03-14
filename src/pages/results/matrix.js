@@ -69,12 +69,40 @@ class ResultsMatrix extends React.Component {
 
     // Get school info for reports
     const schoolInfo = Data.schools.getSelected();
-    this.setState({ schoolInfo });
+    
+    // Load persisted state or defaults
+    const persistedClass = localStorage.getItem('matrix_selectedClass');
+    const persistedTerm = localStorage.getItem('matrix_selectedTerm');
+    const persistedType = localStorage.getItem('matrix_selectedAssessmentType');
 
-    setTimeout(() => this.setState({ loading: false }), 2000);
+    this.setState({ 
+        schoolInfo,
+        selectedClass: persistedClass || "",
+        selectedTerm: persistedTerm || "",
+        selectedAssessmentType: persistedType || ""
+    });
+
+    setTimeout(() => {
+        const { selectedClass, selectedTerm, selectedAssessmentType, classes, terms, assessmentTypes } = this.state;
+        
+        let updates = {};
+        if (!selectedClass && classes?.length > 0) updates.selectedClass = classes[0].id;
+        if (!selectedTerm && terms?.length > 0) updates.selectedTerm = terms[0].id;
+        if (!selectedAssessmentType && assessmentTypes?.length > 0) updates.selectedAssessmentType = assessmentTypes[0].id;
+
+        if (Object.keys(updates).length > 0) {
+            this.setState(updates);
+        }
+        this.setState({ loading: false });
+    }, 2000);
   }
   
   componentDidUpdate(prevProps, prevState) {
+      // Persist changes
+      if (this.state.selectedClass !== prevState.selectedClass) localStorage.setItem('matrix_selectedClass', this.state.selectedClass);
+      if (this.state.selectedTerm !== prevState.selectedTerm) localStorage.setItem('matrix_selectedTerm', this.state.selectedTerm);
+      if (this.state.selectedAssessmentType !== prevState.selectedAssessmentType) localStorage.setItem('matrix_selectedAssessmentType', this.state.selectedAssessmentType);
+
       // Fetch assessments when class or term changes
       if (
           (this.state.selectedClass && this.state.selectedTerm) &&

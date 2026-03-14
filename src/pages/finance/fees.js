@@ -494,6 +494,11 @@ class FeesManagement extends Component {
 
         this.setState({ 
             processedParents: filteredList
+        }, () => {
+            // Auto-expand the first item if none is expanded and we have items
+            if (!this.state.expandedParentId && filteredList.length > 0) {
+                this.setState({ expandedParentId: filteredList[0].id });
+            }
         });
     };
 
