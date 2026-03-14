@@ -807,36 +807,48 @@ class FeesManagement extends Component {
             const totalValidBalance = totalValidExpected - totalValidPaid;
 
             return (
-                <div className="bg-white">
-                    <div className="d-print-none p-4 border-bottom mb-4 d-flex justify-content-between align-items-center">
-                        <button className="btn btn-secondary" onClick={this.togglePrintView}>
-                            <i className="fa fa-arrow-left"></i> Back to Fees
-                        </button>
-                        <div>
-                            <button className="btn btn-primary" onClick={this.handlePrint}>
-                                <i className="la la-print mr-2"></i> Print Statement
+              <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--ver kt-page">
+                <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor kt-wrapper" id="kt_wrapper">
+                  <Navbar />
+                  <Subheader links={["Finance", "Fees Statement"]} />
+
+                  <div className="kt-content kt-grid__item kt-grid__item--fluid" style={{height:"auto"}} id="kt_content">
+                    <div className="kt-container">
+                        <div className="d-print-none p-4 border-bottom mb-4 d-flex justify-content-between align-items-center bg-white rounded shadow-sm">
+                            <button className="btn btn-secondary" onClick={this.togglePrintView}>
+                                <i className="fa fa-arrow-left"></i> Back to Fees
                             </button>
+                            <div>
+                                <h4 className="m-0 font-weight-bold">Statement Preview</h4>
+                            </div>
+                            <div>
+                                <button className="btn btn-primary" onClick={this.handlePrint}>
+                                    <i className="la la-print mr-2"></i> Print Statement
+                                </button>
+                            </div>
+                        </div>
+                        <div id="print-area" style={{ backgroundColor: '#f3f4f6', paddingTop: '20px', paddingBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+                            <StatementCard 
+                                group={printGroup} 
+                                school={schoolInfo} 
+                                validStudentsData={validStudentsData} 
+                                totalValidExpected={totalValidExpected} 
+                                totalValidPaid={totalValidPaid} 
+                                totalValidBalance={totalValidBalance} 
+                            />
                         </div>
                     </div>
-                    <div id="print-area" style={{ backgroundColor: '#f3f4f6', paddingTop: '20px', paddingBottom: '20px' }}>
-                        <StatementCard 
-                            group={printGroup} 
-                            school={schoolInfo} 
-                            validStudentsData={validStudentsData} 
-                            totalValidExpected={totalValidExpected} 
-                            totalValidPaid={totalValidPaid} 
-                            totalValidBalance={totalValidBalance} 
-                        />
-                    </div>
-                    <style>{`
-                        @media print {
-                            .d-print-none, .kt-header, .kt-aside, .kt-footer, .kt-subheader { display: none !important; }
-                            body, .kt-content, .kt-container, #print-area { background: white !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-                            #kt_wrapper { padding: 0 !important; margin: 0 !important; }
-                            .report-card-container { page-break-after: always; width: 100% !important; height: 100vh; border: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
-                        }
-                    `}</style>
+                  </div>
+                  <style>{`
+                      @media print {
+                          .d-print-none, .kt-header, .kt-aside, .kt-footer, .kt-subheader { display: none !important; }
+                          body, .kt-content, .kt-container, #print-area { background: white !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+                          #kt_wrapper { padding: 0 !important; margin: 0 !important; }
+                          .report-card-container { page-break-after: always; width: 100% !important; height: auto !important; min-height: 29.7cm; border: none !important; margin: 0 !important; padding: 1.2cm 2.0cm !important; box-shadow: none !important; }
+                      }
+                  `}</style>
                 </div>
+              </div>
             );
         }
 
