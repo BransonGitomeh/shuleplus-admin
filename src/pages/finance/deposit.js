@@ -135,12 +135,14 @@ class MpesaPaymentModal extends React.Component {
     // Fix z-index of the generated Bootstrap backdrop so it sits exactly behind this modal
     // and above the BulkSmsModal (which is at 1050)
     setTimeout(() => {
+        $(`#${modalId}`).css('z-index', 9999);
         const backdrops = $('.modal-backdrop');
         if (backdrops.length > 0) {
             $(backdrops[backdrops.length - 1]).css({
-                'z-index': 1059,
+                'z-index': 9998,
                 'opacity': 0.65,
-                'background-color': '#000'
+                'background-color': '#000',
+                'position': 'fixed'
             });
         }
     }, 150);
@@ -294,8 +296,8 @@ class MpesaPaymentModal extends React.Component {
     const isBusy = ['INITIATING', 'AWAITING_USER_ACTION', 'VERIFYING', 'SUCCESS'].includes(status);
 
     return (
-      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true" style={{ zIndex: 1060 }}>
-        <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 1061, maxWidth: '450px' }}>
+      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true" style={{ zIndex: 9999 }}>
+        <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 10000, maxWidth: '450px' }}>
           <div className="modal-content shadow-lg border-0" style={{ borderRadius: '16px', overflow: 'hidden' }}>
             
             <div className="modal-header px-6 py-5 border-bottom-0" style={{ backgroundColor: '#43B02A', color: 'white' }}>
