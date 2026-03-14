@@ -166,6 +166,7 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                             </th>
                         ))}
                         <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
+                        <th style={{ minWidth: '200px' }}>Teacher Comment</th>
                         <th className="text-center" style={{ minWidth: '130px', position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>Actions</th>
                     </tr>
                 </thead>
@@ -173,6 +174,19 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                     {students.map(student => {
                         let totalPoints = 0;
                         const isExpanded = !!expandedStudents[student.id];
+
+                        // Find most recent teacher comment across subjects for this student
+                        const teacherComment = (() => {
+                            const comments = (subjects || []).map(subj => {
+                                const a = (assessments || []).find(a =>
+                                    (a.student === student.id || a.student?.id === student.id) &&
+                                    (a.subject === subj.id || a.subject?.id === subj.id) &&
+                                    a.teachersComment
+                                );
+                                return a ? `${subj.name}: ${a.teachersComment}` : null;
+                            }).filter(Boolean);
+                            return comments.join(' | ');
+                        })();
 
                         const cells = (subjects || []).map(subj => {
                             const val = getScore(student.id, subj.id);
@@ -245,6 +259,9 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                     {cells}
                                     <td className="text-center font-weight-bold bg-light align-middle" style={{ fontSize: '1.2rem', color: '#111827' }}>
                                         {totalPoints > 0 ? totalPoints : '-'}
+                                    </td>
+                                    <td className="align-middle" style={{ fontSize: '0.82rem', color: '#6b7280', fontStyle: 'italic', lineHeight: '1.4' }}>
+                                        {teacherComment || <span className="text-muted" style={{ fontSize: '0.75rem' }}>—</span>}
                                     </td>
                                     <td className="text-center align-middle" style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff', borderLeft: '1px solid #e5e7eb' }}>
                                         <div className="d-flex justify-content-center">
