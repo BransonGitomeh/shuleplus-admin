@@ -274,8 +274,8 @@ class MpesaPaymentModal extends React.Component {
     const isBusy = ['INITIATING', 'AWAITING_USER_ACTION', 'VERIFYING', 'SUCCESS'].includes(status);
 
     return (
-      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered" role="document">
+      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true" style={{ zIndex: 1060, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 1061 }}>
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">M-Pesa Express</h5>

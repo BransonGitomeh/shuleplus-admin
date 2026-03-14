@@ -314,10 +314,11 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
                             </div>
                             <button
                                 type="button"
-                                className="btn btn-sm btn-light-primary ml-4"
+                                className="btn btn-warning font-weight-bolder px-5 ml-4 d-flex align-items-center"
+                                style={{ borderRadius: '8px', boxShadow: '0 4px 6px rgba(255, 152, 0, 0.2)' }}
                                 onClick={() => topUpModalRef.current?.show?.()}
                             >
-                                <i className="fa fa-plus d-block mb-1"></i> Top Up
+                                <i className="fa fa-wallet mr-2"></i> Top Up
                             </button>
                         </div>
 
