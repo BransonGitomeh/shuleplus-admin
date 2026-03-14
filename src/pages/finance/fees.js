@@ -822,17 +822,13 @@ class FeesManagement extends Component {
 
             return {
                 id: group.id,
+                parentId: group.id, // parent ID for phone update
                 name: parent.name || 'Parent',
-                phone: parent.phone,
+                phone: parent.phone || '',
                 studentNames: studentNames,
                 message: fullMessage
             };
         }).filter(r => r !== null);
-
-        if (recipients.length === 0) {
-            if (window.toastr) window.toastr.warning("None of the filtered parents have phone numbers registered.");
-            return;
-        }
 
         this.setState({
             showBulkSmsModal: true,
@@ -861,6 +857,11 @@ class FeesManagement extends Component {
             if (failCount === 0) window.toastr.success(`Successfully sent ${sentCount} messages.`);
             else window.toastr.warning(`Sent ${sentCount}, Failed ${failCount}.`);
         }
+    };
+
+    handleSaveParentPhone = async (parentId, newPhone) => {
+        if (!parentId || !newPhone) return;
+        await Data.parents.update({ id: parentId, phone: newPhone });
     };
 
     showStatementPreview = (group) => {
@@ -1735,6 +1736,7 @@ class FeesManagement extends Component {
                     onClose={() => this.setState({ showBulkSmsModal: false })}
                     recipients={this.state.bulkSmsRecipients}
                     onSend={this.handleBulkSmsSend}
+                    onSavePhone={this.handleSaveParentPhone}
                 />
             )}
           </div>

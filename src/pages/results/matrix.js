@@ -346,17 +346,13 @@ class ResultsMatrix extends React.Component {
 
           return {
               id: student.id,
+              parentId: student.parent?.id,
               name: student.parent?.name || 'Parent',
               phone: student.parent?.phone || '',
               studentNames: student.names,
               message: fullMessage
           };
-      }).filter(r => r.phone); // Only those with phones
-
-      if (recipients.length === 0) {
-          if (window.toastr) window.toastr.warning("None of the students have parent phone numbers registered.");
-          return;
-      }
+      });
 
       this.setState({
           showBulkModal: true,
@@ -385,6 +381,11 @@ class ResultsMatrix extends React.Component {
           if (failCount === 0) window.toastr.success(`Successfully sent ${sentCount} messages.`);
           else window.toastr.warning(`Sent ${sentCount}, Failed ${failCount}.`);
       }
+  };
+
+  handleSaveParentPhone = async (parentId, newPhone) => {
+      if (!parentId || !newPhone) return;
+      await Data.parents.update({ id: parentId, phone: newPhone });
   };
 
   sendResultsSMS = async (student) => {
@@ -644,6 +645,7 @@ class ResultsMatrix extends React.Component {
                     onClose={() => this.setState({ showBulkModal: false })}
                     recipients={this.state.bulkSmsRecipients}
                     onSend={this.handleBulkSmsSend}
+                    onSavePhone={this.handleSaveParentPhone}
                 />
             )}
 
