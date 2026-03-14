@@ -407,7 +407,8 @@ class FeesManagement extends Component {
             // And exclude failed transactions to reduce noise in active term views
             const relatedPayments = processedAllPayments.filter(p => {
                 const isFailed = p.status === 'FAILED' || p.status === 'FAILED_ON_CALLBACK';
-                if (isFailed) return false;
+                const isPendingMpesa = p.status === 'PENDING' && p.type === 'mpesa_init';
+                if (isFailed || isPendingMpesa) return false;
 
                 // If "All Terms" is selected, we show everything (that isn't failed)
                 if (!selectedTerm) return true;
@@ -767,6 +768,21 @@ class FeesManagement extends Component {
         }
     };
 
+    restoreRecord = async (type, id) => {
+        if (!window.confirm("Are you sure you want to restore this record?")) return;
+        
+        this.setState({ processingPayment: true });
+        try {
+            await Data[type].restore({ id });
+            if(window.toastr) window.toastr.success("Record restored successfully!");
+            this.recalculateFinancials();
+        } catch (e) {
+            if(window.toastr) window.toastr.error(e.message || "Failed to restore record");
+        } finally {
+            this.setState({ processingPayment: false });
+        }
+    };
+
     // Keep the Print/SMS logic from V1, but reference the processed data structure
     sendBalanceSms = async (group) => {
         const { students, parent, totalBalance } = group;
@@ -991,7 +1007,7 @@ class FeesManagement extends Component {
                                             const isExpanded = expandedParentId === group.id;
                                             const hasArrears = group.totalBalance > 0;
                                             const lastPayment = group.history.length > 0 ? group.history[0] : null;
-                                            const completedPayments = group.history.filter(p => p.status === 'COMPLETED' || p.status === 'PENDING').length;
+                                            const completedPayments = group.history.filter(p => p.status === 'COMPLETED').length;
                                             
                                             return (
                                                 <React.Fragment key={group.id}>
@@ -1002,7 +1018,10 @@ class FeesManagement extends Component {
                                                                     <span className="symbol-label font-size-h5 font-weight-bold">{group.parent.name?.[0]}</span>
                                                                 </div>
                                                                 <div className="ml-4">
-                                                                    <div className="text-dark-75 font-weight-bolder font-size-lg mb-0">{group.parent.name}</div>
+                                                                    <div className="text-dark-75 font-weight-bolder font-size-lg mb-0">
+                                                                        {group.parent.name}
+                                                                        {group.parent.isDeleted && <span className="label label-inline label-light-danger ml-2">Archived</span>}
+                                                                    </div>
                                                                     <span className="text-muted font-weight-bold text-hover-primary">{group.parent.phone}</span>
                                                                 </div>
                                                             </div>
@@ -1041,27 +1060,39 @@ class FeesManagement extends Component {
                                                             )}
                                                         </td>
                                                         <td className="text-right pr-0">
-                                                            <button 
-                                                                className="btn btn-icon btn-light-primary btn-sm mx-1" 
-                                                                onClick={() => this.toggleRow(group.id)}
-                                                                title="View Details"
-                                                            >
-                                                                <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
-                                                            </button>
-                                                            <button 
-                                                                className="btn btn-icon btn-light-success btn-sm mx-1"
-                                                                onClick={() => this.showStatementPreview(group)}
-                                                                title="Print Statement"
-                                                            >
-                                                                <i className="fa fa-print text-dark"></i>
-                                                            </button>
-                                                            <button 
-                                                                className="btn btn-icon btn-light-info btn-sm mx-1"
-                                                                onClick={() => this.sendBalanceSms(group)}
-                                                                title="Send SMS balance"
-                                                            >
-                                                                <i className="flaticon2-paper-plane"></i>
-                                                            </button>
+                                                            {group.parent.isDeleted ? (
+                                                                <button 
+                                                                    className="btn btn-icon btn-light-warning btn-sm mx-1" 
+                                                                    onClick={() => this.restoreRecord('parents', group.parent.id)}
+                                                                    title="Restore Parent"
+                                                                >
+                                                                    <i className="flaticon2-refresh"></i>
+                                                                </button>
+                                                            ) : (
+                                                                <>
+                                                                    <button 
+                                                                        className="btn btn-icon btn-light-primary btn-sm mx-1" 
+                                                                        onClick={() => this.toggleRow(group.id)}
+                                                                        title="View Details"
+                                                                    >
+                                                                        <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
+                                                                    </button>
+                                                                    <button 
+                                                                        className="btn btn-icon btn-light-success btn-sm mx-1"
+                                                                        onClick={() => this.showStatementPreview(group)}
+                                                                        title="Print Statement"
+                                                                    >
+                                                                        <i className="fa fa-print text-dark"></i>
+                                                                    </button>
+                                                                    <button 
+                                                                        className="btn btn-icon btn-light-info btn-sm mx-1"
+                                                                        onClick={() => this.sendBalanceSms(group)}
+                                                                        title="Send SMS balance"
+                                                                    >
+                                                                        <i className="flaticon2-paper-plane"></i>
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                     
@@ -1074,7 +1105,7 @@ class FeesManagement extends Component {
                                                                         {/* UNALLOCATED ALERT for multi-child families */}
                                                                         {(() => {
                                                                             const unallocatedSum = group.history
-                                                                                .filter(h => h.studentName === 'Unallocated' && (h.status === 'COMPLETED' || !h.status))
+                                                                                .filter(h => h.studentName === 'Unallocated' && h.status === 'COMPLETED')
                                                                                 .reduce((sum, h) => sum + parseFloat(h.amount || 0), 0);
                                                                             if (unallocatedSum > 0 && group.students.length > 1) {
                                                                                 return (
@@ -1429,12 +1460,15 @@ class FeesManagement extends Component {
                                             </thead>
                                             <tbody>
                                                 {this.state.statementGroup.students.map(s => {
-                                                    const validHistory = s.finances.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED');
+                                                    const validHistory = s.finances.history.filter(p => p.status === 'COMPLETED');
                                                     const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
                                                     const balance = s.finances.expected - validPaid;
                                                     return (
                                                         <tr key={s.id}>
-                                                            <td>{s.names}</td>
+                                                            <td>
+                                                                {s.names}
+                                                                {s.isDeleted && <span className="label label-inline label-light-danger ml-2">Archived</span>}
+                                                            </td>
                                                             <td>KES {s.finances.expected.toLocaleString()}</td>
                                                             <td className="text-success">KES {validPaid.toLocaleString()}</td>
                                                             <td className={balance > 0 ? 'text-danger' : 'text-success'}>KES {balance.toLocaleString()}</td>

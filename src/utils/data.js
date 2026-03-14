@@ -1004,16 +1004,70 @@ var Data = (function () {
             },
             delete: (data) => new Promise(async (resolve, reject) => {
                 try {
-                    const school = data;
-                    if (!school.id) return reject("No school selected");
-                    await mutate(`mutation ($data: USchool!) { schools { archive(school: $data) { id } } }`, { data: { id: school.id } });
-                    allData.schools = allData.schools.filter(s => String(s.id) !== String(school.id));
-                    if (Array.isArray(subs.schools)) {
-                        const selectedSchool = allData.schools.find(s => String(s.id) === String(schoolID));
-                        subs.schools.forEach(cb => cb({ schools: [...allData.schools], selectedSchool: selectedSchool || {} }));
+                    const item = data;
+                    if (!item.id) return reject(`No ${singularName} ID selected`);
+                    
+                    // Call archive mutation
+                    await mutate(`mutation ($data: U${singularName}!) { ${name} { archive(${singularName}: $data) { id } } }`, { 
+                        data: { id: item.id } 
+                    });
+
+                    // Soft Delete in local cache: find and mark as isDeleted instead of filtering out
+                    const { item: itemInTree } = findItemInTree(item.id, allData.schools);
+                    if (itemInTree) {
+                        itemInTree.isDeleted = true;
                     }
-                    resolve(school);
-                } catch (error) { console.error(`Error deleting school:`, error); reject(error); }
+                    
+                    // Also update flat list
+                    if (Array.isArray(allData[name])) {
+                        const flatItem = allData[name].find(i => String(i.id) === String(item.id));
+                        if (flatItem) flatItem.isDeleted = true;
+                    }
+
+                    // Notify
+                    notifySubscribers(name);
+                    notifySchoolSubscribers();
+                    if (isNested) notifySubscribers(parentEntity);
+
+                    resolve(item);
+                } catch (error) { 
+                    console.error(`Error archiving ${singularName}:`, error); 
+                    reject(error); 
+                }
+            }),
+
+            restore: (data) => new Promise(async (resolve, reject) => {
+                try {
+                    const item = data;
+                    if (!item.id) return reject(`No ${singularName} ID selected`);
+                    
+                    // Call restore mutation
+                    await mutate(`mutation ($data: U${singularName}!) { ${name} { restore(${singularName}: $data) { id } } }`, { 
+                        data: { id: item.id } 
+                    });
+
+                    // Un-archive in local cache
+                    const { item: itemInTree } = findItemInTree(item.id, allData.schools);
+                    if (itemInTree) {
+                        itemInTree.isDeleted = false;
+                    }
+                    
+                    // Also update flat list
+                    if (Array.isArray(allData[name])) {
+                        const flatItem = allData[name].find(i => String(i.id) === String(item.id));
+                        if (flatItem) flatItem.isDeleted = false;
+                    }
+
+                    // Notify
+                    notifySubscribers(name);
+                    notifySchoolSubscribers();
+                    if (isNested) notifySubscribers(parentEntity);
+
+                    resolve(item);
+                } catch (error) { 
+                    console.error(`Error restoring ${singularName}:`, error); 
+                    reject(error); 
+                }
             }),
         },
     };
