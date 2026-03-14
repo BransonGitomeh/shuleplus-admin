@@ -206,7 +206,7 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
                         </div>
 
                         {/* Main Editor */}
-                        <div className="flex-grow-1 h-100 d-flex flex-column bg-white p-8 overflow-auto">
+                        <div className="flex-grow-1 h-100 d-flex flex-column bg-white overflow-auto" style={{ padding: '24px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
                             {activeRecipient ? (
                                 <>
                                     {/* Recipient Info & Phone Edit */}
@@ -251,11 +251,11 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
                                     </div>
 
                                     {/* Message Editor */}
-                                    <div className="form-group flex-grow-1 d-flex flex-column m-0">
+                                    <div className="form-group flex-grow-1 d-flex flex-column m-0" style={{ minHeight: 0 }}>
                                         <label className="font-weight-bold text-muted small text-uppercase mb-3">Message Content</label>
                                         <textarea
-                                            className="form-control border-0 bg-light p-6 flex-grow-1"
-                                            style={{ resize: 'none', borderRadius: '12px', fontSize: '1.05rem', lineHeight: '1.6' }}
+                                            className="form-control border-0 bg-light p-4 flex-grow-1"
+                                            style={{ resize: 'none', borderRadius: '12px', fontSize: '0.95rem', lineHeight: '1.6', minHeight: '180px' }}
                                             value={getMessage(activeRecipient)}
                                             onChange={(e) => handleMessageChange(activeRecipient.id, e.target.value)}
                                             placeholder="Type message here..."
@@ -314,14 +314,26 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
 
                         <div>
                             <button type="button" className="btn btn-light-danger font-weight-bold mr-3" onClick={onClose} disabled={isSending}>Cancel</button>
-                            <button
-                                type="button"
-                                className={`btn btn-primary font-weight-bold px-10 ${isSending ? 'spinner spinner-white spinner-right' : ''}`}
-                                onClick={handleConfirmSend}
-                                disabled={isSending || sendableRecipients.length === 0}
-                            >
-                                {isSending ? 'Sending...' : `Send to ${sendableRecipients.length} Parent${sendableRecipients.length !== 1 ? 's' : ''}`}
-                            </button>
+                            {schoolBalance < campaignStats.totalCost && schoolBalance >= 0 ? (
+                                <button
+                                    type="button"
+                                    className="btn btn-danger font-weight-bold px-8"
+                                    disabled
+                                    title={`Balance KES ${schoolBalance.toFixed(2)} is less than estimated cost KES ${campaignStats.totalCost.toFixed(2)}`}
+                                >
+                                    <i className="fa fa-exclamation-triangle mr-2"></i>
+                                    Insufficient Balance — Top Up First
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className={`btn btn-primary font-weight-bold px-10 ${isSending ? 'spinner spinner-white spinner-right' : ''}`}
+                                    onClick={handleConfirmSend}
+                                    disabled={isSending || sendableRecipients.length === 0}
+                                >
+                                    {isSending ? 'Sending...' : `Send to ${sendableRecipients.length} Parent${sendableRecipients.length !== 1 ? 's' : ''}`}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
