@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import Data from "../../utils/data";
 import Navbar from "../../components/navbar";
 import Subheader from "../../components/subheader";
+import SmsBalanceModal from './components/SmsBalanceModal';
+import StatementCard from './components/StatementCard';
 
 // --- HELPER COMPONENTS ---
 
@@ -146,6 +148,9 @@ class FeesManagement extends Component {
             console.log("Classes Update:", classes?.length);
             this.updateData({ classes, loading: !classes?.length });
         });
+
+        const schoolInfo = Data.schools.getSelected();
+        this.setState({ schoolInfo });
         this.unsubChargeTypes = Data.chargeTypes.subscribe(({ chargeTypes }) => {
             this.updateData({ chargeTypes });
         });
@@ -731,74 +736,109 @@ class FeesManagement extends Component {
             if(window.toastr) window.toastr.error("Failed to send SMS");
         } finally { 
             this.setState({ sendingSms: false }); 
+            this.setState({ showStatementModal: false, statementGroup: null });
+        }
+    };
+
+    sendBalanceSms = (group) => {
+        if (!group) return;
+        this.setState({ showSmsModal: true, smsGroup: group });
+    };
+
+    handleSendSms = async (message) => {
+        try {
+            await Data.communication.sms.create({
+                phone: this.state.smsGroup.parent.phone,
+                message: message
+            });
+            if(window.toastr) window.toastr.success("SMS sent successfully.");
+        } catch (e) {
+            console.error(e);
+            if(window.toastr) window.toastr.error("Failed to send SMS.");
         }
     };
 
     executePrintStatement = () => {
          const { statementGroup } = this.state;
          if (!statementGroup) return;
-
-         const { students, parent } = statementGroup;
-         const school = Data.schools.getSelected();
-         const printWindow = window.open('', '_blank');
-
-         const isValidPayment = (p) => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED';
-
-         // Calculate manual & completed mpesa expected/paid/balances for print preview
-         const validStudentsData = students.map(s => {
-             const validHistory = s.finances.history.filter(isValidPayment);
-             const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-             return {
-                 names: s.names,
-                 expected: s.finances.expected, // Expected usually remains the same class fee
-                 paid: validPaid,
-                 balance: s.finances.expected - validPaid,
-                 history: validHistory
-             };
-         });
          
-         const totalClassFees = validStudentsData.reduce((sum, s) => sum + s.expected, 0);
-         const totalCharges = statementGroup.charges ? statementGroup.charges.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0) : 0;
-         const totalValidExpected = totalClassFees + totalCharges;
-         const totalValidPaid = validStudentsData.reduce((sum, s) => sum + s.paid, 0);
-         const totalValidBalance = totalValidExpected - totalValidPaid;
+         // Instead of window.print builder, use our new component view
+         this.setState({ showPrintView: true, printGroup: statementGroup, showStatementModal: false, statementGroup: null });
+    };
 
-         const content = `
-            <html><head><title>Statement</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px} .text-right { text-align: right; }</style></head>
-            <body>
-                <h2>${school.name} - Official Fee Statement</h2>
-                <p><strong>Parent:</strong> ${parent.name} (${parent.phone})</p>
-                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                <h3>Balances</h3>
-                <table>
-                    <thead><tr><th>Student/Charge</th><th>Expected</th><th>Total Paid</th><th>Balance</th></tr></thead>
-                    <tbody>
-                        ${validStudentsData.map(s => `<tr><td>Class Fee: ${s.names}</td><td>KES ${s.expected.toLocaleString()}</td><td>KES ${s.paid.toLocaleString()}</td><td>KES ${s.balance.toLocaleString()}</td></tr>`).join('')}
-                        ${statementGroup.charges ? statementGroup.charges.map(c => `<tr><td>Charge: ${c.chargeType?.name || c.reason}</td><td>KES ${parseFloat(c.amount || 0).toLocaleString()}</td><td>-</td><td>-</td></tr>`).join('') : ''}
-                    </tbody>
-                </table>
-                <h3 class="text-right">Total Outstanding Balance: KES ${totalValidBalance.toLocaleString()}</h3>
-                
-                <h3>Recent Transactions</h3>
-                <table>
-                    <thead><tr><th>Date</th><th>Student</th><th>Method</th><th>Amount</th><th>Reference</th></tr></thead>
-                    <tbody>
-                        ${validStudentsData.flatMap(s => s.history.map(h => `<tr><td>${new Date(h.time || h.createdAt).toLocaleDateString()}</td><td>${s.names}</td><td>${h.paymentType || (h.type === 'fees_manual' ? 'Cash' : 'M-Pesa')}</td><td>KES ${parseFloat(h.amount).toLocaleString()}</td><td>${h.ref || h.mpesaReceiptNumber || 'N/A'}</td></tr>`)).join('')}
-                    </tbody>
-                </table>
-                <script>window.onload = function() { window.print(); }</script>
-            </body></html>
-         `;
-         printWindow.document.write(content);
-         printWindow.document.close();
-         this.setState({ showStatementModal: false, statementGroup: null });
+    showStatementPreview = (group) => {
+        this.setState({ showPrintView: true, printGroup: group });
+    };
+
+    togglePrintView = () => {
+        this.setState(prev => ({ showPrintView: !prev.showPrintView }));
+    };
+
+    handlePrint = () => {
+        window.print();
     };
 
     render() {
         const { 
             classes, terms, selectedClass, selectedTerm, searchTerm, 
-            processedParents, currentPage, itemsPerPage, expandedParentId, loading 
+            processedParents, currentPage, itemsPerPage, expandedParentId, loading,
+            showPrintView, printGroup, schoolInfo, showSmsModal, smsGroup
         } = this.state;
+
+        if (showPrintView && printGroup) {
+            const isValidPayment = (p) => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED';
+
+            const validStudentsData = printGroup.students.map(s => {
+                const validHistory = s.finances.history.filter(isValidPayment);
+                const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                return {
+                    names: s.names,
+                    expected: s.finances.expected,
+                    paid: validPaid,
+                    balance: s.finances.expected - validPaid,
+                    history: validHistory
+                };
+            });
+            
+            const totalClassFees = validStudentsData.reduce((sum, s) => sum + s.expected, 0);
+            const totalCharges = printGroup.charges ? printGroup.charges.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0) : 0;
+            const totalValidExpected = totalClassFees + totalCharges;
+            const totalValidPaid = validStudentsData.reduce((sum, s) => sum + s.paid, 0);
+            const totalValidBalance = totalValidExpected - totalValidPaid;
+
+            return (
+                <div className="bg-white">
+                    <div className="d-print-none p-4 border-bottom mb-4 d-flex justify-content-between align-items-center">
+                        <button className="btn btn-secondary" onClick={this.togglePrintView}>
+                            <i className="fa fa-arrow-left"></i> Back to Fees
+                        </button>
+                        <div>
+                            <button className="btn btn-primary" onClick={this.handlePrint}>
+                                <i className="la la-print mr-2"></i> Print Statement
+                            </button>
+                        </div>
+                    </div>
+                    <div id="print-area" style={{ backgroundColor: '#f3f4f6', paddingTop: '20px', paddingBottom: '20px' }}>
+                        <StatementCard 
+                            group={printGroup} 
+                            school={schoolInfo} 
+                            validStudentsData={validStudentsData} 
+                            totalValidExpected={totalValidExpected} 
+                            totalValidPaid={totalValidPaid} 
+                            totalValidBalance={totalValidBalance} 
+                        />
+                    </div>
+                    <style>{`
+                        @media print {
+                            .d-print-none, .kt-header, .kt-aside, .kt-footer, .kt-subheader { display: none !important; }
+                            body, .kt-content, .kt-container, #print-area { background: white !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+                            #kt_wrapper { padding: 0 !important; margin: 0 !important; }
+                            .report-card-container { page-break-after: always; width: 100% !important; height: 100vh; border: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+                        }
+                    `}</style>
+                </div>
+            );
+        }
 
         // Pagination Logic
         const indexOfLastItem = currentPage * itemsPerPage;
@@ -1409,6 +1449,16 @@ class FeesManagement extends Component {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* 3. SMS Modal */}
+            {this.state.showSmsModal && (
+                <SmsBalanceModal
+                    show={this.state.showSmsModal}
+                    group={this.state.smsGroup}
+                    onClose={() => this.setState({ showSmsModal: false, smsGroup: null })}
+                    onSend={this.handleSendSms}
+                />
             )}
           </div>
         );
