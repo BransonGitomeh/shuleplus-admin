@@ -173,7 +173,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
                             Validation Status: <span style={{ color: '#10b981' }}>Authentic Financial Record</span>
                         </div>
                         <div style={{ fontSize: '0.7rem', color: '#d1d5db', marginTop: '4px' }}>
-                            Generated on {new Date().toLocaleDateString('full')} at {new Date().toLocaleTimeString()}
+                            Generated on {new Date().toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date().toLocaleTimeString()}
                         </div>
                     </div>
                     
