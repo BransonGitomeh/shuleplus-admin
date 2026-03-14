@@ -54,11 +54,11 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
         <div className="report-card-container" style={{ 
             padding: '1.2cm 2.0cm', 
             backgroundColor: 'white', 
-            minHeight: '29.7cm', 
-            height: '29.7cm', // Fixed height for A4
+            minHeight: '28cm', 
+            height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
-            pageBreakAfter: 'always',
+            pageBreakAfter: 'auto',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', // Slate-800

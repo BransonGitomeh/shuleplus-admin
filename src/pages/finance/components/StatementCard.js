@@ -7,11 +7,11 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
         <div className="report-card-container" style={{ 
             padding: '1.2cm 2.0cm', 
             backgroundColor: 'white', 
-            minHeight: '29.7cm', 
+            minHeight: '28cm', 
             height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
-            pageBreakAfter: 'always',
+            pageBreakAfter: 'auto',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 

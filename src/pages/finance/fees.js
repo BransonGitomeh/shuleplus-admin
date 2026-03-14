@@ -954,13 +954,13 @@ class FeesManagement extends Component {
                               margin-top: 0 !important;
                           }
 
-                          /* Ensure Statement Card fills space */
+                           /* Ensure Statement Card fills space */
                           .report-card-container { 
-                              page-break-after: always; 
+                              page-break-after: auto; 
                               width: 100% !important; 
                               max-width: none !important;
                               height: auto !important; 
-                              min-height: 29.7cm; 
+                              min-height: 28cm; 
                               border: none !important; 
                               margin: 0 !important; 
                               padding: 1.0cm 1.5cm !important; 
