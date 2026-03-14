@@ -544,7 +544,7 @@ class FeesManagement extends Component {
             await Data.charges.create({
                 school: localStorage.getItem('school'),
                 parent: parentGroup.id,
-                amount: String(chargeType.amount),
+                amount: parseFloat(chargeType.amount),
                 reason: chargeNotes || chargeType.name,
                 chargeType: selectedChargeType,
                 time: new Date().toISOString(),
@@ -823,7 +823,7 @@ class FeesManagement extends Component {
                             </div>
                             <div>
                                 <button className="btn btn-primary" onClick={this.handlePrint}>
-                                    <i className="la la-print mr-2"></i> Print Statement
+                                    <i className="flaticon2-printer mr-2"></i> Print Statement
                                 </button>
                             </div>
                         </div>
@@ -983,7 +983,7 @@ class FeesManagement extends Component {
                                                                 onClick={() => this.showStatementPreview(group)}
                                                                 title="Print Statement"
                                                             >
-                                                                <i className="la la-print"></i>
+                                                                <i className="flaticon2-printer"></i>
                                                             </button>
                                                             <button 
                                                                 className="btn btn-icon btn-light-info btn-sm mx-1"
@@ -1028,14 +1028,14 @@ class FeesManagement extends Component {
                                                                                     <div className="col-md-12 mb-6">
                                                                                         <h6 className="font-weight-bold mb-3 d-flex justify-content-between align-items-center">
                                                                                             Filtered Term Payments
-                                                                                            <div className="d-flex">
-                                                                                                <button className="btn btn-xs btn-light-success mr-1" onClick={() => this.setState({ showManualPaymentModal: true, statementGroup: group })} title="Record Cash Payment">
-                                                                                                    <i className="flaticon2-plus icon-xs"></i> Record
-                                                                                                </button>
-                                                                                                <button className="btn btn-xs btn-light-primary" onClick={() => this.setState({ showPaymentModal: true, statementGroup: group })} title="Request M-Pesa Payment">
-                                                                                                    <i className="fa fa-mobile-alt icon-xs"></i> M-Pesa
-                                                                                                </button>
-                                                                                            </div>
+                                                                                                                             <div className="d-flex">
+                                                                                                 <button className="btn btn-xs btn-light-success mr-1" onClick={() => this.openManualPaymentModal(group)} title="Record Cash Payment">
+                                                                                                     <i className="flaticon2-plus icon-xs"></i> Record
+                                                                                                 </button>
+                                                                                                 <button className="btn btn-xs btn-light-primary" onClick={() => this.openPaymentModal(group)} title="Request M-Pesa Payment">
+                                                                                                     <i className="fa fa-mobile-alt icon-xs"></i> M-Pesa
+                                                                                                 </button>
+                                                                                             </div>
                                                                                         </h6>
                                                                                         <div style={{maxHeight: '250px', overflowY: 'auto'}} className="border rounded p-3 bg-white">
                                                                                             {group.history.length === 0 && <span className="text-muted small">No payments in this term.</span>}
@@ -1142,14 +1142,58 @@ class FeesManagement extends Component {
                                                                             </div>
                                                                             
                                                                             {/* BOTTOM SECTION: Student stats (Financial Summary) */}
-                                                                            
+                                                                            <div className="col-md-12 mt-6">
+                                                                                <h6 className="font-weight-bold mb-3">Student Balances & Quick Pay</h6>
+                                                                                <div className="table-responsive">
+                                                                                    <table className="table table-sm table-borderless table-vertical-center bg-white rounded border">
+                                                                                        <thead className="thead-light">
+                                                                                            <tr>
+                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase pl-4">Student</th>
+                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Expected</th>
+                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Paid</th>
+                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Balance</th>
+                                                                                                <th className="text-right pr-4">Actions</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                            {group.students.map(s => {
+                                                                                                const validHistory = s.finances.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED');
+                                                                                                const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                                                                                                const balance = s.finances.expected - validPaid;
+                                                                                                return (
+                                                                                                    <tr key={s.id} className="border-bottom">
+                                                                                                        <td className="py-3 pl-4">
+                                                                                                            <span className="text-dark-75 font-weight-bolder d-block font-size-sm">{s.names}</span>
+                                                                                                            <span className="text-muted font-size-xs">{s.class?.name}</span>
+                                                                                                        </td>
+                                                                                                        <td className="py-3 font-size-sm">KES {s.finances.expected.toLocaleString()}</td>
+                                                                                                        <td className="py-3 text-success font-size-sm">KES {validPaid.toLocaleString()}</td>
+                                                                                                        <td className="py-3">
+                                                                                                            <span className={`font-weight-bolder font-size-sm ${balance > 0 ? 'text-danger' : 'text-success'}`}>KES {balance.toLocaleString()}</span>
+                                                                                                        </td>
+                                                                                                        <td className="text-right pr-4">
+                                                                                                            <button className="btn btn-xs btn-light-success mr-1" onClick={() => {
+                                                                                                                this.openManualPaymentModal(group);
+                                                                                                                this.setState({ paymentStudent: s, paymentAmount: balance > 0 ? balance : "" });
+                                                                                                            }}>Record Cash</button>
+                                                                                                            <button className="btn btn-xs btn-light-primary" onClick={() => {
+                                                                                                                this.openPaymentModal(group);
+                                                                                                                this.setState({ paymentStudent: s, paymentAmount: balance > 0 ? balance : "" });
+                                                                                                            }}>M-Pesa</button>
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                );
+                                                                                            })}
+                                                                                        </tbody>
+                                                                                    </table>
+
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        )}
                                                 </React.Fragment>
                                             );
                                         })}
@@ -1473,7 +1517,8 @@ class FeesManagement extends Component {
                 />
             )}
           </div>
-        );
+        </div>
+      );
     }
 }
 
