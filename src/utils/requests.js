@@ -29,7 +29,7 @@ const handleUnauthorized = () => {
     localStorage.clear();
 
     for (const key in preservedData) {
-        localStorage.setItem(key, preservedData[key];)
+        localStorage.setItem(key, preservedData[key]);
     }
     // Use replace to prevent user from navigating back to the unauthorized page.
     window.location.replace('/#/');
