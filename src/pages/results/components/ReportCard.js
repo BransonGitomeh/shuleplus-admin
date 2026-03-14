@@ -34,19 +34,18 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             return { type, score, rubric };
         });
 
-        // Find if there's any student-specific comment for this subject in any assessment
-        const assessmentWithComment = assessments.find(a => 
-            (a.student === student.id || a.student?.id === student.id) &&
-            (a.subject === subject.id || a.subject?.id === subject.id) &&
-            (a.term === term.id || a.term?.id === term.id) &&
-            a.teachersComment
-        );
+        // Collect rubric comments from all assessment types for this subject
+        const rubricComments = typeScores
+            .filter(ts => ts.rubric?.teachersComment)
+            .map(ts => ts.rubric.teachersComment);
+        // Deduplicate
+        const uniqueComments = [...new Set(rubricComments)];
 
         return {
             subject,
             typeScores,
             totalPoints: subjectPoints,
-            teachersComment: assessmentWithComment?.teachersComment || '-'
+            teachersComment: uniqueComments.length > 0 ? uniqueComments.join(' ') : '-'
         };
     });
 

@@ -28,12 +28,9 @@ const StudentChart = ({ student, subjects, assessments, rubrics, updates, themeC
 
     const getComments = () => {
         return (subjects || []).map(subj => {
-            const a = (assessments || []).find(a =>
-                (a.student === student.id || a.student?.id === student.id) &&
-                (a.subject === subj.id || a.subject?.id === subj.id) &&
-                a.teachersComment
-            );
-            return a ? { subject: subj.name, comment: a.teachersComment } : null;
+            const score = getScore(student.id, subj.id);
+            const rubric = score !== '' && score !== null ? getRubric(score) : null;
+            return rubric?.teachersComment ? { subject: subj.name, comment: rubric.teachersComment } : null;
         }).filter(Boolean);
     };
 
@@ -175,17 +172,14 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                         let totalPoints = 0;
                         const isExpanded = !!expandedStudents[student.id];
 
-                        // Find most recent teacher comment across subjects for this student
+                        // Inline teacher comment: collect rubric comments per subject, deduplicated
                         const teacherComment = (() => {
-                            const comments = (subjects || []).map(subj => {
-                                const a = (assessments || []).find(a =>
-                                    (a.student === student.id || a.student?.id === student.id) &&
-                                    (a.subject === subj.id || a.subject?.id === subj.id) &&
-                                    a.teachersComment
-                                );
-                                return a ? `${subj.name}: ${a.teachersComment}` : null;
+                            const parts = (subjects || []).map(subj => {
+                                const val = getScore(student.id, subj.id);
+                                const rubric = val !== '' && val !== null ? getRubric(val) : null;
+                                return rubric?.teachersComment ? `${subj.name}: ${rubric.teachersComment}` : null;
                             }).filter(Boolean);
-                            return comments.join(' | ');
+                            return parts.join(' | ');
                         })();
 
                         const cells = (subjects || []).map(subj => {
