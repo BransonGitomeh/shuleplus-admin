@@ -1189,11 +1189,13 @@ class FeesManagement extends Component {
 
                                                                                 </div>
                                                                             </div>
+
                                                                         </div>
                                                                     </div>
-                                                                </td>
-                                                            </tr>
-                                                        )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </React.Fragment>
                                             );
                                         })}
@@ -1517,8 +1519,7 @@ class FeesManagement extends Component {
                 />
             )}
           </div>
-        </div>
-      );
+        );
     }
 }
 
