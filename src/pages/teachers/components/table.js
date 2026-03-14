@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import Row from "./table-row";
 
 export default props => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
+
   if (!props.headers || !props.data) return null;
   const { options = { deleteable: true, editable: true } } = props;
+
+  const totalPages = Math.ceil(props.data.length / rowsPerPage) || 1;
+  const validPage = Math.min(currentPage, totalPages);
+  
+  // Safe slice
+  const paginatedData = props.data.slice((validPage - 1) * rowsPerPage, validPage * rowsPerPage);
   return (
     <div className="kt_datatable kt-datatable kt-datatable--default kt-datatable--brand kt-datatable--loaded">
       <table
@@ -19,7 +28,7 @@ export default props => {
           </tr>
         </thead>
         <tbody className="kt-datatable__body">
-          {props.data.map(row => {
+          {paginatedData.map(row => {
             return (
               <Row
                 key={Math.random().toString()}
@@ -32,8 +41,50 @@ export default props => {
               />
             );
           })}
+          {paginatedData.length === 0 && (
+            <tr>
+              <td colSpan={props.headers.length + 2} className="text-center p-4 text-muted">No records found.</td>
+            </tr>
+          )}
         </tbody>
       </table>
+
+      {/* Pagination Controls */}
+      {props.data.length > 0 && (
+        <div className="d-flex justify-content-between align-items-center p-3 border-top mt-2">
+          <div className="text-muted" style={{fontSize: '0.9rem'}}>
+            Showing {(validPage - 1) * rowsPerPage + 1} - {Math.min(validPage * rowsPerPage, props.data.length)} of {props.data.length}
+          </div>
+          <div className="d-flex align-items-center">
+            <select 
+              className="form-control form-control-sm mr-4" 
+              style={{width: 'auto'}} 
+              value={rowsPerPage} 
+              onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+            >
+              <option value="15">15 rows</option>
+              <option value="30">30 rows</option>
+              <option value="50">50 rows</option>
+              <option value="100">100 rows</option>
+            </select>
+            <button 
+              className="btn btn-sm btn-light-primary mr-2" 
+              disabled={validPage === 1} 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              <i className="fa fa-chevron-left" style={{fontSize: '0.7rem'}}></i> Prev
+            </button>
+            <span className="mr-2 text-muted" style={{fontSize: '0.9rem'}}>Page {validPage} of {totalPages}</span>
+            <button 
+              className="btn btn-sm btn-light-primary" 
+              disabled={validPage === totalPages} 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next <i className="fa fa-chevron-right" style={{fontSize: '0.7rem'}}></i>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

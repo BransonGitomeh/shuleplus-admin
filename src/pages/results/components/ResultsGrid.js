@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
 
 /** Simple inline bar chart for a student's subject scores */
 const StudentChart = ({ student, subjects, assessments, rubrics, updates, themeColor = '#3699ff' }) => {
@@ -140,6 +140,27 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
         return (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 20;
+
+    const filteredStudents = useMemo(() => {
+        if (!searchTerm) return students || [];
+        const lowerSearch = searchTerm.toLowerCase();
+        return (students || []).filter(s => 
+            (s.names || '').toLowerCase().includes(lowerSearch) || 
+            (s.id || '').toLowerCase().includes(lowerSearch) ||
+            (s.admNo || '').toLowerCase().includes(lowerSearch)
+        );
+    }, [students, searchTerm]);
+
+    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+    const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, students]);
+
     const getRubricColor = (rubric) => {
         if (!rubric) return '#3699ff';
         if (rubric.label === 'EE') return '#10b981';
@@ -149,10 +170,30 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
     };
 
     return (
-        <div className="table-responsive">
-            <table className="table table-bordered table-hover table-sm" style={{ tableLayout: 'auto' }}>
-                <thead className="thead-light">
-                    <tr>
+        <div className="d-flex flex-column" style={{ minHeight: '400px' }}>
+            {/* Search Bar */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div style={{ width: '300px' }}>
+                    <div className="input-icon input-icon-right">
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            placeholder="Search student name or admission no..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <span><i className="flaticon2-search-1 icon-sm text-muted"></i></span>
+                    </div>
+                </div>
+                <div className="text-muted font-size-sm">
+                    Showing {paginatedStudents.length} of {filteredStudents.length} students
+                </div>
+            </div>
+
+            <div className="table-responsive flex-grow-1">
+                <table className="table table-bordered table-hover table-sm mb-0" style={{ tableLayout: 'auto' }}>
+                    <thead className="thead-light">
+                        <tr>
                         <th style={{ minWidth: '40px', width: '40px' }}></th>
                         <th style={{ minWidth: '200px', position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>
                             Student Name
@@ -167,7 +208,7 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                     </tr>
                 </thead>
                 <tbody>
-                    {students.map(student => {
+                    {paginatedStudents.map(student => {
                         let totalPoints = 0;
                         const isExpanded = !!expandedStudents[student.id];
 
@@ -287,15 +328,57 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                             </React.Fragment>
                         );
                     })}
-                    {(!students || students.length === 0) && (
+                    {paginatedStudents.length === 0 && (
                         <tr>
                             <td colSpan={(subjects?.length || 0) + 4} className="text-center text-muted p-5">
-                                No students found.
+                                No students found matching your search.
                             </td>
                         </tr>
                     )}
                 </tbody>
             </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+            <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <div className="text-muted font-size-sm">
+                    Page {currentPage} of {totalPages}
+                </div>
+                <div className="d-flex">
+                    <button 
+                        className="btn btn-sm btn-icon btn-light-primary mr-2" 
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    >
+                        <i className="ki ki-bold-arrow-back icon-xs"></i>
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+                        .map((page, i, arr) => (
+                            <React.Fragment key={page}>
+                                {i > 0 && arr[i - 1] !== page - 1 && (
+                                    <span className="btn btn-sm btn-icon btn-text-muted disabled mr-2">...</span>
+                                )}
+                                <button 
+                                    className={`btn btn-sm btn-icon mr-2 ${currentPage === page ? 'btn-primary' : 'btn-light-primary'}`}
+                                    onClick={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </button>
+                            </React.Fragment>
+                        ))
+                    }
+                    <button 
+                        className="btn btn-sm btn-icon btn-light-primary" 
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    >
+                        <i className="ki ki-bold-arrow-next icon-xs"></i>
+                    </button>
+                </div>
+            </div>
+        )}
         </div>
     );
 };
