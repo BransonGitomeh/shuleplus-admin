@@ -8,7 +8,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             padding: '1.2cm 2.0cm', 
             backgroundColor: 'white', 
             minHeight: '29.7cm', 
-            height: '29.7cm', // Fixed height for A4
+            height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
             pageBreakAfter: 'always',
@@ -16,7 +16,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
             boxSizing: 'border-box',
-            overflow: 'hidden'
+            overflow: 'visible'
         }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.0cm' }}>
@@ -206,10 +206,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
 
             {/* Premium Pinned ShulePlus Footer */}
             <div style={{ 
-                position: 'absolute', 
-                bottom: '1.2cm', 
-                left: '2.0cm', 
-                right: '2.0cm',
+                marginTop: '1cm',
                 borderTop: '2px double #f3f4f6',
                 paddingTop: '20px'
             }}>
