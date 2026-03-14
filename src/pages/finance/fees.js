@@ -132,6 +132,11 @@ class FeesManagement extends Component {
         manualPaymentNotes: "",
         sendingSms: false,
         
+        // M-Pesa Workflow
+        paymentStatus: 'IDLE', // IDLE, INITIATING, PROCESSING, SUCCESS, ERROR
+        initData: null,
+        paymentErrorMessage: "",
+        
         showEditPaymentModal: false,
         showAddChargeModal: false,
         showEditChargeModal: false,
@@ -619,17 +624,64 @@ class FeesManagement extends Component {
         const { paymentAmount, parentPhone, selectedStudentId } = this.state;
         if (!parentPhone) return window.toastr && window.toastr.error("Parent phone missing");
         
-        this.setState({ processingPayment: true });
+        this.setState({ processingPayment: true, paymentStatus: 'INITIATING', paymentErrorMessage: "" });
         try {
-            await Data.schools.charge(parentPhone, paymentAmount, { studentId: selectedStudentId });
+            const result = await Data.schools.charge(parentPhone, paymentAmount, { studentId: selectedStudentId });
+            
+            // charge() returns response.payments.init: { id, CheckoutRequestID, MerchantRequestID }
+            const initData = result?.payments?.init;
+            if (result?.errors || !initData) {
+                throw new Error(result?.errors?.[0]?.message || 'Failed to initiate payment.');
+            }
+
+            this.setState({ paymentStatus: 'PROCESSING', initData });
+            this.startPaymentPolling(initData, paymentAmount);
+            
             if(window.toastr) window.toastr.success("STK Push sent!");
-            this.setState({ showPaymentModal: false });
-            this.recalculateFinancials();
         } catch (e) {
+            this.setState({ paymentStatus: 'ERROR', paymentErrorMessage: e.message || "Failed" });
             if(window.toastr) window.toastr.error(e.message || "Failed");
         } finally {
             this.setState({ processingPayment: false });
         }
+    };
+
+    startPaymentPolling = (initData, amount) => {
+        const pollPayment = async () => {
+            try {
+                const result = await Data.schools.verifyTx(initData);
+                if (result?.errors || !result?.payments?.confirm) return;
+
+                const { status: txStatus, message } = result.payments.confirm;
+                
+                if (txStatus === 'COMPLETED') {
+                    this.setState({ paymentStatus: 'SUCCESS' });
+                    this.stopPolling();
+                    if(window.toastr) window.toastr.success("Payment confirmed!");
+                    this.recalculateFinancials();
+                    // Close modal after success
+                    setTimeout(() => {
+                        this.setState({ showPaymentModal: false, paymentStatus: 'IDLE' });
+                    }, 2000);
+                } else if (txStatus && txStatus.startsWith('FAILED')) {
+                    this.setState({ paymentStatus: 'ERROR', paymentErrorMessage: message || 'Payment failed.' });
+                    this.stopPolling();
+                }
+            } catch (error) {
+                console.error('Payment polling error:', error);
+            }
+        };
+
+        // Start polling every 3 seconds
+        this.pollingInterval = setInterval(pollPayment, 3000);
+        
+        // Timeout after 3 minutes
+        this.pollingTimeout = setTimeout(() => {
+            this.stopPolling();
+            if (this.state.paymentStatus === 'PROCESSING') {
+                this.setState({ paymentStatus: 'ERROR', paymentErrorMessage: 'Payment timed out. Please check your phone.' });
+            }
+        }, 180000);
     };
     
     recordManualPayment = async () => {
@@ -1204,13 +1256,55 @@ class FeesManagement extends Component {
                                 <button type="button" className="close" onClick={() => this.setState({ showPaymentModal: false })}><span>&times;</span></button>
                             </div>
                             <div className="modal-body">
-                                <p>Initiating payment for <strong>{this.state.paymentStudent?.names}</strong></p>
-                                <div className="form-group"><label>Parent Phone</label><input type="text" className="form-control" value={this.state.parentPhone} disabled /></div>
-                                <div className="form-group"><label>Amount (KES)</label><input type="number" className="form-control" value={this.state.paymentAmount} onChange={e => this.setState({ paymentAmount: e.target.value })} /></div>
+                                {this.state.paymentStatus === 'IDLE' && (
+                                    <>
+                                        <p>Initiating payment for <strong>{this.state.paymentStudent?.names}</strong></p>
+                                        <div className="form-group"><label>Parent Phone</label><input type="text" className="form-control" value={this.state.parentPhone} disabled /></div>
+                                        <div className="form-group"><label>Amount (KES)</label><input type="number" className="form-control" value={this.state.paymentAmount} onChange={e => this.setState({ paymentAmount: e.target.value })} /></div>
+                                    </>
+                                )}
+
+                                {this.state.paymentStatus === 'INITIATING' && (
+                                    <div className="text-center py-5">
+                                        <div className="spinner spinner-primary spinner-lg mb-4"></div>
+                                        <p className="font-weight-bold">Sending STK Push...</p>
+                                        <p className="text-muted">Connecting to M-Pesa</p>
+                                    </div>
+                                )}
+
+                                {this.state.paymentStatus === 'PROCESSING' && (
+                                    <div className="text-center py-5">
+                                        <div className="spinner spinner-success spinner-lg mb-4"></div>
+                                        <p className="font-weight-bold mb-1">Check your phone!</p>
+                                        <p className="text-muted mb-4">An M-Pesa prompt has been sent to <strong>{this.state.parentPhone}</strong>. Enter your PIN to complete the payment.</p>
+                                        <div className="alert alert-light-primary mb-0" role="alert">
+                                            <div className="alert-text">Waiting for confirmation...</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {this.state.paymentStatus === 'SUCCESS' && (
+                                    <div className="text-center py-5">
+                                        <div className="text-success mb-4"><i className="fa fa-check-circle icon-3x"></i></div>
+                                        <h4 className="font-weight-bold mb-1">Payment Successful!</h4>
+                                        <p className="text-muted">The payment has been confirmed and recorded.</p>
+                                    </div>
+                                )}
+
+                                {this.state.paymentStatus === 'ERROR' && (
+                                    <div className="text-center py-5">
+                                        <div className="text-danger mb-4"><i className="fa fa-exclamation-circle icon-3x"></i></div>
+                                        <h4 className="font-weight-bold mb-1">Payment Failed</h4>
+                                        <p className="text-muted mb-4">{this.state.paymentErrorMessage || "The payment could not be completed at this time."}</p>
+                                        <button className="btn btn-outline-danger btn-sm" onClick={() => this.setState({ paymentStatus: 'IDLE' })}>Try Again</button>
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={() => this.setState({ showPaymentModal: false })}>Cancel</button>
-                                <button className="btn btn-primary" disabled={this.state.processingPayment} onClick={this.initiatePayment}>{this.state.processingPayment ? "Sending..." : "Send Request"}</button>
+                                <button className="btn btn-secondary" onClick={() => { this.stopPolling(); this.setState({ showPaymentModal: false, paymentStatus: 'IDLE' }); }}>{this.state.paymentStatus === 'SUCCESS' ? "Close" : "Cancel"}</button>
+                                {this.state.paymentStatus === 'IDLE' && (
+                                    <button className="btn btn-primary" disabled={this.state.processingPayment} onClick={this.initiatePayment}>{this.state.processingPayment ? "Sending..." : "Send Request"}</button>
+                                )}
                             </div>
                         </div>
                     </div>
