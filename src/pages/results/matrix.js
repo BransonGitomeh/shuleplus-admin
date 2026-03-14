@@ -1,6 +1,8 @@
 import React from "react";
 import Data from "../../utils/data";
 import ReportCard from "./components/ReportCard";
+import ResultsGrid from "./components/ResultsGrid";
+import BulkMessageModal from "./components/BulkMessageModal";
 
 class ResultsMatrix extends React.Component {
   state = {
@@ -28,6 +30,12 @@ class ResultsMatrix extends React.Component {
     schoolInfo: null,
     fetchingAssessments: false,
     showBulkModal: false,
+
+    // Single Report Actions
+    printingStudentId: null,
+    showSingleSmsModal: false,
+    selectedStudentForSms: null,
+    smsMessage: "",
   };
 
   componentDidMount() {
@@ -124,14 +132,14 @@ class ResultsMatrix extends React.Component {
   }
 
   fetchAssessments = async () => {
-      const { selectedClass } = this.state;
-      if (!selectedClass) return;
+      const { selectedClass, selectedTerm } = this.state;
+      if (!selectedClass || !selectedTerm) return;
 
       this.setState({ fetchingAssessments: true });
       try {
-          // Fetch ALL terms to support history/trends
            if (Data.assessments.getForClass) { 
-               await Data.assessments.getForClass(selectedClass, null);
+               // Pass termId to specifically catch current data faster
+               await Data.assessments.getForClass(selectedClass, selectedTerm);
            } else {
                console.warn("getForClass method missing on Data.assessments");
            }
@@ -175,10 +183,8 @@ class ResultsMatrix extends React.Component {
       this.setState({ saving: true });
       let successCount = 0;
       let failCount = 0;
+      let newEdits = { ...edits };
 
-      // Process sequentially or parallel? Parallel might be faster but could hit rate limits if many.
-      // Let's do parallel chunks or just all.
-      
       const payloadBase = {
           school: localStorage.getItem('school'),
           term: selectedTerm,
@@ -187,17 +193,22 @@ class ResultsMatrix extends React.Component {
       };
 
       try {
-          const promises = editKeys.map(async (key) => {
+          // Process sequentially to be safe and avoid race conditions or overwhelming the server
+          for (const key of editKeys) {
               const [studentId, subjectId] = key.split('-');
               const scoreVal = edits[key];
               
-              if (scoreVal === "" || scoreVal === null) return; // Skip empty? Or maybe delete?
+              if (scoreVal === "" || scoreVal === null) {
+                  delete newEdits[key];
+                  continue; 
+              }
 
               // Check if exists
               const existing = assessments.find(a => 
                 (a.student === studentId || a.student?.id === studentId) &&
                 (a.subject === subjectId || a.subject?.id === subjectId) &&
-                (a.term === selectedTerm || a.term?.id === selectedTerm)
+                (a.term === selectedTerm || a.term?.id === selectedTerm) &&
+                (a.assessmentType === selectedAssessmentType || a.assessmentType?.id === selectedAssessmentType)
               );
 
               const payload = {
@@ -214,21 +225,20 @@ class ResultsMatrix extends React.Component {
                       await Data.assessments.create(payload);
                   }
                   successCount++;
+                  delete newEdits[key]; // Success, remove from items to edit
               } catch (e) {
-                  console.error(e);
+                  console.error(`Failed to save ${key}:`, e);
                   failCount++;
+                  // Keep in newEdits so user doesn't lose data and can retry
               }
-          });
-
-          await Promise.all(promises);
+          }
 
           if (window.toastr) {
               if (failCount === 0) window.toastr.success(`Saved ${successCount} scores successfully.`);
-              else window.toastr.warning(`Saved ${successCount}, Failed ${failCount}.`);
+              else window.toastr.warning(`Saved ${successCount}, Failed ${failCount}. Please check the fields that didn't save.`);
           }
           
-          // Clear edits on success
-          this.setState({ edits: {} });
+          this.setState({ edits: newEdits });
 
       } catch (e) {
           console.error(e);
@@ -302,7 +312,75 @@ class ResultsMatrix extends React.Component {
   };
 
   togglePrintView = () => {
-      this.setState(prev => ({ showPrintView: !prev.showPrintView }));
+      this.setState(prev => ({ 
+          showPrintView: !prev.showPrintView,
+          printingStudentId: !prev.showPrintView ? prev.printingStudentId : null // Reset if closing
+      }));
+  };
+
+  handlePrintSingle = (student) => {
+      this.setState({
+          printingStudentId: student.id,
+          showPrintView: true
+      });
+  };
+
+  handleSmsClick = (student) => {
+      const { assessments, selectedTerm, terms, subjects, assessmentRubrics } = this.state;
+      const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
+      
+      // Filter assessments for this student and term
+      const studentAss = (assessments || []).filter(a => 
+          (a.student === student.id || a.student?.id === student.id) &&
+          (a.term === selectedTerm || a.term?.id === selectedTerm)
+      );
+
+      // Build report string
+      let reportParts = [];
+      let totalPoints = 0;
+
+      subjects.forEach(subj => {
+          const matched = studentAss.find(a => (a.subject === subj.id || a.subject?.id === subj.id));
+          if (matched) {
+              const score = parseFloat(matched.score);
+              const rubric = (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
+              if (rubric) {
+                  reportParts.push(`${subj.name}: ${score}${rubric.label ? '('+rubric.label+')' : ''}`);
+                  if (rubric.points) totalPoints += parseFloat(rubric.points);
+              } else {
+                  reportParts.push(`${subj.name}: ${score}`);
+              }
+          }
+      });
+
+      const studentFirstName = student.names ? student.names.split(' ')[0] : 'Student';
+      const fullMessage = `Results for ${studentFirstName} (${currentTerm.name}): ${reportParts.join(', ')}. Total: ${totalPoints} pts.`;
+
+      this.setState({
+          selectedStudentForSms: student,
+          smsMessage: fullMessage,
+          showSingleSmsModal: true
+      });
+  };
+
+  sendSingleSms = async () => {
+      const { selectedStudentForSms, smsMessage } = this.state;
+      if (!selectedStudentForSms?.parent?.phone || !smsMessage) return;
+
+      this.setState({ sendingSms: true });
+      try {
+          await Data.communication.sms.create({
+              phone: selectedStudentForSms.parent.phone,
+              message: smsMessage
+          });
+          if (window.toastr) window.toastr.success(`SMS sent to ${selectedStudentForSms.names}'s parent`);
+          this.setState({ showSingleSmsModal: false });
+      } catch (e) {
+          console.error(e);
+          if (window.toastr) window.toastr.error("Failed to send SMS");
+      } finally {
+          this.setState({ sendingSms: false });
+      }
   };
 
   handlePrint = () => {
@@ -310,9 +388,15 @@ class ResultsMatrix extends React.Component {
   };
 
   render() {
-    const { classes, terms, subjects, grades, assessmentTypes, assessmentRubrics, selectedClass, selectedTerm, selectedAssessmentType, assessments, showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, showBulkModal } = this.state;
+    const { 
+        classes, terms, subjects, grades, assessmentTypes, assessmentRubrics, 
+        selectedClass, selectedTerm, selectedAssessmentType, assessments, 
+        showPrintView, schoolInfo, edits, loading, fetchingAssessments, saving, 
+        showBulkModal, printingStudentId 
+    } = this.state;
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
+    const printingStudent = printingStudentId ? students.find(s => s.id === printingStudentId) : null;
 
     // Find the linked grade for the selected class to filter subjects
     const cls = classes.find(c => c.id === selectedClass);
@@ -342,14 +426,16 @@ class ResultsMatrix extends React.Component {
                         <i className="fa fa-arrow-left"></i> Back to Editing
                     </button>
                     <div>
-                        <h4 className="d-inline-block mr-4">Previewing {students.length} Reports</h4>
+                        <h4 className="d-inline-block mr-4">
+                            {printingStudent ? `Report for ${printingStudent.names}` : `Previewing ${students.length} Reports`}
+                        </h4>
                         <button className="btn btn-primary" onClick={this.handlePrint}>
-                            <i className="fa fa-print"></i> Print All
+                            <i className="fa fa-print"></i> {printingStudent ? 'Print Report' : 'Print All'}
                         </button>
                     </div>
                 </div>
                 <div id="print-area">
-                    {students.map(student => (
+                    {students.filter(s => !printingStudentId || s.id === printingStudentId).map(student => (
                         <ReportCard 
                             key={student.id}
                             student={student}
@@ -453,6 +539,8 @@ class ResultsMatrix extends React.Component {
                             rubrics={assessmentRubrics}
                             updates={edits}
                             onScoreChange={this.handleScoreChange}
+                            onPrintSingle={this.handlePrintSingle}
+                            onSendSms={this.handleSmsClick}
                         />
                     )}
                 </div>
@@ -464,11 +552,60 @@ class ResultsMatrix extends React.Component {
                     show={showBulkModal}
                     onClose={() => this.setState({ showBulkModal: false })}
                     students={students}
-                    term={currentTerm}
+                    term={selectedTerm && terms.find(t => t.id === selectedTerm)}
                     assessments={assessments}
                     subjects={subjects}
                     onSend={this.handleBulkSend}
                 />
+            )}
+
+            {/* SINGLE SMS MODAL */}
+            {this.state.showSingleSmsModal && (
+                <div className="modal fade show d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered" role="document">
+                        <div className="modal-content shadow-lg border-0" style={{ borderRadius: '15px' }}>
+                            <div className="modal-header border-bottom-0 pb-0">
+                                <h5 className="modal-title font-weight-bold" style={{ fontSize: '1.2rem' }}>Send Student Report</h5>
+                                <button type="button" className="close" onClick={() => this.setState({ showSingleSmsModal: false })}>
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div className="modal-body pt-4">
+                                <div className="form-group">
+                                    <label className="font-weight-bold text-muted small text-uppercase">Recipient</label>
+                                    <div className="bg-light p-3 rounded d-flex justify-content-between align-items-center">
+                                        <span className="font-weight-bold">{this.state.selectedStudentForSms?.parent?.name || 'Parent'}</span>
+                                        <span className="text-primary font-weight-bold">{this.state.selectedStudentForSms?.parent?.phone || 'No Phone'}</span>
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="font-weight-bold text-muted small text-uppercase">Message Content</label>
+                                    <textarea 
+                                        className="form-control border-0 bg-light" 
+                                        rows="6" 
+                                        value={this.state.smsMessage}
+                                        onChange={(e) => this.setState({ smsMessage: e.target.value })}
+                                        style={{ resize: 'none', borderRadius: '10px', fontSize: '0.9rem' }}
+                                    ></textarea>
+                                    <div className="mt-2 text-right small text-muted">
+                                        {this.state.smsMessage.length} characters
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer border-top-0 d-flex justify-content-between">
+                                <button type="button" className="btn btn-light-danger font-weight-bold" onClick={() => this.setState({ showSingleSmsModal: false })}>Cancel</button>
+                                <button 
+                                    type="button" 
+                                    className={`btn btn-primary font-weight-bold px-8 ${this.state.sendingSms ? 'spinner spinner-white spinner-right' : ''}`}
+                                    onClick={this.sendSingleSms}
+                                    disabled={this.state.sendingSms || !this.state.selectedStudentForSms?.parent?.phone}
+                                >
+                                    Send Report via SMS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
       </div>

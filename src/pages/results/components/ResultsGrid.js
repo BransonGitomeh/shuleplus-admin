@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 
-const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScoreChange }) => {
+const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScoreChange, onPrintSingle, onSendSms }) => {
     
     // Helper to get score for a cell (either from updates or original data)
     const getScore = (studentId, subjectId) => {
@@ -37,7 +37,8 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                 {(subj?.name || "Unknown").substring(0, 15)}
                             </th>
                         ))}
-                        <th className="text-center">Total Points</th>
+                        <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
+                        <th className="text-center" style={{ minWidth: '130px', position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,7 +81,17 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                                 placeholder="-"
                                             />
                                             {rubric && (
-                                                <span className="badge badge-primary" style={{ fontSize: '0.75rem', fontWeight: '900', padding: '4px 8px', textTransform: 'uppercase' }}>
+                                                <span 
+                                                    className="badge badge-primary" 
+                                                    style={{ 
+                                                        fontSize: '0.8rem', 
+                                                        fontWeight: '900', 
+                                                        padding: '5px 10px', 
+                                                        textTransform: 'uppercase',
+                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                                        letterSpacing: '0.5px'
+                                                    }}
+                                                >
                                                     {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
                                                 </span>
                                             )}
@@ -88,8 +99,26 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                     </td>
                                 );
                             })}
-                            <td className="text-center font-weight-bold bg-light" style={{ fontSize: '1.1rem' }}>
+                            <td className="text-center font-weight-bold bg-light" style={{ fontSize: '1.2rem', color: '#111827' }}>
                                 {totalPoints > 0 ? totalPoints : '-'}
+                            </td>
+                            <td className="text-center" style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff', borderLeft: '1px solid #e5e7eb' }}>
+                                <div className="d-flex justify-content-center gap-2">
+                                    <button 
+                                        className="btn btn-sm btn-icon btn-light-primary mr-2" 
+                                        title="Print Single Report"
+                                        onClick={() => onPrintSingle && onPrintSingle(student)}
+                                    >
+                                        <i className="fa fa-print"></i>
+                                    </button>
+                                    <button 
+                                        className="btn btn-sm btn-icon btn-light-success" 
+                                        title="Send Results via SMS"
+                                        onClick={() => onSendSms && onSendSms(student)}
+                                    >
+                                        <i className="fa fa-sms"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     );
