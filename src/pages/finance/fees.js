@@ -757,7 +757,9 @@ class FeesManagement extends Component {
              };
          });
          
-         const totalValidExpected = validStudentsData.reduce((sum, s) => sum + s.expected, 0);
+         const totalClassFees = validStudentsData.reduce((sum, s) => sum + s.expected, 0);
+         const totalCharges = statementGroup.charges ? statementGroup.charges.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0) : 0;
+         const totalValidExpected = totalClassFees + totalCharges;
          const totalValidPaid = validStudentsData.reduce((sum, s) => sum + s.paid, 0);
          const totalValidBalance = totalValidExpected - totalValidPaid;
 
@@ -769,9 +771,10 @@ class FeesManagement extends Component {
                 <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
                 <h3>Balances</h3>
                 <table>
-                    <thead><tr><th>Student</th><th>Expected</th><th>Total Paid</th><th>Balance</th></tr></thead>
+                    <thead><tr><th>Student/Charge</th><th>Expected</th><th>Total Paid</th><th>Balance</th></tr></thead>
                     <tbody>
-                        ${validStudentsData.map(s => `<tr><td>${s.names}</td><td>KES ${s.expected.toLocaleString()}</td><td>KES ${s.paid.toLocaleString()}</td><td>KES ${s.balance.toLocaleString()}</td></tr>`).join('')}
+                        ${validStudentsData.map(s => `<tr><td>Class Fee: ${s.names}</td><td>KES ${s.expected.toLocaleString()}</td><td>KES ${s.paid.toLocaleString()}</td><td>KES ${s.balance.toLocaleString()}</td></tr>`).join('')}
+                        ${statementGroup.charges ? statementGroup.charges.map(c => `<tr><td>Charge: ${c.chargeType?.name || c.reason}</td><td>KES ${parseFloat(c.amount || 0).toLocaleString()}</td><td>-</td><td>-</td></tr>`).join('') : ''}
                     </tbody>
                 </table>
                 <h3 class="text-right">Total Outstanding Balance: KES ${totalValidBalance.toLocaleString()}</h3>
@@ -888,7 +891,7 @@ class FeesManagement extends Component {
                                                         </td>
                                                         <td>
                                                             <span className="text-dark-75 font-weight-bolder d-block font-size-lg">{group.totalExpected.toLocaleString()}</span>
-                                                            <span className="text-muted font-size-xs">{group.students.length} class(es)</span>
+                                                            <span className="text-muted font-size-xs">Fees: {group.totalExpected - group.totalCharges} + Charges: {group.totalCharges}</span>
                                                         </td>
                                                         <td>
                                                             <div className="d-flex flex-column">

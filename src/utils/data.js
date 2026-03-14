@@ -116,7 +116,7 @@ const createEntityAPI = (config) => {
             try {
                 const payload = { ...data };
                 // Ensure amount is string for GraphQL
-                if (payload.amount !== undefined && typeof payload.amount === 'number') {
+                if (payload.amount !== undefined && typeof payload.amount === 'number' && name !== 'chargeTypes') {
                     payload.amount = String(payload.amount);
                 }
                 if (!isNested && !payload.school && name !== 'schools') {
@@ -185,7 +185,7 @@ const createEntityAPI = (config) => {
             try {
                 const { id, ...payload } = data;
                 // Ensure amount is string for GraphQL
-                if (payload.amount !== undefined && typeof payload.amount === 'number') {
+                if (payload.amount !== undefined && typeof payload.amount === 'number' && name !== 'chargeTypes') {
                     payload.amount = String(payload.amount);
                 }
                 const sanitizedPayload = filterPayload(payload, updateFields);
