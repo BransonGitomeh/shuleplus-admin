@@ -62,30 +62,30 @@ const StatusDisplay = ({ status, message }) => {
   return (
     <div style={{
       display: 'flex', 
-      alignItems: 'flex-start', // Align to top for multi-line errors
+      alignItems: 'flex-start',
       justifyContent: 'flex-start', 
       gap: '15px',
-      padding: '15px', 
-      marginTop: '20px', 
-      borderRadius: '6px',
+      padding: '16px', 
+      marginTop: '25px', 
+      borderRadius: '12px',
       border: `1px solid ${current.borderColor}`, 
       color: current.color, 
       backgroundColor: current.bgColor,
+      boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
       textAlign: 'left'
     }}>
       <div style={{ marginTop: '2px' }}>
         {(status === 'INITIATING' || status === 'VERIFYING') ? (
-          <span className="spinner-border spinner-border-sm" />
+          <span className="spinner-border spinner-border-sm" style={{ width: '1.4rem', height: '1.4rem', borderWidth: '0.2em' }} />
         ) : (
-          <i className={current.icon} style={{ fontSize: '1.4rem' }} />
+          <i className={current.icon} style={{ fontSize: '1.6rem' }} />
         )}
       </div>
-      <div>
-        {/* If we have a custom Error Object (JSX), render it, else render standard text */}
+      <div className="flex-grow-1">
         {typeof content === 'object' ? content : (
             <>
-                <strong style={{display: 'block', marginBottom: '4px'}}>{current.title}</strong>
-                <span>{content}</span>
+                <strong style={{display: 'block', marginBottom: '6px', fontSize: '1.05rem'}}>{current.title}</strong>
+                <span style={{ fontSize: '0.95rem', lineHeight: '1.4', display: 'block' }}>{content}</span>
             </>
         )}
       </div>
@@ -131,11 +131,31 @@ class MpesaPaymentModal extends React.Component {
     if (prefillData.phone) this.setState(prev => ({ form: { ...prev.form, phone: prefillData.phone }}));
     
     $(`#${modalId}`).modal({ show: true, backdrop: 'static', keyboard: false });
+    
+    // Fix z-index of the generated Bootstrap backdrop so it sits exactly behind this modal
+    // and above the BulkSmsModal (which is at 1050)
+    setTimeout(() => {
+        const backdrops = $('.modal-backdrop');
+        if (backdrops.length > 0) {
+            $(backdrops[backdrops.length - 1]).css({
+                'z-index': 1059,
+                'opacity': 0.65,
+                'background-color': '#000'
+            });
+        }
+    }, 150);
   };
 
   hide = () => {
     this.stopPolling();
     $(`#${modalId}`).modal('hide');
+    // Safety net: occasionally Bootstrap leaves backdrop behind if toggled rapidly
+    setTimeout(() => {
+        if ($('.modal.show').length === 0) {
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+        }
+    }, 400);
   };
   // ------------------------------------
 
@@ -274,31 +294,62 @@ class MpesaPaymentModal extends React.Component {
     const isBusy = ['INITIATING', 'AWAITING_USER_ACTION', 'VERIFYING', 'SUCCESS'].includes(status);
 
     return (
-      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true" style={{ zIndex: 1060, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 1061 }}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">M-Pesa Express</h5>
-              <button type="button" className="close" onClick={this.hide} disabled={isBusy}><span>×</span></button>
+      <div className="modal fade" id={modalId} tabIndex={-1} role="dialog" aria-hidden="true" style={{ zIndex: 1060 }}>
+        <div className="modal-dialog modal-dialog-centered" role="document" style={{ zIndex: 1061, maxWidth: '450px' }}>
+          <div className="modal-content shadow-lg border-0" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+            
+            <div className="modal-header px-6 py-5 border-bottom-0" style={{ backgroundColor: '#43B02A', color: 'white' }}>
+              <div className="d-flex align-items-center">
+                  <div className="symbol symbol-40 symbol-circle bg-white mr-3 d-flex justify-content-center align-items-center shadow-sm">
+                      <i className="fa fa-mobile-alt" style={{ color: '#43B02A', fontSize: '1.2rem' }}></i>
+                  </div>
+                  <h5 className="modal-title font-weight-bolder mb-0" style={{ fontSize: '1.25rem' }}>M-Pesa Express</h5>
+              </div>
+              <button type="button" className="close text-white opacity-100" onClick={this.hide} disabled={isBusy} style={{ textShadow: 'none' }}>
+                <span aria-hidden="true"><i className="ki ki-close icon-md text-white"></i></span>
+              </button>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input type="text" className="form-control" name="phone" value={form.phone} onChange={this.handleInputChange} disabled={isBusy} placeholder="2547..." />
+            
+            <div className="modal-body p-8 bg-white">
+              <div className="text-muted font-size-sm font-weight-bold mb-6 text-center">
+                 Provide the phone number to receive the prompt and the amount to top up.
               </div>
-              <div className="form-group">
-                <label>Amount</label>
-                <input type="number" className="form-control" name="amount" value={form.amount} onChange={this.handleInputChange} disabled={isBusy} />
+
+              <div className="form-group mb-6">
+                <label className="font-weight-bolder text-dark">Phone Number</label>
+                <div className="input-group input-group-lg input-group-solid shadow-none rounded-lg" style={{ border: '1px solid #E4E6EF' }}>
+                    <div className="input-group-prepend">
+                        <span className="input-group-text bg-transparent border-0"><i className="fa fa-phone-alt text-muted"></i></span>
+                    </div>
+                    <input type="text" className="form-control bg-transparent border-0 font-weight-bold" name="phone" value={form.phone} onChange={this.handleInputChange} disabled={isBusy} placeholder="e.g. 254712345678" style={{ fontSize: '1.1rem' }} />
+                </div>
               </div>
+
+              <div className="form-group mb-4">
+                <label className="font-weight-bolder text-dark">Amount (KES)</label>
+                <div className="input-group input-group-lg input-group-solid shadow-none rounded-lg" style={{ border: '1px solid #E4E6EF' }}>
+                    <div className="input-group-prepend">
+                        <span className="input-group-text bg-transparent border-0 font-weight-bolder text-muted">KES</span>
+                    </div>
+                    <input type="number" className="form-control bg-transparent border-0 font-weight-bold" name="amount" value={form.amount} onChange={this.handleInputChange} disabled={isBusy} placeholder="Amount to deposit" style={{ fontSize: '1.1rem' }} />
+                </div>
+              </div>
+              
               <StatusDisplay status={status} message={this.state.message} />
             </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={this.hide} disabled={isBusy}>Close</button>
+            
+            <div className="modal-footer bg-light border-top-0 px-8 py-5 d-flex justify-content-between">
+              <button type="button" className="btn btn-light-danger font-weight-bold px-6" onClick={this.hide} disabled={isBusy} style={{ borderRadius: '8px' }}>Cancel</button>
+              
               {!isBusy && status !== 'ERROR' && (
-                <button type="button" className="btn btn-success" onClick={this.initiatePayment}>Send Prompt</button>
+                <button type="button" className="btn font-weight-bolder px-8 shadow-sm" onClick={this.initiatePayment} style={{ backgroundColor: '#43B02A', color: 'white', borderRadius: '8px' }}>
+                    Top Up Now <i className="fa fa-arrow-right ml-2 font-size-sm"></i>
+                </button>
               )}
               {status === 'ERROR' && (
-                <button type="button" className="btn btn-warning" onClick={this.resetState}>Retry</button>
+                <button type="button" className="btn btn-warning font-weight-bolder px-8 shadow-sm" onClick={this.resetState} style={{ borderRadius: '8px' }}>
+                    Try Again <i className="fa fa-redo ml-2 font-size-sm"></i>
+                </button>
               )}
             </div>
           </div>
