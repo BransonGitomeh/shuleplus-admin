@@ -307,7 +307,7 @@ class ResultsMatrix extends React.Component {
   };
 
   initiateBulkResultsSms = () => {
-      const { assessments, selectedTerm, terms, subjects, assessmentRubrics } = this.state;
+      const { assessments, selectedTerm, terms, subjects, assessmentRubrics, assessmentTypes } = this.state;
       const students = this.getFilteredStudents();
       const currentTerm = (terms || []).find(t => t.id === selectedTerm) || { name: 'Term' };
 
@@ -318,31 +318,57 @@ class ResultsMatrix extends React.Component {
 
       const recipients = students.map(student => {
           // Filter assessments for this student and term
-          const studentAss = (assessments || []).filter(a => 
+          const studentAss = (assessments || []).filter(a =>
               (a.student === student.id || a.student?.id === student.id) &&
               (a.term === selectedTerm || a.term?.id === selectedTerm)
           );
 
-          // Build report string
-          let reportParts = [];
+          // Build a comprehensive per-subject breakdown (matching ReportCard)
+          let subjectLines = [];
           let totalPoints = 0;
 
           subjects.forEach(subj => {
-              const matched = studentAss.find(a => (a.subject === subj.id || a.subject?.id === subj.id));
-              if (matched) {
-                  const score = parseFloat(matched.score);
-                  const rubric = (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
-                  if (rubric) {
-                      reportParts.push(`${subj.name}: ${score}${rubric.label ? '('+rubric.label+')' : ''}`);
-                      if (rubric.points) totalPoints += parseFloat(rubric.points);
-                  } else {
-                      reportParts.push(`${subj.name}: ${score}`);
-                  }
+              // Collect scores across all assessment types for this subject
+              const typeScores = (assessmentTypes || []).map(type => {
+                  const a = studentAss.find(a =>
+                      (a.subject === subj.id || a.subject?.id === subj.id) &&
+                      (a.assessmentType === type.id || a.assessmentType?.id === type.id)
+                  );
+                  const score = a ? parseFloat(a.score) : null;
+                  const rubric = score !== null ? (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore) : null;
+                  if (rubric?.points) totalPoints += parseFloat(rubric.points);
+                  return { type, score, rubric };
+              });
+
+              // Check for teacher's comment
+              const withComment = studentAss.find(a =>
+                  (a.subject === subj.id || a.subject?.id === subj.id) && a.teachersComment
+              );
+              const comment = withComment?.teachersComment;
+
+              // Build subject score string: "Math: 85(EE) 90(ME)"
+              const scoresStr = typeScores
+                  .filter(ts => ts.score !== null)
+                  .map(ts => `${ts.score}${ts.rubric?.label ? '(' + ts.rubric.label + ')' : ''}`)
+                  .join('/');
+              
+              if (scoresStr) {
+                  subjectLines.push(`${subj.name}: ${scoresStr}${comment ? ' - ' + comment : ''}`);
               }
           });
 
-          const studentFirstName = student.names ? student.names.split(' ')[0] : 'Student';
-          const fullMessage = `Results for ${studentFirstName} (${currentTerm.name}): ${reportParts.join(', ')}. Total: ${totalPoints} pts.`;
+          const studentName = student.names || 'Student';
+          const className = student.class?.name || '';
+          let message = `--- PROGRESS REPORT ---\n`;
+          message += `Student: ${studentName}${className ? ` (${className})` : ''}\n`;
+          message += `Term: ${currentTerm.name}\n\n`;
+          if (subjectLines.length > 0) {
+              message += subjectLines.join('\n') + '\n\n';
+          } else {
+              message += `No scores recorded yet.\n\n`;
+          }
+          message += `Total Points: ${totalPoints}\n`;
+          message += `For the full report, please contact the school.`;
 
           return {
               id: student.id,
@@ -350,7 +376,7 @@ class ResultsMatrix extends React.Component {
               name: student.parent?.name || 'Parent',
               phone: student.parent?.phone || '',
               studentNames: student.names,
-              message: fullMessage
+              message
           };
       });
 

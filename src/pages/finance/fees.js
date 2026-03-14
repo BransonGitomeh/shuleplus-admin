@@ -814,19 +814,54 @@ class FeesManagement extends Component {
         }
 
         const recipients = processedParents.map(group => {
-            const { students, parent, totalBalance } = group;
-            if (!parent?.phone) return null;
+            const { students, parent, totalBalance, totalExpected, totalPaid, charges, history } = group;
+            if (!parent) return null;
 
             const studentNames = students.map(s => s.names).join(", ");
-            const fullMessage = `Dear Parent, fee balance for ${studentNames} (${selectedTerm ? currentTerm.name : 'Overall'}) is KES ${totalBalance.toLocaleString()}. Please clear it.`;
+
+            // Build comprehensive statement message
+            let message = `--- FEE STATEMENT ---\n`;
+            message += `Parent: ${parent.name || 'Parent'}\n`;
+            message += `Period: ${selectedTerm ? currentTerm.name : 'All Terms'}\n\n`;
+
+            // Per-student fee breakdown
+            students.forEach(s => {
+                const sf = s.finances || {};
+                message += `${s.names}:\n`;
+                message += `  Expected: KES ${(sf.expected || 0).toLocaleString()}\n`;
+                message += `  Paid: KES ${(sf.paid || 0).toLocaleString()}\n`;
+                message += `  Balance: KES ${(sf.balance || 0).toLocaleString()}\n`;
+            });
+
+            // Additional charges
+            if (charges && charges.length > 0) {
+                message += `\nAdditional Charges:\n`;
+                charges.forEach(c => {
+                    message += `  ${c.chargeType?.name || c.reason}: KES ${parseFloat(c.amount || 0).toLocaleString()}\n`;
+                });
+            }
+
+            // Last payment
+            const lastPayment = (history || []).filter(h => h.status === 'COMPLETED')[0];
+            if (lastPayment) {
+                const pDate = new Date(lastPayment.time || lastPayment.createdAt).toLocaleDateString('en-GB');
+                message += `\nLast Payment: KES ${parseFloat(lastPayment.amount || 0).toLocaleString()} on ${pDate}`;
+                if (lastPayment.mpesaReceiptNumber || lastPayment.ref) {
+                    message += ` (${lastPayment.mpesaReceiptNumber || lastPayment.ref})`;
+                }
+                message += '\n';
+            }
+
+            message += `\nTotal Balance: KES ${totalBalance.toLocaleString()}\n`;
+            message += `Please clear your balance. Contact the school for inquiries.`;
 
             return {
                 id: group.id,
-                parentId: group.id, // parent ID for phone update
+                parentId: group.id,
                 name: parent.name || 'Parent',
                 phone: parent.phone || '',
                 studentNames: studentNames,
-                message: fullMessage
+                message
             };
         }).filter(r => r !== null);
 
