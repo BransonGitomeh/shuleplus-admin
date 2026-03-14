@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
 
 const SmsBalanceModal = ({ show, onClose, onSend, group }) => {
+    const getBreakdownText = () => {
+        if (!group) return "";
+        const classFees = (group.totalExpected || 0) - (group.totalCharges || 0);
+        let text = ` Breakdown: Class Fees KES ${classFees.toLocaleString()}.`;
+        
+        if (group.charges && group.charges.length > 0) {
+            const chargesStr = group.charges.map(c => {
+                const name = c.chargeType?.name || c.reason || 'Charge';
+                return `${name} KES ${parseFloat(c.amount).toLocaleString()}`;
+            }).join(', ');
+            text += ` Charges: ${chargesStr}.`;
+        }
+        return text;
+    };
+
     const getRecentPaymentsText = () => {
         if (!group?.history || group.history.length === 0) return "";
         
@@ -10,10 +25,10 @@ const SmsBalanceModal = ({ show, onClose, onSend, group }) => {
             return `${date}: KES ${parseFloat(p.amount).toLocaleString()}`;
         }).join(', ');
         
-        return ` Recent Payments: ${paymentsStr}. Total Paid: KES ${group.totalPaid.toLocaleString()}.`;
+        return ` Payments: ${paymentsStr}. Total Paid: KES ${group.totalPaid.toLocaleString()}.`;
     };
 
-    const defaultTemplate = `Dear Parent, your ShulePlus fee balance for ${group?.students?.map(s => s.names.split(' ')[0]).join(', ')} is KES ${group?.totalBalance?.toLocaleString()}.${getRecentPaymentsText()} Please pay to avoid interruptions.`;
+    const defaultTemplate = `Dear Parent, balance for ${group?.students?.map(s => s.names.split(' ')[0]).join(', ')} is KES ${group?.totalBalance?.toLocaleString()}.${getBreakdownText()}${getRecentPaymentsText()} Bal: KES ${group?.totalBalance?.toLocaleString()}.`;
     const [message, setMessage] = useState(defaultTemplate);
     const [isSending, setIsSending] = useState(false);
 
