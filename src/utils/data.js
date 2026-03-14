@@ -715,16 +715,16 @@ var Data = (function () {
                 })
             })
         },
-        { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15 }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { studentsCount students(limit: $limit, offset: $offset) { id names gender registration class{id, name} route{id, name} parent{id, name}  } } }`, { limit, offset, id: localStorage.getItem("school") }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } }) },
+        { name: "students", singularName: "student", createFields: ['names', 'route', 'gender', 'registration', 'parent', 'school', 'parent2', 'class'], updateFields: ['names', 'route', 'registration', 'gender', 'parent', 'parent2', 'class'], customMethods: (allData, subs) => ({ getPage: async ({ page = 1, limit = 15, search = "" }) => { const offset = (page - 1) * limit; const response = await query(`query GetStudentPage($limit: Int, $offset: Int, $id: String, $search: String) { school(id: $id) { studentsCount(search: $search) students(limit: $limit, offset: $offset, search: $search) { id names gender registration class{id, name} route{id, name} parent{id, name}  } } }`, { limit, offset, id: localStorage.getItem("school"), search }); const processedStudents = response.school?.students?.map(s => ({ ...s, parent_name: s.parent?.name, class_name: s.class?.name })) || []; return { students: processedStudents, totalCount: response.school?.studentsCount || 0 }; } }) },
         {
             name: "parents",
             singularName: "parent",
             createFields: ['name', 'national_id', 'phone', 'email', 'school', 'password', 'gender'],
             updateFields: ['national_id', 'name', 'phone', 'password', 'email', 'gender'],
             customMethods: (allData, subs) => ({
-                getPage: async ({ page = 1, limit = 15 }) => {
+                getPage: async ({ page = 1, limit = 15, search = "" }) => {
                     const offset = (page - 1) * limit;
-                    const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String) { school(id: $id) { parentsCount parents(limit: $limit, offset: $offset) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school") });
+                    const response = await query(`query GetParentPage($limit: Int, $offset: Int, $id: String, $search: String) { school(id: $id) { parentsCount(search: $search) parents(limit: $limit, offset: $offset, search: $search) { id national_id name gender email phone students { names gender route { name } } } } }`, { limit, offset, id: localStorage.getItem("school"), search });
                     return { parents: response.school?.parents || [], totalCount: response.school?.parentsCount || 0 };
                 },
                 invite: (data) => new Promise(async (resolve) => {
