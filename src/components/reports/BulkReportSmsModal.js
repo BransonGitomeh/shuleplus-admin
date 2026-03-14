@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Data from '../../utils/data';
+import MpesaPaymentModal from '../../pages/finance/deposit';
 
 /**
  * BulkReportSmsModal
@@ -21,6 +22,7 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
     const [savingPhone, setSavingPhone] = useState(null); // id of recipient being saved
     const [schoolBalance, setSchoolBalance] = useState(0);
     const [isSending, setIsSending] = useState(false);
+    const topUpModalRef = useRef(null);
 
     useEffect(() => {
         const unsub = Data.schools.subscribe(({ selectedSchool }) => {
@@ -310,6 +312,13 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
                                 <span className={`${schoolBalance < campaignStats.totalCost ? 'text-danger' : 'text-success'} font-size-sm font-weight-bold`}>Balance</span>
                                 <span className={`font-weight-bolder font-size-sm ${schoolBalance < campaignStats.totalCost ? 'text-danger' : 'text-success'}`}>KES {schoolBalance.toFixed(2)}</span>
                             </div>
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-light-primary ml-4"
+                                onClick={() => topUpModalRef.current?.show?.()}
+                            >
+                                <i className="fa fa-plus d-block mb-1"></i> Top Up
+                            </button>
                         </div>
 
                         <div>
@@ -345,6 +354,9 @@ const BulkReportSmsModal = ({ show, onClose, title, recipients = [], onSend, onS
                 .custom-scroll::-webkit-scrollbar-thumb { background: #e4e6ef; border-radius: 4px; }
                 .hover-bg-white:hover { background: #ffffff !important; }
             `}</style>
+
+            {/* Render Top Up Modal inside a higher zIndex context if needed, but append to body handles it usually */}
+            <MpesaPaymentModal ref={topUpModalRef} />
         </div>
     );
 };
