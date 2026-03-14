@@ -165,7 +165,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                                             <span style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
                                             {ts.rubric && (
-                                                <div style={{ fontSize: '0.65rem', color: themeColor, fontWeight: 600, textTransform: 'capitalize' }}>
+                                                <div style={{ fontSize: '0.75rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase' }}>
                                                     {ts.rubric.label}
                                                 </div>
                                             )}
@@ -307,7 +307,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                             Validation Status: <span style={{ color: '#10b981' }}>Authentic Record</span>
                         </div>
                         <div style={{ fontSize: '0.7rem', color: '#d1d5db', marginTop: '4px' }}>
-                            Generated on {new Date().toLocaleDateString('full')} at {new Date().toLocaleTimeString()}
+                            Generated on {new Date().toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date().toLocaleTimeString()}
                         </div>
                     </div>
                     

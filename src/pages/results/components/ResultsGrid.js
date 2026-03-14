@@ -63,17 +63,24 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
 
                                 return (
                                     <td key={`${student.id}-${subj.id}`} className="p-1">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                                             <input
                                                 type="number"
-                                                className={`form-control form-control-sm text-center ${isUpdated ? 'bg-light-warning' : ''}`}
+                                                className={`form-control ${isUpdated ? 'bg-light-warning' : ''}`}
                                                 value={val}
-                                                style={{ border: 'none', background: isUpdated ? '#fff8dd' : 'transparent', width: '60px' }}
+                                                style={{ 
+                                                    border: '1px solid #e5e7eb', 
+                                                    background: isUpdated ? '#fff8dd' : '#f9fafb', 
+                                                    width: '80px',
+                                                    fontWeight: '700',
+                                                    fontSize: '1.1rem',
+                                                    height: '40px'
+                                                }}
                                                 onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
                                                 placeholder="-"
                                             />
                                             {rubric && (
-                                                <span className="badge badge-light-primary" style={{ fontSize: '0.7rem' }}>
+                                                <span className="badge badge-primary" style={{ fontSize: '0.75rem', fontWeight: '900', padding: '4px 8px', textTransform: 'uppercase' }}>
                                                     {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
                                                 </span>
                                             )}
