@@ -1,6 +1,6 @@
 import React from 'react';
-import ReportHeader from '../../components/reports/ReportHeader';
-import ReportFooter from '../../components/reports/ReportFooter';
+import ReportHeader from '../../../components/reports/ReportHeader';
+import ReportFooter from '../../../components/reports/ReportFooter';
 
 const StatementCard = ({ group, school, validStudentsData, totalValidExpected, totalValidPaid, totalValidBalance }) => {
     const themeColor = school?.themeColor || '#1a1a1a';
