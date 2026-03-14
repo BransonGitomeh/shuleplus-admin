@@ -931,7 +931,7 @@ class FeesManagement extends Component {
                                                                 onClick={() => this.showStatementPreview(group)}
                                                                 title="Print Statement"
                                                             >
-                                                                <i className="flaticon2-printer"></i>
+                                                                <i className="la la-print"></i>
                                                             </button>
                                                             <button 
                                                                 className="btn btn-icon btn-light-info btn-sm mx-1"
