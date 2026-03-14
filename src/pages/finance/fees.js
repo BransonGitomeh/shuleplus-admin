@@ -494,15 +494,30 @@ class FeesManagement extends Component {
         this.setState(prev => ({ expandedParentId: prev.expandedParentId === parentId ? null : parentId }));
     };
 
-    openPaymentModal = (student, parentGroup, manual = false) => {
-        const bal = student.finances.balance;
+    openPaymentModal = (parentGroup) => {
         this.setState({
-            showPaymentModal: !manual,
-            showManualPaymentModal: manual,
-            paymentStudent: student,
-            selectedStudentId: student.id,
+            showPaymentModal: true,
+            showManualPaymentModal: false,
+            paymentStudent: null,
+            selectedStudentId: "",
             paymentStudents: parentGroup.students,
-            paymentAmount: bal > 0 ? bal : 0,
+            paymentAmount: parentGroup.totalBalance > 0 ? parentGroup.totalBalance : 0,
+            parentPhone: parentGroup.parent.phone,
+            manualPaymentMethod: "CASH",
+            manualPaymentNotes: "",
+            manualPaymentTermId: "",
+            parentGroup
+        });
+    };
+
+    openManualPaymentModal = (parentGroup) => {
+        this.setState({
+            showPaymentModal: false,
+            showManualPaymentModal: true,
+            paymentStudent: null,
+            selectedStudentId: "",
+            paymentStudents: parentGroup.students,
+            paymentAmount: parentGroup.totalBalance > 0 ? parentGroup.totalBalance : 0,
             parentPhone: parentGroup.parent.phone,
             manualPaymentMethod: "CASH",
             manualPaymentNotes: "",
@@ -1172,15 +1187,15 @@ class FeesManagement extends Component {
                                                                                                             <span className={`font-weight-bolder font-size-sm ${balance > 0 ? 'text-danger' : 'text-success'}`}>KES {balance.toLocaleString()}</span>
                                                                                                         </td>
                                                                                                         <td className="text-right pr-4">
-                                                                                                            <button className="btn btn-xs btn-light-success mr-1" onClick={() => {
-                                                                                                                this.openManualPaymentModal(group);
-                                                                                                                this.setState({ paymentStudent: s, paymentAmount: balance > 0 ? balance : "" });
-                                                                                                            }}>Record Cash</button>
-                                                                                                            <button className="btn btn-xs btn-light-primary" onClick={() => {
-                                                                                                                this.openPaymentModal(group);
-                                                                                                                this.setState({ paymentStudent: s, paymentAmount: balance > 0 ? balance : "" });
-                                                                                                            }}>M-Pesa</button>
-                                                                                                        </td>
+                                                                                                             <button className="btn btn-xs btn-light-success mr-1" onClick={() => {
+                                                                                                                 this.openManualPaymentModal(group);
+                                                                                                                 this.setState({ paymentStudent: s, selectedStudentId: s.id, paymentAmount: balance > 0 ? balance : "" });
+                                                                                                             }}>Record Cash</button>
+                                                                                                             <button className="btn btn-xs btn-light-primary" onClick={() => {
+                                                                                                                 this.openPaymentModal(group);
+                                                                                                                 this.setState({ paymentStudent: s, selectedStudentId: s.id, paymentAmount: balance > 0 ? balance : "" });
+                                                                                                             }}>M-Pesa</button>
+                                                                                                         </td>
                                                                                                     </tr>
                                                                                                 );
                                                                                             })}
