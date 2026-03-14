@@ -1156,54 +1156,7 @@ class FeesManagement extends Component {
                                                                                 </div>
                                                                             </div>
                                                                             
-                                                                            {/* BOTTOM SECTION: Student stats (Financial Summary) */}
-                                                                            <div className="col-md-12 mt-6">
-                                                                                <h6 className="font-weight-bold mb-3">Student Balances & Quick Pay</h6>
-                                                                                <div className="table-responsive">
-                                                                                    <table className="table table-sm table-borderless table-vertical-center bg-white rounded border">
-                                                                                        <thead className="thead-light">
-                                                                                            <tr>
-                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase pl-4">Student</th>
-                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Expected</th>
-                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Paid</th>
-                                                                                                <th className="font-size-xs font-weight-bolder text-uppercase">Balance</th>
-                                                                                                <th className="text-right pr-4">Actions</th>
-                                                                                            </tr>
-                                                                                        </thead>
-                                                                                        <tbody>
-                                                                                            {group.students.map(s => {
-                                                                                                const validHistory = s.finances.history.filter(p => p.type === 'fees_manual' || p.metadata?.manual === true || p.status === 'COMPLETED');
-                                                                                                const validPaid = validHistory.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-                                                                                                const balance = s.finances.expected - validPaid;
-                                                                                                return (
-                                                                                                    <tr key={s.id} className="border-bottom">
-                                                                                                        <td className="py-3 pl-4">
-                                                                                                            <span className="text-dark-75 font-weight-bolder d-block font-size-sm">{s.names}</span>
-                                                                                                            <span className="text-muted font-size-xs">{s.class?.name}</span>
-                                                                                                        </td>
-                                                                                                        <td className="py-3 font-size-sm">KES {s.finances.expected.toLocaleString()}</td>
-                                                                                                        <td className="py-3 text-success font-size-sm">KES {validPaid.toLocaleString()}</td>
-                                                                                                        <td className="py-3">
-                                                                                                            <span className={`font-weight-bolder font-size-sm ${balance > 0 ? 'text-danger' : 'text-success'}`}>KES {balance.toLocaleString()}</span>
-                                                                                                        </td>
-                                                                                                        <td className="text-right pr-4">
-                                                                                                             <button className="btn btn-xs btn-light-success mr-1" onClick={() => {
-                                                                                                                 this.openManualPaymentModal(group);
-                                                                                                                 this.setState({ paymentStudent: s, selectedStudentId: s.id, paymentAmount: balance > 0 ? balance : "" });
-                                                                                                             }}>Record Cash</button>
-                                                                                                             <button className="btn btn-xs btn-light-primary" onClick={() => {
-                                                                                                                 this.openPaymentModal(group);
-                                                                                                                 this.setState({ paymentStudent: s, selectedStudentId: s.id, paymentAmount: balance > 0 ? balance : "" });
-                                                                                                             }}>M-Pesa</button>
-                                                                                                         </td>
-                                                                                                    </tr>
-                                                                                                );
-                                                                                            })}
-                                                                                        </tbody>
-                                                                                    </table>
-
-                                                                                </div>
-                                                                            </div>
+                                                                          
 
                                                                         </div>
                                                                     </div>
