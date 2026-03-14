@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 
 const SmsBalanceModal = ({ show, onClose, onSend, group }) => {
-    const defaultTemplate = `Dear Parent, your ShulePlus fee balance for ${group?.students?.map(s => s.names.split(' ')[0]).join(', ')} is KES ${group?.totalBalance?.toLocaleString()}. Please pay to avoid interruptions.`;
+    const getRecentPaymentsText = () => {
+        if (!group?.history || group.history.length === 0) return "";
+        
+        const recent = group.history.slice(0, 3);
+        const paymentsStr = recent.map(p => {
+            const date = new Date(p.time || p.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+            return `${date}: KES ${parseFloat(p.amount).toLocaleString()}`;
+        }).join(', ');
+        
+        return ` Recent Payments: ${paymentsStr}. Total Paid: KES ${group.totalPaid.toLocaleString()}.`;
+    };
+
+    const defaultTemplate = `Dear Parent, your ShulePlus fee balance for ${group?.students?.map(s => s.names.split(' ')[0]).join(', ')} is KES ${group?.totalBalance?.toLocaleString()}.${getRecentPaymentsText()} Please pay to avoid interruptions.`;
     const [message, setMessage] = useState(defaultTemplate);
     const [isSending, setIsSending] = useState(false);
 
