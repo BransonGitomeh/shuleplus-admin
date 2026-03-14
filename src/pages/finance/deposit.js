@@ -130,17 +130,21 @@ class MpesaPaymentModal extends React.Component {
     if (prefillData.amount) this.setState(prev => ({ form: { ...prev.form, amount: prefillData.amount }}));
     if (prefillData.phone) this.setState(prev => ({ form: { ...prev.form, phone: prefillData.phone }}));
     
-    $(`#${modalId}`).modal({ show: true, backdrop: 'static', keyboard: false });
+    // MOVE modal to body to escape parent stacking contexts (crucial for nested modals)
+    const modalElem = $(`#${modalId}`);
+    modalElem.appendTo('body');
+    
+    modalElem.modal({ show: true, backdrop: 'static', keyboard: false });
     
     // Fix z-index of the generated Bootstrap backdrop so it sits exactly behind this modal
-    // and above the BulkSmsModal (which is at 1050)
+    // and above any other active modals (which are usually at 1050)
     setTimeout(() => {
-        $(`#${modalId}`).css('z-index', 9999);
+        $(`#${modalId}`).css('z-index', 10001); // Even higher
         const backdrops = $('.modal-backdrop');
         if (backdrops.length > 0) {
             $(backdrops[backdrops.length - 1]).css({
-                'z-index': 9998,
-                'opacity': 0.65,
+                'z-index': 10000,
+                'opacity': 0.7,
                 'background-color': '#000',
                 'position': 'fixed'
             });
