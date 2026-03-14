@@ -149,8 +149,10 @@ class FeesManagement extends Component {
             this.updateData({ classes, loading: !classes?.length });
         });
 
-        const schoolInfo = Data.schools.getSelected();
-        this.setState({ schoolInfo });
+        this.unsubSchools = Data.schools.subscribe(({ selectedSchool }) => {
+            console.log("School Info Update:", selectedSchool?.name);
+            this.setState({ schoolInfo: selectedSchool });
+        });
         this.unsubChargeTypes = Data.chargeTypes.subscribe(({ chargeTypes }) => {
             this.updateData({ chargeTypes });
         });
@@ -191,6 +193,7 @@ class FeesManagement extends Component {
 
     componentWillUnmount() {
         if (this.unsubClasses) this.unsubClasses();
+        if (this.unsubSchools) this.unsubSchools();
         if (this.unsubTerms) this.unsubTerms();
         if (this.unsubStudents) this.unsubStudents();
         if (this.unsubParents) this.unsubParents();
@@ -998,7 +1001,7 @@ class FeesManagement extends Component {
                                                                 onClick={() => this.showStatementPreview(group)}
                                                                 title="Print Statement"
                                                             >
-                                                                <i className="flaticon2-printer"></i>
+                                                                <i className="flaticon2-printer text-dark"></i>
                                                             </button>
                                                             <button 
                                                                 className="btn btn-icon btn-light-info btn-sm mx-1"
