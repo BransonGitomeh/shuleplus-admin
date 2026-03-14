@@ -179,6 +179,7 @@ class Navbar extends React.Component {
   renderMobileNav = () => {
     const { isMobileMenuOpen, availableSchools, selectedSchool, openMobileSubmenu } = this.state;
     const isTeacher = this.state.userRole === 'teacher' || this.state.userRole === 'Teacher';
+    const showLowBalanceIndicator = selectedSchool && selectedSchool.financial && typeof selectedSchool.financial.balance === 'number' && selectedSchool.financial.balance < 300;
     const manageDataItems = [
         { path: "/schools", label: "Schools" }, { path: "/admins", label: "Admins" },
         { path: "/invitations", label: "Invitations" }, { path: "/drivers", label: "Drivers" },
