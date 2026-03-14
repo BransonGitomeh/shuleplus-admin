@@ -909,7 +909,7 @@ class FeesManagement extends Component {
                             </div>
                             <div>
                                 <button className="btn btn-primary" onClick={this.handlePrint}>
-                                    <i className="flaticon2-printer mr-2"></i> Print Statement
+                                    <i className="fa fa-print mr-2"></i> Print Statement
                                 </button>
                             </div>
                         </div>
@@ -927,10 +927,45 @@ class FeesManagement extends Component {
                   </div>
                   <style>{`
                       @media print {
-                          .d-print-none, .kt-header, .kt-aside, .kt-footer, .kt-subheader { display: none !important; }
-                          body, .kt-content, .kt-container, #print-area { background: white !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-                          #kt_wrapper { padding: 0 !important; margin: 0 !important; }
-                          .report-card-container { page-break-after: always; width: 100% !important; height: auto !important; min-height: 29.7cm; border: none !important; margin: 0 !important; padding: 1.2cm 2.0cm !important; box-shadow: none !important; }
+                          /* Hide UI Clutter */
+                          #kt_header, #kt_header_mobile, #kt_header_secondary, .kt-subheader, .kt-footer, .kt-aside, .d-print-none { 
+                              display: none !important; 
+                          }
+                          
+                          /* Reset Layout for Print */
+                          body, html { 
+                              background: white !important; 
+                              margin: 0 !important; 
+                              padding: 0 !important; 
+                          }
+                          
+                          #kt_wrapper, .kt-content, .kt-container, #print-area { 
+                              background: white !important; 
+                              padding: 0 !important; 
+                              margin: 0 !important; 
+                              width: 100% !important; 
+                              max-width: 100% !important; 
+                              display: block !important;
+                              border: none !important;
+                          }
+
+                          #print-area {
+                              padding-top: 0 !important;
+                              margin-top: 0 !important;
+                          }
+
+                          /* Ensure Statement Card fills space */
+                          .report-card-container { 
+                              page-break-after: always; 
+                              width: 100% !important; 
+                              max-width: none !important;
+                              height: auto !important; 
+                              min-height: 29.7cm; 
+                              border: none !important; 
+                              margin: 0 !important; 
+                              padding: 1.0cm 1.5cm !important; 
+                              box-shadow: none !important; 
+                          }
                       }
                   `}</style>
                 </div>
