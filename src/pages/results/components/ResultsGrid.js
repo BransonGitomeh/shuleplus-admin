@@ -163,7 +163,6 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                             </th>
                         ))}
                         <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
-                        <th style={{ minWidth: '200px' }}>Teacher Comment</th>
                         <th className="text-center" style={{ minWidth: '130px', position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>Actions</th>
                     </tr>
                 </thead>
@@ -171,16 +170,6 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                     {students.map(student => {
                         let totalPoints = 0;
                         const isExpanded = !!expandedStudents[student.id];
-
-                        // Inline teacher comment: collect rubric comments per subject, deduplicated
-                        const teacherComment = (() => {
-                            const parts = (subjects || []).map(subj => {
-                                const val = getScore(student.id, subj.id);
-                                const rubric = val !== '' && val !== null ? getRubric(val) : null;
-                                return rubric?.teachersComment ? `${subj.name}: ${rubric.teachersComment}` : null;
-                            }).filter(Boolean);
-                            return parts.join(' | ');
-                        })();
 
                         const cells = (subjects || []).map(subj => {
                             const val = getScore(student.id, subj.id);
@@ -212,20 +201,27 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                             placeholder="-"
                                         />
                                         {rubric && (
-                                            <span
-                                                style={{
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: '900',
-                                                    padding: '3px 10px',
-                                                    textTransform: 'uppercase',
-                                                    letterSpacing: '0.5px',
-                                                    borderRadius: '12px',
-                                                    background: rubricColor + '22',
-                                                    color: rubricColor
-                                                }}
-                                            >
-                                                {rubric.label} {rubric.points ? `(${rubric.points})` : ''}
-                                            </span>
+                                            <>
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: '900',
+                                                        padding: '3px 10px',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.5px',
+                                                        borderRadius: '12px',
+                                                        background: rubricColor + '22',
+                                                        color: rubricColor
+                                                    }}
+                                                >
+                                                    {rubric.label} {rubric.points ? `(${rubric.points})` : ''}
+                                                </span>
+                                                {rubric.teachersComment && (
+                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic', textAlign: 'center', lineHeight: '1.2', maxWidth: '110px', marginTop: '2px' }}>
+                                                        {rubric.teachersComment}
+                                                    </span>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </td>
@@ -253,9 +249,6 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                     {cells}
                                     <td className="text-center font-weight-bold bg-light align-middle" style={{ fontSize: '1.2rem', color: '#111827' }}>
                                         {totalPoints > 0 ? totalPoints : '-'}
-                                    </td>
-                                    <td className="align-middle" style={{ fontSize: '0.82rem', color: '#6b7280', fontStyle: 'italic', lineHeight: '1.4' }}>
-                                        {teacherComment || <span className="text-muted" style={{ fontSize: '0.75rem' }}>—</span>}
                                     </td>
                                     <td className="text-center align-middle" style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff', borderLeft: '1px solid #e5e7eb' }}>
                                         <div className="d-flex justify-content-center">
