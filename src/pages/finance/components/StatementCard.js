@@ -1,4 +1,6 @@
 import React from 'react';
+import ReportHeader from '../../components/reports/ReportHeader';
+import ReportFooter from '../../components/reports/ReportFooter';
 
 const StatementCard = ({ group, school, validStudentsData, totalValidExpected, totalValidPaid, totalValidBalance }) => {
     const themeColor = school?.themeColor || '#1a1a1a';
@@ -19,50 +21,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             overflow: 'visible'
         }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.0cm' }}>
-                <div style={{ flex: 1 }}>
-                    <h1 style={{ 
-                        margin: 0, 
-                        fontSize: '2.4rem', 
-                        fontWeight: 900, 
-                        color: themeColor, 
-                        letterSpacing: '-1.5px',
-                        lineHeight: '1.1',
-                        textTransform: 'uppercase'
-                    }}>
-                        {school?.name || "SCHOOL NAME"}
-                    </h1>
-                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <p style={{ margin: 0, fontSize: '0.95rem', color: '#4b5563', fontWeight: 500 }}>
-                            {school?.address || "Address Information"}
-                        </p>
-                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>
-                            <span style={{ fontWeight: 600, color: '#374151' }}>Tel:</span> {school?.phone || "N/A"} 
-                            <span style={{ margin: '0 10px', color: '#d1d5db' }}>|</span> 
-                            <span style={{ fontWeight: 600, color: '#374151' }}>Email:</span> {school?.email || "N/A"}
-                        </p>
-                    </div>
-                </div>
-                {school?.logo && (
-                    <div style={{ padding: '10px', backgroundColor: '#f9fafb', borderRadius: '16px', border: '1px solid #f3f4f6' }}>
-                        <img src={school.logo} alt="School Logo" style={{ maxHeight: '110px', maxWidth: '180px', objectFit: 'contain' }} />
-                    </div>
-                )}
-            </div>
-
-            <div style={{ textAlign: 'center', marginBottom: '1cm', position: 'relative' }}>
-                <h2 style={{ 
-                    margin: 0, 
-                    fontSize: '1.6rem', 
-                    fontWeight: 800, 
-                    textTransform: 'uppercase', 
-                    color: '#111827',
-                    letterSpacing: '2px'
-                }}>
-                    Fees Statement
-                </h2>
-                <div style={{ height: '4px', width: '80px', backgroundColor: themeColor, margin: '12px auto', borderRadius: '2px' }}></div>
-            </div>
+            <ReportHeader school={school} title="Fees Statement" themeColor={themeColor} />
 
             {/* Parent Details Block */}
             <div style={{ 
@@ -205,48 +164,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             </div>
 
             {/* Premium Pinned ShulePlus Footer */}
-            <div style={{ 
-                marginTop: '1cm',
-                borderTop: '2px double #f3f4f6',
-                paddingTop: '20px'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            Validation Status: <span style={{ color: '#10b981' }}>Authentic Financial Record</span>
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#d1d5db', marginTop: '4px' }}>
-                            Generated on {new Date().toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date().toLocaleTimeString()}
-                        </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#374151', letterSpacing: '-0.3px' }}>
-                                Powered by <span style={{ color: '#FA064B' }}>Shule</span><span style={{ color: '#1a1a1a' }}>Plus</span>
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: 500 }}>
-                                Leading the Education Digital Frontier
-                            </div>
-                        </div>
-                        <div style={{ 
-                            width: '42px', 
-                            height: '42px', 
-                            backgroundColor: '#FA064B', 
-                            borderRadius: '10px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 10px rgba(250, 6, 75, 0.2)'
-                        }}>
-                           <span style={{ color: 'white', fontWeight: 900, fontSize: '1.6rem', marginTop: '-2px' }}>+</span>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Subtle bottom line accent */}
-                <div style={{ height: '4px', background: `linear-gradient(to right, ${themeColor}, #FA064B)`, marginTop: '15px', borderRadius: '2px', opacity: 0.6 }}></div>
-            </div>
+            <ReportFooter themeColor={themeColor} validationStatus="Authentic Financial Record" />
         </div>
     );
 };

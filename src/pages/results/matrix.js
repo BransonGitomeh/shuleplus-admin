@@ -2,7 +2,7 @@ import React from "react";
 import Data from "../../utils/data";
 import ReportCard from "./components/ReportCard";
 import ResultsGrid from "./components/ResultsGrid";
-import BulkMessageModal from "./components/BulkMessageModal";
+import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
 
 class ResultsMatrix extends React.Component {
   state = {
@@ -36,6 +36,7 @@ class ResultsMatrix extends React.Component {
     showSingleSmsModal: false,
     selectedStudentForSms: null,
     smsMessage: "",
+    bulkSmsRecipients: [],
   };
 
   componentDidMount() {
@@ -305,6 +306,87 @@ class ResultsMatrix extends React.Component {
       this.setState({ showBulkModal: false });
   };
 
+  initiateBulkResultsSms = () => {
+      const { assessments, selectedTerm, terms, subjects, assessmentRubrics } = this.state;
+      const students = this.getFilteredStudents();
+      const currentTerm = (terms || []).find(t => t.id === selectedTerm) || { name: 'Term' };
+
+      if (!students.length) {
+          if (window.toastr) window.toastr.warning("No students found in this class.");
+          return;
+      }
+
+      const recipients = students.map(student => {
+          // Filter assessments for this student and term
+          const studentAss = (assessments || []).filter(a => 
+              (a.student === student.id || a.student?.id === student.id) &&
+              (a.term === selectedTerm || a.term?.id === selectedTerm)
+          );
+
+          // Build report string
+          let reportParts = [];
+          let totalPoints = 0;
+
+          subjects.forEach(subj => {
+              const matched = studentAss.find(a => (a.subject === subj.id || a.subject?.id === subj.id));
+              if (matched) {
+                  const score = parseFloat(matched.score);
+                  const rubric = (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
+                  if (rubric) {
+                      reportParts.push(`${subj.name}: ${score}${rubric.label ? '('+rubric.label+')' : ''}`);
+                      if (rubric.points) totalPoints += parseFloat(rubric.points);
+                  } else {
+                      reportParts.push(`${subj.name}: ${score}`);
+                  }
+              }
+          });
+
+          const studentFirstName = student.names ? student.names.split(' ')[0] : 'Student';
+          const fullMessage = `Results for ${studentFirstName} (${currentTerm.name}): ${reportParts.join(', ')}. Total: ${totalPoints} pts.`;
+
+          return {
+              id: student.id,
+              name: student.parent?.name || 'Parent',
+              phone: student.parent?.phone || '',
+              studentNames: student.names,
+              message: fullMessage
+          };
+      }).filter(r => r.phone); // Only those with phones
+
+      if (recipients.length === 0) {
+          if (window.toastr) window.toastr.warning("None of the students have parent phone numbers registered.");
+          return;
+      }
+
+      this.setState({
+          showBulkModal: true,
+          bulkSmsRecipients: recipients
+      });
+  };
+
+  handleBulkSmsSend = async (finalMessages) => {
+      let sentCount = 0;
+      let failCount = 0;
+
+      for (const msgObj of finalMessages) {
+          try {
+              await Data.communication.sms.create({
+                  phone: msgObj.phone,
+                  message: msgObj.message
+              });
+              sentCount++;
+          } catch (e) {
+              console.error(`Failed to send SMS to ${msgObj.phone}:`, e);
+              failCount++;
+          }
+      }
+
+      if (window.toastr) {
+          if (failCount === 0) window.toastr.success(`Successfully sent ${sentCount} messages.`);
+          else window.toastr.warning(`Sent ${sentCount}, Failed ${failCount}.`);
+      }
+  };
+
   sendResultsSMS = async (student) => {
       // ... (existing implementation) ...
       // Keeping this as is, though Bulk is preferred.
@@ -483,11 +565,19 @@ class ResultsMatrix extends React.Component {
                 )}
                 
                 <button 
-                    className="btn btn-success font-weight-bold"
+                    className="btn btn-success font-weight-bold mr-2"
                     onClick={this.togglePrintView}
                     disabled={!selectedClass || !selectedTerm}
                 >
                     <i className="fa fa-print"></i> Print Reports
+                </button>
+
+                <button 
+                    className="btn btn-primary font-weight-bold"
+                    onClick={this.initiateBulkResultsSms}
+                    disabled={!selectedClass || !selectedTerm}
+                >
+                    <i className="fa fa-sms"></i> Bulk SMS Report
                 </button>
             </div>
         </div>
@@ -548,14 +638,12 @@ class ResultsMatrix extends React.Component {
             
             {/* MODALS */}
             {showBulkModal && (
-                <BulkMessageModal
+                <BulkReportSmsModal
                     show={showBulkModal}
+                    title="Bulk Results Summary SMS"
                     onClose={() => this.setState({ showBulkModal: false })}
-                    students={students}
-                    term={selectedTerm && terms.find(t => t.id === selectedTerm)}
-                    assessments={assessments}
-                    subjects={subjects}
-                    onSend={this.handleBulkSend}
+                    recipients={this.state.bulkSmsRecipients}
+                    onSend={this.handleBulkSmsSend}
                 />
             )}
 

@@ -4,6 +4,7 @@ import Navbar from "../../components/navbar";
 import Subheader from "../../components/subheader";
 import SmsBalanceModal from './components/SmsBalanceModal';
 import StatementCard from './components/StatementCard';
+import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
 
 // --- HELPER COMPONENTS ---
 
@@ -144,7 +145,9 @@ class FeesManagement extends Component {
         chargeNotes: "",
         selectedChargeTermId: "",
         editPaymentData: null,
-        editChargeData: null
+        editChargeData: null,
+        showBulkSmsModal: false,
+        bulkSmsRecipients: []
     };
     
     componentDidMount() {
@@ -801,6 +804,65 @@ class FeesManagement extends Component {
         } catch(e) { console.error(e); } finally { this.setState({ sendingSms: false }); }
     };
 
+    initiateBulkFinanceSms = () => {
+        const { processedParents, selectedTerm, terms } = this.state;
+        const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
+
+        if (!processedParents.length) {
+            if (window.toastr) window.toastr.warning("No parents found with current filters.");
+            return;
+        }
+
+        const recipients = processedParents.map(group => {
+            const { students, parent, totalBalance } = group;
+            if (!parent?.phone) return null;
+
+            const studentNames = students.map(s => s.names).join(", ");
+            const fullMessage = `Dear Parent, fee balance for ${studentNames} (${selectedTerm ? currentTerm.name : 'Overall'}) is KES ${totalBalance.toLocaleString()}. Please clear it.`;
+
+            return {
+                id: group.id,
+                name: parent.name || 'Parent',
+                phone: parent.phone,
+                studentNames: studentNames,
+                message: fullMessage
+            };
+        }).filter(r => r !== null);
+
+        if (recipients.length === 0) {
+            if (window.toastr) window.toastr.warning("None of the filtered parents have phone numbers registered.");
+            return;
+        }
+
+        this.setState({
+            showBulkSmsModal: true,
+            bulkSmsRecipients: recipients
+        });
+    };
+
+    handleBulkSmsSend = async (finalMessages) => {
+        let sentCount = 0;
+        let failCount = 0;
+
+        for (const msgObj of finalMessages) {
+            try {
+                await Data.communication.sms.create({
+                    phone: msgObj.phone,
+                    message: msgObj.message
+                });
+                sentCount++;
+            } catch (e) {
+                console.error(`Failed to send SMS to ${msgObj.phone}:`, e);
+                failCount++;
+            }
+        }
+
+        if (window.toastr) {
+            if (failCount === 0) window.toastr.success(`Successfully sent ${sentCount} messages.`);
+            else window.toastr.warning(`Sent ${sentCount}, Failed ${failCount}.`);
+        }
+    };
+
     showStatementPreview = (group) => {
         const { students, totalBalance } = group;
         const studentNames = students.map(s => s.names).join(", ");
@@ -1010,6 +1072,14 @@ class FeesManagement extends Component {
                                         {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
+
+                                <button 
+                                    className="btn btn-primary font-weight-bold ml-3"
+                                    onClick={this.initiateBulkFinanceSms}
+                                    disabled={loading || processedParents.length === 0}
+                                >
+                                    <i className="fa fa-sms"></i> Bulk SMS Statements
+                                </button>
                             </div>
                         </div>
 
@@ -1655,6 +1725,16 @@ class FeesManagement extends Component {
                     group={this.state.smsGroup}
                     onClose={() => this.setState({ showSmsModal: false, smsGroup: null })}
                     onSend={this.handleSendSms}
+                />
+            )}
+
+            {this.state.showBulkSmsModal && (
+                <BulkReportSmsModal
+                    show={this.state.showBulkSmsModal}
+                    title="Bulk Fee Balance SMS"
+                    onClose={() => this.setState({ showBulkSmsModal: false })}
+                    recipients={this.state.bulkSmsRecipients}
+                    onSend={this.handleBulkSmsSend}
                 />
             )}
           </div>
