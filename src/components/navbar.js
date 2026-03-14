@@ -266,20 +266,23 @@ class Navbar extends React.Component {
                 <li><Link to="/home" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-dashboard" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Reports</Link></li>
                 <li><Link to="/comms" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-bullhorn" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> SMS & Email</Link></li>
                 <li><Link to="/learning" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-graduation-cap" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Learning</Link></li>
+                <li><Link to="/results" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-bar-chart" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Results</Link></li>
                 <li><Link to="/library" style={linkStyle} onClick={this.toggleMobileMenu}><i className="la la-book" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Library</Link></li>
                  {/* Manage Data */}
-                 <li>
-                    <button onClick={() => this.toggleMobileSubmenu('manage')} style={buttonStyle}>
-                        <i className="la la-database" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Manage Data <i className={`la la-angle-${openMobileSubmenu === 'manage' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
-                    </button>
-                    <div style={{ maxHeight: openMobileSubmenu === 'manage' ? '600px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
-                        <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
-                            {manageDataItems.map(item => (
-                                <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
-                            ))}
-                        </ul>
-                    </div>
-                </li>
+                 {!isTeacher && (
+                    <li>
+                        <button onClick={() => this.toggleMobileSubmenu('manage')} style={buttonStyle}>
+                            <i className="la la-database" style={{marginRight: '12px', fontSize: '1.2rem', color: '#94a3b8'}}></i> Manage Data <i className={`la la-angle-${openMobileSubmenu === 'manage' ? 'down' : 'right'}`} style={{marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.5}}></i>
+                        </button>
+                        <div style={{ maxHeight: openMobileSubmenu === 'manage' ? '600px' : '0', overflow: 'hidden', transition: 'all 0.4s ease-in-out', backgroundColor: '#fdfdfd', borderRadius: '8px', margin: '0 10px' }}>
+                            <ul style={{listStyle: 'none', padding: '5px 0', margin: 0 }}>
+                                {manageDataItems.map(item => (
+                                    <li key={item.path}><Link to={item.path} style={subLinkStyle} onClick={this.toggleMobileMenu}>{item.label}</Link></li>
+                                ))}
+                            </ul>
+                        </div>
+                    </li>
+                 )}
                 {/* Finance */}
                  {!isTeacher && (
                     <li>
@@ -415,27 +418,34 @@ class Navbar extends React.Component {
                     <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Reports</span>
                   </Link>
                 </li>
-                <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
-                  <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
-                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Manage Data</span>
-                    <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
-                  </a>
-                  <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
-                    <ul className="kt-menu__subnav">
-                      {manageDataItems.map(item => (
-                        <li key={item.path} className="kt-menu__item" aria-haspopup="true">
-                          <Link to={item.path} className="kt-menu__link">
-                            <span className="kt-menu__link-icon kt-menu__link-icon--md" style={{ marginRight: '8px' }}>
-                              <item.IconComponent style={{ width: '18px', height: '18px', color: effectiveTopBarTextColor }} />
-                            </span>
-                            <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
-                              {item.label}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {!isTeacher && (
+                  <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
+                    <a href="!#" onClick={e => e.preventDefault()} className="kt-menu__link kt-menu__toggle">
+                      <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Manage Data</span>
+                      <i className="kt-menu__hor-arrow la la-angle-down" style={{ ...topNavIconStyle, color: effectiveTopBarTextColor }} />
+                    </a>
+                    <div className="kt-menu__submenu kt-menu__submenu--classic kt-menu__submenu--left">
+                      <ul className="kt-menu__subnav">
+                        {manageDataItems.map(item => (
+                          <li key={item.path} className="kt-menu__item" aria-haspopup="true">
+                            <Link to={item.path} className="kt-menu__link">
+                              <span className="kt-menu__link-icon kt-menu__link-icon--md" style={{ marginRight: '8px' }}>
+                                <item.IconComponent style={{ width: '18px', height: '18px', color: effectiveTopBarTextColor }} />
+                              </span>
+                              <span className="kt-menu__link-text" style={{ color: effectiveTopBarTextColor }}>
+                                {item.label}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                )}
+                <li className="kt-menu__item">
+                  <Link to="/results" className="kt-menu__link">
+                    <span className="kt-menu__link-text" style={{ ...topNavlinkStyle, fontWeight: '500' }}>Results</span>
+                  </Link>
                 </li>
                 {!isTeacher && (
                     <li className="kt-menu__item kt-menu__item--submenu kt-menu__item--rel" data-ktmenu-submenu-toggle="click" aria-haspopup="true">
@@ -465,7 +475,7 @@ class Navbar extends React.Component {
           <div className="kt-header__topbar">
             <div className="kt-header__topbar-item kt-header__topbar-item--user" id="kt_offcanvas_toolbar_profile_toggler_btn" style={{ cursor: 'pointer' }}>
               <div className="kt-header__topbar-welcome" style={{ color: effectiveTopBarTextColor }}>Hi,</div>
-              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user} </div>
+              <div className="kt-header__topbar-username" style={{ color: effectiveTopBarTextColor, marginLeft: '5px', fontWeight: '500' }}>{user} <span style={{ opacity: 0.7, fontSize: '0.8rem', fontWeight: '400', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px', marginLeft: '5px' }}>({this.state.userRole || storedUser.role || 'User'})</span> </div>
               <div className="kt-header__topbar-wrapper" style={{ marginLeft: '10px' }}>
                 <img alt="User avatar" src={storedUser?.avatar || `https://picsum.photos/30/30?random=${storedUser?.id || 1027}`} style={{ width: '30px', height: '30px', borderRadius: '50%' }} />
               </div>
