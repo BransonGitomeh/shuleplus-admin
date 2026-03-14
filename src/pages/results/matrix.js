@@ -653,6 +653,9 @@ class ResultsMatrix extends React.Component {
                             students={students}
                             subjects={filteredSubjectsList}
                             assessments={currentViewAssessments}
+                            allAssessments={assessments}
+                            allTerms={terms}
+                            assessmentTypes={assessmentTypes}
                             rubrics={assessmentRubrics}
                             updates={edits}
                             onScoreChange={this.handleScoreChange}

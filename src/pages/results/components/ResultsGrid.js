@@ -1,120 +1,197 @@
 import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
 
-/** Simple inline bar chart for a student's subject scores */
-const StudentChart = ({ student, subjects, assessments, rubrics, updates, themeColor = '#3699ff' }) => {
-    const getScore = (studentId, subjectId) => {
-        const key = `${studentId}-${subjectId}`;
-        if (updates && updates.hasOwnProperty(key)) return parseFloat(updates[key]) || 0;
-        const a = assessments.find(a =>
-            (a.student === studentId || a.student?.id === studentId) &&
-            (a.subject === subjectId || a.subject?.id === subjectId)
-        );
-        return a ? (parseFloat(a.score) || 0) : 0;
-    };
+/** 
+ * DetailedPerformanceAnalytics
+ * A premium SVG-based analytics component showing cross-term trends 
+ * and assessment type performance.
+ */
+const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, themeColor = '#3699ff' }) => {
+    
+    // 1. Data Processing
+    const studentAll = useMemo(() => {
+        return (allAssessments || []).filter(a => (a.student === student.id || a.student?.id === student.id));
+    }, [allAssessments, student.id]);
 
     const getRubric = (score) => {
-        if (!score || isNaN(score)) return null;
+        if (score === undefined || score === null || isNaN(score)) return null;
         return (rubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
     };
 
-    const bars = subjects.map(subj => {
-        const score = getScore(student.id, subj.id);
-        const rubric = getRubric(score);
-        const color = rubric
-            ? (rubric.label === 'EE' ? '#10b981' : rubric.label === 'ME' ? '#3699ff' : rubric.label === 'AE' ? '#f6c23e' : '#e74c3c')
-            : '#e5e7eb';
-        return { name: subj.name, score, color, rubric };
-    }).filter(b => b.score > 0);
+    // Current Subject Performance (Bars)
+    const currentBars = useMemo(() => {
+        return subjects.map(subj => {
+            const a = currentAssessments.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.student === student.id || a.student?.id === student.id));
+            const score = a ? (parseFloat(a.score) || 0) : 0;
+            const rubric = getRubric(score);
+            const color = rubric
+                ? (rubric.label === 'EE' ? '#10b981' : rubric.label === 'ME' ? '#3699ff' : rubric.label === 'AE' ? '#f6c23e' : '#e74c3c')
+                : '#e5e7eb';
+            return { name: subj.name, score, color, rubric };
+        }).filter(b => b.score > 0);
+    }, [subjects, currentAssessments, student.id, rubrics]);
 
-    const getComments = () => {
-        return (subjects || []).map(subj => {
-            const score = getScore(student.id, subj.id);
-            const rubric = score !== '' && score !== null ? getRubric(score) : null;
-            return rubric?.teachersComment ? { subject: subj.name, comment: rubric.teachersComment } : null;
-        }).filter(Boolean);
+    // Cross-Term Trends (Line Chart Data)
+    const trendData = useMemo(() => {
+        const sortedTerms = (allTerms || []).sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
+        return sortedTerms.map(term => {
+            const termAssessments = studentAll.filter(a => (a.term === term.id || a.term?.id === term.id));
+            const total = termAssessments.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0);
+            const avg = termAssessments.length > 0 ? (total / termAssessments.length) : 0;
+            
+            // Shorten name: "Term 1 2024" -> "T1 '24" or "First Term" -> "First..."
+            const parts = term.name.split(' ');
+            let shortName = term.name;
+            if (parts.length >= 3) shortName = `${parts[0][0]}${parts[1]} '${parts[parts.length-1].slice(-2)}`;
+            else if (parts.length === 2) shortName = `${parts[0][0]}${parts[1]}`;
+            
+            return { term: shortName, avg, fullTerm: term.name };
+        }).filter(d => d.avg > 0);
+    }, [allTerms, studentAll]);
+
+    // Assessment Type Comparison (Bar Chart Data)
+    const comparisonData = useMemo(() => {
+        return (assessmentTypes || []).map(type => {
+            const typeAssessments = studentAll.filter(a => (a.assessmentType === type.id || a.assessmentType?.id === type.id));
+            const total = typeAssessments.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0);
+            const avg = typeAssessments.length > 0 ? (total / typeAssessments.length) : 0;
+            return { type: type.name, avg };
+        }).filter(d => d.avg > 0);
+    }, [assessmentTypes, studentAll]);
+
+    // 2. Chart Rendering (Line Chart SVG)
+    const renderTrendChart = () => {
+        if (trendData.length < 2) return <div className="text-muted small">Insufficient historical data for trend analysis.</div>;
+        
+        const width = 320;
+        const height = 120;
+        const padding = 25;
+        const maxAvg = 100;
+        
+        const points = trendData.map((d, i) => {
+            const x = padding + (i * (width - 2 * padding) / (trendData.length - 1));
+            const y = height - padding - (d.avg / maxAvg * (height - 2 * padding));
+            return { x, y, avg: d.avg, term: d.term };
+        });
+
+        const pathD = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+        const areaD = `${pathD} L ${points[points.length-1].x} ${height-padding} L ${points[0].x} ${height-padding} Z`;
+
+        return (
+            <div style={{ position: 'relative' }}>
+                <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+                    {/* Grid lines */}
+                    <line x1={padding} y1={padding} x2={padding} y2={height-padding} stroke="#f3f4f6" />
+                    <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="#f3f4f6" />
+                    
+                    {/* Area fill */}
+                    <path d={areaD} fill="url(#trendGradient)" opacity="0.1" />
+                    <defs>
+                        <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={themeColor} />
+                            <stop offset="100%" stopColor="transparent" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Path line */}
+                    <path d={pathD} fill="none" stroke={themeColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    
+                    {/* Data Points */}
+                    {points.map((p, i) => (
+                        <g key={i}>
+                            <circle cx={p.x} cy={p.y} r="4" fill="white" stroke={themeColor} strokeWidth="2" />
+                            <text x={p.x} y={height - 5} fontSize="9" fill="#9ca3af" textAnchor="middle">{p.term}</text>
+                            <text x={p.x} y={p.y - 8} fontSize="10" fontWeight="700" fill={themeColor} textAnchor="middle">{Math.round(p.avg)}%</text>
+                        </g>
+                    ))}
+                </svg>
+            </div>
+        );
     };
 
-    const comments = getComments();
-    const maxScore = 100;
+    // 3. Chart Rendering (Comparison Bar SVG)
+    const renderComparisonChart = () => {
+        if (comparisonData.length === 0) return <div className="text-muted small">No assessment type data available.</div>;
+        
+        const width = 200;
+        const height = 120;
+        const padding = 20;
+        const barWidth = 35;
+        const maxAvg = 100;
+
+        return (
+            <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+                {comparisonData.map((d, i) => {
+                    const barHeight = (d.avg / maxAvg) * (height - 2 * padding);
+                    const x = padding + i * (width - 2 * padding) / (comparisonData.length > 1 ? comparisonData.length - 1 : 1) - (comparisonData.length > 1 ? barWidth / 2 : width/2 - padding);
+                    const safeX = comparisonData.length === 1 ? (width/2 - barWidth/2) : (padding + i * (width - 2*padding) / (comparisonData.length - 1) - barWidth/2);
+                    
+                    return (
+                        <g key={i}>
+                            <rect 
+                                x={safeX} 
+                                y={height - padding - barHeight} 
+                                width={barWidth} 
+                                height={barHeight} 
+                                fill={i === comparisonData.length - 1 ? '#3699ff' : '#e4e6ef'} 
+                                rx="4"
+                            />
+                            <text x={safeX + barWidth/2} y={height - 5} fontSize="9" fill="#9ca3af" textAnchor="middle">{d.type.substring(0,6)}</text>
+                            <text x={safeX + barWidth/2} y={height - padding - barHeight - 5} fontSize="10" fontWeight="700" fill="#3f4254" textAnchor="middle">{Math.round(d.avg)}%</text>
+                        </g>
+                    );
+                })}
+            </svg>
+        );
+    };
 
     return (
-        <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg, #f8f9fc, #ffffff)', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-                {/* Bar Chart */}
-                {bars.length > 0 ? (
-                    <div style={{ flex: 2, minWidth: '300px' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
-                            Subject Performance
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {bars.map((bar, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ width: '100px', fontSize: '0.78rem', fontWeight: 600, color: '#374151', flexShrink: 0, textAlign: 'right', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <div style={{ padding: '24px', background: '#fdfdfd', borderTop: '1px solid #ebedf3' }}>
+            <div className="row">
+                {/* Column 1: Subject Performance (The original bars) */}
+                <div className="col-lg-4 border-right">
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
+                        Subject Breakdown
+                    </div>
+                    {currentBars.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {currentBars.map((bar, i) => (
+                                <div key={i} className="d-flex align-items-center">
+                                    <div style={{ width: '90px', fontSize: '0.8rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                         {bar.name}
                                     </div>
-                                    <div style={{ flex: 1, background: '#f3f4f6', borderRadius: '20px', height: '18px', position: 'relative', overflow: 'hidden' }}>
-                                        <div style={{
-                                            width: `${(bar.score / maxScore) * 100}%`,
-                                            height: '100%',
-                                            background: bar.color,
-                                            borderRadius: '20px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            paddingRight: '8px',
-                                            justifyContent: 'flex-end',
-                                            transition: 'width 0.4s ease',
-                                            fontSize: '0.72rem',
-                                            fontWeight: 700,
-                                            color: 'white'
-                                        }}>
-                                            {bar.score > 10 ? bar.score : ''}
-                                        </div>
+                                    <div className="flex-grow-1 mx-3" style={{ height: '14px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${bar.score}%`, height: '100%', background: bar.color, transition: 'width 0.5s ease' }} />
                                     </div>
-                                    {bar.rubric && (
-                                        <span style={{
-                                            padding: '2px 8px',
-                                            borderRadius: '12px',
-                                            fontSize: '0.7rem',
-                                            fontWeight: 900,
-                                            background: bar.color + '22',
-                                            color: bar.color,
-                                            flexShrink: 0
-                                        }}>
-                                            {bar.rubric.label}
-                                        </span>
-                                    )}
+                                    <div style={{ width: '35px', textAlign: 'right', fontWeight: 800, fontSize: '0.8rem', color: bar.color }}>{bar.score}</div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                ) : (
-                    <div style={{ flex: 2, color: '#9ca3af', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>
-                        No scores recorded for this student.
-                    </div>
-                )}
+                    ) : (
+                        <div className="text-muted small p-4 text-center bg-light rounded">No scores for this student.</div>
+                    )}
+                </div>
 
-                {/* Teacher Comments */}
-                {comments.length > 0 && (
-                    <div style={{ flex: 1, minWidth: '200px', borderLeft: '1px solid #e5e7eb', paddingLeft: '20px' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
-                            Teacher Comments
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {comments.map((c, i) => (
-                                <div key={i}>
-                                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: '2px' }}>{c.subject}</div>
-                                    <div style={{ fontSize: '0.82rem', color: '#374151', fontStyle: 'italic', lineHeight: '1.4' }}>{c.comment}</div>
-                                </div>
-                            ))}
-                        </div>
+                {/* Column 2: Historical Trend */}
+                <div className="col-lg-5 border-right pl-lg-8">
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
+                        Performance Trend (Terms)
                     </div>
-                )}
+                    {renderTrendChart()}
+                </div>
+
+                {/* Column 3: Assessment Comparison */}
+                <div className="col-lg-3 pl-lg-8">
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
+                        Exam Type Mix
+                    </div>
+                    {renderComparisonChart()}
+                </div>
             </div>
         </div>
     );
 };
 
-const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScoreChange, onPrintSingle, onSendSms }) => {
+const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onPrintSingle, onSendSms }) => {
     const [expandedStudents, setExpandedStudents] = useState({});
 
     const toggleExpand = useCallback((studentId) => {
@@ -315,10 +392,13 @@ const ResultsGrid = ({ students, subjects, assessments, rubrics, updates, onScor
                                 {isExpanded && (
                                     <tr>
                                         <td colSpan={(subjects?.length || 0) + 4} style={{ padding: 0, background: 'transparent' }}>
-                                            <StudentChart
+                                            <DetailedPerformanceAnalytics
                                                 student={student}
                                                 subjects={subjects}
-                                                assessments={assessments}
+                                                currentAssessments={assessments}
+                                                allAssessments={allAssessments}
+                                                allTerms={allTerms}
+                                                assessmentTypes={assessmentTypes}
                                                 rubrics={rubrics}
                                                 updates={updates}
                                             />
