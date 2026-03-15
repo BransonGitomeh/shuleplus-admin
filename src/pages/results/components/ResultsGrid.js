@@ -223,27 +223,15 @@ const SkeletonRow = ({ subjectsCount }) => (
 );
 
 const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
-    const [expandedParents, setExpandedParents] = useState({});
+    const [expandedStudents, setExpandedStudents] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 15;
 
-    const toggleParent = useCallback((parentId) => {
-        setExpandedParents(prev => ({ ...prev, [parentId]: !prev[parentId] }));
+    const toggleStudent = useCallback((studentId) => {
+        setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
     }, []);
 
-    // 1. Group Students by Parent
-    const parentGroups = useMemo(() => {
-        const groups = {};
-        (students || []).forEach(student => {
-            const parent = student.parent || { id: 'unknown', name: 'Unknown Parent', phone: '-' };
-            if (!groups[parent.id]) {
-                groups[parent.id] = {
-                    parent: parent,
-                    students: []
-                };
-            }
-            groups[parent.id].students.push(student);
-        });
-        return Object.values(groups).sort((a, b) => (a.parent.name || '').localeCompare(b.parent.name || ''));
-    }, [students]);
 
     // Helper to get score for a cell
     const getScore = (studentId, subjectId) => {
@@ -288,22 +276,20 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
         return (rubrics || []).find(r => s >= r.minScore && s <= r.maxScore);
     };
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 15;
-
-    const filteredGroups = useMemo(() => {
-        if (!searchTerm) return parentGroups;
+    const filteredStudents = useMemo(() => {
+        if (!searchTerm) return students;
         const lowerSearch = searchTerm.toLowerCase();
-        return parentGroups.filter(g => 
-            (g.parent.name || '').toLowerCase().includes(lowerSearch) || 
-            (g.parent.phone || '').includes(lowerSearch) ||
-            g.students.some(s => (s.names || '').toLowerCase().includes(lowerSearch) || (s.admNo || '').toLowerCase().includes(lowerSearch))
+        return (students || []).filter(s => 
+            (s.names || '').toLowerCase().includes(lowerSearch) || 
+            (s.admNo || '').toLowerCase().includes(lowerSearch) ||
+            (s.registration || '').toLowerCase().includes(lowerSearch) ||
+            (s.parent?.name || '').toLowerCase().includes(lowerSearch) ||
+            (s.parent?.phone || '').includes(lowerSearch)
         );
-    }, [parentGroups, searchTerm]);
+    }, [students, searchTerm]);
 
-    const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
-    const paginatedGroups = filteredGroups.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+    const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -332,7 +318,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                     </div>
                 </div>
                 <div className="text-muted font-weight-bold">
-                    {loading ? 'Updating results...' : `Showing ${paginatedGroups.length} families`}
+                    {loading ? 'Updating results...' : `Showing ${paginatedStudents.length} students`}
                 </div>
             </div>
 
@@ -352,161 +338,120 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedGroups.map(group => {
-                            const isExpanded = !!expandedParents[group.parent.id];
+                        {paginatedStudents.map(student => {
+                            let totalPoints = 0;
+                            const firstSubjectId = subjects?.[0]?.id;
+                            const isExpanded = !!expandedStudents[student.id];
+
                             return (
-                                <React.Fragment key={group.parent.id}>
-                                    <tr className="bg-light-primary" style={{ cursor: 'pointer' }} onClick={() => toggleParent(group.parent.id)}>
-                                        <td className="pl-0 py-3">
-                                            <div className="symbol symbol-35 symbol-light-success ml-4">
-                                                <span className="symbol-label font-size-h6 font-weight-bold">{group.parent.name?.[0] || 'P'}</span>
+                                <React.Fragment key={student.id}>
+                                    {/* STUDENT ROW (TOP LEVEL INPUTS) */}
+                                    <tr className={`bg-white border-bottom ${isExpanded ? 'bg-light-primary' : ''}`}>
+                                        <td className="pl-4 py-3">
+                                            <div className="symbol symbol-35 symbol-light-success">
+                                                <span className="symbol-label font-size-h6 font-weight-bold">{student.names?.[0] || 'S'}</span>
                                             </div>
                                         </td>
                                         <td className="py-3">
-                                            <div className="d-flex align-items-center">
-                                                <span className="text-dark-75 font-weight-bolder font-size-lg mr-2">{group.parent.name}</span>
-                                                <span className="text-muted font-weight-bold font-size-sm">{group.parent.phone}</span>
+                                            <div className="d-flex flex-column">
+                                                <span className="text-dark-75 font-weight-bolder font-size-sm">{student.names}</span>
+                                                <div className="d-flex align-items-center mt-1">
+                                                    <span className="text-muted font-weight-bold font-size-xs">{student.admNo || student.registration}</span>
+                                                    <span className="label label-dot label-secondary ml-2 mr-2"></span>
+                                                    <span className="text-muted font-weight-bold font-size-xs text-uppercase">{student.parent?.name || 'N/A'}</span>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td colSpan={(subjects?.length || 0) + 3} className="py-3">
-                                            <div className="d-flex align-items-center">
-                                                <span className="label label-inline label-light-primary font-weight-bold mr-4">
-                                                    {group.students.length} Student(s)
-                                                </span>
-                                                <span className="text-muted font-weight-bold font-size-sm">
-                                                    {group.students.map(s => s.names).join(', ')}
-                                                </span>
-                                            </div>
+                                        {subjects?.map(subj => {
+                                            const val = getScore(student.id, subj.id);
+                                            const rubric = getRubric(val);
+                                            if (rubric?.points) totalPoints += parseFloat(rubric.points);
+                                            const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}-score`);
+                                            const color = getRubricColor(rubric);
+
+                                            return (
+                                                <td key={subj.id} className="text-center py-2">
+                                                    <div className="d-flex flex-column align-items-center">
+                                                        <input
+                                                            type="number"
+                                                            className="form-control form-control-sm text-center font-weight-boldest"
+                                                            value={val}
+                                                            onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
+                                                            style={{ 
+                                                                width: '65px', 
+                                                                height: '32px', 
+                                                                fontSize: '0.95rem',
+                                                                borderRadius: '6px',
+                                                                border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
+                                                                background: isUpdated ? '#fff8dd' : '#f8f9fb'
+                                                            }}
+                                                        />
+                                                        {rubric && (
+                                                            <span className="mt-1 font-weight-boldest" style={{ color, fontSize: '10px' }}>
+                                                                {rubric.label}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                        <td className="text-center py-2">
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm border-0 bg-light"
+                                                placeholder="Remark..."
+                                                value={getRemark(student.id, firstSubjectId)}
+                                                onChange={(e) => onRemarkChange(student.id, firstSubjectId, e.target.value)}
+                                                style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
+                                            />
                                         </td>
-                                        <td className="text-right pr-4 py-3">
+                                        <td className="text-center py-2">
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm border-0 bg-light"
+                                                placeholder="Comment..."
+                                                value={getComment(student.id, firstSubjectId)}
+                                                onChange={(e) => onCommentChange(student.id, firstSubjectId, e.target.value)}
+                                                style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
+                                            />
+                                        </td>
+                                        <td className="text-center align-middle">
+                                            <span className="text-dark-75 font-weight-bolder font-size-h6">
+                                                {totalPoints || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="text-right">
                                             <button 
-                                                className={`btn btn-xs btn-light-info font-weight-bolder px-4 ${isExpanded ? 'active' : ''}`}
+                                                className={`btn btn-icon btn-light-info btn-sm mr-1 ${isExpanded ? 'active' : ''}`}
+                                                onClick={() => toggleStudent(student.id)}
+                                                title="View Insights"
                                             >
-                                                {isExpanded ? 'Hide Insights' : 'Show Insights'}
+                                                <i className={`ki ki-bold-more-hor icon-xs ${isExpanded ? 'text-white' : ''}`}></i>
+                                            </button>
+                                            <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
+                                                <i className="fa fa-print"></i>
+                                            </button>
+                                            <button className="btn btn-icon btn-light-success btn-sm" onClick={() => onSendSms?.(student)}>
+                                                <i className="fa fa-sms"></i>
                                             </button>
                                         </td>
                                     </tr>
 
-                                    {/* STUDENT ROWS (ALWAYS VISIBLE) */}
-                                    {group.students.map(student => {
-                                        let totalPoints = 0;
-                                        const firstSubjectId = subjects?.[0]?.id;
-
-                                        return (
-                                            <tr key={student.id} className="bg-white border-bottom-0">
-                                                <td className="pl-10 pr-0" style={{ borderLeft: '3px solid #ebedf3' }}>
-                                                    {/* Tree indicator */}
-                                                    <div style={{ marginLeft: '10px', height: '100%', borderLeft: '1px dashed #ebedf3', position: 'relative' }}>
-                                                        <div style={{ position: 'absolute', top: '50%', left: 0, width: '10px', borderTop: '1px dashed #ebedf3' }}></div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="d-flex flex-column">
-                                                        <span className="text-dark-75 font-weight-bolder font-size-sm">{student.names}</span>
-                                                        <span className="text-muted font-weight-bold font-size-xs">{student.admNo || student.registration}</span>
-                                                    </div>
-                                                </td>
-                                                {subjects?.map(subj => {
-                                                    const val = getScore(student.id, subj.id);
-                                                    const rubric = getRubric(val);
-                                                    if (rubric?.points) totalPoints += parseFloat(rubric.points);
-                                                    const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}-score`);
-                                                    const color = getRubricColor(rubric);
-
-                                                    return (
-                                                        <td key={subj.id} className="text-center py-2">
-                                                            <div className="d-flex flex-column align-items-center">
-                                                                <input
-                                                                    type="number"
-                                                                    className="form-control form-control-sm text-center font-weight-boldest"
-                                                                    value={val}
-                                                                    onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
-                                                                    style={{ 
-                                                                        width: '65px', 
-                                                                        height: '32px', 
-                                                                        fontSize: '0.95rem',
-                                                                        borderRadius: '6px',
-                                                                        border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
-                                                                        background: isUpdated ? '#fff8dd' : '#f8f9fb'
-                                                                    }}
-                                                                />
-                                                                {rubric && (
-                                                                    <span className="mt-1 font-weight-boldest" style={{ color, fontSize: '10px' }}>
-                                                                        {rubric.label}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    );
-                                                })}
-                                                <td className="text-center py-2">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm border-0 bg-light"
-                                                        placeholder="Remark..."
-                                                        value={getRemark(student.id, firstSubjectId)}
-                                                        onChange={(e) => onRemarkChange(student.id, firstSubjectId, e.target.value)}
-                                                        style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
-                                                    />
-                                                </td>
-                                                <td className="text-center py-2">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control form-control-sm border-0 bg-light"
-                                                        placeholder="Comment..."
-                                                        value={getComment(student.id, firstSubjectId)}
-                                                        onChange={(e) => onCommentChange(student.id, firstSubjectId, e.target.value)}
-                                                        style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
-                                                    />
-                                                </td>
-                                                <td className="text-center align-middle">
-                                                    <span className="text-dark-75 font-weight-bolder font-size-h6">
-                                                        {totalPoints || '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="text-right">
-                                                    <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
-                                                        <i className="fa fa-print"></i>
-                                                    </button>
-                                                    <button className="btn btn-icon btn-light-success btn-sm" onClick={() => onSendSms?.(student)}>
-                                                        <i className="fa fa-sms"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-
-                                    {/* INSIGHTS (IF EXPANDED) */}
+                                    {/* EXPANDED ANALYTICS */}
                                     {isExpanded && (
                                         <tr>
-                                            <td colSpan={(subjects?.length || 0) + 6} className="p-0 border-0 bg-light-primary">
-                                                <div className="m-4 p-4 bg-white rounded shadow-sm">
-                                                    <div className="mb-4 pl-4 border-left border-3 border-info">
-                                                        <h5 className="font-weight-bolder text-info mb-1">Performance Analytics</h5>
-                                                        <p className="text-muted small mb-0">Cross-term trends and mobile revision insights for the family.</p>
-                                                    </div>
-                                                    {group.students.map(student => (
-                                                        <div key={student.id} className="mb-8 last-mb-0">
-                                                            <div className="d-flex align-items-center mb-4 px-4 py-2 bg-light rounded">
-                                                                <span className="symbol symbol-25 symbol-info mr-3">
-                                                                    <span className="symbol-label font-size-xs font-weight-boldest">{student.names?.[0]}</span>
-                                                                </span>
-                                                                <span className="font-weight-boldest text-dark-75">{student.names}</span>
-                                                            </div>
-                                                            <DetailedPerformanceAnalytics 
-                                                                student={student}
-                                                                subjects={subjects}
-                                                                currentAssessments={assessments}
-                                                                allAssessments={allAssessments}
-                                                                allTerms={allTerms}
-                                                                assessmentTypes={assessmentTypes}
-                                                                rubrics={rubrics}
-                                                                lessonAttempts={lessonAttempts}
-                                                                attemptEvents={attemptEvents}
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                            <td colSpan={(subjects?.length || 0) + 6} className="p-0 border-0">
+                                                <DetailedPerformanceAnalytics 
+                                                    student={student}
+                                                    subjects={subjects}
+                                                    currentAssessments={assessments}
+                                                    allAssessments={allAssessments}
+                                                    allTerms={allTerms}
+                                                    assessmentTypes={assessmentTypes}
+                                                    rubrics={rubrics}
+                                                    lessonAttempts={lessonAttempts}
+                                                    attemptEvents={attemptEvents}
+                                                />
                                             </td>
                                         </tr>
                                     )}
