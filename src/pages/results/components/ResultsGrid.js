@@ -224,14 +224,11 @@ const SkeletonRow = ({ subjectsCount }) => (
 
 const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
     const [expandedParents, setExpandedParents] = useState({});
-    const [expandedStudents, setExpandedStudents] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
 
     const toggleParent = useCallback((parentId) => {
         setExpandedParents(prev => ({ ...prev, [parentId]: !prev[parentId] }));
-    }, []);
-
-    const toggleStudent = useCallback((studentId) => {
-        setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
     }, []);
 
     // 1. Group Students by Parent
@@ -361,57 +358,49 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                             const isExpanded = !!expandedParents[group.parent.id];
                             return (
                                 <React.Fragment key={group.parent.id}>
-                                    {/* PARENT ROW */}
-                                    <tr className={isExpanded ? 'bg-light-primary' : ''}>
-                                        <td className="pl-0 py-4">
-                                            <div className="symbol symbol-40 symbol-light-success">
-                                                <span className="symbol-label font-size-h5 font-weight-bold">{group.parent.name?.[0] || 'P'}</span>
+                                    <tr className="bg-light-primary" style={{ cursor: 'pointer' }} onClick={() => toggleParent(group.parent.id)}>
+                                        <td className="pl-0 py-3">
+                                            <div className="symbol symbol-35 symbol-light-success ml-4">
+                                                <span className="symbol-label font-size-h6 font-weight-bold">{group.parent.name?.[0] || 'P'}</span>
                                             </div>
                                         </td>
-                                        <td className="py-4">
-                                            <div className="d-flex flex-column">
-                                                <span className="text-dark-75 font-weight-bolder font-size-lg">{group.parent.name}</span>
-                                                <span className="text-muted font-weight-bold">{group.parent.phone}</span>
-                                                <span className="label label-inline label-light-primary font-weight-bold mt-1" style={{ width: 'fit-content' }}>
+                                        <td className="py-3">
+                                            <div className="d-flex align-items-center">
+                                                <span className="text-dark-75 font-weight-bolder font-size-lg mr-2">{group.parent.name}</span>
+                                                <span className="text-muted font-weight-bold font-size-sm">{group.parent.phone}</span>
+                                            </div>
+                                        </td>
+                                        <td colSpan={(subjects?.length || 0) + 3} className="py-3">
+                                            <div className="d-flex align-items-center">
+                                                <span className="label label-inline label-light-primary font-weight-bold mr-4">
                                                     {group.students.length} Student(s)
                                                 </span>
-                                            </div>
-                                        </td>
-                                        <td colSpan={subjects?.length || 0} className="py-4">
-                                            <div className="d-flex align-items-center">
                                                 <span className="text-muted font-weight-bold font-size-sm">
                                                     {group.students.map(s => s.names).join(', ')}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="text-center py-4">
-                                            <span className="text-dark-75 font-weight-bolder font-size-lg">
-                                                {/* Parent level total could be shown here if needed */}
-                                                -
-                                            </span>
-                                        </td>
-                                        <td className="text-right py-4">
+                                        <td className="text-right pr-4 py-3">
                                             <button 
-                                                className={`btn btn-icon btn-light-primary btn-sm ${isExpanded ? 'active' : ''}`}
-                                                onClick={() => toggleParent(group.parent.id)}
+                                                className={`btn btn-xs btn-light-info font-weight-bolder px-4 ${isExpanded ? 'active' : ''}`}
                                             >
-                                                <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
+                                                {isExpanded ? 'Hide Insights' : 'Show Insights'}
                                             </button>
                                         </td>
                                     </tr>
 
-                                    {/* STUDENT ROWS (TREE) */}
-                                    {isExpanded && group.students.map(student => {
+                                    {/* STUDENT ROWS (ALWAYS VISIBLE) */}
+                                    {group.students.map(student => {
                                         let totalPoints = 0;
-                                        // We'll use the first subject for the 'General Remark' if they want a single column
                                         const firstSubjectId = subjects?.[0]?.id;
-                                        const generalRemark = getRemark(student.id, firstSubjectId);
 
                                         return (
-                                            <React.Fragment key={student.id}>
-                                            <tr className={`bg-white ${expandedStudents[student.id] ? 'student-row-expanded' : ''}`}>
-                                                <td className="pl-10 mr-0" style={{ borderLeft: '3px solid #3699ff' }}>
-                                                    <i className="fa fa-level-up-alt text-muted fa-rotate-90"></i>
+                                            <tr key={student.id} className="bg-white border-bottom-0">
+                                                <td className="pl-10 pr-0" style={{ borderLeft: '3px solid #ebedf3' }}>
+                                                    {/* Tree indicator */}
+                                                    <div style={{ marginLeft: '10px', height: '100%', borderLeft: '1px dashed #ebedf3', position: 'relative' }}>
+                                                        <div style={{ position: 'absolute', top: '50%', left: 0, width: '10px', borderTop: '1px dashed #ebedf3' }}></div>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <div className="d-flex flex-column">
@@ -478,9 +467,6 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     </span>
                                                 </td>
                                                 <td className="text-right">
-                                                    <button className={`btn btn-icon btn-light-info btn-sm mr-1 ${expandedStudents[student.id] ? 'active' : ''}`} onClick={() => toggleStudent(student.id)} title="View Insights">
-                                                        <i className={`ki ki-bold-more-hor icon-xs ${expandedStudents[student.id] ? 'text-white' : ''}`}></i>
-                                                    </button>
                                                     <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
                                                         <i className="fa fa-print"></i>
                                                     </button>
@@ -489,27 +475,43 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     </button>
                                                 </td>
                                             </tr>
-                                            {expandedStudents[student.id] && (
-                                                <tr>
-                                                    <td className="pl-10" style={{ borderLeft: '3px solid #3699ff' }}></td>
-                                                    <td colSpan={(subjects?.length || 0) + 3} className="p-0">
-                                                        <DetailedPerformanceAnalytics 
-                                                            student={student}
-                                                            subjects={subjects}
-                                                            currentAssessments={assessments}
-                                                            allAssessments={allAssessments}
-                                                            allTerms={allTerms}
-                                                            assessmentTypes={assessmentTypes}
-                                                            rubrics={rubrics}
-                                                            lessonAttempts={lessonAttempts}
-                                                            attemptEvents={attemptEvents}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            </React.Fragment>
                                         );
                                     })}
+
+                                    {/* INSIGHTS (IF EXPANDED) */}
+                                    {isExpanded && (
+                                        <tr>
+                                            <td colSpan={(subjects?.length || 0) + 6} className="p-0 border-0 bg-light-primary">
+                                                <div className="m-4 p-4 bg-white rounded shadow-sm">
+                                                    <div className="mb-4 pl-4 border-left border-3 border-info">
+                                                        <h5 className="font-weight-bolder text-info mb-1">Performance Analytics</h5>
+                                                        <p className="text-muted small mb-0">Cross-term trends and mobile revision insights for the family.</p>
+                                                    </div>
+                                                    {group.students.map(student => (
+                                                        <div key={student.id} className="mb-8 last-mb-0">
+                                                            <div className="d-flex align-items-center mb-4 px-4 py-2 bg-light rounded">
+                                                                <span className="symbol symbol-25 symbol-info mr-3">
+                                                                    <span className="symbol-label font-size-xs font-weight-boldest">{student.names?.[0]}</span>
+                                                                </span>
+                                                                <span className="font-weight-boldest text-dark-75">{student.names}</span>
+                                                            </div>
+                                                            <DetailedPerformanceAnalytics 
+                                                                student={student}
+                                                                subjects={subjects}
+                                                                currentAssessments={assessments}
+                                                                allAssessments={allAssessments}
+                                                                allTerms={allTerms}
+                                                                assessmentTypes={assessmentTypes}
+                                                                rubrics={rubrics}
+                                                                lessonAttempts={lessonAttempts}
+                                                                attemptEvents={attemptEvents}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </React.Fragment>
                             );
                         })}
