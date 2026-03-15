@@ -13,7 +13,6 @@ class ResultsIndex extends React.Component {
           id="kt_wrapper"
         >
           <Navbar />
-          <Subheader links={["Results", "Management"]} />
 
           <div
             className="kt-content  kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor"

@@ -161,7 +161,7 @@ class ResultsMatrix extends React.Component {
                 (a.student === studentId || a.student?.id === studentId) &&
                 (a.subject === subjectId || a.subject?.id === subjectId) &&
                 (a.term === selectedTerm || a.term?.id === selectedTerm) &&
-                (a.type === selectedAssessmentType || a.type?.id === selectedAssessmentType)
+                (a.type === selectedAssessmentType || a.type?.id === selectedAssessmentType || a.assessmentType === selectedAssessmentType || a.assessmentType?.id === selectedAssessmentType)
               );
 
               const payload = {
@@ -207,7 +207,7 @@ class ResultsMatrix extends React.Component {
               const typeScores = (assessmentTypes || []).map(type => {
                   const a = studentAss.find(a =>
                       (a.subject === subj.id || a.subject?.id === subj.id) &&
-                      (a.type === type.id || a.type?.id === type.id)
+                      (a.type === type.id || a.type?.id === type.id || a.assessmentType === type.id || a.assessmentType?.id === type.id)
                   );
                   const score = a ? parseFloat(a.score) : null;
                   const rubric = score !== null ? (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore) : null;
@@ -342,7 +342,7 @@ class ResultsMatrix extends React.Component {
     const currentViewAssessments = (assessments || []).filter(a => 
         (a.student?.class?.id === selectedClass || a.student?.class === selectedClass) &&
         (a.term?.id === selectedTerm || a.term === selectedTerm) &&
-        (a.type?.id === selectedAssessmentType || a.type === selectedAssessmentType)
+        (a.assessmentType?.id === selectedAssessmentType || a.assessmentType === selectedAssessmentType || a.type?.id === selectedAssessmentType || a.type === selectedAssessmentType)
     );
 
     if (showPrintView) {
@@ -366,29 +366,63 @@ class ResultsMatrix extends React.Component {
 
     return (
       <div className="card card-custom">
-        <div className="card-header border-0 pt-7">
-            <h3 className="card-title align-items-start flex-column">
-                <span className="card-label font-weight-bolder text-dark">Results Management</span>
-                <span className="text-muted mt-3 font-weight-bold font-size-sm">Manage scores and view academic insights</span>
-            </h3>
-            <div className="card-toolbar">
-                <div className="nav-tabs-custom mr-6">
-                    <ul className="nav nav-pills nav-pills-sm nav-dark-75">
-                        <li className="nav-item"><button className={`nav-link py-2 px-6 ${activeTab === 'grid' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'grid' })}><span className="nav-text font-weight-bold">Score Sheet</span></button></li>
-                        <li className="nav-item"><button className={`nav-link py-2 px-6 ${activeTab === 'insights' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'insights' })}><span className="nav-text font-weight-bold">Insights Dashboard</span></button></li>
-                    </ul>
+        <div className="card-header border-0 py-5 d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center">
+                <h3 className="card-title align-items-start flex-column mr-10 mb-0">
+                    <span className="card-label font-weight-bolder text-dark">Results Management</span>
+                    <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage scores and insights</span>
+                </h3>
+
+                <ul className="nav nav-tabs nav-tabs-line nav-bold nav-tabs-line-2x border-0">
+                    <li className="nav-item">
+                        <a 
+                            className={`nav-link py-4 ${activeTab === 'grid' ? 'active' : ''}`} 
+                            href="#" 
+                            onClick={(e) => { e.preventDefault(); this.setState({ activeTab: 'grid' }); }}
+                        >
+                            Score Sheet
+                        </a>
+                    </li>
+                    <li className="nav-item">
+                        <a 
+                            className={`nav-link py-4 ${activeTab === 'insights' ? 'active' : ''}`} 
+                            href="#" 
+                            onClick={(e) => { e.preventDefault(); this.setState({ activeTab: 'insights' }); }}
+                        >
+                            Insights
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div className="card-toolbar d-flex align-items-center">
+                <div className="dropdown dropdown-inline mr-2">
+                    <select className="form-control form-control-solid" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}>
+                        <option value="">Term...</option>
+                        {terms?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
                 </div>
-                {Object.keys(edits).length > 0 && <button className={`btn btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
-                <button className="btn btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print Reports</button>
-                <button className="btn btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> Bulk SMS</button>
+                <div className="dropdown dropdown-inline mr-2">
+                    <select className="form-control form-control-solid" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
+                        <option value="">Class...</option>
+                        {classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
+                <div className="dropdown dropdown-inline mr-6">
+                    <select className="form-control form-control-solid" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}>
+                        <option value="">Type...</option>
+                        {assessmentTypes?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                </div>
+
+                <div className="d-flex align-items-center">
+                    {Object.keys(edits).length > 0 && <button className={`btn btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
+                    <button className="btn btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print</button>
+                    <button className="btn btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> SMS</button>
+                </div>
             </div>
         </div>
         <div className="card-body">
-            <div className="row mb-8">
-                <div className="col-md-3"><label className="font-weight-bolder">Term</label><select className="form-control bg-light border-0" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}><option value="">Select Term...</option>{terms?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-                <div className="col-md-3"><label className="font-weight-bolder">Class</label><select className="form-control bg-light border-0" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}><option value="">Select Class...</option>{classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                <div className="col-md-3"><label className="font-weight-bolder">Assessment Type</label><select className="form-control bg-light border-0" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}><option value="">Select Type...</option>{assessmentTypes?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
-            </div>
 
             {activeTab === 'grid' ? (
                 selectedClass && selectedTerm ? (

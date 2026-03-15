@@ -1214,47 +1214,55 @@ class FeesManagement extends Component {
           <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--ver kt-page">
             <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor kt-wrapper" id="kt_wrapper">
               <Navbar />
-              <Subheader links={["Finance", "Fees V2"]} />
 
               <div className="kt-content kt-grid__item kt-grid__item--fluid" style={{height:"100vh"}} id="kt_content">
                 <div className="kt-container">
                     <div className="card card-custom gutter-b">
-                        <div className="card-header border-0 py-5">
-                            <h3 className="card-title align-items-start flex-column">
-                                <span className="card-label font-weight-bolder text-dark">Fees Management</span>
-                                <span className="text-muted mt-3 font-weight-bold font-size-sm">Manage student balances and payments ({processedParents.length} Parents)</span>
-                            </h3>
-                            <div className="card-toolbar">
-                        <div className="nav-tabs-custom mr-6">
-                            <ul className="nav nav-pills nav-pills-sm nav-dark-75">
-                                <li className="nav-item">
-                                    <button className={`nav-link py-2 px-6 ${this.state.activeTab === 'accounts' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'accounts' })}>
-                                        <span className="nav-text font-weight-bold">Accounts List</span>
-                                    </button>
-                                </li>
-                                <li className="nav-item">
-                                    <button className={`nav-link py-2 px-6 ${this.state.activeTab === 'insights' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'insights' })}>
-                                        <span className="nav-text font-weight-bold">Financial Insights</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                        <div className="card-header border-0 py-5 d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <h3 className="card-title align-items-start flex-column mr-10 mb-0">
+                                    <span className="card-label font-weight-bolder text-dark">Fees Management</span>
+                                    <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage student balances and payments</span>
+                                </h3>
+                                
+                                <ul className="nav nav-tabs nav-tabs-line nav-bold nav-tabs-line-2x border-0">
+                                    <li className="nav-item">
+                                        <a 
+                                            className={`nav-link py-4 ${this.state.activeTab === 'accounts' ? 'active' : ''}`} 
+                                            href="#" 
+                                            onClick={(e) => { e.preventDefault(); this.setState({ activeTab: 'accounts' }); }}
+                                        >
+                                            Accounts List
+                                        </a>
+                                    </li>
+                                    <li className="nav-item">
+                                        <a 
+                                            className={`nav-link py-4 ${this.state.activeTab === 'insights' ? 'active' : ''}`} 
+                                            href="#" 
+                                            onClick={(e) => { e.preventDefault(); this.setState({ activeTab: 'insights' }); }}
+                                        >
+                                            Financial Insights
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
 
-                        <div className="dropdown dropdown-inline mr-2">
-                                    <select className="form-control" value={selectedTerm} onChange={e => this.handleFilterChange('selectedTerm', e.target.value)}>
+                            <div className="card-toolbar d-flex align-items-center">
+                                <div className="dropdown dropdown-inline mr-2">
+                                    <select className="form-control form-control-solid" value={selectedTerm} onChange={e => this.handleFilterChange('selectedTerm', e.target.value)}>
                                         <option value="">All Terms</option>
                                         {terms && terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                     </select>
                                 </div>
-                                <div className="dropdown dropdown-inline">
-                                    <select className="form-control" value={selectedClass} onChange={e => this.handleFilterChange('selectedClass', e.target.value)}>
+                                <div className="dropdown dropdown-inline mr-2">
+                                    <select className="form-control form-control-solid" value={selectedClass} onChange={e => this.handleFilterChange('selectedClass', e.target.value)}>
                                         <option value="">All Classes</option>
                                         {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
 
                                 <button 
-                                    className="btn btn-primary font-weight-bold ml-3"
+                                    className="btn btn-primary font-weight-bold"
                                     onClick={this.initiateBulkFinanceSms}
                                     disabled={loading || processedParents.length === 0}
                                 >
