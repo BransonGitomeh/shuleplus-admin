@@ -15,7 +15,7 @@ class App extends React.Component {
           id="kt_wrapper"
         >
           <Navbar />
-          <Subheader links={["Learning Content", "Manage"]} />
+          <Navbar />
 
           <div
             // Note: The height style here might constrain the layout. 
