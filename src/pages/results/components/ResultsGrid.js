@@ -416,19 +416,27 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                 {totalPoints || '-'}
                                             </span>
                                         </td>
-                                        <td className="text-right">
+                                        <td className="text-right pr-0">
                                             <button 
-                                                className={`btn btn-icon btn-light-info btn-sm mr-1 ${isExpanded ? 'active' : ''}`}
+                                                className="btn btn-icon btn-light-primary btn-sm mx-1" 
                                                 onClick={() => toggleStudent(student.id)}
-                                                title="View Insights"
+                                                title="View Details"
                                             >
-                                                <i className={`flaticon-statistics icon-md ${isExpanded ? 'text-white' : ''}`}></i>
+                                                <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
                                             </button>
-                                            <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
-                                                <i className="fa fa-print"></i>
+                                            <button 
+                                                className="btn btn-icon btn-light-success btn-sm mx-1" 
+                                                onClick={() => onPrintSingle?.(student)}
+                                                title="Print Statement"
+                                            >
+                                                <i className="fa fa-print text-dark"></i>
                                             </button>
-                                            <button className="btn btn-icon btn-light-success btn-sm" onClick={() => onSendSms?.(student)}>
-                                                <i className="fa fa-sms"></i>
+                                            <button 
+                                                className="btn btn-icon btn-light-info btn-sm mx-1" 
+                                                onClick={() => onSendSms?.(student)}
+                                                title="Send SMS balance"
+                                            >
+                                                <i className="flaticon2-paper-plane"></i>
                                             </button>
                                         </td>
                                     </tr>
