@@ -191,7 +191,40 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
     );
 };
 
-const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onPrintSingle, onSendSms }) => {
+const SkeletonRow = ({ subjectsCount }) => (
+    <tr className="skeleton-row">
+        <td className="text-center"><div className="skeleton-placeholder" style={{ width: '20px', height: '20px', borderRadius: '50%' }}></div></td>
+        <td style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff' }}>
+            <div className="skeleton-placeholder" style={{ width: '150px', height: '20px' }}></div>
+        </td>
+        {Array.from({ length: subjectsCount }).map((_, i) => (
+            <td key={i} className="p-4">
+                <div className="d-flex flex-column align-items-center">
+                    <div className="skeleton-placeholder mb-2" style={{ width: '60px', height: '35px' }}></div>
+                    <div className="skeleton-placeholder" style={{ width: '40px', height: '15px' }}></div>
+                </div>
+            </td>
+        ))}
+        <td className="bg-light"><div className="skeleton-placeholder mx-auto" style={{ width: '40px', height: '25px' }}></div></td>
+        <td style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff' }}>
+            <div className="d-flex justify-content-center">
+                <div className="skeleton-placeholder mr-2" style={{ width: '30px', height: '30px' }}></div>
+                <div className="skeleton-placeholder" style={{ width: '30px', height: '30px' }}></div>
+            </div>
+        </td>
+        <style>{`
+            .skeleton-row .skeleton-placeholder {
+                background: #f3f6f9;
+                border-radius: 4px;
+                animation: pulse 1.5s infinite;
+            }
+            @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
+            .results-table-container { transition: opacity 0.3s ease; }
+        `}</style>
+    </tr>
+);
+
+const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onPrintSingle, onSendSms, loading }) => {
     const [expandedStudents, setExpandedStudents] = useState({});
 
     const toggleExpand = useCallback((studentId) => {
@@ -247,7 +280,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
     };
 
     return (
-        <div className="d-flex flex-column" style={{ minHeight: '400px' }}>
+        <div className={`d-flex flex-column results-table-container ${loading ? 'opacity-70' : ''}`} style={{ minHeight: '400px' }}>
             {/* Search Bar */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div style={{ width: '300px' }}>
@@ -263,7 +296,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                     </div>
                 </div>
                 <div className="text-muted font-size-sm">
-                    Showing {paginatedStudents.length} of {filteredStudents.length} students
+                    {loading ? 'Fetching assessments...' : `Showing ${paginatedStudents.length} of ${filteredStudents.length} students`}
                 </div>
             </div>
 
@@ -275,17 +308,23 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                         <th style={{ minWidth: '200px', position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>
                             Student Name
                         </th>
-                        {subjects && subjects.map(subj => (
+                        {subjects && subjects.length > 0 ? subjects.map(subj => (
                             <th key={subj?.id} className="text-center" style={{ minWidth: '120px' }}>
-                                {(subj?.name || "Unknown").substring(0, 15)}
+                                {(subj?.name || "Subject").substring(0, 15)}
                             </th>
-                        ))}
+                        )) : (loading && Array.from({length: 5}).map((_, i) => (
+                            <th key={i} className="text-center" style={{ minWidth: '120px' }}>
+                                <div className="skeleton-placeholder mx-auto" style={{ width: '60px', height: '15px' }}></div>
+                            </th>
+                        )))}
                         <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
                         <th className="text-center" style={{ minWidth: '130px', position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {paginatedStudents.map(student => {
+                    {loading && paginatedStudents.length === 0 ? (
+                        Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} subjectsCount={subjects?.length || 5} />)
+                    ) : paginatedStudents.map(student => {
                         let totalPoints = 0;
                         const isExpanded = !!expandedStudents[student.id];
 

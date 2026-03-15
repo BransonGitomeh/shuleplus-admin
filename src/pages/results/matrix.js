@@ -429,8 +429,7 @@ class ResultsMatrix extends React.Component {
 
             {activeTab === 'grid' ? (
                 selectedClass && selectedTerm ? (
-                    fetchingAssessments ? <div className="text-center p-10"><div className="spinner spinner-primary"></div></div> :
-                    <ResultsGrid students={students} subjects={filteredSubjectsList} assessments={currentViewAssessments} allAssessments={assessments} allTerms={terms} assessmentTypes={assessmentTypes} rubrics={assessmentRubrics} updates={edits} onScoreChange={this.handleScoreChange} onPrintSingle={this.handlePrintSingle} onSendSms={this.handleSmsClick} />
+                    <ResultsGrid loading={fetchingAssessments} students={students} subjects={filteredSubjectsList} assessments={currentViewAssessments} allAssessments={assessments} allTerms={terms} assessmentTypes={assessmentTypes} rubrics={assessmentRubrics} updates={edits} onScoreChange={this.handleScoreChange} onPrintSingle={this.handlePrintSingle} onSendSms={this.handleSmsClick} />
                 ) : <div className="alert alert-light-primary text-center py-10">Select Term and Class to view results</div>
             ) : this.renderInsights()}
         </div>
