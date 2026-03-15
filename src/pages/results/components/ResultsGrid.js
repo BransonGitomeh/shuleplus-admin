@@ -329,7 +329,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                             <th style={{ width: '10px' }} className="pl-0"></th>
                             <th style={{ minWidth: '200px' }}>Details</th>
                             {subjects?.map(subj => (
-                                <th key={subj.id} className="text-center" style={{ minWidth: '120px' }}>{subj.name}</th>
+                                <th key={subj.id} className="text-center" style={{ minWidth: '150px' }}>{subj.name}</th>
                             ))}
                             <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
                             <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
@@ -368,7 +368,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                             const color = getRubricColor(rubric);
 
                                             return (
-                                                <td key={subj.id} className="text-center py-2">
+                                                <td key={subj.id} className="text-center py-4">
                                                     <div className="d-flex flex-column align-items-center">
                                                         <input
                                                             type="number"
@@ -376,23 +376,34 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                             value={val}
                                                             onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
                                                             style={{ 
-                                                                width: '65px', 
-                                                                height: '32px', 
-                                                                fontSize: '0.95rem',
-                                                                borderRadius: '6px',
+                                                                width: '80px', 
+                                                                height: '40px', 
+                                                                fontSize: '1.2rem',
+                                                                borderRadius: '8px',
                                                                 border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
-                                                                background: isUpdated ? '#fff8dd' : '#f8f9fb'
+                                                                background: isUpdated ? '#fff8dd' : '#f8f9fb',
+                                                                marginBottom: '8px'
                                                             }}
                                                         />
                                                         {rubric && (
-                                                            <div className="d-flex flex-column align-items-center mt-1">
-                                                                <span className="font-weight-boldest" style={{ color, fontSize: '10px' }}>
+                                                            <div className="d-flex flex-column align-items-center">
+                                                                <div 
+                                                                    className="label label-inline font-weight-boldest mb-1" 
+                                                                    style={{ 
+                                                                        backgroundColor: `${color}15`, 
+                                                                        color: color,
+                                                                        fontSize: '11px',
+                                                                        padding: '2px 8px',
+                                                                        borderRadius: '4px',
+                                                                        border: `1px solid ${color}`
+                                                                    }}
+                                                                >
                                                                     {rubric.label} ({rubric.points || 0} pts)
-                                                                </span>
+                                                                </div>
                                                                 {rubric.comment && (
-                                                                    <span className="text-muted italic" style={{ fontSize: '9px', lineHeight: '1.2', maxWidth: '100px' }}>
+                                                                    <div className="text-muted font-weight-bold text-center px-1" style={{ fontSize: '10px', lineHeight: '1.3', maxWidth: '130px' }}>
                                                                         {rubric.comment}
-                                                                    </span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         )}
