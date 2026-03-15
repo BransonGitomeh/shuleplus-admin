@@ -15,7 +15,6 @@ class App extends React.Component {
           id="kt_wrapper"
         >
           <Navbar />
-          <Navbar />
 
           <div
             // Note: The height style here might constrain the layout. 
