@@ -224,8 +224,6 @@ const SkeletonRow = ({ subjectsCount }) => (
 
 const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
     const [expandedParents, setExpandedParents] = useState({});
-    const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
 
     const toggleParent = useCallback((parentId) => {
         setExpandedParents(prev => ({ ...prev, [parentId]: !prev[parentId] }));
