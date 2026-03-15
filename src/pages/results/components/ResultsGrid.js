@@ -104,85 +104,136 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
     };
 
     return (
-        <div style={{ padding: '24px', background: '#fdfdfd', borderTop: '1px solid #ebedf3' }}>
+        <div style={{ padding: '20px 24px', background: '#f9fafc', borderTop: '3px solid #3699ff' }}>
             <div className="row">
-                {/* Column 1: Subject Performance Mix */}
-                <div className="col-lg-3 border-right">
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Performance Mix
+
+                {/* === LEFT PANEL === */}
+                <div className="col-lg-6 pr-lg-6">
+
+                    {/* Subject Performance Bar Chart */}
+                    <div className="card card-custom card-shadowless bg-white mb-4" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                        <div className="card-body p-5">
+                            <div className="d-flex align-items-center justify-content-between mb-4">
+                                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    Subject Performance (%)
+                                </div>
+                                <span className="label label-inline label-light-primary font-weight-bold font-size-xs">
+                                    Current Term
+                                </span>
+                            </div>
+                            {revisionInsights.currentBars.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {revisionInsights.currentBars.map((bar, i) => {
+                                        const rubric = (rubrics || []).find(r => bar.score >= r.minScore && bar.score <= r.maxScore);
+                                        const colorMap = { 'EE': '#10b981', 'ME': '#3699ff', 'AE': '#f6c23e', 'BE': '#e74c3c' };
+                                        const color = rubric ? (colorMap[rubric.label] || '#6c757d') : '#d1d5db';
+                                        return (
+                                            <div key={i}>
+                                                <div className="d-flex align-items-center justify-content-between mb-1">
+                                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3f4254', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {bar.name}
+                                                    </span>
+                                                    <div className="d-flex align-items-center">
+                                                        {rubric && (
+                                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: color, marginRight: '8px' }}>
+                                                                {rubric.label}
+                                                            </span>
+                                                        )}
+                                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3f4254' }}>
+                                                            {bar.score}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ height: '8px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${bar.score}%`, height: '100%', background: color, borderRadius: '10px', transition: 'width 0.6s ease' }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-muted small p-4 text-center bg-light rounded">No scores recorded this term.</div>
+                            )}
+                        </div>
                     </div>
-                    {revisionInsights.currentBars.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {revisionInsights.currentBars.map((bar, i) => {
-                                const rubric = (rubrics || []).find(r => bar.score >= r.minScore && bar.score <= r.maxScore);
-                                const color = rubric ? (rubric.label === 'EE' ? '#10b981' : rubric.label === 'ME' ? '#3699ff' : rubric.label === 'AE' ? '#f6c23e' : '#e74c3c') : '#e5e7eb';
-                                return (
-                                    <div key={i} className="d-flex align-items-center">
-                                        <div style={{ width: '80px', fontSize: '0.75rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                            {bar.name}
-                                        </div>
-                                        <div className="flex-grow-1 mx-2" style={{ height: '10px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
-                                            <div style={{ width: `${bar.score}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
-                                        </div>
-                                        <div style={{ width: '30px', textAlign: 'right', fontWeight: 800, fontSize: '0.75rem', color: color }}>{bar.score}</div>
+
+                    {/* Progress Trend Chart */}
+                    <div className="card card-custom card-shadowless bg-white" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                        <div className="card-body p-5">
+                            <div className="d-flex align-items-center justify-content-between mb-4">
+                                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    Progress Trend
+                                </div>
+                                <div className="d-flex align-items-center">
+                                    <span className="text-muted font-weight-bold font-size-xs mr-2">Prev:</span>
+                                    <span className="text-dark-75 font-weight-boldest font-size-sm mr-4">{Math.round(trendData[trendData.length-2]?.avg || 0)}%</span>
+                                    <span className="text-muted font-weight-bold font-size-xs mr-2">Current:</span>
+                                    <span className="text-primary font-weight-boldest font-size-sm">{Math.round(trendData[trendData.length-1]?.avg || 0)}%</span>
+                                </div>
+                            </div>
+                            {renderTrendChart()}
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* === RIGHT PANEL === */}
+                <div className="col-lg-6 pl-lg-6">
+
+                    {/* Mobile Revision Stats */}
+                    <div className="card card-custom card-shadowless bg-white mb-4" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                        <div className="card-body p-5">
+                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>
+                                Mobile Revision
+                            </div>
+                            <div className="row">
+                                <div className="col-6">
+                                    <div className="d-flex flex-column bg-light-primary p-4 rounded" style={{ borderLeft: '3px solid #3699ff' }}>
+                                        <span className="text-primary font-weight-boldest font-size-h3">{revisionInsights.totalAttempts}</span>
+                                        <span className="text-muted font-weight-bold font-size-xs text-uppercase">Attempts</span>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-muted small p-4 text-center bg-light rounded">No scores found.</div>
-                    )}
-                </div>
-
-                {/* Column 2: Historical Trend */}
-                <div className="col-lg-4 border-right pl-lg-8">
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Progress Trend
-                    </div>
-                    {renderTrendChart()}
-                    <div className="mt-4 p-4 bg-light rounded">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <span className="text-muted font-weight-bold font-size-xs">Term Avg</span>
-                            <span className="text-dark-75 font-weight-bolder">{Math.round(trendData[trendData.length-1]?.avg || 0)}%</span>
-                        </div>
-                        <div className="d-flex align-items-center justify-content-between mt-1">
-                            <span className="text-muted font-weight-bold font-size-xs">Prev Avg</span>
-                            <span className="text-dark-75 font-weight-bolder">{Math.round(trendData[trendData.length-2]?.avg || 0)}%</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Column 3: Mobile Revision Insights */}
-                <div className="col-lg-5 pl-lg-8">
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Mobile Revision Insights
-                    </div>
-                    <div className="row">
-                        <div className="col-6">
-                            <div className="d-flex flex-column bg-light-primary p-4 rounded mb-4 shadow-sm" style={{ borderLeft: '4px solid #3699ff' }}>
-                                <span className="text-primary font-weight-boldest font-size-h3">{revisionInsights.totalAttempts}</span>
-                                <span className="text-muted font-weight-bold font-size-xs text-uppercase">Lesson Attempts</span>
-                            </div>
-                            <div className="d-flex flex-column bg-light-success p-4 rounded shadow-sm" style={{ borderLeft: '4px solid #10b981' }}>
-                                <span className="text-success font-weight-boldest font-size-h3">{revisionInsights.revisionAvg}%</span>
-                                <span className="text-muted font-weight-bold font-size-xs text-uppercase">Avg Revision Score</span>
+                                </div>
+                                <div className="col-6">
+                                    <div className="d-flex flex-column bg-light-success p-4 rounded" style={{ borderLeft: '3px solid #10b981' }}>
+                                        <span className="text-success font-weight-boldest font-size-h3">{revisionInsights.revisionAvg}%</span>
+                                        <span className="text-muted font-weight-bold font-size-xs text-uppercase">Avg Score</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="col-6">
+                    </div>
+
+                    {/* Strengths / Weaknesses */}
+                    <div className="card card-custom card-shadowless bg-white" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                        <div className="card-body p-5">
+                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>
+                                Performance Insights
+                            </div>
                             <div className="mb-4">
-                                <div className="text-muted font-weight-bold font-size-xs mb-1">TOP STRENGTHS</div>
-                                {revisionInsights.strengths.length > 0 ? revisionInsights.strengths.map((s, i) => (
-                                    <div key={i} className="label label-inline label-light-success font-weight-bold mb-1 mr-1">{s}</div>
-                                )) : <span className="text-muted font-size-xs italic">N/A</span>}
+                                <div className="d-flex align-items-center mb-2">
+                                    <i className="flaticon2-check-mark text-success mr-2" style={{ fontSize: '0.9rem' }}></i>
+                                    <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Top Strengths</span>
+                                </div>
+                                <div className="d-flex flex-wrap" style={{ gap: '6px' }}>
+                                    {revisionInsights.strengths.length > 0 ? revisionInsights.strengths.map((s, i) => (
+                                        <span key={i} className="label label-inline label-light-success font-weight-bold">{s}</span>
+                                    )) : <span className="text-muted font-size-xs">Not enough data</span>}
+                                </div>
                             </div>
                             <div>
-                                <div className="text-muted font-weight-bold font-size-xs mb-1">REVISION AREAS</div>
-                                {revisionInsights.weaknesses.length > 0 ? revisionInsights.weaknesses.map((s, i) => (
-                                    <div key={i} className="label label-inline label-light-danger font-weight-bold mb-1 mr-1">{s}</div>
-                                )) : <span className="text-muted font-size-xs italic">N/A</span>}
+                                <div className="d-flex align-items-center mb-2">
+                                    <i className="flaticon2-warning text-danger mr-2" style={{ fontSize: '0.9rem' }}></i>
+                                    <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Needs Attention</span>
+                                </div>
+                                <div className="d-flex flex-wrap" style={{ gap: '6px' }}>
+                                    {revisionInsights.weaknesses.length > 0 ? revisionInsights.weaknesses.map((s, i) => (
+                                        <span key={i} className="label label-inline label-light-danger font-weight-bold">{s}</span>
+                                    )) : <span className="text-muted font-size-xs">N/A</span>}
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
