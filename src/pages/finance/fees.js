@@ -150,7 +150,7 @@ class FeesManagement extends Component {
         showBulkSmsModal: false,
         bulkSmsRecipients: [],
 
-        activeTab: 'list', // 'list' or 'insights'
+        activeTab: 'accounts', // 'accounts' or 'insights'
     };
     
     componentDidMount() {
@@ -1219,11 +1219,9 @@ class FeesManagement extends Component {
                 <div className="kt-container">
                     <div className="card card-custom gutter-b">
                         <div className="card-header border-0 py-5 d-flex flex-column align-items-stretch">
-                            <div className="mb-6">
-                                <h1 className="card-title align-items-start flex-column mb-0">
-                                    <span className="card-label font-weight-bolder text-dark font-size-h3">Fees Management</span>
-                                    <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage student balances and payments</span>
-                                </h1>
+                            <div className="mb-6 d-flex flex-column">
+                                <h1 className="font-weight-bolder text-dark font-size-h3 mb-1">Fees Management</h1>
+                                <div className="text-muted font-weight-bold font-size-sm">Manage student balances and payments</div>
                             </div>
 
                             <div className="d-flex align-items-center justify-content-between">
