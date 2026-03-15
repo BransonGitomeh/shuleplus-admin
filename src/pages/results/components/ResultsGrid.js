@@ -411,7 +411,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                 onClick={() => toggleStudent(student.id)}
                                                 title="View Insights"
                                             >
-                                                <i className={`ki ki-bold-more-hor icon-xs ${isExpanded ? 'text-white' : ''}`}></i>
+                                                <i className={`flaticon-statistics icon-md ${isExpanded ? 'text-white' : ''}`}></i>
                                             </button>
                                             <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
                                                 <i className="fa fa-print"></i>
