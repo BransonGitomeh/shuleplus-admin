@@ -15,11 +15,11 @@ class ResultsIndex extends React.Component {
           <Navbar />
 
           <div
-            className="kt-content  kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor"
+            className="kt-content kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor pt-0"
             style={{ minHeight: "100vh" }}
             id="kt_content"
           >
-            <div className="kt-container  kt-grid__item kt-grid__item--fluid">
+            <div className="kt-container kt-grid__item kt-grid__item--fluid pt-0">
               <ResultsMatrix />
             </div>
           </div>

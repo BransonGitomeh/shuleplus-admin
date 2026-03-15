@@ -1215,13 +1215,13 @@ class FeesManagement extends Component {
             <div className="kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor kt-wrapper" id="kt_wrapper">
               <Navbar />
 
-              <div className="kt-content kt-grid__item kt-grid__item--fluid" style={{height:"100vh"}} id="kt_content">
-                <div className="kt-container">
+              <div className="kt-content kt-grid__item kt-grid__item--fluid pt-0" style={{height:"100vh"}} id="kt_content">
+                <div className="kt-container pt-0">
                     <div className="card card-custom gutter-b">
-                        <div className="card-header border-0 py-5 d-flex flex-column align-items-stretch">
-                            <div className="mb-6 d-flex flex-column">
-                                <h1 className="font-weight-bolder text-dark font-size-h3 mb-1">Fees Management</h1>
-                                <div className="text-muted font-weight-bold font-size-sm">Manage student balances and payments</div>
+                        <div className="card-header border-0 pt-5 pb-2 d-flex flex-column align-items-stretch">
+                            <div className="mb-4 d-flex flex-column">
+                                <h1 className="font-weight-bolder text-dark font-size-h3 mb-0">Fees Management</h1>
+                                <div className="text-muted font-weight-bold font-size-sm mt-1">Manage student balances and payments</div>
                             </div>
 
                             <div className="d-flex align-items-center justify-content-between">

@@ -370,9 +370,9 @@ class ResultsMatrix extends React.Component {
     return (
       <div className="card card-custom">
         <div className="card-header border-0 py-5 d-flex flex-column align-items-stretch">
-            <div className="mb-6 d-flex flex-column">
-                <h1 className="font-weight-bolder text-dark font-size-h3 mb-1">Results Management</h1>
-                <div className="text-muted font-weight-bold font-size-sm">Manage student scores and academic insights</div>
+            <div className="mb-4 d-flex flex-column">
+                <h1 className="font-weight-bolder text-dark font-size-h3 mb-0">Results Management</h1>
+                <div className="text-muted font-weight-bold font-size-sm mt-1">Manage student scores and academic insights</div>
             </div>
 
             <div className="d-flex align-items-center justify-content-between">
