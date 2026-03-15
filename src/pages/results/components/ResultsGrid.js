@@ -451,9 +451,9 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                 >
                                                                     {rubric.label} ({rubric.points || 0} pts)
                                                                 </div>
-                                                                {rubric.comment && (
-                                                                    <div className="text-muted font-weight-bold text-center px-1" style={{ fontSize: '10px', lineHeight: '1.3', maxWidth: '130px' }}>
-                                                                        {rubric.comment}
+                                                                {rubric.teachersComment && (
+                                                                    <div className="text-muted font-weight-bold text-center px-1 mt-1" style={{ fontSize: '10px', lineHeight: '1.3', maxWidth: '130px' }}>
+                                                                        {rubric.teachersComment}
                                                                     </div>
                                                                 )}
                                                             </div>
