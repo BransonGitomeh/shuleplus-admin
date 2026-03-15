@@ -5,7 +5,7 @@ import Subheader from "../../components/subheader";
 import SmsBalanceModal from './components/SmsBalanceModal';
 import StatementCard from './components/StatementCard';
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
-import { StatCard, DistributionChart, TrendBarChart } from "../../components/analytics/DashboardWidgets";
+import { StatCard, DistributionChart, TrendBarChart, AreaChart, RankingList } from "../../components/analytics/DashboardWidgets";
 
 // --- HELPER COMPONENTS ---
 
@@ -971,71 +971,10 @@ class FeesManagement extends Component {
     };
 
     renderInsights = () => {
-        const { payments, charges, students, selectedClass, classes } = this.state;
-        
-        // 1. Overall Totals
-        const totalCharged = charges.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
-        const totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-        const totalArrears = totalCharged - totalPaid;
-        const collectionRate = totalCharged > 0 ? Math.round((totalPaid / totalCharged) * 100) : 0;
-
-        // 2. Payment Method Distribution
-        const methods = ['MPESA', 'CASH', 'BANK'];
-        const methodData = methods.map(m => ({
-            label: m,
-            value: payments.filter(p => p.method === m).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
-            color: m === 'MPESA' ? '#10b981' : m === 'CASH' ? '#3699ff' : '#f6c23e'
-        })).filter(d => d.value > 0);
-
-        // 3. Arrears by Class
-        const arrearsByClass = (classes || []).map(c => {
-            const classStudents = students.filter(s => s.class?.id === c.id || s.class === c.id);
-            const studentIds = new Set(classStudents.map(s => s.id));
-            
-            const classCharged = charges.filter(ch => studentIds.has(ch.student?.id || ch.student)).reduce((sum, ch) => sum + (parseFloat(ch.amount) || 0),0);
-            const classPaid = payments.filter(p => studentIds.has(p.student?.id || p.student)).reduce((sum, p) => sum + (parseFloat(p.amount) || 0),0);
-            const arrears = classCharged - classPaid;
-            
-            return { label: c.name, value: arrears > 0 ? arrears : 0, color: '#e74c3c' };
-        }).filter(d => d.value > 0).sort((a,b) => b.value - a.value).slice(0, 8);
-
-        return (
-            <div className="animate__animated animate__fadeIn">
-                <div className="row">
-                    <div className="col-md-3">
-                        <StatCard title="Total Collections" value={`KES ${totalPaid.toLocaleString()}`} icon="flaticon2-shopping-cart-1" color="#10b981" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard title="Total Arrears" value={`KES ${totalArrears.toLocaleString()}`} icon="flaticon-warning" color="#e74c3c" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard title="Collection Rate" value={`${collectionRate}%`} icon="flaticon-pie-chart" color="#3699ff" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard title="Fee Targets" value={`KES ${totalCharged.toLocaleString()}`} icon="flaticon-price-tag" color="#f6c23e" />
-                    </div>
-                </div>
-
-                <div className="row mt-4">
-                    <div className="col-lg-5">
-                        <DistributionChart title="Payment Methods (KES)" data={methodData} />
-                    </div>
-                    <div className="col-lg-7">
-                        <TrendBarChart title="Top Arrears by Class (KES)" data={arrearsByClass} />
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    renderInsights = () => {
         const { payments, charges, students, classes } = this.state;
         
-        // 1. Calculations
-        const totalCollected = (payments || []).filter(p => !p.status || p.status === 'COMPLETED').reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
-        
-        // Expected is more complex as it's per student. Let's aggregate.
-        // Simplified for dashboard: total charges
+        const validPayments = (payments || []).filter(p => !p.status || p.status === 'COMPLETED');
+        const totalCollected = validPayments.reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
         const totalCharges = (charges || []).reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
         const totalArrears = Math.max(0, totalCharges - totalCollected);
         const collectionRate = totalCharges > 0 ? Math.round((totalCollected / totalCharges) * 100) : 0;
@@ -1052,23 +991,37 @@ class FeesManagement extends Component {
             color: m === 'M-Pesa' ? '#3699ff' : m === 'CASH' ? '#10b981' : '#f6c23e'
         }));
 
-        // 3. Arrears by class
+        // 3. Arrears by class (Ranking)
         const classArrears = (classes || []).map(cls => {
             const classStudents = (students || []).filter(s => s.class?.id === cls.id || s.class === cls.id);
             const classStudentIds = new Set(classStudents.map(s => s.id));
-            
-            const classTotalCharges = (charges || []).filter(c => classStudentIds.has(c.student?.id || c.student)).reduce((sum, c) => sum + parseFloat(c.amount), 0);
-            const classTotalPaid = (payments || []).filter(p => classStudentIds.has(p.student?.id || p.student)).reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
-            
+            const classPaid = validPayments.filter(p => classStudentIds.has(p.student?.id || p.student)).reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
+            const classExpected = (charges || []).filter(c => classStudentIds.has(c.student?.id || c.student)).reduce((sum, c) => sum + parseFloat(c.amount), 0);
             return {
                 label: cls.name,
-                value: Math.max(0, classTotalCharges - classTotalPaid),
+                subtext: `${classStudents.length} Students`,
+                value: Math.max(0, classExpected - classPaid),
                 color: '#e74c3c'
             };
         }).filter(c => c.value > 0).sort((a,b) => b.value - a.value).slice(0, 5);
 
+        // 4. Revenue Trend (Last 7 days)
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const dayPayments = validPayments.filter(p => {
+                const pDate = new Date(p.time || p.createdAt);
+                return pDate.toDateString() === d.toDateString();
+            });
+            const sum = dayPayments.reduce((acc, p) => acc + (parseFloat(p.amount || p.ammount) || 0), 0);
+            days.push({ label: dateStr, value: sum });
+        }
+
         return (
-            <div className="animate__animated animate__fadeIn">
+            <div className="animate__animated animate__fadeInUp">
+                {/* ROW 1: MISSION CONTROL STATS */}
                 <div className="row">
                     <div className="col-md-3">
                         <StatCard title="Total Collections" value={`KES ${totalCollected.toLocaleString()}`} icon="flaticon2-shopping-cart-1" color="#10b981" trend={12} />
@@ -1080,16 +1033,27 @@ class FeesManagement extends Component {
                         <StatCard title="Collection Rate" value={`${collectionRate}%`} icon="flaticon2-line-chart" color="#3699ff" trend={3} />
                     </div>
                     <div className="col-md-3">
-                        <StatCard title="Fee Targets" value={`KES ${totalCharges.toLocaleString()}`} icon="flaticon2- correct" color="#f6c23e" />
+                        <StatCard title="Fee Targets" value={`KES ${totalCharges.toLocaleString()}`} icon="flaticon2-correct" color="#f6c23e" subtext="Expected revenue" />
                     </div>
                 </div>
 
+                {/* ROW 2: PRIMARY DISTRIBUTIONS */}
                 <div className="row mt-4">
                     <div className="col-lg-5">
-                        <DistributionChart title="Payment Methods" data={methodData} />
+                        <DistributionChart title="Payment Methods (KES)" data={methodData} />
                     </div>
                     <div className="col-lg-7">
-                        <TrendBarChart title="Top Arrears by Class" data={classArrears} />
+                        <TrendBarChart title="Top Arrears by Class" data={classArrears.map(c => ({ label: c.label, value: c.value, color: c.color }))} />
+                    </div>
+                </div>
+
+                {/* ROW 3: TRENDS & LEADERS */}
+                <div className="row mt-4">
+                    <div className="col-lg-7">
+                        <AreaChart title="Daily Revenue Trend (KES)" data={days} color="#10b981" />
+                    </div>
+                    <div className="col-lg-5">
+                        <RankingList title="Critical Outstanding Balances" data={classArrears} valuePrefix="KES " />
                     </div>
                 </div>
             </div>

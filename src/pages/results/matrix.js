@@ -3,7 +3,7 @@ import Data from "../../utils/data";
 import ReportCard from "./components/ReportCard";
 import ResultsGrid from "./components/ResultsGrid";
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
-import { StatCard, DistributionChart, TrendBarChart } from "../../components/analytics/DashboardWidgets";
+import { StatCard, DistributionChart, TrendBarChart, AreaChart, RankingList } from "../../components/analytics/DashboardWidgets";
 
 class ResultsMatrix extends React.Component {
   state = {
@@ -285,7 +285,7 @@ class ResultsMatrix extends React.Component {
   handlePrint = () => window.print();
 
   renderInsights = () => {
-    const { assessments, students, subjects, assessmentRubrics, selectedClass, selectedTerm } = this.state;
+    const { assessments, students, subjects, assessmentRubrics, selectedClass, selectedTerm, terms } = this.state;
     const currentAss = (assessments || []).filter(a => 
         (!selectedClass || a.student?.class?.id === selectedClass || a.student?.class === selectedClass) &&
         (!selectedTerm || a.term?.id === selectedTerm || a.term === selectedTerm)
@@ -304,22 +304,63 @@ class ResultsMatrix extends React.Component {
         const subAss = currentAss.filter(a => (a.subject === subj.id || a.subject?.id === subj.id));
         const avg = subAss.length > 0 ? (subAss.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0) / subAss.length) : 0;
         return { label: subj.name, value: avg, color: avg >= 80 ? '#10b981' : avg >= 65 ? '#3699ff' : avg >= 50 ? '#f6c23e' : '#e74c3c' };
-    }).filter(s => s.value > 0).sort((a,b) => b.value - a.value);
+    }).filter(s => s.value > 0).sort((a,b) => b.value - a.value).slice(0, 8);
 
-    const totalStudents = (students || []).filter(s => !selectedClass || s.class?.id === selectedClass || s.class === selectedClass).length;
+    // Term-over-Term Trend
+    const termTrendData = (terms || []).map(t => {
+        const tAss = (assessments || []).filter(a => 
+            (a.term?.id === t.id || a.term === t.id) &&
+            (!selectedClass || a.student?.class?.id === selectedClass || a.student?.class === selectedClass)
+        );
+        const avg = tAss.length > 0 ? (tAss.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0) / tAss.length) : 0;
+        return { label: t.name, value: Math.round(avg) };
+    }).filter(t => t.value > 0);
+
+    // Top Performers Ranking
+    const filteredStudents = this.getFilteredStudents();
+    const studentPerformance = filteredStudents.map(student => {
+        const studentAss = currentAss.filter(a => (a.student === student.id || a.student?.id === student.id));
+        let totalPoints = 0;
+        studentAss.forEach(a => {
+            const score = parseFloat(a.score);
+            const rubric = (assessmentRubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
+            if (rubric?.points) totalPoints += parseFloat(rubric.points);
+        });
+        return { label: student.names, subtext: student.registration || 'No Reg No.', value: totalPoints, color: '#3699ff' };
+    }).filter(s => s.value > 0).sort((a,b) => b.value - a.value).slice(0, 5);
+
+    const totalStudents = filteredStudents.length;
     const gradedStudents = new Set(currentAss.map(a => a.student?.id || a.student)).size;
     const classAvg = currentAss.length > 0 ? (currentAss.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0) / currentAss.length) : 0;
+    const topGradesCount = currentAss.filter(a => {
+        const s = parseFloat(a.score);
+        return s >= 80; // Assuming 80+ is EE
+    }).length;
 
     return (
-        <div className="animate__animated animate__fadeIn">
+        <div className="animate__animated animate__fadeInUp">
+            {/* ROW 1: MISSION CONTROL STATS */}
             <div className="row">
-                <div className="col-md-4"><StatCard title="Class Average" value={`${Math.round(classAvg)}%`} icon="flaticon-line-graph" color="#3699ff" trend={5} /></div>
-                <div className="col-md-4"><StatCard title="Grading Progress" value={`${gradedStudents}/${totalStudents}`} icon="flaticon-users" color="#10b981" subtext="Students with scores" /></div>
-                <div className="col-md-4"><StatCard title="Subject Coverage" value={subjects.length} icon="flaticon-book" color="#f6c23e" subtext="Subjects recorded" /></div>
+                <div className="col-md-3"><StatCard title="Class Average" value={`${Math.round(classAvg)}%`} icon="flaticon-line-graph" color="#3699ff" trend={5} /></div>
+                <div className="col-md-3"><StatCard title="Grading Progress" value={`${gradedStudents}/${totalStudents}`} icon="flaticon-users" color="#10b981" subtext="Students with scores" /></div>
+                <div className="col-md-3"><StatCard title="Subject Coverage" value={subjects.length} icon="flaticon-book" color="#f6c23e" subtext="Subjects recorded" trend={2} /></div>
+                <div className="col-md-3"><StatCard title="Quality Scores" value={topGradesCount} icon="flaticon-medal" color="#e74c3c" subtext="High achievement (80%+)" /></div>
             </div>
+
+            {/* ROW 2: PRIMARY DISTRIBUTIONS */}
             <div className="row mt-4">
                 <div className="col-lg-5"><DistributionChart title="Grade Distribution" data={rubricCounts} /></div>
                 <div className="col-lg-7"><TrendBarChart title="Subject Performance (%)" data={subjectMastery} /></div>
+            </div>
+
+            {/* ROW 3: TRENDS & LEADERS */}
+            <div className="row mt-4">
+                <div className="col-lg-7">
+                    <AreaChart title="Class Performance Trend (Termly)" data={termTrendData} color="#3699ff" />
+                </div>
+                <div className="col-lg-5">
+                    <RankingList title="Top Student Performers" data={studentPerformance} valueSuffix=" pts" />
+                </div>
             </div>
         </div>
     );
