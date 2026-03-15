@@ -1218,38 +1218,15 @@ class FeesManagement extends Component {
               <div className="kt-content kt-grid__item kt-grid__item--fluid" style={{height:"100vh"}} id="kt_content">
                 <div className="kt-container">
                     <div className="card card-custom gutter-b">
-                        <div className="card-header border-0 py-5">
-                            <div className="d-flex align-items-center justify-content-between mb-5">
-                                <h3 className="card-title align-items-start flex-column mb-0">
-                                    <span className="card-label font-weight-bolder text-dark">Fees Management</span>
+                        <div className="card-header border-0 py-5 d-flex flex-column align-items-stretch">
+                            <div className="mb-6">
+                                <h1 className="card-title align-items-start flex-column mb-0">
+                                    <span className="card-label font-weight-bolder text-dark font-size-h3">Fees Management</span>
                                     <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage student balances and payments</span>
-                                </h3>
-
-                                <div className="card-toolbar d-flex align-items-center">
-                                    <div className="dropdown dropdown-inline mr-2">
-                                        <select className="form-control form-control-solid" value={selectedTerm} onChange={e => this.handleFilterChange('selectedTerm', e.target.value)}>
-                                            <option value="">Term...</option>
-                                            {terms && terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="dropdown dropdown-inline mr-6">
-                                        <select className="form-control form-control-solid" value={selectedClass} onChange={e => this.handleFilterChange('selectedClass', e.target.value)}>
-                                            <option value="">Class...</option>
-                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <button 
-                                        className="btn btn-primary font-weight-bold"
-                                        onClick={this.initiateBulkFinanceSms}
-                                        disabled={loading || processedParents.length === 0}
-                                    >
-                                        <i className="fa fa-sms"></i> Bulk SMS Statements
-                                    </button>
-                                </div>
+                                </h1>
                             </div>
 
-                            <div className="d-flex align-items-center">
+                            <div className="d-flex align-items-center justify-content-between">
                                 <ul className="nav nav-tabs nav-tabs-line nav-bold nav-tabs-line-2x border-0 mb-0">
                                     <li className="nav-item">
                                         <a 
@@ -1270,6 +1247,29 @@ class FeesManagement extends Component {
                                         </a>
                                     </li>
                                 </ul>
+
+                                <div className="card-toolbar d-flex align-items-center">
+                                    <div className="dropdown dropdown-inline mr-2">
+                                        <select className="form-control form-control-sm form-control-solid" value={selectedTerm} onChange={e => this.handleFilterChange('selectedTerm', e.target.value)}>
+                                            <option value="">Term...</option>
+                                            {terms && terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="dropdown dropdown-inline mr-4">
+                                        <select className="form-control form-control-sm form-control-solid" value={selectedClass} onChange={e => this.handleFilterChange('selectedClass', e.target.value)}>
+                                            <option value="">Class...</option>
+                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <button 
+                                        className="btn btn-sm btn-primary font-weight-bold"
+                                        onClick={this.initiateBulkFinanceSms}
+                                        disabled={loading || processedParents.length === 0}
+                                    >
+                                        <i className="fa fa-sms"></i> Bulk SMS
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
