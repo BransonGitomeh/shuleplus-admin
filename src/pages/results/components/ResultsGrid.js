@@ -5,7 +5,7 @@ import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
  * A premium SVG-based analytics component showing cross-term trends 
  * and assessment type performance.
  */
-const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onCommentChange, lessonAttempts = [], attemptEvents = [], themeColor = '#3699ff' }) => {
+const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, allAssessments, allTerms, assessmentTypes, rubrics, lessonAttempts = [], attemptEvents = [], themeColor = '#3699ff' }) => {
     
     // 1. Data Processing
     const studentAll = useMemo(() => {
@@ -16,38 +16,18 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         return (lessonAttempts || []).filter(l => l.userId === student.id || l.student === student.id || l.student?.id === student.id);
     }, [lessonAttempts, student.id]);
 
-    const getRubric = (score) => {
-        if (score === undefined || score === null || isNaN(score)) return null;
-        return (rubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
-    };
-
-    // Teacher's Comment Logic
-    const teacherComment = useMemo(() => {
-        const updateKey = `${student.id}-${subjects?.[0]?.id}-comment`;
-        if (updates && updates.hasOwnProperty(updateKey)) return updates[updateKey];
-        const a = currentAssessments.find(a => (a.student === student.id || a.student?.id === student.id));
-        return a ? (a.teachersComment || "") : "";
-    }, [student.id, subjects, currentAssessments, updates]);
-
-    // Current Subject Performance (Bars)
-    const currentBars = useMemo(() => {
-        return subjects.map(subj => {
-            const a = currentAssessments.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.student === student.id || a.student?.id === student.id));
-            const score = a ? (parseFloat(a.score) || 0) : 0;
-            const rubric = getRubric(score);
-            const color = rubric
-                ? (rubric.label === 'EE' ? '#10b981' : rubric.label === 'ME' ? '#3699ff' : rubric.label === 'AE' ? '#f6c23e' : '#e74c3c')
-                : '#e5e7eb';
-            return { name: subj.name, score, color, rubric };
-        }).filter(b => b.score > 0);
-    }, [subjects, currentAssessments, student.id, rubrics]);
-
     // Revision Summary
     const revisionInsights = useMemo(() => {
         const completed = studentLessons.filter(l => l.status === 'COMPLETED');
         const avgScore = completed.length > 0 ? (completed.reduce((sum, l) => sum + (l.finalScore || 0), 0) / completed.length) : 0;
         
-        // Identify strengths/weaknesses from scores
+        // Current bars for relative strengths (calculated on the fly for insights)
+        const currentBars = subjects.map(subj => {
+            const a = currentAssessments.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.student === student.id || a.student?.id === student.id));
+            const score = a ? (parseFloat(a.score) || 0) : 0;
+            return { name: subj.name, score };
+        }).filter(b => b.score > 0);
+
         const sortedScores = [...currentBars].sort((a,b) => b.score - a.score);
         const strengths = sortedScores.slice(0, 2).map(s => s.name);
         const weaknesses = sortedScores.slice(-2).reverse().map(s => s.name);
@@ -57,9 +37,10 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
             completedCount: completed.length,
             revisionAvg: Math.round(avgScore),
             strengths,
-            weaknesses
+            weaknesses,
+            currentBars
         };
-    }, [studentLessons, currentBars]);
+    }, [studentLessons, subjects, currentAssessments, student.id, rubrics]);
 
     // Cross-Term Trends (Line Chart Data)
     const trendData = useMemo(() => {
@@ -125,40 +106,32 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
     return (
         <div style={{ padding: '24px', background: '#fdfdfd', borderTop: '1px solid #ebedf3' }}>
             <div className="row">
-                {/* Column 1: Subject Performance & Teacher Comment */}
+                {/* Column 1: Subject Performance Mix */}
                 <div className="col-lg-3 border-right">
                     <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
                         Performance Mix
                     </div>
-                    {currentBars.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                            {currentBars.map((bar, i) => (
-                                <div key={i} className="d-flex align-items-center">
-                                    <div style={{ width: '80px', fontSize: '0.75rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                        {bar.name}
+                    {revisionInsights.currentBars.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {revisionInsights.currentBars.map((bar, i) => {
+                                const rubric = (rubrics || []).find(r => bar.score >= r.minScore && bar.score <= r.maxScore);
+                                const color = rubric ? (rubric.label === 'EE' ? '#10b981' : rubric.label === 'ME' ? '#3699ff' : rubric.label === 'AE' ? '#f6c23e' : '#e74c3c') : '#e5e7eb';
+                                return (
+                                    <div key={i} className="d-flex align-items-center">
+                                        <div style={{ width: '80px', fontSize: '0.75rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                            {bar.name}
+                                        </div>
+                                        <div className="flex-grow-1 mx-2" style={{ height: '10px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                            <div style={{ width: `${bar.score}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
+                                        </div>
+                                        <div style={{ width: '30px', textAlign: 'right', fontWeight: 800, fontSize: '0.75rem', color: color }}>{bar.score}</div>
                                     </div>
-                                    <div className="flex-grow-1 mx-2" style={{ height: '10px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${bar.score}%`, height: '100%', background: bar.color, transition: 'width 0.5s ease' }} />
-                                    </div>
-                                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 800, fontSize: '0.75rem', color: bar.color }}>{bar.score}</div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
-                        <div className="text-muted small p-4 text-center bg-light rounded mb-4">No scores found.</div>
+                        <div className="text-muted small p-4 text-center bg-light rounded">No scores found.</div>
                     )}
-                    
-                    <div className="mt-6">
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', marginBottom: '8px' }}>Teacher's Comment</div>
-                        <textarea 
-                            className="form-control form-control-sm border-0 bg-light"
-                            rows="3"
-                            placeholder="Enter general feedback..."
-                            value={teacherComment}
-                            onChange={(e) => onCommentChange?.(student.id, subjects?.[0]?.id, e.target.value)}
-                            style={{ borderRadius: '10px', fontSize: '0.8rem' }}
-                        />
-                    </div>
                 </div>
 
                 {/* Column 2: Historical Trend */}
@@ -377,7 +350,8 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                             {subjects?.map(subj => (
                                 <th key={subj.id} className="text-center" style={{ minWidth: '100px' }}>{subj.name}</th>
                             ))}
-                            <th className="text-center" style={{ minWidth: '150px' }}>Current Remarks</th>
+                            <th className="text-center" style={{ minWidth: '130px' }}>Remarks</th>
+                            <th className="text-center" style={{ minWidth: '130px' }}>Comments</th>
                             <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
                             <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
                         </tr>
@@ -482,14 +456,20 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     <input
                                                         type="text"
                                                         className="form-control form-control-sm border-0 bg-light"
-                                                        placeholder="General Remark..."
-                                                        value={generalRemark}
+                                                        placeholder="Remark..."
+                                                        value={getRemark(student.id, firstSubjectId)}
                                                         onChange={(e) => onRemarkChange(student.id, firstSubjectId, e.target.value)}
-                                                        style={{ 
-                                                            fontSize: '0.85rem', 
-                                                            minWidth: '150px',
-                                                            borderRadius: '6px'
-                                                        }}
+                                                        style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
+                                                    />
+                                                </td>
+                                                <td className="text-center py-2">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm border-0 bg-light"
+                                                        placeholder="Comment..."
+                                                        value={getComment(student.id, firstSubjectId)}
+                                                        onChange={(e) => onCommentChange(student.id, firstSubjectId, e.target.value)}
+                                                        style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
                                                     />
                                                 </td>
                                                 <td className="text-center align-middle">
@@ -521,8 +501,6 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                             allTerms={allTerms}
                                                             assessmentTypes={assessmentTypes}
                                                             rubrics={rubrics}
-                                                            updates={updates}
-                                                            onCommentChange={onCommentChange}
                                                             lessonAttempts={lessonAttempts}
                                                             attemptEvents={attemptEvents}
                                                         />
