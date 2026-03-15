@@ -366,14 +366,43 @@ class ResultsMatrix extends React.Component {
 
     return (
       <div className="card card-custom">
-        <div className="card-header border-0 py-5 d-flex align-items-center justify-content-between">
-            <div className="d-flex align-items-center">
-                <h3 className="card-title align-items-start flex-column mr-10 mb-0">
+        <div className="card-header border-0 py-5">
+            <div className="d-flex align-items-center justify-content-between mb-5">
+                <h3 className="card-title align-items-start flex-column mb-0">
                     <span className="card-label font-weight-bolder text-dark">Results Management</span>
-                    <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage scores and insights</span>
+                    <span className="text-muted mt-2 font-weight-bold font-size-sm">Manage student scores and academic insights</span>
                 </h3>
 
-                <ul className="nav nav-tabs nav-tabs-line nav-bold nav-tabs-line-2x border-0">
+                <div className="card-toolbar d-flex align-items-center">
+                    <div className="dropdown dropdown-inline mr-2">
+                        <select className="form-control form-control-solid" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}>
+                            <option value="">Term...</option>
+                            {terms?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="dropdown dropdown-inline mr-2">
+                        <select className="form-control form-control-solid" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
+                            <option value="">Class...</option>
+                            {classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="dropdown dropdown-inline mr-6">
+                        <select className="form-control form-control-solid" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}>
+                            <option value="">Type...</option>
+                            {assessmentTypes?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="d-flex align-items-center">
+                        {Object.keys(edits).length > 0 && <button className={`btn btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
+                        <button className="btn btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print</button>
+                        <button className="btn btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> SMS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="d-flex align-items-center">
+                <ul className="nav nav-tabs nav-tabs-line nav-bold nav-tabs-line-2x border-0 mb-0">
                     <li className="nav-item">
                         <a 
                             className={`nav-link py-4 ${activeTab === 'grid' ? 'active' : ''}`} 
@@ -393,33 +422,6 @@ class ResultsMatrix extends React.Component {
                         </a>
                     </li>
                 </ul>
-            </div>
-
-            <div className="card-toolbar d-flex align-items-center">
-                <div className="dropdown dropdown-inline mr-2">
-                    <select className="form-control form-control-solid" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}>
-                        <option value="">Term...</option>
-                        {terms?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                </div>
-                <div className="dropdown dropdown-inline mr-2">
-                    <select className="form-control form-control-solid" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
-                        <option value="">Class...</option>
-                        {classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                </div>
-                <div className="dropdown dropdown-inline mr-6">
-                    <select className="form-control form-control-solid" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}>
-                        <option value="">Type...</option>
-                        {assessmentTypes?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                </div>
-
-                <div className="d-flex align-items-center">
-                    {Object.keys(edits).length > 0 && <button className={`btn btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
-                    <button className="btn btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print</button>
-                    <button className="btn btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> SMS</button>
-                </div>
             </div>
         </div>
         <div className="card-body">

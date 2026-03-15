@@ -664,7 +664,7 @@ var Data = (function () {
                                 school(id: $schoolId) {
                                     assessments(class: $classId, term: $termId) {
                                         id score outOf remarks teachersComment
-                                        student { id }
+                                        student { id class { id } }
                                         subject { id }
                                         term { id }
                                         assessmentType { id }
@@ -686,9 +686,13 @@ var Data = (function () {
                             // Normalize references for the flat cache
                             const flatAss = {
                                 ...newAss,
-                                student: newAss.student?.id || newAss.student,
+                                student: {
+                                    id: newAss.student?.id || newAss.student,
+                                    class: newAss.student?.class?.id || newAss.student?.class
+                                },
                                 subject: newAss.subject?.id || newAss.subject,
                                 term: newAss.term?.id || newAss.term,
+                                assessmentType: newAss.assessmentType?.id || newAss.assessmentType
                             };
                             
                             if (existingIdx > -1) {
