@@ -2,7 +2,10 @@ import React from 'react';
 import ReportHeader from '../../../components/reports/ReportHeader';
 import ReportFooter from '../../../components/reports/ReportFooter';
 
-const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentTypes, school }) => {
+import Data from '../../../utils/data';
+
+const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentTypes, school: propSchool }) => {
+    const school = propSchool || Data.schools.getSelected();
     const themeColor = school?.themeColor || '#1a1a1a';
     
     // Helper to find score for a specific subject and assessment type
@@ -55,19 +58,21 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
         <div className="report-card-container" style={{ 
             padding: '1.2cm 2.0cm', 
             backgroundColor: 'white', 
-            minHeight: '28cm', 
+            minHeight: '29.7cm', // Full A4 Height
             height: 'auto', 
             width: '21cm', 
-            margin: '0 auto', 
+            margin: '2cm auto', // Margin for web visibility
             pageBreakAfter: 'auto',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
-            color: '#1f2937', // Slate-800
+            color: '#1f2937', 
             boxSizing: 'border-box',
-            overflow: 'hidden' // Prevent spillover
+            boxShadow: '0 0 30px rgba(0,0,0,0.1)', // Make A4 visible
+            border: '1px solid #e5e7eb',
+            overflow: 'visible'
         }}>
             {/* Premium Header Layout */}
-            <ReportHeader school={school} title="Student Progress Report" themeColor={themeColor} />
+            <ReportHeader school={school} title="STUDENT REPORT" themeColor={themeColor} />
 
             {/* Student Infographic Grid */}
             <div style={{ 
@@ -254,6 +259,30 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             <div style={{ position: 'absolute', bottom: '1.2cm', left: '2.0cm', right: '2.0cm' }}>
                 <ReportFooter themeColor={themeColor} validationStatus="Authentic Record" />
             </div>
+
+            <style>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 0;
+                    }
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        background: white !important;
+                    }
+                    .report-card-container {
+                        margin: 0 !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        width: 100% !important;
+                        min-height: 29.7cm !important;
+                    }
+                    .navbar, .subheader, .d-print-none, .card-toolbar {
+                        display: none !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

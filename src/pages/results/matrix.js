@@ -359,7 +359,7 @@ class ResultsMatrix extends React.Component {
 
     if (showPrintView) {
         return (
-            <div className="p-10 bg-white min-h-100vh">
+            <div className="p-10 min-h-100vh" style={{ backgroundColor: '#f3f4f6' }}>
                 <div className="d-flex justify-content-between align-items-center mb-10 d-print-none">
                     <button className="btn btn-light-primary font-weight-bold" onClick={this.togglePrintView}><i className="fa fa-arrow-left"></i> Back</button>
                     <div className="d-flex align-items-center">
