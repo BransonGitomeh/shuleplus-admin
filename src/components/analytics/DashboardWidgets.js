@@ -4,7 +4,7 @@ import React from 'react';
  * Premium Stat Card with icon and badge
  */
 export const StatCard = ({ title, value, subtext, icon, color = '#3699ff', trend }) => (
-    <div className="card card-custom gutter-b" style={{ height: '140px', borderRadius: '15px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+    <div className="card card-custom gutter-b shadow-hover" style={{ height: '140px', borderRadius: '15px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', transition: 'transform 0.2s' }}>
         <div className="card-body d-flex flex-column p-8">
             <div className="d-flex align-items-center justify-content-between mb-2">
                 <span className={`symbol symbol-45 symbol-light-${color === '#3699ff' ? 'primary' : 'success'}`}>
@@ -56,21 +56,21 @@ export const DistributionChart = ({ data, title, height = 200 }) => {
                             const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
                             const largeArcFlag = item.value / (total || 1) > 0.5 ? 1 : 0;
                             const pathData = `M ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} L 0 0`;
-                            return <path key={i} d={pathData} fill={item.color} />;
+                            return <path key={i} d={pathData} fill={item.color} style={{ transition: 'all 0.3s' }} />;
                         })}
-                        <circle cx="0" cy="0" r="0.65" fill="#fff" />
+                        <circle cx="0" cy="0" r="0.72" fill="#fff" />
                     </svg>
                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#3f4254' }}>{total}</div>
-                        <div style={{ fontSize: '0.6rem', color: '#b5b5c3', textTransform: 'uppercase' }}>Total</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#3f4254', lineHeight: 1 }}>{total}</div>
+                        <div style={{ fontSize: '0.65rem', color: '#b5b5c3', textTransform: 'uppercase', fontWeight: 700, marginTop: '2px' }}>Total</div>
                     </div>
                 </div>
-                <div className="d-flex flex-column" style={{ flex: 1, minWidth: '120px' }}>
+                <div className="d-flex flex-column justify-content-center" style={{ flex: 1, minWidth: '140px' }}>
                     {data.map((item, i) => (
-                        <div key={i} className="d-flex align-items-center mb-2">
-                            <span className="bullet bullet-sm mr-2" style={{ backgroundColor: item.color }}></span>
-                            <span className="text-muted font-weight-bold font-size-sm flex-grow-1">{item.label}</span>
-                            <span className="text-dark-75 font-weight-bolder font-size-sm">{Math.round((item.value / (total || 1)) * 100)}%</span>
+                        <div key={i} className="d-flex align-items-center mb-3">
+                            <span className="bullet bullet-sm mr-3" style={{ backgroundColor: item.color, width: '8px', height: '8px' }}></span>
+                            <span className="text-muted font-weight-bold font-size-sm flex-grow-1" style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
+                            <span className="text-dark-75 font-weight-bolder font-size-sm ml-4">{Math.round((item.value / (total || 1)) * 100)}%</span>
                         </div>
                     ))}
                 </div>
@@ -106,7 +106,8 @@ export const TrendBarChart = ({ data, title, height = 250 }) => {
                                     background: d.color || '#3699ff', 
                                     borderRadius: '6px 6px 0 0',
                                     position: 'relative',
-                                    transition: 'height 0.4s ease'
+                                    transition: 'height 0.4s ease',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                                 }}>
                                     <div style={{ position: 'absolute', top: '-25px', width: '100%', textAlign: 'center', fontSize: '10px', fontWeight: 800, color: '#3f4254' }}>
                                         {Math.round(d.value)}

@@ -1037,23 +1037,23 @@ class FeesManagement extends Component {
                     </div>
                 </div>
 
-                {/* ROW 2: PRIMARY DISTRIBUTIONS */}
+                {/* ROW 2: PRIMARY ANALYTICS (3 COLUMNS) */}
                 <div className="row mt-4">
-                    <div className="col-lg-5">
+                    <div className="col-lg-4">
                         <DistributionChart title="Payment Methods (KES)" data={methodData} />
                     </div>
-                    <div className="col-lg-7">
-                        <TrendBarChart title="Top Arrears by Class" data={classArrears.map(c => ({ label: c.label, value: c.value, color: c.color }))} />
+                    <div className="col-lg-4">
+                        <TrendBarChart title="Arrears by Class" data={classArrears.map(c => ({ label: c.label, value: c.value, color: c.color }))} />
+                    </div>
+                    <div className="col-lg-4">
+                        <AreaChart title="Daily Revenue Trend" data={days} color="#10b981" />
                     </div>
                 </div>
 
-                {/* ROW 3: TRENDS & LEADERS */}
+                {/* ROW 3: RANKINGS */}
                 <div className="row mt-4">
-                    <div className="col-lg-7">
-                        <AreaChart title="Daily Revenue Trend (KES)" data={days} color="#10b981" />
-                    </div>
-                    <div className="col-lg-5">
-                        <RankingList title="Critical Outstanding Balances" data={classArrears} valuePrefix="KES " />
+                    <div className="col-lg-12">
+                        <RankingList title="Critical Outstanding Balances" data={classArrears} valuePrefix="KES " height={400} />
                     </div>
                 </div>
             </div>

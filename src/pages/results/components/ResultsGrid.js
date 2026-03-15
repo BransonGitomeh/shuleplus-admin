@@ -225,11 +225,27 @@ const SkeletonRow = ({ subjectsCount }) => (
 );
 
 const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onPrintSingle, onSendSms, loading }) => {
-    const [expandedStudents, setExpandedStudents] = useState({});
+    const [expandedParents, setExpandedParents] = useState({});
 
-    const toggleExpand = useCallback((studentId) => {
-        setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
+    const toggleParent = useCallback((parentId) => {
+        setExpandedParents(prev => ({ ...prev, [parentId]: !prev[parentId] }));
     }, []);
+
+    // 1. Group Students by Parent
+    const parentGroups = useMemo(() => {
+        const groups = {};
+        (students || []).forEach(student => {
+            const parent = student.parent || { id: 'unknown', name: 'Unknown Parent', phone: '-' };
+            if (!groups[parent.id]) {
+                groups[parent.id] = {
+                    parent: parent,
+                    students: []
+                };
+            }
+            groups[parent.id].students.push(student);
+        });
+        return Object.values(groups).sort((a, b) => (a.parent.name || '').localeCompare(b.parent.name || ''));
+    }, [students]);
 
     // Helper to get score for a cell
     const getScore = (studentId, subjectId) => {
@@ -252,254 +268,206 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 20;
+    const rowsPerPage = 15;
 
-    const filteredStudents = useMemo(() => {
-        if (!searchTerm) return students || [];
+    const filteredGroups = useMemo(() => {
+        if (!searchTerm) return parentGroups;
         const lowerSearch = searchTerm.toLowerCase();
-        return (students || []).filter(s => 
-            (s.names || '').toLowerCase().includes(lowerSearch) || 
-            (s.id || '').toLowerCase().includes(lowerSearch) ||
-            (s.admNo || '').toLowerCase().includes(lowerSearch)
+        return parentGroups.filter(g => 
+            (g.parent.name || '').toLowerCase().includes(lowerSearch) || 
+            (g.parent.phone || '').includes(lowerSearch) ||
+            g.students.some(s => (s.names || '').toLowerCase().includes(lowerSearch) || (s.admNo || '').toLowerCase().includes(lowerSearch))
         );
-    }, [students, searchTerm]);
+    }, [parentGroups, searchTerm]);
 
-    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
-    const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
+    const paginatedGroups = filteredGroups.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, students]);
+    }, [searchTerm]);
 
     const getRubricColor = (rubric) => {
         if (!rubric) return '#3699ff';
-        if (rubric.label === 'EE') return '#10b981';
-        if (rubric.label === 'ME') return '#3699ff';
-        if (rubric.label === 'AE') return '#f6c23e';
-        return '#e74c3c';
+        const colors = { 'EE': '#10b981', 'ME': '#3699ff', 'AE': '#f6c23e', 'BE': '#e74c3c' };
+        return colors[rubric.label] || '#3699ff';
     };
 
     return (
         <div className={`d-flex flex-column results-table-container ${loading ? 'opacity-70' : ''}`} style={{ minHeight: '400px' }}>
             {/* Search Bar */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div style={{ width: '300px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-6">
+                <div style={{ width: '400px' }}>
                     <div className="input-icon input-icon-right">
                         <input
                             type="text"
-                            className="form-control form-control-sm"
-                            placeholder="Search student name or admission no..."
+                            className="form-control"
+                            placeholder="Search Parent, Student, or ADM No..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <span><i className="flaticon2-search-1 icon-sm text-muted"></i></span>
+                        <span><i className="flaticon2-search-1 icon-md text-muted"></i></span>
                     </div>
                 </div>
-                <div className="text-muted font-size-sm">
-                    {loading ? 'Fetching assessments...' : `Showing ${paginatedStudents.length} of ${filteredStudents.length} students`}
+                <div className="text-muted font-weight-bold">
+                    {loading ? 'Updating results...' : `Showing ${paginatedGroups.length} families`}
                 </div>
             </div>
 
             <div className="table-responsive flex-grow-1">
-                <table className="table table-bordered table-hover table-sm mb-0" style={{ tableLayout: 'auto' }}>
-                    <thead className="thead-light">
-                        <tr>
-                        <th style={{ minWidth: '40px', width: '40px' }}></th>
-                        <th style={{ minWidth: '200px', position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>
-                            Student Name
-                        </th>
-                        {subjects && subjects.length > 0 ? subjects.map(subj => (
-                            <th key={subj?.id} className="text-center" style={{ minWidth: '120px' }}>
-                                {(subj?.name || "Subject").substring(0, 15)}
-                            </th>
-                        )) : (loading && Array.from({length: 5}).map((_, i) => (
-                            <th key={i} className="text-center" style={{ minWidth: '120px' }}>
-                                <div className="skeleton-placeholder mx-auto" style={{ width: '60px', height: '15px' }}></div>
-                            </th>
-                        )))}
-                        <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
-                        <th className="text-center" style={{ minWidth: '130px', position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#f8f9fa' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading && paginatedStudents.length === 0 ? (
-                        Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} subjectsCount={subjects?.length || 5} />)
-                    ) : paginatedStudents.map(student => {
-                        let totalPoints = 0;
-                        const isExpanded = !!expandedStudents[student.id];
-
-                        const cells = (subjects || []).map(subj => {
-                            const val = getScore(student.id, subj.id);
-                            const rubric = getRubric(val);
-
-                            if (rubric && rubric.points) {
-                                totalPoints += parseFloat(rubric.points);
-                            }
-
-                            const isUpdated = updates && updates.hasOwnProperty(`${student.id}-${subj.id}`);
-                            const rubricColor = getRubricColor(rubric);
-
+                <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1">
+                    <thead>
+                        <tr className="text-left text-uppercase">
+                            <th style={{ width: '10px' }} className="pl-0"></th>
+                            <th style={{ minWidth: '250px' }}>Details</th>
+                            {subjects?.map(subj => (
+                                <th key={subj.id} className="text-center" style={{ minWidth: '130px' }}>{subj.name}</th>
+                            ))}
+                            <th className="text-center" style={{ minWidth: '100px' }}>Total Pts</th>
+                            <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginatedGroups.map(group => {
+                            const isExpanded = !!expandedParents[group.parent.id];
                             return (
-                                <td key={`${student.id}-${subj.id}`} className="p-1">
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={val}
-                                            style={{
-                                                border: isUpdated ? `2px solid #f6c23e` : '1px solid #e5e7eb',
-                                                background: isUpdated ? '#fff8dd' : '#f9fafb',
-                                                width: '80px',
-                                                fontWeight: '700',
-                                                fontSize: '1.1rem',
-                                                height: '40px'
-                                            }}
-                                            onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
-                                            placeholder="-"
-                                        />
-                                        {rubric && (
-                                            <>
-                                                <span
-                                                    style={{
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: '900',
-                                                        padding: '3px 10px',
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.5px',
-                                                        borderRadius: '12px',
-                                                        background: rubricColor + '22',
-                                                        color: rubricColor
-                                                    }}
-                                                >
-                                                    {rubric.label} {rubric.points ? `(${rubric.points})` : ''}
+                                <React.Fragment key={group.parent.id}>
+                                    {/* PARENT ROW */}
+                                    <tr className={isExpanded ? 'bg-light-primary' : ''}>
+                                        <td className="pl-0 py-4">
+                                            <div className="symbol symbol-40 symbol-light-success">
+                                                <span className="symbol-label font-size-h5 font-weight-bold">{group.parent.name?.[0] || 'P'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-4">
+                                            <div className="d-flex flex-column">
+                                                <span className="text-dark-75 font-weight-bolder font-size-lg">{group.parent.name}</span>
+                                                <span className="text-muted font-weight-bold">{group.parent.phone}</span>
+                                                <span className="label label-inline label-light-primary font-weight-bold mt-1" style={{ width: 'fit-content' }}>
+                                                    {group.students.length} Student(s)
                                                 </span>
-                                                {rubric.teachersComment && (
-                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280', fontStyle: 'italic', textAlign: 'center', lineHeight: '1.2', maxWidth: '110px', marginTop: '2px' }}>
-                                                        {rubric.teachersComment}
-                                                    </span>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
-                            );
-                        });
-
-                        return (
-                            <React.Fragment key={student.id}>
-                                <tr style={{ cursor: 'pointer' }}>
-                                    {/* Expand toggle */}
-                                    <td
-                                        className="text-center align-middle"
-                                        onClick={() => toggleExpand(student.id)}
-                                        style={{ cursor: 'pointer', userSelect: 'none', color: '#9ca3af' }}
-                                    >
-                                        <i className={`fa fa-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '0.75rem' }}></i>
-                                    </td>
-                                    <td
-                                        className="font-weight-bold align-middle"
-                                        style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff', cursor: 'pointer' }}
-                                        onClick={() => toggleExpand(student.id)}
-                                    >
-                                        {student?.names || student?.id || "Unnamed Student"}
-                                    </td>
-                                    {cells}
-                                    <td className="text-center font-weight-bold bg-light align-middle" style={{ fontSize: '1.2rem', color: '#111827' }}>
-                                        {totalPoints > 0 ? totalPoints : '-'}
-                                    </td>
-                                    <td className="text-center align-middle" style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff', borderLeft: '1px solid #e5e7eb' }}>
-                                        <div className="d-flex justify-content-center">
-                                            <button
-                                                className="btn btn-sm btn-icon btn-light-primary mr-2"
-                                                title="Print Single Report"
-                                                onClick={() => onPrintSingle && onPrintSingle(student)}
+                                            </div>
+                                        </td>
+                                        <td colSpan={subjects?.length || 0} className="py-4">
+                                            <div className="d-flex align-items-center">
+                                                <span className="text-muted font-weight-bold font-size-sm">
+                                                    {group.students.map(s => s.names).join(', ')}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="text-center py-4">
+                                            <span className="text-dark-75 font-weight-bolder font-size-lg">
+                                                {/* Parent level total could be shown here if needed */}
+                                                -
+                                            </span>
+                                        </td>
+                                        <td className="text-right py-4">
+                                            <button 
+                                                className={`btn btn-icon btn-light-primary btn-sm ${isExpanded ? 'active' : ''}`}
+                                                onClick={() => toggleParent(group.parent.id)}
                                             >
-                                                <i className="fa fa-print"></i>
+                                                <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
                                             </button>
-                                            <button
-                                                className="btn btn-sm btn-icon btn-light-success"
-                                                title="Send Results via SMS"
-                                                onClick={() => onSendSms && onSendSms(student)}
-                                            >
-                                                <i className="fa fa-sms"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                {/* Expandable Chart Row */}
-                                {isExpanded && (
-                                    <tr>
-                                        <td colSpan={(subjects?.length || 0) + 4} style={{ padding: 0, background: 'transparent' }}>
-                                            <DetailedPerformanceAnalytics
-                                                student={student}
-                                                subjects={subjects}
-                                                currentAssessments={assessments}
-                                                allAssessments={allAssessments}
-                                                allTerms={allTerms}
-                                                assessmentTypes={assessmentTypes}
-                                                rubrics={rubrics}
-                                                updates={updates}
-                                            />
                                         </td>
                                     </tr>
-                                )}
-                            </React.Fragment>
-                        );
-                    })}
-                    {paginatedStudents.length === 0 && (
-                        <tr>
-                            <td colSpan={(subjects?.length || 0) + 4} className="text-center text-muted p-5">
-                                No students found matching your search.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-            <div className="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                <div className="text-muted font-size-sm">
-                    Page {currentPage} of {totalPages}
-                </div>
-                <div className="d-flex">
-                    <button 
-                        className="btn btn-sm btn-icon btn-light-primary mr-2" 
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    >
-                        <i className="ki ki-bold-arrow-back icon-xs"></i>
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
-                        .map((page, i, arr) => (
-                            <React.Fragment key={page}>
-                                {i > 0 && arr[i - 1] !== page - 1 && (
-                                    <span className="btn btn-sm btn-icon btn-text-muted disabled mr-2">...</span>
-                                )}
-                                <button 
-                                    className={`btn btn-sm btn-icon mr-2 ${currentPage === page ? 'btn-primary' : 'btn-light-primary'}`}
-                                    onClick={() => setCurrentPage(page)}
-                                >
-                                    {page}
-                                </button>
-                            </React.Fragment>
-                        ))
-                    }
-                    <button 
-                        className="btn btn-sm btn-icon btn-light-primary" 
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    >
-                        <i className="ki ki-bold-arrow-next icon-xs"></i>
-                    </button>
-                </div>
+                                    {/* STUDENT ROWS (TREE) */}
+                                    {isExpanded && group.students.map(student => {
+                                        let totalPoints = 0;
+                                        return (
+                                            <React.Fragment key={student.id}>
+                                            <tr className="bg-white">
+                                                <td className="pl-10 mr-0" style={{ borderLeft: '3px solid #3699ff' }}>
+                                                    <i className="fa fa-level-up-alt text-muted fa-rotate-90"></i>
+                                                </td>
+                                                <td>
+                                                    <div className="d-flex flex-column">
+                                                        <span className="text-dark-75 font-weight-bolder font-size-sm">{student.names}</span>
+                                                        <span className="text-muted font-weight-bold font-size-xs">{student.admNo || student.registration}</span>
+                                                    </div>
+                                                </td>
+                                                {subjects?.map(subj => {
+                                                    const val = getScore(student.id, subj.id);
+                                                    const rubric = getRubric(val);
+                                                    if (rubric?.points) totalPoints += parseFloat(rubric.points);
+                                                    const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}`);
+                                                    const color = getRubricColor(rubric);
+
+                                                    return (
+                                                        <td key={subj.id} className="text-center py-2">
+                                                            <div className="d-flex flex-column align-items-center">
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control form-control-sm text-center font-weight-boldest"
+                                                                    value={val}
+                                                                    onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
+                                                                    style={{ 
+                                                                        width: '70px', 
+                                                                        height: '35px', 
+                                                                        fontSize: '1rem',
+                                                                        border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
+                                                                        background: isUpdated ? '#fff8dd' : '#fcfcfc'
+                                                                    }}
+                                                                />
+                                                                {rubric && (
+                                                                    <span className="mt-1 font-weight-boldest font-size-xs" style={{ color }}>
+                                                                        {rubric.label}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="text-center align-middle">
+                                                    <span className="text-dark-75 font-weight-bolder font-size-h6">
+                                                        {totalPoints || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="text-right">
+                                                    <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
+                                                        <i className="fa fa-print"></i>
+                                                    </button>
+                                                    <button className="btn btn-icon btn-light-success btn-sm" onClick={() => onSendSms?.(student)}>
+                                                        <i className="fa fa-sms"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
-        )}
+
+            {/* Pagination Component */}
+            {totalPages > 1 && (
+                <div className="d-flex justify-content-between align-items-center mt-6 pt-4 border-top">
+                    <span className="text-muted font-weight-bold">Page {currentPage} of {totalPages}</span>
+                    <div className="d-flex">
+                        <button className="btn btn-sm btn-icon btn-light-primary mr-2" disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)}>
+                            <i className="ki ki-bold-arrow-back icon-xs"></i>
+                        </button>
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button 
+                                key={i} 
+                                className={`btn btn-sm btn-icon mr-2 ${currentPage === i + 1 ? 'btn-primary' : 'btn-light-primary'}`}
+                                onClick={() => setCurrentPage(i + 1)}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                        <button className="btn btn-sm btn-icon btn-light-primary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(c => c + 1)}>
+                            <i className="ki ki-bold-arrow-next icon-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
 
 export default memo(ResultsGrid);

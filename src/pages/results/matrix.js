@@ -347,19 +347,26 @@ class ResultsMatrix extends React.Component {
                 <div className="col-md-3"><StatCard title="Quality Scores" value={topGradesCount} icon="flaticon-medal" color="#e74c3c" subtext="High achievement (80%+)" /></div>
             </div>
 
-            {/* ROW 2: PRIMARY DISTRIBUTIONS */}
+            {/* ROW 2: PRIMARY ANALYTICS (3 COLUMNS) */}
             <div className="row mt-4">
-                <div className="col-lg-5"><DistributionChart title="Grade Distribution" data={rubricCounts} /></div>
-                <div className="col-lg-7"><TrendBarChart title="Subject Performance (%)" data={subjectMastery} /></div>
+                <div className="col-lg-4">
+                    <DistributionChart title="Grade Distribution" data={rubricCounts} />
+                </div>
+                <div className="col-lg-4">
+                    <TrendBarChart title="Subject Performance (%)" data={subjectMastery} />
+                </div>
+                <div className="col-lg-4">
+                    <AreaChart title="Class Trend (Termly)" data={termTrendData} color="#3699ff" />
+                </div>
             </div>
 
-            {/* ROW 3: TRENDS & LEADERS */}
+            {/* ROW 3: LEADERS & RANKINGS */}
             <div className="row mt-4">
-                <div className="col-lg-7">
-                    <AreaChart title="Class Performance Trend (Termly)" data={termTrendData} color="#3699ff" />
-                </div>
-                <div className="col-lg-5">
+                <div className="col-lg-6">
                     <RankingList title="Top Student Performers" data={studentPerformance} valueSuffix=" pts" />
+                </div>
+                <div className="col-lg-6">
+                    <RankingList title="Top Subject Mastery" data={subjectMastery.slice(0, 5)} valueSuffix="%" />
                 </div>
             </div>
         </div>
