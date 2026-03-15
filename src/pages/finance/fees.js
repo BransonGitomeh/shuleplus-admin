@@ -5,6 +5,7 @@ import Subheader from "../../components/subheader";
 import SmsBalanceModal from './components/SmsBalanceModal';
 import StatementCard from './components/StatementCard';
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
+import { StatCard, DistributionChart, TrendBarChart } from "../../components/analytics/DashboardWidgets";
 
 // --- HELPER COMPONENTS ---
 
@@ -147,7 +148,9 @@ class FeesManagement extends Component {
         editPaymentData: null,
         editChargeData: null,
         showBulkSmsModal: false,
-        bulkSmsRecipients: []
+        bulkSmsRecipients: [],
+
+        activeTab: 'list', // 'list' or 'insights'
     };
     
     componentDidMount() {
@@ -967,6 +970,132 @@ class FeesManagement extends Component {
         window.print();
     };
 
+    renderInsights = () => {
+        const { payments, charges, students, selectedClass, classes } = this.state;
+        
+        // 1. Overall Totals
+        const totalCharged = charges.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+        const totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        const totalArrears = totalCharged - totalPaid;
+        const collectionRate = totalCharged > 0 ? Math.round((totalPaid / totalCharged) * 100) : 0;
+
+        // 2. Payment Method Distribution
+        const methods = ['MPESA', 'CASH', 'BANK'];
+        const methodData = methods.map(m => ({
+            label: m,
+            value: payments.filter(p => p.method === m).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
+            color: m === 'MPESA' ? '#10b981' : m === 'CASH' ? '#3699ff' : '#f6c23e'
+        })).filter(d => d.value > 0);
+
+        // 3. Arrears by Class
+        const arrearsByClass = (classes || []).map(c => {
+            const classStudents = students.filter(s => s.class?.id === c.id || s.class === c.id);
+            const studentIds = new Set(classStudents.map(s => s.id));
+            
+            const classCharged = charges.filter(ch => studentIds.has(ch.student?.id || ch.student)).reduce((sum, ch) => sum + (parseFloat(ch.amount) || 0),0);
+            const classPaid = payments.filter(p => studentIds.has(p.student?.id || p.student)).reduce((sum, p) => sum + (parseFloat(p.amount) || 0),0);
+            const arrears = classCharged - classPaid;
+            
+            return { label: c.name, value: arrears > 0 ? arrears : 0, color: '#e74c3c' };
+        }).filter(d => d.value > 0).sort((a,b) => b.value - a.value).slice(0, 8);
+
+        return (
+            <div className="animate__animated animate__fadeIn">
+                <div className="row">
+                    <div className="col-md-3">
+                        <StatCard title="Total Collections" value={`KES ${totalPaid.toLocaleString()}`} icon="flaticon2-shopping-cart-1" color="#10b981" />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Total Arrears" value={`KES ${totalArrears.toLocaleString()}`} icon="flaticon-warning" color="#e74c3c" />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Collection Rate" value={`${collectionRate}%`} icon="flaticon-pie-chart" color="#3699ff" />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Fee Targets" value={`KES ${totalCharged.toLocaleString()}`} icon="flaticon-price-tag" color="#f6c23e" />
+                    </div>
+                </div>
+
+                <div className="row mt-4">
+                    <div className="col-lg-5">
+                        <DistributionChart title="Payment Methods (KES)" data={methodData} />
+                    </div>
+                    <div className="col-lg-7">
+                        <TrendBarChart title="Top Arrears by Class (KES)" data={arrearsByClass} />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    renderInsights = () => {
+        const { payments, charges, students, classes } = this.state;
+        
+        // 1. Calculations
+        const totalCollected = (payments || []).filter(p => !p.status || p.status === 'COMPLETED').reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
+        
+        // Expected is more complex as it's per student. Let's aggregate.
+        // Simplified for dashboard: total charges
+        const totalCharges = (charges || []).reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+        const totalArrears = Math.max(0, totalCharges - totalCollected);
+        const collectionRate = totalCharges > 0 ? Math.round((totalCollected / totalCharges) * 100) : 0;
+
+        // 2. Payment Methods split
+        const methods = {};
+        (payments || []).forEach(p => {
+            const m = p.method || p.paymentType || 'M-Pesa';
+            methods[m] = (methods[m] || 0) + (parseFloat(p.amount || p.ammount) || 0);
+        });
+        const methodData = Object.keys(methods).map(m => ({
+            label: m,
+            value: methods[m],
+            color: m === 'M-Pesa' ? '#3699ff' : m === 'CASH' ? '#10b981' : '#f6c23e'
+        }));
+
+        // 3. Arrears by class
+        const classArrears = (classes || []).map(cls => {
+            const classStudents = (students || []).filter(s => s.class?.id === cls.id || s.class === cls.id);
+            const classStudentIds = new Set(classStudents.map(s => s.id));
+            
+            const classTotalCharges = (charges || []).filter(c => classStudentIds.has(c.student?.id || c.student)).reduce((sum, c) => sum + parseFloat(c.amount), 0);
+            const classTotalPaid = (payments || []).filter(p => classStudentIds.has(p.student?.id || p.student)).reduce((sum, p) => sum + (parseFloat(p.amount || p.ammount) || 0), 0);
+            
+            return {
+                label: cls.name,
+                value: Math.max(0, classTotalCharges - classTotalPaid),
+                color: '#e74c3c'
+            };
+        }).filter(c => c.value > 0).sort((a,b) => b.value - a.value).slice(0, 5);
+
+        return (
+            <div className="animate__animated animate__fadeIn">
+                <div className="row">
+                    <div className="col-md-3">
+                        <StatCard title="Total Collections" value={`KES ${totalCollected.toLocaleString()}`} icon="flaticon2-shopping-cart-1" color="#10b981" trend={12} />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Total Arrears" value={`KES ${totalArrears.toLocaleString()}`} icon="flaticon2-warning" color="#e74c3c" trend={-5} />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Collection Rate" value={`${collectionRate}%`} icon="flaticon2-line-chart" color="#3699ff" trend={3} />
+                    </div>
+                    <div className="col-md-3">
+                        <StatCard title="Fee Targets" value={`KES ${totalCharges.toLocaleString()}`} icon="flaticon2- correct" color="#f6c23e" />
+                    </div>
+                </div>
+
+                <div className="row mt-4">
+                    <div className="col-lg-5">
+                        <DistributionChart title="Payment Methods" data={methodData} />
+                    </div>
+                    <div className="col-lg-7">
+                        <TrendBarChart title="Top Arrears by Class" data={classArrears} />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     render() {
         const { 
             classes, terms, selectedClass, selectedTerm, searchTerm, 
@@ -1096,7 +1225,22 @@ class FeesManagement extends Component {
                                 <span className="text-muted mt-3 font-weight-bold font-size-sm">Manage student balances and payments ({processedParents.length} Parents)</span>
                             </h3>
                             <div className="card-toolbar">
-                                <div className="dropdown dropdown-inline mr-2">
+                        <div className="nav-tabs-custom mr-6">
+                            <ul className="nav nav-pills nav-pills-sm nav-dark-75">
+                                <li className="nav-item">
+                                    <button className={`nav-link py-2 px-6 ${this.state.activeTab === 'accounts' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'accounts' })}>
+                                        <span className="nav-text font-weight-bold">Accounts List</span>
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button className={`nav-link py-2 px-6 ${this.state.activeTab === 'insights' ? 'active' : ''}`} onClick={() => this.setState({ activeTab: 'insights' })}>
+                                        <span className="nav-text font-weight-bold">Financial Insights</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="dropdown dropdown-inline mr-2">
                                     <select className="form-control" value={selectedTerm} onChange={e => this.handleFilterChange('selectedTerm', e.target.value)}>
                                         <option value="">All Terms</option>
                                         {terms && terms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1135,7 +1279,9 @@ class FeesManagement extends Component {
                             </div>
 
                             {/* MAIN TABLE */}
-                            <div className="table-responsive">
+                            {this.state.activeTab === 'accounts' ? (
+                                <>
+                                <div className="table-responsive">
                                 <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1">
                                     <thead>
                                         <tr className="text-left">
@@ -1415,6 +1561,10 @@ class FeesManagement extends Component {
                                     onPageChange={(p) => this.setState({ currentPage: p })} 
                                 />
                             </div>
+                                </>
+                            ) : (
+                                this.renderInsights()
+                            )}
                             </>
                             )}
                         </div>
