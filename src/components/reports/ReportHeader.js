@@ -1,6 +1,9 @@
 import React from 'react';
 
-const ReportHeader = ({ school, title, themeColor }) => {
+import Data from '../../utils/data';
+
+const ReportHeader = ({ school: propSchool, title, themeColor }) => {
+    const school = propSchool || Data.schools.getSelected();
     const activeThemeColor = themeColor || school?.themeColor || '#1a1a1a';
     
     return (

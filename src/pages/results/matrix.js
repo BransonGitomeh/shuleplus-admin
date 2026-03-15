@@ -360,11 +360,17 @@ class ResultsMatrix extends React.Component {
     if (showPrintView) {
         return (
             <div className="p-10 min-h-100vh" style={{ backgroundColor: '#f3f4f6' }}>
-                <div className="d-flex justify-content-between align-items-center mb-10 d-print-none">
-                    <button className="btn btn-light-primary font-weight-bold" onClick={this.togglePrintView}><i className="fa fa-arrow-left"></i> Back</button>
-                    <div className="d-flex align-items-center">
-                        <h4 className="mr-8 mb-0">{printingStudentId ? 'Student Report' : 'Class Reports'}</h4>
-                        <button className="btn btn-primary" onClick={this.handlePrint}><i className="fa fa-print"></i> Print</button>
+                <div className="d-print-none p-4 border-bottom mb-4 d-flex justify-content-between align-items-center bg-white rounded shadow-sm">
+                    <button className="btn btn-secondary font-weight-bold" onClick={this.togglePrintView}>
+                        <i className="fa fa-arrow-left"></i> Back to Matrix
+                    </button>
+                    <div>
+                        <h4 className="m-0 font-weight-bold">Report Preview</h4>
+                    </div>
+                    <div>
+                        <button className="btn btn-primary font-weight-bold" onClick={this.handlePrint}>
+                            <i className="fa fa-print mr-2"></i> Print Report
+                        </button>
                     </div>
                 </div>
                 <div id="print-area">
