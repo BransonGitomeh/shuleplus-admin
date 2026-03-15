@@ -329,10 +329,8 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                             <th style={{ width: '10px' }} className="pl-0"></th>
                             <th style={{ minWidth: '200px' }}>Details</th>
                             {subjects?.map(subj => (
-                                <th key={subj.id} className="text-center" style={{ minWidth: '100px' }}>{subj.name}</th>
+                                <th key={subj.id} className="text-center" style={{ minWidth: '120px' }}>{subj.name}</th>
                             ))}
-                            <th className="text-center" style={{ minWidth: '130px' }}>Remarks</th>
-                            <th className="text-center" style={{ minWidth: '130px' }}>Comments</th>
                             <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
                             <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
                         </tr>
@@ -387,34 +385,21 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                             }}
                                                         />
                                                         {rubric && (
-                                                            <span className="mt-1 font-weight-boldest" style={{ color, fontSize: '10px' }}>
-                                                                {rubric.label}
-                                                            </span>
+                                                            <div className="d-flex flex-column align-items-center mt-1">
+                                                                <span className="font-weight-boldest" style={{ color, fontSize: '10px' }}>
+                                                                    {rubric.label} ({rubric.points || 0} pts)
+                                                                </span>
+                                                                {rubric.comment && (
+                                                                    <span className="text-muted italic" style={{ fontSize: '9px', lineHeight: '1.2', maxWidth: '100px' }}>
+                                                                        {rubric.comment}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
                                             );
                                         })}
-                                        <td className="text-center py-2">
-                                            <input
-                                                type="text"
-                                                className="form-control form-control-sm border-0 bg-light"
-                                                placeholder="Remark..."
-                                                value={getRemark(student.id, firstSubjectId)}
-                                                onChange={(e) => onRemarkChange(student.id, firstSubjectId, e.target.value)}
-                                                style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
-                                            />
-                                        </td>
-                                        <td className="text-center py-2">
-                                            <input
-                                                type="text"
-                                                className="form-control form-control-sm border-0 bg-light"
-                                                placeholder="Comment..."
-                                                value={getComment(student.id, firstSubjectId)}
-                                                onChange={(e) => onCommentChange(student.id, firstSubjectId, e.target.value)}
-                                                style={{ fontSize: '0.8rem', minWidth: '120px', borderRadius: '6px' }}
-                                            />
-                                        </td>
                                         <td className="text-center align-middle">
                                             <span className="text-dark-75 font-weight-bolder font-size-h6">
                                                 {totalPoints || '-'}
@@ -440,7 +425,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                     {/* EXPANDED ANALYTICS */}
                                     {isExpanded && (
                                         <tr>
-                                            <td colSpan={(subjects?.length || 0) + 6} className="p-0 border-0">
+                                            <td colSpan={(subjects?.length || 0) + 4} className="p-0 border-0">
                                                 <DetailedPerformanceAnalytics 
                                                     student={student}
                                                     subjects={subjects}
