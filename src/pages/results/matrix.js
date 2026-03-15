@@ -337,7 +337,10 @@ class ResultsMatrix extends React.Component {
 
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
-    const filteredSubjectsList = subjects.filter(s => assessmentTypes.find(at => at.id === selectedAssessmentType)?.subjects?.includes(s.id));
+      const selectedType = assessmentTypes.find(at => at.id === selectedAssessmentType);
+      const filteredSubjectsList = (selectedType && selectedType.subjects) 
+        ? subjects.filter(s => selectedType.subjects.includes(s.id))
+        : subjects;
     
     const currentViewAssessments = (assessments || []).filter(a => 
         (a.student?.class?.id === selectedClass || a.student?.class === selectedClass) &&

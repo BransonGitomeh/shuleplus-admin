@@ -381,7 +381,7 @@ var Data = (function () {
         const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
         const FRAGMENT_TERMS_DATA = `fragment TermsData on school { terms { id name startDate endDate } }`;
-        const FRAGMENT_ASSESSMENT_TYPES_DATA = `fragment AssessmentTypesData on school { assessmentTypes { id name percentage subjects { id } } }`;
+        const FRAGMENT_ASSESSMENT_TYPES_DATA = `fragment AssessmentTypesData on school { assessmentTypes { id name percentage } }`;
         const FRAGMENT_ASSESSMENT_RUBRICS_DATA = `fragment AssessmentRubricsData on school { assessmentRubrics { id label minScore maxScore points teachersComment } }`;
         // 1. Define the Fragment for SMS History (Add this near other fragments)
         const FRAGMENT_SMS_EVENTS_DATA = `fragment SmsEventsData on school { 
