@@ -342,11 +342,20 @@ class ResultsMatrix extends React.Component {
         ? subjects.filter(s => selectedType.subjects.includes(s.id))
         : subjects;
     
-    const currentViewAssessments = (assessments || []).filter(a => 
-        (a.student?.class?.id === selectedClass || a.student?.class === selectedClass) &&
-        (a.term?.id === selectedTerm || a.term === selectedTerm) &&
-        (a.assessmentType?.id === selectedAssessmentType || a.assessmentType === selectedAssessmentType || a.type?.id === selectedAssessmentType || a.type === selectedAssessmentType)
-    );
+    const currentViewAssessments = (assessments || []).filter(a => {
+        const studentId = a.student?.id || a.student;
+        const studentClassId = a.student?.class?.id || a.student?.class; // Note: Newly created assessments might lack this
+        const termId = a.term?.id || a.term;
+        const typeId = a.assessmentType?.id || a.assessmentType || a.type?.id || a.type;
+
+        // If studentClassId is missing (newly created), we fall back to student lookup if possible
+        const student = students.find(s => String(s.id) === String(studentId));
+        const classMatch = studentClassId ? (String(studentClassId) === String(selectedClass)) : (student && (String(student.class?.id || student.class) === String(selectedClass)));
+
+        return classMatch &&
+            String(termId) === String(selectedTerm) &&
+            String(typeId) === String(selectedAssessmentType);
+    });
 
     if (showPrintView) {
         return (

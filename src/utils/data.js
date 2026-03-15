@@ -137,7 +137,16 @@ const createEntityAPI = (config) => {
                 }
 
                 const createdItem = response[name].create;
-                const newItem = { ...data, id: createdItem.id };
+                let newItem = { ...data, id: createdItem.id };
+
+                // Normalization for assessments
+                if (name === 'assessments') {
+                    if (typeof newItem.student === 'string') newItem.student = { id: newItem.student };
+                    if (typeof newItem.subject === 'string') newItem.subject = { id: newItem.subject };
+                    if (typeof newItem.term === 'string') newItem.term = { id: newItem.term };
+                    if (typeof newItem.assessmentType === 'string') newItem.assessmentType = { id: newItem.assessmentType };
+                    if (typeof newItem.type === 'string') newItem.type = { id: newItem.type };
+                }
 
                 // 2. Safely Update Flat Cache
                 if (!Array.isArray(allData[name])) {
@@ -195,13 +204,23 @@ const createEntityAPI = (config) => {
                     { data: { id, ...sanitizedPayload } }
                 );
 
+                // Normalization for specific entities like assessments
+                let normalizedData = { ...data };
+                if (name === 'assessments') {
+                    if (typeof normalizedData.student === 'string') normalizedData.student = { id: normalizedData.student };
+                    if (typeof normalizedData.subject === 'string') normalizedData.subject = { id: normalizedData.subject };
+                    if (typeof normalizedData.term === 'string') normalizedData.term = { id: normalizedData.term };
+                    if (typeof normalizedData.assessmentType === 'string') normalizedData.assessmentType = { id: normalizedData.assessmentType };
+                    if (typeof normalizedData.type === 'string') normalizedData.type = { id: normalizedData.type };
+                }
+
                 const { item: itemInTree } = findItemInTree(id, allData.schools);
-                if (itemInTree) Object.assign(itemInTree, data);
+                if (itemInTree) Object.assign(itemInTree, normalizedData);
                 
                 if (Array.isArray(allData[name])) {
-                    const itemIndexFlat = allData[name].findIndex(item => item.id === id);
+                    const itemIndexFlat = allData[name].findIndex(item => String(item.id) === String(id));
                     if (itemIndexFlat > -1) {
-                        allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...data };
+                        allData[name][itemIndexFlat] = { ...allData[name][itemIndexFlat], ...normalizedData };
                     }
                 }
 
