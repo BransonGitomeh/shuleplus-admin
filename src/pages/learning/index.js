@@ -19,12 +19,12 @@ class App extends React.Component {
           <div
             // Note: The height style here might constrain the layout. 
             // It's often better to let content define the height.
-            className="kt-content  kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor"
+            className="kt-content kt-grid__item kt-grid__item--fluid kt-grid kt-grid--hor pt-0"
             id="kt_content"
           >
             {/* The kt-container class provides horizontal padding. 
                 The CSS inside CurriculumManagerV5 is designed to counteract this for a full-width effect. */}
-            <div className="kt-container  kt-grid__item kt-grid__item--fluid">
+            <div className="kt-container kt-grid__item kt-grid__item--fluid pt-0">
               
               {/* 2. Replace the old "List" component with the new manager component */}
               <CurriculumManagerV5 id={this.props.match.params.id} />
