@@ -13,6 +13,8 @@ class ResultsMatrix extends React.Component {
     grades: [],
     students: [],
     assessments: [], // Full list
+    lessonAttempts: [],
+    attemptEvents: [],
 
     selectedClass: "",
     selectedTerm: "",
@@ -68,6 +70,8 @@ class ResultsMatrix extends React.Component {
         }
     });
     this.unsubAssessmentRubrics = Data.assessmentRubrics.subscribe(({ assessmentRubrics }) => this.setState({ assessmentRubrics }));
+    this.unsubLessonAttempts = Data.lessonAttempts.subscribe(({ lessonAttempts }) => this.setState({ lessonAttempts }));
+    this.unsubAttemptEvents = Data.attemptEvents.subscribe(({ attemptEvents }) => this.setState({ attemptEvents }));
 
     const schoolInfo = Data.schools.getSelected();
     
@@ -135,7 +139,19 @@ class ResultsMatrix extends React.Component {
 
   handleScoreChange = (studentId, subjectId, val) => {
       this.setState(prev => ({
-          edits: { ...prev.edits, [`${studentId}-${subjectId}`]: val }
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-score`]: val }
+      }));
+  };
+
+  handleRemarkChange = (studentId, subjectId, val) => {
+      this.setState(prev => ({
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-remark`]: val }
+      }));
+  };
+
+  handleCommentChange = (studentId, subjectId, val) => {
+      this.setState(prev => ({
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-comment`]: val }
       }));
   };
   
@@ -148,15 +164,24 @@ class ResultsMatrix extends React.Component {
       let successCount = 0;
       let newEdits = { ...edits };
 
-      try {
-          for (const key of editKeys) {
-              const [studentId, subjectId] = key.split('-');
-              const scoreVal = edits[key];
-              if (scoreVal === "" || scoreVal === null) {
-                  delete newEdits[key];
-                  continue; 
-              }
+      // Group edits by studentId-subjectId
+      const groupedEdits = {};
+      editKeys.forEach(key => {
+          const parts = key.split('-');
+          if (parts.length < 3) return;
+          const studentId = parts[0];
+          const subjectId = parts[1];
+          const field = parts[2];
+          const groupKey = `${studentId}-${subjectId}`;
+          if (!groupedEdits[groupKey]) groupedEdits[groupKey] = {};
+          groupedEdits[groupKey][field] = edits[key];
+      });
 
+      try {
+          for (const key of Object.keys(groupedEdits)) {
+              const [studentId, subjectId] = key.split('-');
+              const fieldEdits = groupedEdits[key];
+              
               const existing = assessments.find(a => 
                 (a.student === studentId || a.student?.id === studentId) &&
                 (a.subject === subjectId || a.subject?.id === subjectId) &&
@@ -170,18 +195,24 @@ class ResultsMatrix extends React.Component {
                   type: selectedAssessmentType,
                   student: studentId,
                   subject: subjectId,
-                  score: parseFloat(scoreVal),
-                  outOf: 100
+                  outOf: 100,
+                  ...existing
               };
 
+              // Apply changes
+              if (fieldEdits.score !== undefined) payload.score = parseFloat(fieldEdits.score);
+              if (fieldEdits.remark !== undefined) payload.remarks = fieldEdits.remark;
+              if (fieldEdits.comment !== undefined) payload.teachersComment = fieldEdits.comment;
+
               try {
-                  if (existing) await Data.assessments.update({ ...payload, id: existing.id });
+                  if (existing?.id) await Data.assessments.update(payload);
                   else await Data.assessments.create(payload);
                   successCount++;
-                  delete newEdits[key];
+                  // Clear these specific edits
+                  Object.keys(fieldEdits).forEach(f => delete newEdits[`${key}-${f}`]);
               } catch (e) { console.error(e); }
           }
-          if (window.toastr) window.toastr.success(`Saved ${successCount} scores.`);
+          if (window.toastr) window.toastr.success(`Saved changes for ${successCount} assessments.`);
           this.setState({ edits: newEdits });
       } catch (e) { console.error(e); }
       finally { this.setState({ saving: false }); }
@@ -492,7 +523,24 @@ class ResultsMatrix extends React.Component {
 
             {activeTab === 'grid' ? (
                 selectedClass && selectedTerm ? (
-                    <ResultsGrid loading={fetchingAssessments} students={students} subjects={filteredSubjectsList} assessments={currentViewAssessments} allAssessments={assessments} allTerms={terms} assessmentTypes={assessmentTypes} rubrics={assessmentRubrics} updates={edits} onScoreChange={this.handleScoreChange} onPrintSingle={this.handlePrintSingle} onSendSms={this.handleSmsClick} />
+                    <ResultsGrid 
+                        loading={fetchingAssessments || loading} 
+                        students={students} 
+                        subjects={filteredSubjectsList} 
+                        assessments={currentViewAssessments} 
+                        allAssessments={assessments} 
+                        allTerms={terms} 
+                        assessmentTypes={assessmentTypes} 
+                        rubrics={assessmentRubrics} 
+                        lessonAttempts={this.state.lessonAttempts}
+                        attemptEvents={this.state.attemptEvents}
+                        updates={edits} 
+                        onScoreChange={this.handleScoreChange} 
+                        onRemarkChange={this.handleRemarkChange}
+                        onCommentChange={this.handleCommentChange}
+                        onPrintSingle={this.handlePrintSingle} 
+                        onSendSms={this.handleSmsClick} 
+                    />
                 ) : <div className="alert alert-light-primary text-center py-10">Select Term and Class to view results</div>
             ) : this.renderInsights()}
         </div>

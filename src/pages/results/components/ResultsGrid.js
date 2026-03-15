@@ -5,17 +5,29 @@ import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
  * A premium SVG-based analytics component showing cross-term trends 
  * and assessment type performance.
  */
-const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, themeColor = '#3699ff' }) => {
+const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onCommentChange, lessonAttempts = [], attemptEvents = [], themeColor = '#3699ff' }) => {
     
     // 1. Data Processing
     const studentAll = useMemo(() => {
         return (allAssessments || []).filter(a => (a.student === student.id || a.student?.id === student.id));
     }, [allAssessments, student.id]);
 
+    const studentLessons = useMemo(() => {
+        return (lessonAttempts || []).filter(l => l.userId === student.id || l.student === student.id || l.student?.id === student.id);
+    }, [lessonAttempts, student.id]);
+
     const getRubric = (score) => {
         if (score === undefined || score === null || isNaN(score)) return null;
         return (rubrics || []).find(r => score >= r.minScore && score <= r.maxScore);
     };
+
+    // Teacher's Comment Logic
+    const teacherComment = useMemo(() => {
+        const updateKey = `${student.id}-${subjects?.[0]?.id}-comment`;
+        if (updates && updates.hasOwnProperty(updateKey)) return updates[updateKey];
+        const a = currentAssessments.find(a => (a.student === student.id || a.student?.id === student.id));
+        return a ? (a.teachersComment || "") : "";
+    }, [student.id, subjects, currentAssessments, updates]);
 
     // Current Subject Performance (Bars)
     const currentBars = useMemo(() => {
@@ -30,6 +42,25 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         }).filter(b => b.score > 0);
     }, [subjects, currentAssessments, student.id, rubrics]);
 
+    // Revision Summary
+    const revisionInsights = useMemo(() => {
+        const completed = studentLessons.filter(l => l.status === 'COMPLETED');
+        const avgScore = completed.length > 0 ? (completed.reduce((sum, l) => sum + (l.finalScore || 0), 0) / completed.length) : 0;
+        
+        // Identify strengths/weaknesses from scores
+        const sortedScores = [...currentBars].sort((a,b) => b.score - a.score);
+        const strengths = sortedScores.slice(0, 2).map(s => s.name);
+        const weaknesses = sortedScores.slice(-2).reverse().map(s => s.name);
+
+        return {
+            totalAttempts: studentLessons.length,
+            completedCount: completed.length,
+            revisionAvg: Math.round(avgScore),
+            strengths,
+            weaknesses
+        };
+    }, [studentLessons, currentBars]);
+
     // Cross-Term Trends (Line Chart Data)
     const trendData = useMemo(() => {
         const sortedTerms = (allTerms || []).sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
@@ -38,7 +69,7 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
             const total = termAssessments.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0);
             const avg = termAssessments.length > 0 ? (total / termAssessments.length) : 0;
             
-            // Shorten name: "Term 1 2024" -> "T1 '24" or "First Term" -> "First..."
+            // Shorten name: "Term 1 2024" -> "T1 '24"
             const parts = term.name.split(' ');
             let shortName = term.name;
             if (parts.length >= 3) shortName = `${parts[0][0]}${parts[1]} '${parts[parts.length-1].slice(-2)}`;
@@ -48,19 +79,9 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         }).filter(d => d.avg > 0);
     }, [allTerms, studentAll]);
 
-    // Assessment Type Comparison (Bar Chart Data)
-    const comparisonData = useMemo(() => {
-        return (assessmentTypes || []).map(type => {
-            const typeAssessments = studentAll.filter(a => (a.assessmentType === type.id || a.assessmentType?.id === type.id));
-            const total = typeAssessments.reduce((sum, a) => sum + (parseFloat(a.score) || 0), 0);
-            const avg = typeAssessments.length > 0 ? (total / typeAssessments.length) : 0;
-            return { type: type.name, avg };
-        }).filter(d => d.avg > 0);
-    }, [assessmentTypes, studentAll]);
-
     // 2. Chart Rendering (Line Chart SVG)
     const renderTrendChart = () => {
-        if (trendData.length < 2) return <div className="text-muted small">Insufficient historical data for trend analysis.</div>;
+        if (trendData.length < 2) return <div className="text-muted small p-4 bg-light rounded text-center">Insufficient historical data for trend analysis.</div>;
         
         const width = 320;
         const height = 120;
@@ -79,11 +100,8 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         return (
             <div style={{ position: 'relative' }}>
                 <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-                    {/* Grid lines */}
                     <line x1={padding} y1={padding} x2={padding} y2={height-padding} stroke="#f3f4f6" />
                     <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="#f3f4f6" />
-                    
-                    {/* Area fill */}
                     <path d={areaD} fill="url(#trendGradient)" opacity="0.1" />
                     <defs>
                         <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
@@ -91,11 +109,7 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
                             <stop offset="100%" stopColor="transparent" />
                         </linearGradient>
                     </defs>
-
-                    {/* Path line */}
                     <path d={pathD} fill="none" stroke={themeColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    
-                    {/* Data Points */}
                     {points.map((p, i) => (
                         <g key={i}>
                             <circle cx={p.x} cy={p.y} r="4" fill="white" stroke={themeColor} strokeWidth="2" />
@@ -108,83 +122,94 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         );
     };
 
-    // 3. Chart Rendering (Comparison Bar SVG)
-    const renderComparisonChart = () => {
-        if (comparisonData.length === 0) return <div className="text-muted small">No assessment type data available.</div>;
-        
-        const width = 200;
-        const height = 120;
-        const padding = 20;
-        const barWidth = 35;
-        const maxAvg = 100;
-
-        return (
-            <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-                {comparisonData.map((d, i) => {
-                    const barHeight = (d.avg / maxAvg) * (height - 2 * padding);
-                    const x = padding + i * (width - 2 * padding) / (comparisonData.length > 1 ? comparisonData.length - 1 : 1) - (comparisonData.length > 1 ? barWidth / 2 : width/2 - padding);
-                    const safeX = comparisonData.length === 1 ? (width/2 - barWidth/2) : (padding + i * (width - 2*padding) / (comparisonData.length - 1) - barWidth/2);
-                    
-                    return (
-                        <g key={i}>
-                            <rect 
-                                x={safeX} 
-                                y={height - padding - barHeight} 
-                                width={barWidth} 
-                                height={barHeight} 
-                                fill={i === comparisonData.length - 1 ? '#3699ff' : '#e4e6ef'} 
-                                rx="4"
-                            />
-                            <text x={safeX + barWidth/2} y={height - 5} fontSize="9" fill="#9ca3af" textAnchor="middle">{d.type.substring(0,6)}</text>
-                            <text x={safeX + barWidth/2} y={height - padding - barHeight - 5} fontSize="10" fontWeight="700" fill="#3f4254" textAnchor="middle">{Math.round(d.avg)}%</text>
-                        </g>
-                    );
-                })}
-            </svg>
-        );
-    };
-
     return (
         <div style={{ padding: '24px', background: '#fdfdfd', borderTop: '1px solid #ebedf3' }}>
             <div className="row">
-                {/* Column 1: Subject Performance (The original bars) */}
-                <div className="col-lg-4 border-right">
+                {/* Column 1: Subject Performance & Teacher Comment */}
+                <div className="col-lg-3 border-right">
                     <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Subject Breakdown
+                        Performance Mix
                     </div>
                     {currentBars.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                             {currentBars.map((bar, i) => (
                                 <div key={i} className="d-flex align-items-center">
-                                    <div style={{ width: '90px', fontSize: '0.8rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                    <div style={{ width: '80px', fontSize: '0.75rem', fontWeight: 600, color: '#3f4254', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                         {bar.name}
                                     </div>
-                                    <div className="flex-grow-1 mx-3" style={{ height: '14px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                    <div className="flex-grow-1 mx-2" style={{ height: '10px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
                                         <div style={{ width: `${bar.score}%`, height: '100%', background: bar.color, transition: 'width 0.5s ease' }} />
                                     </div>
-                                    <div style={{ width: '35px', textAlign: 'right', fontWeight: 800, fontSize: '0.8rem', color: bar.color }}>{bar.score}</div>
+                                    <div style={{ width: '30px', textAlign: 'right', fontWeight: 800, fontSize: '0.75rem', color: bar.color }}>{bar.score}</div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-muted small p-4 text-center bg-light rounded">No scores for this student.</div>
+                        <div className="text-muted small p-4 text-center bg-light rounded mb-4">No scores found.</div>
                     )}
+                    
+                    <div className="mt-6">
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', marginBottom: '8px' }}>Teacher's Comment</div>
+                        <textarea 
+                            className="form-control form-control-sm border-0 bg-light"
+                            rows="3"
+                            placeholder="Enter general feedback..."
+                            value={teacherComment}
+                            onChange={(e) => onCommentChange?.(student.id, subjects?.[0]?.id, e.target.value)}
+                            style={{ borderRadius: '10px', fontSize: '0.8rem' }}
+                        />
+                    </div>
                 </div>
 
                 {/* Column 2: Historical Trend */}
-                <div className="col-lg-5 border-right pl-lg-8">
+                <div className="col-lg-4 border-right pl-lg-8">
                     <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Performance Trend (Terms)
+                        Progress Trend
                     </div>
                     {renderTrendChart()}
+                    <div className="mt-4 p-4 bg-light rounded">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <span className="text-muted font-weight-bold font-size-xs">Term Avg</span>
+                            <span className="text-dark-75 font-weight-bolder">{Math.round(trendData[trendData.length-1]?.avg || 0)}%</span>
+                        </div>
+                        <div className="d-flex align-items-center justify-content-between mt-1">
+                            <span className="text-muted font-weight-bold font-size-xs">Prev Avg</span>
+                            <span className="text-dark-75 font-weight-bolder">{Math.round(trendData[trendData.length-2]?.avg || 0)}%</span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Column 3: Assessment Comparison */}
-                <div className="col-lg-3 pl-lg-8">
+                {/* Column 3: Mobile Revision Insights */}
+                <div className="col-lg-5 pl-lg-8">
                     <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#959cb6', textTransform: 'uppercase', marginBottom: '15px', letterSpacing: '1px' }}>
-                        Exam Type Mix
+                        Mobile Revision Insights
                     </div>
-                    {renderComparisonChart()}
+                    <div className="row">
+                        <div className="col-6">
+                            <div className="d-flex flex-column bg-light-primary p-4 rounded mb-4 shadow-sm" style={{ borderLeft: '4px solid #3699ff' }}>
+                                <span className="text-primary font-weight-boldest font-size-h3">{revisionInsights.totalAttempts}</span>
+                                <span className="text-muted font-weight-bold font-size-xs text-uppercase">Lesson Attempts</span>
+                            </div>
+                            <div className="d-flex flex-column bg-light-success p-4 rounded shadow-sm" style={{ borderLeft: '4px solid #10b981' }}>
+                                <span className="text-success font-weight-boldest font-size-h3">{revisionInsights.revisionAvg}%</span>
+                                <span className="text-muted font-weight-bold font-size-xs text-uppercase">Avg Revision Score</span>
+                            </div>
+                        </div>
+                        <div className="col-6">
+                            <div className="mb-4">
+                                <div className="text-muted font-weight-bold font-size-xs mb-1">TOP STRENGTHS</div>
+                                {revisionInsights.strengths.length > 0 ? revisionInsights.strengths.map((s, i) => (
+                                    <div key={i} className="label label-inline label-light-success font-weight-bold mb-1 mr-1">{s}</div>
+                                )) : <span className="text-muted font-size-xs italic">N/A</span>}
+                            </div>
+                            <div>
+                                <div className="text-muted font-weight-bold font-size-xs mb-1">REVISION AREAS</div>
+                                {revisionInsights.weaknesses.length > 0 ? revisionInsights.weaknesses.map((s, i) => (
+                                    <div key={i} className="label label-inline label-light-danger font-weight-bold mb-1 mr-1">{s}</div>
+                                )) : <span className="text-muted font-size-xs italic">N/A</span>}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -224,11 +249,16 @@ const SkeletonRow = ({ subjectsCount }) => (
     </tr>
 );
 
-const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onPrintSingle, onSendSms, loading }) => {
+const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
     const [expandedParents, setExpandedParents] = useState({});
+    const [expandedStudents, setExpandedStudents] = useState({});
 
     const toggleParent = useCallback((parentId) => {
         setExpandedParents(prev => ({ ...prev, [parentId]: !prev[parentId] }));
+    }, []);
+
+    const toggleStudent = useCallback((studentId) => {
+        setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
     }, []);
 
     // 1. Group Students by Parent
@@ -249,7 +279,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
 
     // Helper to get score for a cell
     const getScore = (studentId, subjectId) => {
-        const updateKey = `${studentId}-${subjectId}`;
+        const updateKey = `${studentId}-${subjectId}-score`;
         if (updates && updates.hasOwnProperty(updateKey)) {
             return updates[updateKey];
         }
@@ -258,6 +288,30 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
             (a.subject === subjectId || a.subject?.id === subjectId)
         );
         return assessment ? assessment.score : "";
+    };
+
+    const getRemark = (studentId, subjectId) => {
+        const updateKey = `${studentId}-${subjectId}-remark`;
+        if (updates && updates.hasOwnProperty(updateKey)) {
+            return updates[updateKey];
+        }
+        const assessment = assessments.find(a =>
+            (a.student === studentId || a.student?.id === studentId) &&
+            (a.subject === subjectId || a.subject?.id === subjectId)
+        );
+        return assessment ? (assessment.remarks || assessment.remark || "") : "";
+    };
+
+    const getComment = (studentId, subjectId) => {
+        const updateKey = `${studentId}-${subjectId}-comment`;
+        if (updates && updates.hasOwnProperty(updateKey)) {
+            return updates[updateKey];
+        }
+        const assessment = assessments.find(a =>
+            (a.student === studentId || a.student?.id === studentId) &&
+            (a.subject === subjectId || a.subject?.id === subjectId)
+        );
+        return assessment ? (assessment.teachersComment || "") : "";
     };
 
     const getRubric = (score) => {
@@ -319,11 +373,12 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                     <thead>
                         <tr className="text-left text-uppercase">
                             <th style={{ width: '10px' }} className="pl-0"></th>
-                            <th style={{ minWidth: '250px' }}>Details</th>
+                            <th style={{ minWidth: '200px' }}>Details</th>
                             {subjects?.map(subj => (
-                                <th key={subj.id} className="text-center" style={{ minWidth: '130px' }}>{subj.name}</th>
+                                <th key={subj.id} className="text-center" style={{ minWidth: '100px' }}>{subj.name}</th>
                             ))}
-                            <th className="text-center" style={{ minWidth: '100px' }}>Total Pts</th>
+                            <th className="text-center" style={{ minWidth: '150px' }}>Current Remarks</th>
+                            <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
                             <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
                         </tr>
                     </thead>
@@ -374,9 +429,13 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                     {/* STUDENT ROWS (TREE) */}
                                     {isExpanded && group.students.map(student => {
                                         let totalPoints = 0;
+                                        // We'll use the first subject for the 'General Remark' if they want a single column
+                                        const firstSubjectId = subjects?.[0]?.id;
+                                        const generalRemark = getRemark(student.id, firstSubjectId);
+
                                         return (
                                             <React.Fragment key={student.id}>
-                                            <tr className="bg-white">
+                                            <tr className={`bg-white ${expandedStudents[student.id] ? 'student-row-expanded' : ''}`}>
                                                 <td className="pl-10 mr-0" style={{ borderLeft: '3px solid #3699ff' }}>
                                                     <i className="fa fa-level-up-alt text-muted fa-rotate-90"></i>
                                                 </td>
@@ -390,7 +449,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     const val = getScore(student.id, subj.id);
                                                     const rubric = getRubric(val);
                                                     if (rubric?.points) totalPoints += parseFloat(rubric.points);
-                                                    const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}`);
+                                                    const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}-score`);
                                                     const color = getRubricColor(rubric);
 
                                                     return (
@@ -402,15 +461,16 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                     value={val}
                                                                     onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
                                                                     style={{ 
-                                                                        width: '70px', 
-                                                                        height: '35px', 
-                                                                        fontSize: '1rem',
+                                                                        width: '65px', 
+                                                                        height: '32px', 
+                                                                        fontSize: '0.95rem',
+                                                                        borderRadius: '6px',
                                                                         border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
-                                                                        background: isUpdated ? '#fff8dd' : '#fcfcfc'
+                                                                        background: isUpdated ? '#fff8dd' : '#f8f9fb'
                                                                     }}
                                                                 />
                                                                 {rubric && (
-                                                                    <span className="mt-1 font-weight-boldest font-size-xs" style={{ color }}>
+                                                                    <span className="mt-1 font-weight-boldest" style={{ color, fontSize: '10px' }}>
                                                                         {rubric.label}
                                                                     </span>
                                                                 )}
@@ -418,12 +478,29 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                         </td>
                                                     );
                                                 })}
+                                                <td className="text-center py-2">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm border-0 bg-light"
+                                                        placeholder="General Remark..."
+                                                        value={generalRemark}
+                                                        onChange={(e) => onRemarkChange(student.id, firstSubjectId, e.target.value)}
+                                                        style={{ 
+                                                            fontSize: '0.85rem', 
+                                                            minWidth: '150px',
+                                                            borderRadius: '6px'
+                                                        }}
+                                                    />
+                                                </td>
                                                 <td className="text-center align-middle">
                                                     <span className="text-dark-75 font-weight-bolder font-size-h6">
                                                         {totalPoints || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="text-right">
+                                                    <button className={`btn btn-icon btn-light-info btn-sm mr-1 ${expandedStudents[student.id] ? 'active' : ''}`} onClick={() => toggleStudent(student.id)} title="View Insights">
+                                                        <i className={`ki ki-bold-more-hor icon-xs ${expandedStudents[student.id] ? 'text-white' : ''}`}></i>
+                                                    </button>
                                                     <button className="btn btn-icon btn-light-primary btn-sm mr-1" onClick={() => onPrintSingle?.(student)}>
                                                         <i className="fa fa-print"></i>
                                                     </button>
@@ -432,6 +509,26 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     </button>
                                                 </td>
                                             </tr>
+                                            {expandedStudents[student.id] && (
+                                                <tr>
+                                                    <td className="pl-10" style={{ borderLeft: '3px solid #3699ff' }}></td>
+                                                    <td colSpan={(subjects?.length || 0) + 3} className="p-0">
+                                                        <DetailedPerformanceAnalytics 
+                                                            student={student}
+                                                            subjects={subjects}
+                                                            currentAssessments={assessments}
+                                                            allAssessments={allAssessments}
+                                                            allTerms={allTerms}
+                                                            assessmentTypes={assessmentTypes}
+                                                            rubrics={rubrics}
+                                                            updates={updates}
+                                                            onCommentChange={onCommentChange}
+                                                            lessonAttempts={lessonAttempts}
+                                                            attemptEvents={attemptEvents}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            )}
                                             </React.Fragment>
                                         );
                                     })}
