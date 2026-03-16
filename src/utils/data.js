@@ -399,8 +399,8 @@ var Data = (function () {
         const FRAGMENT_ROUTES_DATA = `fragment RoutesData on school { routes { id name description path { lat lng } } }`;
         const FRAGMENT_SCHEDULES_DATA = `fragment SchedulesData on school { schedules { id message time type end_time name days route { id, name } bus { id, make } } }`;
         const FRAGMENT_TRIPS_DATA = `fragment TripsData on school { trips { id startedAt isCancelled completedAt schedule { name id time end_time, route { id, name, students { id } } } bus { id, make, plate } driver { id, names } locReports { id time loc { lat lng } } events { time, type, student { id, names } } } }`;
-        const FRAGMENT_TERMS_DATA = `fragment TermsData on school { terms { id name startDate endDate } }`;
-        const FRAGMENT_ASSESSMENT_TYPES_DATA = `fragment AssessmentTypesData on school { assessmentTypes { id name percentage } }`;
+        const FRAGMENT_TERMS_DATA = `fragment TermsData on school { terms { id name startDate endDate order } }`;
+        const FRAGMENT_ASSESSMENT_TYPES_DATA = `fragment AssessmentTypesData on school { assessmentTypes { id name percentage order } }`;
         const FRAGMENT_ASSESSMENT_RUBRICS_DATA = `fragment AssessmentRubricsData on school { assessmentRubrics { id label minScore maxScore points teachersComment } }`;
         // 1. Define the Fragment for SMS History (Add this near other fragments)
         const FRAGMENT_SMS_EVENTS_DATA = `fragment SmsEventsData on school { 
@@ -803,6 +803,60 @@ var Data = (function () {
                         console.error("Failed to bulk save assessments:", e);
                         reject(e);
                     }
+                }),
+                getForStudent: (studentId) => new Promise(async (resolve, reject) => {
+                    try {
+                        const schoolId = localStorage.getItem("school");
+                        const queryStr = `
+                            query GetStudentAssessments($schoolId: String, $studentId: String) {
+                                school(id: $schoolId) {
+                                    assessments(student: $studentId) {
+                                        id score outOf remarks teachersComment
+                                        student { id class { id } }
+                                        subject { id }
+                                        term { id }
+                                        assessmentType { id }
+                                    }
+                                }
+                            }
+                        `;
+                        const response = await query(queryStr, { schoolId, studentId });
+                        const fetchedAssessments = response.school?.assessments || [];
+                        
+                        // Merge into local cache
+                        const safeList = Array.isArray(allData.assessments) ? allData.assessments : [];
+                        
+                        fetchedAssessments.forEach(newAss => {
+                            const existingIdx = safeList.findIndex(a => String(a.id) === String(newAss.id));
+                            const flatAss = {
+                                ...newAss,
+                                student: {
+                                    id: newAss.student?.id || newAss.student,
+                                    class: newAss.student?.class?.id || newAss.student?.class
+                                },
+                                subject: newAss.subject?.id || newAss.subject,
+                                term: newAss.term?.id || newAss.term,
+                                assessmentType: newAss.assessmentType?.id || newAss.assessmentType
+                            };
+                            
+                            if (existingIdx > -1) {
+                                safeList[existingIdx] = { ...safeList[existingIdx], ...flatAss };
+                            } else {
+                                safeList.push(flatAss);
+                            }
+                        });
+                        
+                        if (!Array.isArray(allData.assessments)) allData.assessments = safeList;
+
+                        if (Array.isArray(subs.assessments)) {
+                            subs.assessments.forEach(cb => cb({ assessments: [...allData.assessments] }));
+                        }
+                        
+                        resolve(fetchedAssessments);
+                    } catch (e) {
+                        console.error("Failed to fetch student assessments:", e);
+                        reject(e);
+                    }
                 })
             })
         },
@@ -907,8 +961,41 @@ var Data = (function () {
         {
             name: "terms",
             singularName: "term",
-            createFields: ['name', 'school', 'startDate', 'endDate'],
-            updateFields: ['name', 'school', 'startDate', 'endDate']
+            createFields: ['name', 'school', 'startDate', 'endDate', 'order'],
+            updateFields: ['name', 'school', 'startDate', 'endDate', 'order'],
+            customMethods: (allData, subs, api) => ({
+                updateOrder: (orders) => new Promise(async (resolve, reject) => {
+                    if (!orders || orders.length === 0) return resolve(true);
+                    try {
+                        const mutation = `
+                            mutation UpdateTermOrder($orders: [TermOrderInput]!) {
+                                terms {
+                                    updateOrder(orders: $orders)
+                                }
+                            }
+                        `;
+                        const response = await mutate(mutation, { orders });
+                        
+                        // Update cache locally
+                        const safeList = Array.isArray(allData.terms) ? allData.terms : [];
+                        orders.forEach(({ id, order }) => {
+                            const existing = safeList.find(a => String(a.id) === String(id));
+                            if (existing) existing.order = order;
+                        });
+                        
+                        allData.terms = [...safeList].sort((a, b) => (a.order || 0) - (b.order || 0));
+                        
+                        if (Array.isArray(subs.terms)) {
+                            subs.terms.forEach(cb => cb({ terms: [...allData.terms] }));
+                        }
+                        
+                        resolve(response);
+                    } catch(e) {
+                        console.error('Failed to update term orders:', e);
+                        reject(e);
+                    }
+                })
+            })
         },
         {
             name: "books",
@@ -919,8 +1006,41 @@ var Data = (function () {
         {
             name: "assessmentTypes",
             singularName: "assessmenttype",
-            createFields: ['name', 'percentage', 'school'],
-            updateFields: ['name', 'percentage']
+            createFields: ['name', 'percentage', 'school', 'order'],
+            updateFields: ['name', 'percentage', 'order'],
+            customMethods: (allData, subs, api) => ({
+                updateOrder: (orders) => new Promise(async (resolve, reject) => {
+                    if (!orders || orders.length === 0) return resolve(true);
+                    try {
+                        const mutation = `
+                            mutation UpdateAssessmentTypeOrder($orders: [AssessmentTypeOrderInput]!) {
+                                assessmentTypes {
+                                    updateOrder(orders: $orders)
+                                }
+                            }
+                        `;
+                        const response = await mutate(mutation, { orders });
+                        
+                        // Update cache locally
+                        const safeList = Array.isArray(allData.assessmentTypes) ? allData.assessmentTypes : [];
+                        orders.forEach(({ id, order }) => {
+                            const existing = safeList.find(a => String(a.id) === String(id));
+                            if (existing) existing.order = order;
+                        });
+                        
+                        allData.assessmentTypes = [...safeList].sort((a, b) => (a.order || 0) - (b.order || 0));
+                        
+                        if (Array.isArray(subs.assessmentTypes)) {
+                            subs.assessmentTypes.forEach(cb => cb({ assessmentTypes: [...allData.assessmentTypes] }));
+                        }
+                        
+                        resolve(response);
+                    } catch(e) {
+                        console.error('Failed to update assessmentType orders:', e);
+                        reject(e);
+                    }
+                })
+            })
         },
         {
             name: "assessmentRubrics",

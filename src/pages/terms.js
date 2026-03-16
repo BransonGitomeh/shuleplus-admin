@@ -3,7 +3,9 @@ import React, { Component } from 'react';
 import Navbar from "../components/navbar";
 import Subheader from "../components/subheader";
 import Data from "../utils/data";
-import { Modal } from "react-bootstrap"; // Assuming react-bootstrap or usage of window.$
+import { Modal } from "react-bootstrap";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragHandle } from './learning/assessmentTypes'; // Reusing the icon if possible or defining here
 
 const $ = window.$;
 
@@ -25,7 +27,8 @@ class TermsManagement extends Component {
     componentDidMount() {
         this.fetchTerms();
         this.unsubscribe = Data.terms.subscribe(({ terms }) => {
-            this.setState({ terms: terms || [] });
+            const sortedTerms = [...(terms || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+            this.setState({ terms: sortedTerms });
         });
     }
 
@@ -34,8 +37,36 @@ class TermsManagement extends Component {
     }
 
     fetchTerms = () => {
-        const terms = Data.terms.list() || [];
+        const terms = [...(Data.terms.list() || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
         this.setState({ terms, loading: false });
+    }
+
+    onDragEnd = async (result) => {
+        if (!result.destination) return;
+
+        const { terms } = this.state;
+        const reorderedTerms = Array.from(terms);
+        const [removed] = reorderedTerms.splice(result.source.index, 1);
+        reorderedTerms.splice(result.destination.index, 0, removed);
+
+        // Assign new order values based on index
+        const updatedTerms = reorderedTerms.map((term, index) => ({
+            ...term,
+            order: index
+        }));
+
+        const previousTerms = terms;
+        this.setState({ terms: updatedTerms });
+
+        try {
+            const orders = updatedTerms.map(t => ({ id: t.id, order: t.order }));
+            await Data.terms.updateOrder(orders);
+            if (window.toastr) window.toastr.success("Term order updated");
+        } catch (e) {
+            console.error(e);
+            this.setState({ terms: previousTerms });
+            if (window.toastr) window.toastr.error("Failed to update order");
+        }
     }
 
     handleAdd = async () => {
@@ -135,34 +166,56 @@ class TermsManagement extends Component {
                                 </div>
                                 <div className="card-body">
                                     <div className="table-responsive">
-                                        <table className="table table-bordered table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Term Name</th>
-                                                    <th>Start Date</th>
-                                                    <th>End Date</th>
-                                                    <th style={{width: '150px'}}>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {terms.map(term => (
-                                                    <tr key={term.id}>
-                                                        <td>{term.name}</td>
-                                                        <td>{term.startDate ? new Date(term.startDate).toLocaleDateString() : '-'}</td>
-                                                        <td>{term.endDate ? new Date(term.endDate).toLocaleDateString() : '-'}</td>
-                                                        <td>
-                                                            <button className="btn btn-sm btn-light-primary mr-2" onClick={() => this.openEditModal(term)}>
-                                                                <i className="flaticon2-edit"></i>
-                                                            </button>
-                                                            <button className="btn btn-sm btn-light-danger" onClick={() => this.handleDelete(term)}>
-                                                                <i className="flaticon2-trash"></i>
-                                                            </button>
-                                                        </td>
+                                        <DragDropContext onDragEnd={this.onDragEnd}>
+                                            <table className="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th style={{ width: '40px' }}></th>
+                                                        <th>Term Name</th>
+                                                        <th>Start Date</th>
+                                                        <th>End Date</th>
+                                                        <th style={{width: '150px'}}>Actions</th>
                                                     </tr>
-                                                ))}
-                                                {terms.length === 0 && <tr><td colSpan="4" className="text-center">No terms found.</td></tr>}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <Droppable droppableId="terms-list">
+                                                    {(provided) => (
+                                                        <tbody {...provided.droppableProps} ref={provided.innerRef}>
+                                                            {terms.map((term, index) => (
+                                                                <Draggable key={term.id} draggableId={term.id} index={index}>
+                                                                    {(provided, snapshot) => (
+                                                                        <tr 
+                                                                            ref={provided.innerRef} 
+                                                                            {...provided.draggableProps}
+                                                                            style={{
+                                                                                ...provided.draggableProps.style,
+                                                                                backgroundColor: snapshot.isDragging ? '#f4f6fa' : 'transparent'
+                                                                            }}
+                                                                        >
+                                                                            <td {...provided.dragHandleProps} className="text-center" style={{ verticalAlign: 'middle' }}>
+                                                                                <i className="flaticon2-menu-1 text-muted" style={{ cursor: 'grab' }}></i>
+                                                                            </td>
+                                                                            <td>{term.name}</td>
+                                                                            <td>{term.startDate ? new Date(term.startDate).toLocaleDateString() : '-'}</td>
+                                                                            <td>{term.endDate ? new Date(term.endDate).toLocaleDateString() : '-'}</td>
+                                                                            <td>
+                                                                                <button className="btn btn-sm btn-light-primary mr-2" onClick={() => this.openEditModal(term)}>
+                                                                                    <i className="flaticon2-edit"></i>
+                                                                                </button>
+                                                                                <button className="btn btn-sm btn-light-danger" onClick={() => this.handleDelete(term)}>
+                                                                                    <i className="flaticon2-trash"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                </Draggable>
+                                                            ))}
+                                                            {provided.placeholder}
+                                                            {terms.length === 0 && <tr><td colSpan="5" className="text-center">No terms found.</td></tr>}
+                                                        </tbody>
+                                                    )}
+                                                </Droppable>
+                                            </table>
+                                        </DragDropContext>
                                     </div>
                                 </div>
                             </div>

@@ -1,8 +1,8 @@
-
 import React, { Component } from 'react';
 import Navbar from "../../components/navbar";
 import Subheader from "../../components/subheader";
 import Data from "../../utils/data";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 class AssessmentTypes extends Component {
     state = {
@@ -21,7 +21,8 @@ class AssessmentTypes extends Component {
     componentDidMount() {
         this.fetchData();
         this.unsubscribe = Data.assessmentTypes.subscribe(({ assessmentTypes }) => {
-            this.setState({ assessmentTypes: assessmentTypes || [] });
+            const sorted = (assessmentTypes || []).sort((a,b) => (a.order||0) - (b.order||0));
+            this.setState({ assessmentTypes: sorted });
         });
     }
 
@@ -31,7 +32,8 @@ class AssessmentTypes extends Component {
 
     fetchData = () => {
         const assessmentTypes = Data.assessmentTypes.list() || [];
-        this.setState({ assessmentTypes, loading: false });
+        const sorted = [...assessmentTypes].sort((a,b) => (a.order||0) - (b.order||0));
+        this.setState({ assessmentTypes: sorted, loading: false });
     }
 
     handleAdd = async () => {
@@ -41,9 +43,11 @@ class AssessmentTypes extends Component {
 
         this.setState({ processing: true });
         try {
+            const newOrder = this.state.assessmentTypes.length;
             await Data.assessmentTypes.create({ 
                 name: typeName, 
                 percentage: parseFloat(percentage),
+                order: newOrder,
                 school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Assessment type created successfully");
@@ -66,6 +70,7 @@ class AssessmentTypes extends Component {
                 id: selectedType.id, 
                 name: typeName, 
                 percentage: parseFloat(percentage),
+                order: selectedType.order,
                 school: localStorage.getItem('school')
             });
             if(window.toastr) window.toastr.success("Assessment type updated successfully");
@@ -88,6 +93,31 @@ class AssessmentTypes extends Component {
             if(window.toastr) window.toastr.error("Failed to delete assessment type");
         }
     }
+
+    onDragEnd = async (result) => {
+        if (!result.destination) return;
+        
+        const items = Array.from(this.state.assessmentTypes);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        // Update local state immediately for smooth UI
+        const updatedItems = items.map((item, index) => ({ ...item, order: index }));
+        this.setState({ assessmentTypes: updatedItems });
+
+        // Build order payload
+        const ordersPayload = updatedItems.map(item => ({ id: item.id, order: item.order }));
+
+        try {
+            await Data.assessmentTypes.updateOrder(ordersPayload);
+            if (window.toastr) window.toastr.success("Order updated");
+        } catch (e) {
+            console.error(e);
+            if (window.toastr) window.toastr.error("Failed to save order");
+            // Revert on failure
+            this.fetchData();
+        }
+    };
 
     openAddModal = () => {
         this.setState({ 
@@ -134,28 +164,51 @@ class AssessmentTypes extends Component {
                                         <table className="table table-bordered table-striped">
                                             <thead>
                                                 <tr>
+                                                    <th style={{width: '50px'}}></th>
                                                     <th>Name</th>
                                                     <th>Percentage (%)</th>
                                                     <th style={{width: '150px'}}>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                {assessmentTypes.map(item => (
-                                                    <tr key={item.id}>
-                                                        <td>{item.name}</td>
-                                                        <td>{item.percentage}%</td>
-                                                        <td>
-                                                            <button className="btn btn-sm btn-light-primary mr-2" onClick={() => this.openEditModal(item)}>
-                                                                <i className="flaticon2-edit"></i>
-                                                            </button>
-                                                            <button className="btn btn-sm btn-light-danger" onClick={() => this.handleDelete(item)}>
-                                                                <i className="flaticon2-trash"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                {assessmentTypes.length === 0 && <tr><td colSpan="3" className="text-center">No assessment types found.</td></tr>}
-                                            </tbody>
+                                            <DragDropContext onDragEnd={this.onDragEnd}>
+                                                <Droppable droppableId="droppable-types">
+                                                    {(provided) => (
+                                                        <tbody {...provided.droppableProps} ref={provided.innerRef}>
+                                                            {assessmentTypes.map((item, index) => (
+                                                                <Draggable key={item.id} draggableId={item.id} index={index}>
+                                                                    {(provided, snapshot) => (
+                                                                        <tr
+                                                                            ref={provided.innerRef}
+                                                                            {...provided.draggableProps}
+                                                                            style={{
+                                                                                ...provided.draggableProps.style,
+                                                                                background: snapshot.isDragging ? '#f3f6f9' : 'white',
+                                                                                display: snapshot.isDragging ? 'table' : '',
+                                                                            }}
+                                                                        >
+                                                                            <td {...provided.dragHandleProps} style={{ cursor: 'grab', verticalAlign: 'middle', textAlign: 'center' }}>
+                                                                                <i className="flaticon2-line"></i>
+                                                                            </td>
+                                                                            <td style={{ verticalAlign: 'middle' }}>{item.name}</td>
+                                                                            <td style={{ verticalAlign: 'middle' }}>{item.percentage}%</td>
+                                                                            <td style={{ verticalAlign: 'middle' }}>
+                                                                                <button className="btn btn-sm btn-light-primary mr-2" onClick={() => this.openEditModal(item)}>
+                                                                                    <i className="flaticon2-edit"></i>
+                                                                                </button>
+                                                                                <button className="btn btn-sm btn-light-danger" onClick={() => this.handleDelete(item)}>
+                                                                                    <i className="flaticon2-trash"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                </Draggable>
+                                                            ))}
+                                                            {provided.placeholder}
+                                                            {assessmentTypes.length === 0 && <tr><td colSpan="4" className="text-center">No assessment types found.</td></tr>}
+                                                        </tbody>
+                                                    )}
+                                                </Droppable>
+                                            </DragDropContext>
                                         </table>
                                     </div>
                                 </div>

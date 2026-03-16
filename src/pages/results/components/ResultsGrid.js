@@ -103,6 +103,28 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         );
     };
 
+    useEffect(() => {
+        if (student.id) {
+            Data.assessments.getForStudent(student.id);
+        }
+    }, [student.id]);
+
+    // Cross-Term Performance Matrix Data
+    const crossTermMatrix = useMemo(() => {
+        const sortedTerms = [...(allTerms || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+        return sortedTerms.map(term => {
+            const termAss = studentAll.filter(a => (a.term === term.id || a.term?.id === term.id));
+            const subjectScores = subjects.map(subj => {
+                const a = termAss.find(a => (a.subject === subj.id || a.subject?.id === subj.id));
+                return a ? parseFloat(a.score) : null;
+            });
+            const termAvg = subjectScores.filter(s => s !== null).length > 0 
+                ? (subjectScores.reduce((sum, s) => sum + (s || 0), 0) / subjectScores.filter(s => s !== null).length) 
+                : 0;
+            return { term, subjectScores, termAvg };
+        }).filter(d => d.subjectScores.some(s => s !== null)); // Only show terms with data
+    }, [allTerms, studentAll, subjects]);
+
     return (
         <div style={{ padding: '20px 24px', background: '#f9fafc', borderTop: '3px solid #3699ff' }}>
             <div className="row">
@@ -203,33 +225,78 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
                         </div>
                     </div>
 
-                    {/* Strengths / Weaknesses */}
-                    <div className="card card-custom card-shadowless bg-white" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                    {/* Performance Insights (Strengths / Weaknesses) */}
+                    <div className="card card-custom card-shadowless bg-white mb-4" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
                         <div className="card-body p-5">
                             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>
                                 Performance Insights
                             </div>
-                            <div className="mb-4">
-                                <div className="d-flex align-items-center mb-2">
-                                    <i className="flaticon2-check-mark text-success mr-2" style={{ fontSize: '0.9rem' }}></i>
-                                    <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Top Strengths</span>
+                            <div className="row">
+                                <div className="col-6">
+                                    <div className="d-flex align-items-center mb-2">
+                                        <i className="flaticon2-check-mark text-success mr-2" style={{ fontSize: '0.8rem' }}></i>
+                                        <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Strengths</span>
+                                    </div>
+                                    <div className="d-flex flex-wrap" style={{ gap: '4px' }}>
+                                        {revisionInsights.strengths.length > 0 ? revisionInsights.strengths.map((s, i) => (
+                                            <span key={i} className="label label-inline label-light-success font-weight-bold" style={{ fontSize: '0.65rem' }}>{s}</span>
+                                        )) : <span className="text-muted font-size-xs">N/A</span>}
+                                    </div>
                                 </div>
-                                <div className="d-flex flex-wrap" style={{ gap: '6px' }}>
-                                    {revisionInsights.strengths.length > 0 ? revisionInsights.strengths.map((s, i) => (
-                                        <span key={i} className="label label-inline label-light-success font-weight-bold">{s}</span>
-                                    )) : <span className="text-muted font-size-xs">Not enough data</span>}
+                                <div className="col-6">
+                                    <div className="d-flex align-items-center mb-2">
+                                        <i className="flaticon2-warning text-danger mr-2" style={{ fontSize: '0.8rem' }}></i>
+                                        <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Focus Areas</span>
+                                    </div>
+                                    <div className="d-flex flex-wrap" style={{ gap: '4px' }}>
+                                        {revisionInsights.weaknesses.length > 0 ? revisionInsights.weaknesses.map((s, i) => (
+                                            <span key={i} className="label label-inline label-light-danger font-weight-bold" style={{ fontSize: '0.65rem' }}>{s}</span>
+                                        )) : <span className="text-muted font-size-xs">N/A</span>}
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div className="d-flex align-items-center mb-2">
-                                    <i className="flaticon2-warning text-danger mr-2" style={{ fontSize: '0.9rem' }}></i>
-                                    <span className="font-weight-boldest text-dark-75 font-size-xs text-uppercase">Needs Attention</span>
-                                </div>
-                                <div className="d-flex flex-wrap" style={{ gap: '6px' }}>
-                                    {revisionInsights.weaknesses.length > 0 ? revisionInsights.weaknesses.map((s, i) => (
-                                        <span key={i} className="label label-inline label-light-danger font-weight-bold">{s}</span>
-                                    )) : <span className="text-muted font-size-xs">N/A</span>}
-                                </div>
+                        </div>
+                    </div>
+
+                    {/* Cross-Term Sub-Matrix Table */}
+                    <div className="card card-custom card-shadowless bg-white" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
+                        <div className="card-body p-5">
+                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>
+                                Cross-Term Comparison
+                            </div>
+                            <div className="table-responsive">
+                                <table className="table table-borderless table-vertical-center mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th className="p-0" style={{ minWidth: '80px' }}>Term</th>
+                                            {subjects.map(s => (
+                                                <th key={s.id} className="p-0 text-center" style={{ minWidth: '40px' }}>
+                                                    <span className="text-muted font-weight-bold font-size-xs d-block">{s.name.slice(0,3)}</span>
+                                                </th>
+                                            ))}
+                                            <th className="p-0 text-right" style={{ minWidth: '40px' }}>Avg</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {crossTermMatrix.map((row, i) => (
+                                            <tr key={i} style={{ borderBottom: i === crossTermMatrix.length - 1 ? 'none' : '1px solid #f3f6f9' }}>
+                                                <td className="pl-0 py-2">
+                                                    <span className="text-dark-75 font-weight-bolder d-block font-size-xs">{row.term.name}</span>
+                                                </td>
+                                                {row.subjectScores.map((score, j) => (
+                                                    <td key={j} className="text-center py-2">
+                                                        <span className={`font-weight-bold font-size-xs ${score === null ? 'text-muted opacity-30' : 'text-dark-75'}`}>
+                                                            {score !== null ? Math.round(score) : '-'}
+                                                        </span>
+                                                    </td>
+                                                ))}
+                                                <td className="pr-0 py-2 text-right text-primary font-weight-boldest font-size-xs">
+                                                    {Math.round(row.termAvg)}%
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -459,6 +526,11 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                             >
                                                                                 {rubric.label}
                                                                             </div>
+                                                                            {rubric.teachersComment && (
+                                                                                <div className="text-muted font-weight-bold text-center px-1 mt-1" style={{ fontSize: '9px', lineHeight: '1.2', maxWidth: '80px', pointerEvents: 'none' }}>
+                                                                                    {rubric.teachersComment}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     )}
                                                                 </div>
