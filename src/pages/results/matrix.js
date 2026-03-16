@@ -18,7 +18,6 @@ class ResultsMatrix extends React.Component {
 
     selectedClass: "",
     selectedTerm: "",
-    selectedAssessmentType: "",
     
     assessmentTypes: [],
     assessmentRubrics: [],
@@ -65,9 +64,6 @@ class ResultsMatrix extends React.Component {
     this.unsubAssessments = Data.assessments.subscribe(({ assessments }) => this.setState({ assessments }));
     this.unsubAssessmentTypes = Data.assessmentTypes.subscribe(({ assessmentTypes }) => {
         this.setState({ assessmentTypes });
-        if (assessmentTypes?.length > 0 && !this.state.selectedAssessmentType) {
-            this.setState({ selectedAssessmentType: assessmentTypes[0].id });
-        }
     });
     this.unsubAssessmentRubrics = Data.assessmentRubrics.subscribe(({ assessmentRubrics }) => this.setState({ assessmentRubrics }));
     this.unsubLessonAttempts = Data.lessonAttempts.subscribe(({ lessonAttempts }) => this.setState({ lessonAttempts }));
@@ -78,16 +74,14 @@ class ResultsMatrix extends React.Component {
     this.setState({ 
         schoolInfo,
         selectedClass: localStorage.getItem('matrix_selectedClass') || "",
-        selectedTerm: localStorage.getItem('matrix_selectedTerm') || "",
-        selectedAssessmentType: localStorage.getItem('matrix_selectedAssessmentType') || ""
+        selectedTerm: localStorage.getItem('matrix_selectedTerm') || ""
     });
 
     setTimeout(() => {
-        const { selectedClass, selectedTerm, selectedAssessmentType, classes, terms, assessmentTypes } = this.state;
+        const { selectedClass, selectedTerm, classes, terms } = this.state;
         let updates = {};
         if (!selectedClass && classes?.length > 0) updates.selectedClass = classes[0].id;
         if (!selectedTerm && terms?.length > 0) updates.selectedTerm = terms[0].id;
-        if (!selectedAssessmentType && assessmentTypes?.length > 0) updates.selectedAssessmentType = assessmentTypes[0].id;
 
         if (Object.keys(updates).length > 0) this.setState(updates);
         this.setState({ loading: false });
@@ -97,7 +91,6 @@ class ResultsMatrix extends React.Component {
   componentDidUpdate(prevProps, prevState) {
       if (this.state.selectedClass !== prevState.selectedClass) localStorage.setItem('matrix_selectedClass', this.state.selectedClass);
       if (this.state.selectedTerm !== prevState.selectedTerm) localStorage.setItem('matrix_selectedTerm', this.state.selectedTerm);
-      if (this.state.selectedAssessmentType !== prevState.selectedAssessmentType) localStorage.setItem('matrix_selectedAssessmentType', this.state.selectedAssessmentType);
 
       if ((this.state.selectedClass && this.state.selectedTerm) &&
           (this.state.selectedClass !== prevState.selectedClass || this.state.selectedTerm !== prevState.selectedTerm)) {
@@ -137,62 +130,63 @@ class ResultsMatrix extends React.Component {
     return students.filter(s => s.class?.id === selectedClass || s.class === selectedClass);
   };
 
-  handleScoreChange = (studentId, subjectId, val) => {
+  handleScoreChange = (studentId, subjectId, typeId, val) => {
       this.setState(prev => ({
-          edits: { ...prev.edits, [`${studentId}-${subjectId}-score`]: val }
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-${typeId}-score`]: val }
       }));
   };
 
-  handleRemarkChange = (studentId, subjectId, val) => {
+  handleRemarkChange = (studentId, subjectId, typeId, val) => {
       this.setState(prev => ({
-          edits: { ...prev.edits, [`${studentId}-${subjectId}-remark`]: val }
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-${typeId}-remark`]: val }
       }));
   };
 
-  handleCommentChange = (studentId, subjectId, val) => {
+  handleCommentChange = (studentId, subjectId, typeId, val) => {
       this.setState(prev => ({
-          edits: { ...prev.edits, [`${studentId}-${subjectId}-comment`]: val }
+          edits: { ...prev.edits, [`${studentId}-${subjectId}-${typeId}-comment`]: val }
       }));
   };
   
   saveAllChanges = async () => {
-      const { edits, selectedTerm, selectedAssessmentType, assessments } = this.state;
+      const { edits, selectedTerm, assessments } = this.state;
       const editKeys = Object.keys(edits);
       if (editKeys.length === 0) return;
       
       this.setState({ saving: true });
-      let successCount = 0;
       let newEdits = { ...edits };
 
-      // Group edits by studentId-subjectId
+      // Group edits by studentId-subjectId-typeId
       const groupedEdits = {};
       editKeys.forEach(key => {
           const parts = key.split('-');
-          if (parts.length < 3) return;
+          if (parts.length < 4) return;
           const studentId = parts[0];
           const subjectId = parts[1];
-          const field = parts[2];
-          const groupKey = `${studentId}-${subjectId}`;
+          const typeId = parts[2];
+          const field = parts[3];
+          const groupKey = `${studentId}-${subjectId}-${typeId}`;
           if (!groupedEdits[groupKey]) groupedEdits[groupKey] = {};
           groupedEdits[groupKey][field] = edits[key];
       });
 
       try {
+          const payloads = [];
           for (const key of Object.keys(groupedEdits)) {
-              const [studentId, subjectId] = key.split('-');
+              const [studentId, subjectId, typeId] = key.split('-');
               const fieldEdits = groupedEdits[key];
               
               const existing = assessments.find(a => 
                 (a.student === studentId || a.student?.id === studentId) &&
                 (a.subject === subjectId || a.subject?.id === subjectId) &&
                 (a.term === selectedTerm || a.term?.id === selectedTerm) &&
-                (a.type === selectedAssessmentType || a.type?.id === selectedAssessmentType || a.assessmentType === selectedAssessmentType || a.assessmentType?.id === selectedAssessmentType)
+                (a.type === typeId || a.type?.id === typeId || a.assessmentType === typeId || a.assessmentType?.id === typeId)
               );
 
               const payload = {
                   school: localStorage.getItem('school'),
                   term: selectedTerm,
-                  type: selectedAssessmentType,
+                  type: typeId,
                   student: studentId,
                   subject: subjectId,
                   outOf: 100,
@@ -204,15 +198,21 @@ class ResultsMatrix extends React.Component {
               if (fieldEdits.remark !== undefined) payload.remarks = fieldEdits.remark;
               if (fieldEdits.comment !== undefined) payload.teachersComment = fieldEdits.comment;
 
-              try {
-                  if (existing?.id) await Data.assessments.update(payload);
-                  else await Data.assessments.create(payload);
-                  successCount++;
-                  // Clear these specific edits
-                  Object.keys(fieldEdits).forEach(f => delete newEdits[`${key}-${f}`]);
-              } catch (e) { console.error(e); }
+              // Validate payload
+              if (!isNaN(payload.score)) {
+                  payloads.push(payload);
+              }
           }
-          if (window.toastr) window.toastr.success(`Saved changes for ${successCount} assessments.`);
+          if (payloads.length > 0) {
+              await Data.assessments.bulkSave(payloads);
+              // Clear these specific edits
+              Object.keys(groupedEdits).forEach(groupKey => {
+                  Object.keys(groupedEdits[groupKey]).forEach(field => {
+                      delete newEdits[`${groupKey}-${field}`];
+                  });
+              });
+              if (window.toastr) window.toastr.success(`Saved changes for ${payloads.length} assessments.`);
+          }
           this.setState({ edits: newEdits });
       } catch (e) { console.error(e); }
       finally { this.setState({ saving: false }); }
@@ -407,7 +407,7 @@ class ResultsMatrix extends React.Component {
   render() {
     const { 
         classes, terms, subjects, assessmentTypes, assessmentRubrics, 
-        selectedClass, selectedTerm, selectedAssessmentType, assessments, 
+        selectedClass, selectedTerm, assessments, 
         showPrintView, schoolInfo, edits, fetchingAssessments, saving, 
         showBulkModal, printingStudentId, activeTab, loading 
     } = this.state;
@@ -416,24 +416,18 @@ class ResultsMatrix extends React.Component {
 
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
-      const selectedType = assessmentTypes.find(at => at.id === selectedAssessmentType);
-      const filteredSubjectsList = (selectedType && selectedType.subjects) 
-        ? subjects.filter(s => selectedType.subjects.includes(s.id))
-        : subjects;
+      const filteredSubjectsList = subjects; // Since we display all types side-by-side, we should display all possible subjects
     
     const currentViewAssessments = (assessments || []).filter(a => {
         const studentId = a.student?.id || a.student;
         const studentClassId = a.student?.class?.id || a.student?.class; // Note: Newly created assessments might lack this
         const termId = a.term?.id || a.term;
-        const typeId = a.assessmentType?.id || a.assessmentType || a.type?.id || a.type;
 
         // If studentClassId is missing (newly created), we fall back to student lookup if possible
         const student = students.find(s => String(s.id) === String(studentId));
         const classMatch = studentClassId ? (String(studentClassId) === String(selectedClass)) : (student && (String(student.class?.id || student.class) === String(selectedClass)));
 
-        return classMatch &&
-            String(termId) === String(selectedTerm) &&
-            String(typeId) === String(selectedAssessmentType);
+        return classMatch && String(termId) === String(selectedTerm);
     });
 
     if (showPrintView) {
@@ -504,12 +498,7 @@ class ResultsMatrix extends React.Component {
                             {classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
-                    <div className="dropdown dropdown-inline mr-4">
-                        <select className="form-control form-control-sm form-control-solid" value={selectedAssessmentType} onChange={e => this.setState({ selectedAssessmentType: e.target.value })}>
-                            <option value="">Type...</option>
-                            {assessmentTypes?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                    </div>
+
 
                     <div className="d-flex align-items-center">
                         {Object.keys(edits).length > 0 && <button className={`btn btn-sm btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
@@ -538,6 +527,7 @@ class ResultsMatrix extends React.Component {
                         onScoreChange={this.handleScoreChange} 
                         onRemarkChange={this.handleRemarkChange}
                         onCommentChange={this.handleCommentChange}
+                        onBlur={this.saveAllChanges}
                         onPrintSingle={this.handlePrintSingle} 
                         onSendSms={this.handleSmsClick} 
                     />

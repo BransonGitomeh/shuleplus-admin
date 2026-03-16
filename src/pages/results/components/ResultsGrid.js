@@ -273,7 +273,7 @@ const SkeletonRow = ({ subjectsCount }) => (
     </tr>
 );
 
-const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
+const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms, assessmentTypes, rubrics, updates, onScoreChange, onRemarkChange, onCommentChange, onBlur, onPrintSingle, onSendSms, loading, lessonAttempts = [], attemptEvents = [] }) => {
     const [expandedStudents, setExpandedStudents] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -285,38 +285,41 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
 
 
     // Helper to get score for a cell
-    const getScore = (studentId, subjectId) => {
-        const updateKey = `${studentId}-${subjectId}-score`;
+    const getScore = (studentId, subjectId, typeId) => {
+        const updateKey = `${studentId}-${subjectId}-${typeId}-score`;
         if (updates && updates.hasOwnProperty(updateKey)) {
             return updates[updateKey];
         }
         const assessment = assessments.find(a =>
             (a.student === studentId || a.student?.id === studentId) &&
-            (a.subject === subjectId || a.subject?.id === subjectId)
+            (a.subject === subjectId || a.subject?.id === subjectId) &&
+            (a.assessmentType === typeId || a.assessmentType?.id === typeId || a.type === typeId || a.type?.id === typeId)
         );
         return assessment ? assessment.score : "";
     };
 
-    const getRemark = (studentId, subjectId) => {
-        const updateKey = `${studentId}-${subjectId}-remark`;
+    const getRemark = (studentId, subjectId, typeId) => {
+        const updateKey = `${studentId}-${subjectId}-${typeId}-remark`;
         if (updates && updates.hasOwnProperty(updateKey)) {
             return updates[updateKey];
         }
         const assessment = assessments.find(a =>
             (a.student === studentId || a.student?.id === studentId) &&
-            (a.subject === subjectId || a.subject?.id === subjectId)
+            (a.subject === subjectId || a.subject?.id === subjectId) &&
+            (a.assessmentType === typeId || a.assessmentType?.id === typeId || a.type === typeId || a.type?.id === typeId)
         );
         return assessment ? (assessment.remarks || assessment.remark || "") : "";
     };
 
-    const getComment = (studentId, subjectId) => {
-        const updateKey = `${studentId}-${subjectId}-comment`;
+    const getComment = (studentId, subjectId, typeId) => {
+        const updateKey = `${studentId}-${subjectId}-${typeId}-comment`;
         if (updates && updates.hasOwnProperty(updateKey)) {
             return updates[updateKey];
         }
         const assessment = assessments.find(a =>
             (a.student === studentId || a.student?.id === studentId) &&
-            (a.subject === subjectId || a.subject?.id === subjectId)
+            (a.subject === subjectId || a.subject?.id === subjectId) &&
+            (a.assessmentType === typeId || a.assessmentType?.id === typeId || a.type === typeId || a.type?.id === typeId)
         );
         return assessment ? (assessment.teachersComment || "") : "";
     };
@@ -412,52 +415,55 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                             </div>
                                         </td>
                                         {subjects?.map(subj => {
-                                            const val = getScore(student.id, subj.id);
-                                            const rubric = getRubric(val);
-                                            if (rubric?.points) totalPoints += parseFloat(rubric.points);
-                                            const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}-score`);
-                                            const color = getRubricColor(rubric);
-
                                             return (
                                                 <td key={subj.id} className="text-center py-4">
-                                                    <div className="d-flex flex-column align-items-center">
-                                                        <input
-                                                            type="number"
-                                                            className="form-control form-control-sm text-center font-weight-boldest"
-                                                            value={val}
-                                                            onChange={(e) => onScoreChange(student.id, subj.id, e.target.value)}
-                                                            style={{ 
-                                                                width: '80px', 
-                                                                height: '40px', 
-                                                                fontSize: '1.2rem',
-                                                                borderRadius: '8px',
-                                                                border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
-                                                                background: isUpdated ? '#fff8dd' : '#f8f9fb',
-                                                                marginBottom: '8px'
-                                                            }}
-                                                        />
-                                                        {rubric && (
-                                                            <div className="d-flex flex-column align-items-center">
-                                                                <div 
-                                                                    className="label label-inline font-weight-boldest mb-1" 
-                                                                    style={{ 
-                                                                        backgroundColor: `${color}15`, 
-                                                                        color: color,
-                                                                        fontSize: '11px',
-                                                                        padding: '2px 8px',
-                                                                        borderRadius: '4px',
-                                                                        border: `1px solid ${color}`
-                                                                    }}
-                                                                >
-                                                                    {rubric.label} ({rubric.points || 0} pts)
+                                                    <div className="d-flex flex-row justify-content-center align-items-start" style={{ gap: '10px' }}>
+                                                        {assessmentTypes?.map(type => {
+                                                            const val = getScore(student.id, subj.id, type.id);
+                                                            const rubric = getRubric(val);
+                                                            if (rubric?.points) totalPoints += parseFloat(rubric.points);
+                                                            const isUpdated = updates?.hasOwnProperty(`${student.id}-${subj.id}-${type.id}-score`);
+                                                            const color = getRubricColor(rubric);
+
+                                                            return (
+                                                                <div key={type.id} className="d-flex flex-column align-items-center">
+                                                                    <div className="text-muted font-weight-bold font-size-xs mb-1" style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '60px' }} title={type.name}>{type.name}</div>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="form-control form-control-sm text-center font-weight-boldest px-1"
+                                                                        value={val}
+                                                                        onBlur={onBlur ? () => onBlur() : undefined}
+                                                                        onChange={(e) => onScoreChange(student.id, subj.id, type.id, e.target.value)}
+                                                                        style={{ 
+                                                                            width: '60px', 
+                                                                            height: '35px', 
+                                                                            fontSize: '1.1rem',
+                                                                            borderRadius: '8px',
+                                                                            border: isUpdated ? '2px solid #f6c23e' : '1px solid #ebedf3',
+                                                                            background: isUpdated ? '#fff8dd' : '#f8f9fb',
+                                                                            marginBottom: '4px'
+                                                                        }}
+                                                                    />
+                                                                    {rubric && (
+                                                                        <div className="d-flex flex-column align-items-center">
+                                                                            <div 
+                                                                                className="label label-inline font-weight-boldest mb-1" 
+                                                                                style={{ 
+                                                                                    backgroundColor: `${color}15`, 
+                                                                                    color: color,
+                                                                                    fontSize: '10px',
+                                                                                    padding: '2px 6px',
+                                                                                    borderRadius: '4px',
+                                                                                    border: `1px solid ${color}`
+                                                                                }}
+                                                                            >
+                                                                                {rubric.label}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                {rubric.teachersComment && (
-                                                                    <div className="text-muted font-weight-bold text-center px-1 mt-1" style={{ fontSize: '10px', lineHeight: '1.3', maxWidth: '130px' }}>
-                                                                        {rubric.teachersComment}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                            );
+                                                        })}
                                                     </div>
                                                 </td>
                                             );

@@ -735,6 +735,74 @@ var Data = (function () {
                         console.error("Failed to fetch assessments:", e);
                         reject(e);
                     }
+                }),
+                bulkSave: (assessmentsData) => new Promise(async (resolve, reject) => {
+                    if (!assessmentsData || assessmentsData.length === 0) return resolve([]);
+                    try {
+                        const mutation = `
+                            mutation BulkSaveAssessments($data: [BulkAssessmentInput]!) {
+                                assessments {
+                                    bulkSave(assessments: $data) {
+                                        id score outOf remarks teachersComment
+                                        student { id class { id } }
+                                        subject { id }
+                                        term { id }
+                                        assessmentType { id }
+                                    }
+                                }
+                            }
+                        `;
+                        // Ensure all data is correctly formatted
+                        const payload = assessmentsData.map(a => ({
+                            id: a.id,
+                            student: a.student,
+                            term: a.term,
+                            subject: a.subject,
+                            assessmentType: a.assessmentType || a.type,
+                            score: parseFloat(a.score),
+                            outOf: parseFloat(a.outOf || 100),
+                            teachersComment: a.teachersComment || a.comment,
+                            school: a.school || localStorage.getItem("school"),
+                            remarks: a.remarks || a.remark
+                        }));
+
+                        const response = await mutate(mutation, { data: payload });
+                        const savedAssessments = response.assessments?.bulkSave || [];
+                        
+                        // Merge into local cache
+                        const safeList = Array.isArray(allData.assessments) ? allData.assessments : [];
+                        
+                        savedAssessments.forEach(newAss => {
+                            const existingIdx = safeList.findIndex(a => String(a.id) === String(newAss.id));
+                            const flatAss = {
+                                ...newAss,
+                                student: {
+                                    id: newAss.student?.id || newAss.student,
+                                    class: newAss.student?.class?.id || newAss.student?.class
+                                },
+                                subject: newAss.subject?.id || newAss.subject,
+                                term: newAss.term?.id || newAss.term,
+                                assessmentType: newAss.assessmentType?.id || newAss.assessmentType
+                            };
+                            
+                            if (existingIdx > -1) {
+                                safeList[existingIdx] = { ...safeList[existingIdx], ...flatAss };
+                            } else {
+                                safeList.push(flatAss);
+                            }
+                        });
+                        
+                        if (!Array.isArray(allData.assessments)) allData.assessments = safeList;
+
+                        if (Array.isArray(subs.assessments)) {
+                            subs.assessments.forEach(cb => cb({ assessments: [...allData.assessments] }));
+                        }
+                        
+                        resolve(savedAssessments);
+                    } catch (e) {
+                        console.error("Failed to bulk save assessments:", e);
+                        reject(e);
+                    }
                 })
             })
         },
