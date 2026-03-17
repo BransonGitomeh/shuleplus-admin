@@ -165,6 +165,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                             )}
                         </React.Fragment>
                     ))}
+                    </tbody>
                     <tfoot>
                         <tr style={{ backgroundColor: '#f3f4f6' }}>
                             <td style={{ padding: '14px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (sortedAssessmentTypes?.length || 0)}>
