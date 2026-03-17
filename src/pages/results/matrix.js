@@ -4,7 +4,6 @@ import ReportCard from "./components/ReportCard";
 import ResultsGrid from "./components/ResultsGrid";
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
 import AddSubjectModal from "../learning/subjects/add";
-import SelectSubjectModal from "../learning/subjects/SelectSubjectModal";
 import { StatCard, DistributionChart, TrendBarChart, AreaChart, RankingList } from "../../components/analytics/DashboardWidgets";
 
 class ResultsMatrix extends React.Component {
@@ -43,6 +42,7 @@ class ResultsMatrix extends React.Component {
     
     showAddSubjectModal: false,
     showSelectSubjectModal: false,
+    selectedGrade: localStorage.getItem('matrix_selectedGrade') || "",
   };
 
   componentDidMount() {
@@ -97,8 +97,16 @@ class ResultsMatrix extends React.Component {
   }
   
   componentDidUpdate(prevProps, prevState) {
-      if (this.state.selectedClass !== prevState.selectedClass) localStorage.setItem('matrix_selectedClass', this.state.selectedClass);
+      if (this.state.selectedClass !== prevState.selectedClass) {
+          localStorage.setItem('matrix_selectedClass', this.state.selectedClass);
+          // Proactively set grade if class changed
+          const newGradeId = this.detectGradeId();
+          if (newGradeId) {
+              this.setState({ selectedGrade: newGradeId });
+          }
+      }
       if (this.state.selectedTerm !== prevState.selectedTerm) localStorage.setItem('matrix_selectedTerm', this.state.selectedTerm);
+      if (this.state.selectedGrade !== prevState.selectedGrade) localStorage.setItem('matrix_selectedGrade', this.state.selectedGrade);
 
       if ((this.state.selectedClass && this.state.selectedTerm) &&
           (this.state.selectedClass !== prevState.selectedClass || this.state.selectedTerm !== prevState.selectedTerm)) {
@@ -448,7 +456,12 @@ class ResultsMatrix extends React.Component {
 
     const students = this.getFilteredStudents();
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
-      const filteredSubjectsList = subjects; // Since we display all types side-by-side, we should display all possible subjects
+    
+    const { selectedGrade } = this.state;
+    const filteredSubjectsList = subjects.filter(s => {
+        const sGradeId = s.grade?.id || s.grade;
+        return !selectedGrade || String(sGradeId) === String(selectedGrade);
+    });
     
     const currentViewAssessments = (assessments || []).filter(a => {
         const studentId = a.student?.id || a.student;
@@ -526,34 +539,18 @@ class ResultsMatrix extends React.Component {
                     </div>
                     <div className="dropdown dropdown-inline mr-2">
                         <select className="form-control form-control-sm form-control-solid" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
-                            <option value="">Class...</option>
-                            {classes?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value="">Class (Students)...</option>
+                            {classes?.map(c => <option key={c.id} value={c.id}>{c.name} ({c.student_num || 0} Students)</option>)}
+                        </select>
+                    </div>
+                    <div className="dropdown dropdown-inline mr-2">
+                        <select className="form-control form-control-sm form-control-solid" value={selectedGrade} onChange={e => this.setState({ selectedGrade: e.target.value })}>
+                            <option value="">Grade (Subjects)...</option>
+                            {(this.state.grades || [])?.map(g => <option key={g.id} value={g.id}>{g.name} ({(g.subjects || []).length} Subjects)</option>)}
                         </select>
                     </div>
 
-
                     <div className="d-flex align-items-center">
-                        <div className="dropdown dropdown-inline mr-2">
-                            <button 
-                                className="btn btn-sm btn-light-success font-weight-bold dropdown-toggle" 
-                                type="button" 
-                                data-toggle="dropdown" 
-                                aria-haspopup="true" 
-                                aria-expanded="false"
-                                disabled={!selectedClass}
-                            >
-                                <i className="fa fa-plus"></i> Manage Subjects
-                            </button>
-                            <div className="dropdown-menu dropdown-menu-sm dropdown-menu-right">
-                                <a className="dropdown-item cursor-pointer" onClick={() => this.setState({ showAddSubjectModal: true })}>
-                                    <i className="fa fa-plus-circle mr-2 text-success"></i> Add New Subject
-                                </a>
-                                <a className="dropdown-item cursor-pointer" onClick={() => this.setState({ showSelectSubjectModal: true })}>
-                                    <i className="fa fa-list-check mr-2 text-primary"></i> Select Existing
-                                </a>
-                            </div>
-                        </div>
-
                         {Object.keys(edits).length > 0 && <button className={`btn btn-sm btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
                         <button className="btn btn-sm btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print</button>
                         <button className="btn btn-sm btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> SMS</button>
@@ -613,13 +610,6 @@ class ResultsMatrix extends React.Component {
                 grade={this.detectGradeId()}
             />
         )}
-
-        <SelectSubjectModal 
-            show={this.state.showSelectSubjectModal}
-            onClose={() => this.setState({ showSelectSubjectModal: false })}
-            currentGradeId={this.detectGradeId()}
-            onSubjectsAdded={() => this.fetchAssessments()}
-        />
       </div>
     );
   }
