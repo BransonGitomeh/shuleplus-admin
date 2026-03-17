@@ -28,18 +28,24 @@ const ReportFooter = ({ themeColor, validationStatus = "Authentic Record" }) => 
                             Leading the Education Digital Frontier
                         </div>
                     </div>
-                    <div style={{ 
-                        width: '42px', 
-                        height: '42px', 
-                        backgroundColor: '#FA064B', 
-                        borderRadius: '10px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 10px rgba(250, 6, 75, 0.2)'
-                    }}>
-                       <span style={{ color: 'white', fontWeight: 900, fontSize: '1.6rem', marginTop: '-2px' }}>+</span>
-                    </div>
+                    <img 
+                        src="/assets/media/logos/ic_launcher.png" 
+                        alt="ShulePlus Logo" 
+                        style={{ 
+                            width: '42px', 
+                            height: '42px', 
+                            borderRadius: '10px', 
+                            boxShadow: '0 4px 10px rgba(250, 6, 75, 0.2)',
+                            objectFit: 'contain',
+                            backgroundColor: 'white',
+                            padding: '4px',
+                            border: '1px solid #f3f4f6'
+                        }} 
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://shuleplus.com/logo.png'; // Handled via fallback
+                        }}
+                    />
                 </div>
             </div>
             

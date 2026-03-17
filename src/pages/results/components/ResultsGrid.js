@@ -639,7 +639,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                                     border: `1px solid ${color}`
                                                                                 }}
                                                                             >
-                                                                                {rubric.label}
+                                                                                {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
                                                                             </div>
                                                                             {rubric.teachersComment && (
                                                                                 <div className="text-muted font-weight-bold text-center px-1 mt-1" style={{ fontSize: '9px', lineHeight: '1.2', maxWidth: '80px', pointerEvents: 'none' }}>

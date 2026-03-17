@@ -3,8 +3,12 @@ import React from 'react';
 import Data from '../../utils/data';
 
 const ReportHeader = ({ school: propSchool, title, themeColor }) => {
-    const school = propSchool || Data.schools.getSelected();
-    const activeThemeColor = themeColor || school?.themeColor || '#1a1a1a';
+    // Self-healing: Try to get school from props, then from global state, then fall back to localStorage/defaults
+    const selectedSchool = Data.schools.getSelected();
+    const school = propSchool || (selectedSchool?.id ? selectedSchool : null) || { name: localStorage.getItem('school_name') || 'ShulePlus School' };
+    
+    // Ensure we have a valid theme color (not black or undefined)
+    const activeThemeColor = themeColor || school?.themeColor || school?.theme_color || '#FA064B'; // Default to ShulePlus Red if missing
     
     return (
         <>
@@ -14,21 +18,21 @@ const ReportHeader = ({ school: propSchool, title, themeColor }) => {
                         margin: 0, 
                         fontSize: '2.4rem', 
                         fontWeight: 900, 
-                        color: activeThemeColor, 
+                        color: activeThemeColor === '#000000' || activeThemeColor === 'black' ? '#1a1a1a' : activeThemeColor, 
                         letterSpacing: '-1.5px',
                         lineHeight: '1.1',
                         textTransform: 'uppercase'
                     }}>
-                        {school?.name || "SCHOOL NAME"}
+                        {school?.name || "SHULEPLUS ACADEMY"}
                     </h1>
                     <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <p style={{ margin: 0, fontSize: '0.95rem', color: '#4b5563', fontWeight: 500 }}>
-                            {school?.address || "Address Information"}
+                            {school?.address || "Quality Education for the Digital Frontier"}
                         </p>
                         <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>
-                            <span style={{ fontWeight: 600, color: '#374151' }}>Tel:</span> {school?.phone || "N/A"} 
+                            <span style={{ fontWeight: 600, color: '#374151' }}>Tel:</span> {school?.phone || "+254 ..."} 
                             <span style={{ margin: '0 10px', color: '#d1d5db' }}>|</span> 
-                            <span style={{ fontWeight: 600, color: '#374151' }}>Email:</span> {school?.email || "N/A"}
+                            <span style={{ fontWeight: 600, color: '#374151' }}>Email:</span> {school?.email || "info@shuleplus.com"}
                         </p>
                     </div>
                 </div>

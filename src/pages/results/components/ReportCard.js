@@ -109,12 +109,11 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ backgroundColor: themeColor }}>
-                            <th style={{ padding: '14px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Learning Area</th>
+                            <th style={{ padding: '14px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Learning Area / Subject</th>
                             {assessmentTypes?.map(type => (
                                 <th key={type.id} style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>{type.name}</th>
                             ))}
-                            <th style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Points</th>
-                            <th style={{ padding: '14px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Remarks / Feedback</th>
+                            <th style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Subj. Points</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,11 +124,16 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                 </td>
                                 {row.typeScores.map((ts, tIdx) => (
                                     <td key={tIdx} style={{ padding: '12px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                                            <span style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
                                             {ts.rubric && (
-                                                <div style={{ fontSize: '0.75rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase' }}>
-                                                    {ts.rubric.label}
+                                                <div style={{ fontSize: '0.7rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase', lineHeight: '1.2' }}>
+                                                    {ts.rubric.label} {ts.rubric.points ? `(${ts.rubric.points} pts)` : ''}
+                                                </div>
+                                            )}
+                                            {ts.rubric?.teachersComment && (
+                                                <div style={{ fontSize: '0.65rem', color: '#6b7280', fontWeight: 500, fontStyle: 'italic', maxWidth: '140px', marginTop: '2px', lineHeight: '1.2' }}>
+                                                    {ts.rubric.teachersComment}
                                                 </div>
                                             )}
                                         </div>
@@ -137,9 +141,6 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                 ))}
                                 <td style={{ padding: '12px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center', fontWeight: 900, fontSize: '1.2rem', color: themeColor }}>
                                     {row.totalPoints}
-                                </td>
-                                <td style={{ padding: '12px 18px', borderBottom: '1px solid #f3f4f6', color: '#6b7280', fontSize: '0.8rem', fontStyle: 'italic', maxWidth: '220px', lineHeight: '1.4' }}>
-                                    {row.teachersComment}
                                 </td>
                             </tr>
                         ))}
