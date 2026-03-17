@@ -26,9 +26,11 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
     };
 
     // Calculate totals and averages
+    const sortedAssessmentTypes = [...(assessmentTypes || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+
     const subjectRows = subjects.map(subject => {
         let subjectPoints = 0;
-        const typeScores = (assessmentTypes || []).map(type => {
+        const typeScores = sortedAssessmentTypes.map(type => {
             const score = getScore(subject.id, type.id);
             const rubric = getRubric(score);
             if (rubric && rubric.points) {
@@ -110,7 +112,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                     <thead>
                         <tr style={{ backgroundColor: themeColor }}>
                             <th style={{ padding: '14px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Learning Area / Subject</th>
-                            {assessmentTypes?.map(type => (
+                            {sortedAssessmentTypes?.map(type => (
                                 <th key={type.id} style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>{type.name}</th>
                             ))}
                             <th style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Subj. Points</th>
@@ -147,7 +149,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                     </tbody>
                     <tfoot>
                         <tr style={{ backgroundColor: '#f3f4f6' }}>
-                            <td style={{ padding: '16px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (assessmentTypes?.length || 0)}>
+                            <td style={{ padding: '16px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (sortedAssessmentTypes?.length || 0)}>
                                 AGGREGATE SUMMARY
                             </td>
                             <td style={{ padding: '16px 10px', textAlign: 'center', fontWeight: 900, fontSize: '1.4rem', color: themeColor }}>

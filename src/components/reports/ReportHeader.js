@@ -36,9 +36,9 @@ const ReportHeader = ({ school: propSchool, title, themeColor }) => {
                         </p>
                     </div>
                 </div>
-                {school?.logo && (
+                { (school?.logo || true) && (
                     <div style={{ padding: '10px', backgroundColor: '#f9fafb', borderRadius: '16px', border: '1px solid #f3f4f6' }}>
-                        <img src={school.logo} alt="School Logo" style={{ maxHeight: '110px', maxWidth: '180px', objectFit: 'contain' }} />
+                        <img src={school?.logo || '/assets/media/logos/ic_launcher.png'} alt="School Logo" style={{ maxHeight: '110px', maxWidth: '180px', objectFit: 'contain' }} />
                     </div>
                 )}
             </div>

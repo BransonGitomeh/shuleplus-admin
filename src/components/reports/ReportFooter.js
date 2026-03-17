@@ -41,10 +41,6 @@ const ReportFooter = ({ themeColor, validationStatus = "Authentic Record" }) => 
                             padding: '4px',
                             border: '1px solid #f3f4f6'
                         }} 
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://shuleplus.com/logo.png'; // Handled via fallback
-                        }}
                     />
                 </div>
             </div>

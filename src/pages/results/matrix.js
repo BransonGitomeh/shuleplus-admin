@@ -73,6 +73,9 @@ class ResultsMatrix extends React.Component {
     this.unsubAssessmentRubrics = Data.assessmentRubrics.subscribe(({ assessmentRubrics }) => this.setState({ assessmentRubrics }));
     this.unsubLessonAttempts = Data.lessonAttempts.subscribe(({ lessonAttempts }) => this.setState({ lessonAttempts }));
     this.unsubAttemptEvents = Data.attemptEvents.subscribe(({ attemptEvents }) => this.setState({ attemptEvents }));
+    this.unsubSchools = Data.schools.subscribe(({ selectedSchool }) => {
+        this.setState({ schoolInfo: selectedSchool });
+    });
 
     const schoolInfo = Data.schools.getSelected();
     
@@ -112,6 +115,7 @@ class ResultsMatrix extends React.Component {
       if (this.unsubAssessments) this.unsubAssessments();
       if (this.unsubAssessmentTypes) this.unsubAssessmentTypes();
       if (this.unsubAssessmentRubrics) this.unsubAssessmentRubrics();
+      if (this.unsubSchools) this.unsubSchools();
   }
 
   fetchAssessments = async () => {
