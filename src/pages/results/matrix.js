@@ -335,6 +335,17 @@ class ResultsMatrix extends React.Component {
       this.fetchAssessments();
   };
 
+  handleClassChange = (classId) => {
+    const { classes } = this.state;
+    const currentClass = classes.find(c => String(c.id) === String(classId));
+    const gradeId = currentClass?.grade?.id || currentClass?.grade;
+    const updates = { selectedClass: classId };
+    if (gradeId) updates.selectedGrade = gradeId;
+    this.setState(updates);
+    localStorage.setItem('matrix_selectedClass', classId);
+    if (gradeId) localStorage.setItem('matrix_selectedGrade', gradeId);
+  };
+
   detectGradeId = () => {
     const { selectedClass, classes } = this.state;
     const currentClass = classes.find(c => String(c.id) === String(selectedClass));
