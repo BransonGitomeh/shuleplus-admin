@@ -412,6 +412,10 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
     const [rowsPerPage, setRowsPerPage] = useState(15);
     const [selectedLetter, setSelectedLetter] = useState(null);
 
+    const sortedAssessmentTypes = useMemo(() => {
+        return [...(assessmentTypes || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    }, [assessmentTypes]);
+
     const toggleStudent = useCallback((studentId) => {
         setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
     }, []);
@@ -560,7 +564,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
             </div>
 
             <div className="table-responsive flex-grow-1" style={{ position: 'relative', overflow: 'auto', maxHeight: '70vh' }}>
-                <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1" style={{ borderCollapse: 'separate', borderSpacing: 0, whiteSpace: 'nowrap' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#f3f6f9' }}>
                         <tr className="text-left text-uppercase">
                             <th style={{ width: '10px', backgroundColor: '#f3f6f9' }} className="pl-0"></th>
@@ -600,7 +604,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                             return (
                                                 <td key={subj.id} className="text-center py-4" style={{ backgroundColor: isExpanded ? '#f1faff' : '#fff' }}>
                                                     <div className="d-flex flex-row justify-content-center align-items-start" style={{ gap: '10px' }}>
-                                                        {assessmentTypes?.map(type => {
+                                                        {sortedAssessmentTypes?.map(type => {
                                                             const val = getScore(student.id, subj.id, type.id);
                                                             const rubric = getRubric(val);
                                                             if (rubric?.points) totalPoints += parseFloat(rubric.points);
@@ -642,7 +646,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                                 {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
                                                                             </div>
                                                                             {rubric.teachersComment && (
-                                                                                <div className="text-muted font-weight-bold text-center px-1 mt-1" style={{ fontSize: '9px', lineHeight: '1.2', maxWidth: '80px', pointerEvents: 'none' }}>
+                                                                                <div className="text-muted font-weight-boldest text-center px-1 mt-1" style={{ fontSize: '10px', lineHeight: '1.2', maxWidth: '80px', pointerEvents: 'none', fontWeight: 900 }}>
                                                                                     {rubric.teachersComment}
                                                                                 </div>
                                                                             )}
@@ -697,7 +701,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                     currentAssessments={assessments}
                                                     allAssessments={allAssessments}
                                                     allTerms={allTerms}
-                                                    assessmentTypes={assessmentTypes}
+                                                    assessmentTypes={sortedAssessmentTypes}
                                                     rubrics={rubrics}
                                                     lessonAttempts={lessonAttempts}
                                                     attemptEvents={attemptEvents}
