@@ -1622,7 +1622,13 @@ class FeesManagement extends Component {
                                 <p>Recording payment for <strong>{this.state.paymentStudent?.names}</strong></p>
                                 <div className="form-group">
                                     <label>Method</label>
-                                    <select className="form-control" value={this.state.manualPaymentMethod} onChange={e => this.setState({ manualPaymentMethod: e.target.value })}><option value="CASH">Cash</option><option value="BANK">Bank</option><option value="CHEQUE">Cheque</option><option value="OTHER">Other</option></select>
+                                    <select className="form-control" value={this.state.manualPaymentMethod} onChange={e => this.setState({ manualPaymentMethod: e.target.value })}>
+                                        <option value="M-Pesa">M-Pesa</option>
+                                        <option value="CASH">Cash</option>
+                                        <option value="BANK">Bank</option>
+                                        <option value="CHEQUE">Cheque</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
                                 </div>
                                 <div className="form-group">
                                     <label>Assign to Term</label>
