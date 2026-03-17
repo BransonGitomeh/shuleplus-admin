@@ -618,6 +618,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                         type="number"
                                                                         className="form-control form-control-sm text-center font-weight-boldest px-1"
                                                                         value={val}
+                                                                        onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })}
                                                                         onBlur={onBlur ? () => onBlur() : undefined}
                                                                         onChange={(e) => onScoreChange(student.id, subj.id, type.id, e.target.value)}
                                                                         style={{ 
