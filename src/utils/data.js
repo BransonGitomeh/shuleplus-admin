@@ -755,9 +755,9 @@ var Data = (function () {
                         // Ensure all data is correctly formatted
                         const payload = assessmentsData.map(a => ({
                             id: a.id,
-                            student: a.student,
-                            term: a.term,
-                            subject: a.subject,
+                            student: typeof a.student === 'object' ? a.student.id : a.student,
+                            term: typeof a.term === 'object' ? a.term.id : a.term,
+                            subject: typeof a.subject === 'object' ? a.subject.id : a.subject,
                             assessmentType: a.assessmentType || a.type,
                             score: parseFloat(a.score),
                             outOf: parseFloat(a.outOf || 100),

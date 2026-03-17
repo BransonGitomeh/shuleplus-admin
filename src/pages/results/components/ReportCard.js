@@ -153,9 +153,6 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                             <td style={{ padding: '16px 10px', textAlign: 'center', fontWeight: 900, fontSize: '1.4rem', color: themeColor }}>
                                 {totalOverallPoints}
                             </td>
-                            <td style={{ padding: '16px 18px', fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>
-                                Total Learning Area Points
-                            </td>
                         </tr>
                     </tfoot>
                 </table>
