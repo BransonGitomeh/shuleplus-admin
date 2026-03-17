@@ -409,11 +409,14 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
     const [expandedStudents, setExpandedStudents] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 15;
+    const [rowsPerPage, setRowsPerPage] = useState(15);
+    const [selectedLetter, setSelectedLetter] = useState(null);
 
     const toggleStudent = useCallback((studentId) => {
         setExpandedStudents(prev => ({ ...prev, [studentId]: !prev[studentId] }));
     }, []);
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 
     // Helper to get score for a cell
@@ -463,23 +466,34 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
     };
 
     const filteredStudents = useMemo(() => {
-        if (!searchTerm) return students;
-        const lowerSearch = searchTerm.toLowerCase();
-        return (students || []).filter(s => 
-            (s.names || '').toLowerCase().includes(lowerSearch) || 
-            (s.admNo || '').toLowerCase().includes(lowerSearch) ||
-            (s.registration || '').toLowerCase().includes(lowerSearch) ||
-            (s.parent?.name || '').toLowerCase().includes(lowerSearch) ||
-            (s.parent?.phone || '').includes(lowerSearch)
-        );
-    }, [students, searchTerm]);
+        let result = students || [];
+        
+        // 1. Search term filter
+        if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
+            result = result.filter(s => 
+                (s.names || '').toLowerCase().includes(lowerSearch) || 
+                (s.admNo || '').toLowerCase().includes(lowerSearch) ||
+                (s.registration || '').toLowerCase().includes(lowerSearch) ||
+                (s.parent?.name || '').toLowerCase().includes(lowerSearch) ||
+                (s.parent?.phone || '').includes(lowerSearch)
+            );
+        }
+
+        // 2. Alphabetical filter
+        if (selectedLetter) {
+            result = result.filter(s => (s.names || '').trim().toUpperCase().startsWith(selectedLetter));
+        }
+
+        return result;
+    }, [students, searchTerm, selectedLetter]);
 
     const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
     const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, selectedLetter, rowsPerPage]);
 
     const getRubricColor = (rubric) => {
         if (!rubric) return '#3699ff';
@@ -489,22 +503,59 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
 
     return (
         <div className={`d-flex flex-column results-table-container ${loading ? 'opacity-70' : ''}`} style={{ minHeight: '400px' }}>
-            {/* Search Bar */}
+            {/* Alphabetical Quick Filter */}
+            <div className="d-flex flex-wrap mb-4 p-2 bg-light rounded" style={{ gap: '4px' }}>
+                <button 
+                    className={`btn btn-xs font-weight-boldest ${selectedLetter === null ? 'btn-primary' : 'btn-light-primary text-primary'}`}
+                    onClick={() => setSelectedLetter(null)}
+                    style={{ minWidth: '40px' }}
+                >
+                    ALL
+                </button>
+                {letters.map(letter => (
+                    <button 
+                        key={letter}
+                        className={`btn btn-xs font-weight-boldest ${selectedLetter === letter ? 'btn-primary' : 'btn-light-primary text-primary'}`}
+                        onClick={() => setSelectedLetter(letter)}
+                        style={{ minWidth: '32px' }}
+                    >
+                        {letter}
+                    </button>
+                ))}
+            </div>
+
+            {/* Search Bar & Controls */}
             <div className="d-flex justify-content-between align-items-center mb-6">
-                <div style={{ width: '400px' }}>
-                    <div className="input-icon input-icon-right">
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search Parent, Student, or ADM No..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <span><i className="flaticon2-search-1 icon-md text-muted"></i></span>
+                <div className="d-flex align-items-center" style={{ gap: '15px' }}>
+                    <div style={{ width: '350px' }}>
+                        <div className="input-icon input-icon-right">
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search Name, ADM No..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <span><i className="flaticon2-search-1 icon-md text-muted"></i></span>
+                        </div>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <span className="text-muted font-weight-bold mr-2" style={{ fontSize: '0.8rem' }}>Show:</span>
+                        <select 
+                            className="form-control form-control-sm font-weight-boldest" 
+                            style={{ width: '80px', borderRadius: '8px' }}
+                            value={rowsPerPage}
+                            onChange={(e) => setRowsPerPage(parseInt(e.target.value))}
+                        >
+                            <option value={15}>15</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                            <option value={1000}>All</option>
+                        </select>
                     </div>
                 </div>
                 <div className="text-muted font-weight-bold">
-                    {loading ? 'Updating results...' : `Showing ${paginatedStudents.length} students`}
+                    {loading ? 'Updating results...' : `Found ${filteredStudents.length} students`}
                 </div>
             </div>
 
@@ -664,20 +715,46 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
             {/* Pagination Component */}
             {totalPages > 1 && (
                 <div className="d-flex justify-content-between align-items-center mt-6 pt-4 border-top">
-                    <span className="text-muted font-weight-bold">Page {currentPage} of {totalPages}</span>
+                    <div className="d-flex align-items-center">
+                        <span className="text-muted font-weight-bold mr-4">Page {currentPage} of {totalPages}</span>
+                        <div className="d-flex align-items-center" style={{ gap: '8px' }}>
+                            <span className="text-muted font-size-xs" style={{ whiteSpace: 'nowrap' }}>Jump to:</span>
+                            <input 
+                                type="number" 
+                                className="form-control form-control-sm text-center" 
+                                style={{ width: '60px', borderRadius: '8px' }}
+                                min={1}
+                                max={totalPages}
+                                value={currentPage}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (val >= 1 && val <= totalPages) setCurrentPage(val);
+                                }}
+                            />
+                        </div>
+                    </div>
                     <div className="d-flex">
                         <button className="btn btn-sm btn-icon btn-light-primary mr-2" disabled={currentPage === 1} onClick={() => setCurrentPage(c => c - 1)}>
                             <i className="ki ki-bold-arrow-back icon-xs"></i>
                         </button>
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button 
-                                key={i} 
-                                className={`btn btn-sm btn-icon mr-2 ${currentPage === i + 1 ? 'btn-primary' : 'btn-light-primary'}`}
-                                onClick={() => setCurrentPage(i + 1)}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
+                        {/* Show limited page buttons if many pages */}
+                        {[...Array(totalPages)].map((_, i) => {
+                            const page = i + 1;
+                            if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                return (
+                                    <button 
+                                        key={i} 
+                                        className={`btn btn-sm btn-icon mr-2 ${currentPage === page ? 'btn-primary' : 'btn-light-primary'}`}
+                                        onClick={() => setCurrentPage(page)}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            } else if (page === currentPage - 2 || page === currentPage + 2) {
+                                return <span key={i} className="mr-2 text-muted">...</span>;
+                            }
+                            return null;
+                        })}
                         <button className="btn btn-sm btn-icon btn-light-primary" disabled={currentPage === totalPages} onClick={() => setCurrentPage(c => c + 1)}>
                             <i className="ki ki-bold-arrow-next icon-xs"></i>
                         </button>
