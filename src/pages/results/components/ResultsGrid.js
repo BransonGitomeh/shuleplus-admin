@@ -371,19 +371,22 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
 
 const SkeletonRow = ({ subjectsCount }) => (
     <tr className="skeleton-row">
-        <td className="text-center"><div className="skeleton-placeholder" style={{ width: '20px', height: '20px', borderRadius: '50%' }}></div></td>
-        <td style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff' }}>
+        <td className="pl-4 py-3"><div className="skeleton-placeholder" style={{ width: '20px', height: '20px', borderRadius: '50%' }}></div></td>
+        <td style={{ position: 'sticky', left: 0, zIndex: 10, backgroundColor: '#fff', borderRight: '1px solid #ebedf3', boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
             <div className="skeleton-placeholder" style={{ width: '150px', height: '20px' }}></div>
         </td>
         {Array.from({ length: subjectsCount }).map((_, i) => (
             <td key={i} className="p-4">
-                <div className="d-flex flex-column align-items-center">
-                    <div className="skeleton-placeholder mb-2" style={{ width: '60px', height: '35px' }}></div>
-                    <div className="skeleton-placeholder" style={{ width: '40px', height: '15px' }}></div>
+                <div className="d-flex flex-row justify-content-center" style={{ gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div className="skeleton-placeholder mb-2" style={{ width: '60px', height: '35px' }}></div>
+                    </div>
                 </div>
             </td>
         ))}
-        <td className="bg-light"><div className="skeleton-placeholder mx-auto" style={{ width: '40px', height: '25px' }}></div></td>
+        <td style={{ position: 'sticky', right: '120px', zIndex: 10, backgroundColor: '#fff', borderLeft: '1px solid #ebedf3', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
+            <div className="skeleton-placeholder mx-auto" style={{ width: '40px', height: '25px' }}></div>
+        </td>
         <td style={{ position: 'sticky', right: 0, zIndex: 10, backgroundColor: '#fff' }}>
             <div className="d-flex justify-content-center">
                 <div className="skeleton-placeholder mr-2" style={{ width: '30px', height: '30px' }}></div>
@@ -505,35 +508,34 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                 </div>
             </div>
 
-            <div className="table-responsive flex-grow-1">
-                <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1">
-                    <thead>
+            <div className="table-responsive flex-grow-1" style={{ position: 'relative', overflow: 'auto', maxHeight: '70vh' }}>
+                <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#f3f6f9' }}>
                         <tr className="text-left text-uppercase">
-                            <th style={{ width: '10px' }} className="pl-0"></th>
-                            <th style={{ minWidth: '200px' }}>Details</th>
+                            <th style={{ width: '10px', backgroundColor: '#f3f6f9' }} className="pl-0"></th>
+                            <th style={{ minWidth: '220px', position: 'sticky', left: 0, zIndex: 101, backgroundColor: '#f3f6f9', borderRight: '1px solid #ebedf3', boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>Details</th>
                             {subjects?.map(subj => (
-                                <th key={subj.id} className="text-center" style={{ minWidth: '150px' }}>{subj.name}</th>
+                                <th key={subj.id} className="text-center" style={{ minWidth: '150px', backgroundColor: '#f3f6f9' }}>{subj.name}</th>
                             ))}
-                            <th className="text-center" style={{ minWidth: '80px' }}>Total Pts</th>
-                            <th className="text-right" style={{ minWidth: '120px' }}>Actions</th>
+                            <th className="text-center" style={{ minWidth: '100px', backgroundColor: '#f3f6f9', position: 'sticky', right: '120px', zIndex: 101, borderLeft: '1px solid #ebedf3', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>Total Pts</th>
+                            <th className="text-right" style={{ minWidth: '120px', backgroundColor: '#f3f6f9', position: 'sticky', right: 0, zIndex: 101 }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginatedStudents.map(student => {
                             let totalPoints = 0;
-                            const firstSubjectId = subjects?.[0]?.id;
                             const isExpanded = !!expandedStudents[student.id];
 
                             return (
                                 <React.Fragment key={student.id}>
                                     {/* STUDENT ROW (TOP LEVEL INPUTS) */}
-                                    <tr className={`bg-white border-bottom ${isExpanded ? 'bg-light-primary' : ''}`}>
-                                        <td className="pl-4 py-3">
+                                    <tr className={`border-bottom ${isExpanded ? 'bg-light-primary' : 'bg-white'}`} style={{ transition: 'background-color 0.2s' }}>
+                                        <td className="pl-4 py-3" style={{ backgroundColor: isExpanded ? '#f1faff' : '#fff' }}>
                                             <div className="symbol symbol-35 symbol-light-success">
                                                 <span className="symbol-label font-size-h6 font-weight-bold">{student.names?.[0] || 'S'}</span>
                                             </div>
                                         </td>
-                                        <td className="py-3">
+                                        <td className="py-3" style={{ position: 'sticky', left: 0, zIndex: 50, backgroundColor: isExpanded ? '#f1faff' : '#fff', borderRight: '1px solid #ebedf3', boxShadow: '2px 0 5px rgba(0,0,0,0.05)' }}>
                                             <div className="d-flex flex-column">
                                                 <span className="text-dark-75 font-weight-bolder font-size-sm">{student.names}</span>
                                                 <div className="d-flex align-items-center mt-1">
@@ -545,7 +547,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                         </td>
                                         {subjects?.map(subj => {
                                             return (
-                                                <td key={subj.id} className="text-center py-4">
+                                                <td key={subj.id} className="text-center py-4" style={{ backgroundColor: isExpanded ? '#f1faff' : '#fff' }}>
                                                     <div className="d-flex flex-row justify-content-center align-items-start" style={{ gap: '10px' }}>
                                                         {assessmentTypes?.map(type => {
                                                             const val = getScore(student.id, subj.id, type.id);
@@ -600,35 +602,37 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                         })}
                                                     </div>
                                                 </td>
-                                            );
+                                             );
                                         })}
-                                        <td className="text-center align-middle">
+                                        <td className="text-center align-middle" style={{ position: 'sticky', right: '120px', zIndex: 50, backgroundColor: isExpanded ? '#f1faff' : '#fff', borderLeft: '1px solid #ebedf3', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
                                             <span className="text-dark-75 font-weight-bolder font-size-h6">
                                                 {totalPoints || '-'}
                                             </span>
                                         </td>
-                                        <td className="text-right pr-0">
-                                            <button 
-                                                className="btn btn-icon btn-light-primary btn-sm mx-1" 
-                                                onClick={() => toggleStudent(student.id)}
-                                                title="View Details"
-                                            >
-                                                <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
-                                            </button>
-                                            <button 
-                                                className="btn btn-icon btn-light-success btn-sm mx-1" 
-                                                onClick={() => onPrintSingle?.(student)}
-                                                title="Print Statement"
-                                            >
-                                                <i className="fa fa-print text-dark"></i>
-                                            </button>
-                                            <button 
-                                                className="btn btn-icon btn-light-info btn-sm mx-1" 
-                                                onClick={() => onSendSms?.(student)}
-                                                title="Send SMS balance"
-                                            >
-                                                <i className="flaticon2-paper-plane"></i>
-                                            </button>
+                                        <td className="text-right pr-4" style={{ position: 'sticky', right: 0, zIndex: 50, backgroundColor: isExpanded ? '#f1faff' : '#fff' }}>
+                                            <div className="d-flex justify-content-end">
+                                                <button 
+                                                    className="btn btn-icon btn-light-primary btn-sm mx-1" 
+                                                    onClick={() => toggleStudent(student.id)}
+                                                    title="View Details"
+                                                >
+                                                    <i className={`flaticon2-${isExpanded ? 'up' : 'down'}`}></i>
+                                                </button>
+                                                <button 
+                                                    className="btn btn-icon btn-light-success btn-sm mx-1" 
+                                                    onClick={() => onPrintSingle?.(student)}
+                                                    title="Print Statement"
+                                                >
+                                                    <i className="fa fa-print text-dark"></i>
+                                                </button>
+                                                <button 
+                                                    className="btn btn-icon btn-light-info btn-sm mx-1" 
+                                                    onClick={() => onSendSms?.(student)}
+                                                    title="Send SMS balance"
+                                                >
+                                                    <i className="flaticon2-paper-plane"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
 
