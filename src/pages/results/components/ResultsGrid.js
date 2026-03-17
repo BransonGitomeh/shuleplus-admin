@@ -563,7 +563,7 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                 </div>
             </div>
 
-            <div className="table-responsive flex-grow-1" style={{ position: 'relative', overflow: 'auto', maxHeight: '70vh' }}>
+            <div className="table-responsive flex-grow-1" style={{ position: 'relative', overflow: 'auto', maxHeight: 'calc(100vh - 380px)', border: '1px solid #ebedf3', borderRadius: '8px' }}>
                 <table className="table table-head-custom table-vertical-center" id="kt_advance_table_widget_1" style={{ borderCollapse: 'separate', borderSpacing: 0, whiteSpace: 'nowrap' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#f3f6f9' }}>
                         <tr className="text-left text-uppercase">
@@ -646,7 +646,18 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                                 {rubric.label} {rubric.points ? `(${rubric.points} pts)` : ''}
                                                                             </div>
                                                                             {rubric.teachersComment && (
-                                                                                <div className="text-muted font-weight-boldest text-center px-1 mt-1" style={{ fontSize: '10px', lineHeight: '1.2', maxWidth: '80px', pointerEvents: 'none', fontWeight: 900 }}>
+                                                                                <div 
+                                                                                    className="text-center mt-1 px-1" 
+                                                                                    style={{ 
+                                                                                        fontSize: '10px', 
+                                                                                        lineHeight: '1.3', 
+                                                                                        maxWidth: '110px', 
+                                                                                        fontWeight: 900,
+                                                                                        color: '#3f4254',
+                                                                                        whiteSpace: 'normal',
+                                                                                        wordBreak: 'break-word'
+                                                                                    }}
+                                                                                >
                                                                                     {rubric.teachersComment}
                                                                                 </div>
                                                                             )}
