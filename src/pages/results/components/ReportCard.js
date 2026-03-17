@@ -64,7 +64,6 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             height: 'auto', 
             width: '21cm', 
             margin: '2cm auto', 
-            pageBreakAfter: 'always',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 

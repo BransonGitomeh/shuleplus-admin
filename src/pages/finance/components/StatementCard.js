@@ -13,7 +13,6 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
-            pageBreakAfter: 'always',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
             boxSizing: 'border-box',
