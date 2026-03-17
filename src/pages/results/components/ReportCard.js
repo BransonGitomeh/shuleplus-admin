@@ -142,8 +142,15 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                             <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
                                             {ts.rubric && (
-                                                <div style={{ fontSize: '0.7rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase', lineHeight: '1.2' }}>
-                                                    {ts.rubric.label} {ts.rubric.points ? `(${ts.rubric.points} pts)` : ''}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                    <div style={{ fontSize: '0.7rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase', lineHeight: '1.2' }}>
+                                                        {ts.rubric.label} {ts.rubric.points ? `(${ts.rubric.points} pts)` : ''}
+                                                    </div>
+                                                    {ts.rubric.teachersComment && (
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#3f4254', lineHeight: '1.3', textAlign: 'center', wordBreak: 'break-word', maxWidth: '90px' }}>
+                                                            {ts.rubric.teachersComment}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -153,18 +160,8 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                     {row.totalPoints}
                                 </td>
                             </tr>
-                            {row.teachersComment && row.teachersComment !== '-' && (
-                                <tr key={`comment-${idx}`}>
-                                    <td colSpan={2 + (sortedAssessmentTypes?.length || 0)} style={{ padding: '4px 18px 10px 18px', borderBottom: '1px solid #f3f4f6', fontSize: '0.8rem', color: '#6b7280', fontStyle: 'italic' }}>
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                            <span style={{ fontWeight: 800, color: themeColor, whiteSpace: 'nowrap' }}>Comment:</span>
-                                            <span style={{ lineHeight: '1.4', margin: '0 5px' }}>{row.teachersComment}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </React.Fragment>
-                    ))}
+                            </React.Fragment>
+                        ))}
                     </tbody>
                     <tfoot>
                         <tr style={{ backgroundColor: '#f3f4f6' }}>
