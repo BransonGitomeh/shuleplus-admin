@@ -9,7 +9,7 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
         <div className="report-card-container" style={{ 
             padding: '1.0cm 1.5cm', 
             backgroundColor: 'white', 
-            minHeight: '28cm', 
+            minHeight: 'auto', 
             height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
@@ -17,7 +17,9 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
             boxSizing: 'border-box',
-            overflow: 'visible'
+            overflow: 'visible',
+            display: 'flex',
+            flexDirection: 'column'
         }}>
             {/* Header */}
             <ReportHeader school={school} title="Fees Statement" themeColor={themeColor} />

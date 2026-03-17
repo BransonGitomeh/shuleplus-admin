@@ -60,18 +60,20 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
         <div className="report-card-container" style={{ 
             padding: '1.0cm 1.5cm', 
             backgroundColor: 'white', 
-            minHeight: '29.7cm', // Full A4 Height
+            minHeight: 'auto', 
             height: 'auto', 
             width: '21cm', 
-            margin: '2cm auto', // Margin for web visibility
+            margin: '2cm auto', 
             pageBreakAfter: 'always',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
             boxSizing: 'border-box',
-            boxShadow: '0 0 30px rgba(0,0,0,0.1)', // Make A4 visible
+            boxShadow: '0 0 30px rgba(0,0,0,0.1)', 
             border: '1px solid #e5e7eb',
-            overflow: 'visible'
+            overflow: 'visible',
+            display: 'flex',
+            flexDirection: 'column'
         }}>
             {/* Premium Header Layout */}
             <ReportHeader school={school} title="STUDENT REPORT" themeColor={themeColor} />

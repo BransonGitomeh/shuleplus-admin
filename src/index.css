@@ -103,16 +103,18 @@ code {
     display: none !important;
   }
 
-  /* Reset layout for print */
+  /* Reset layout for print - SUPER AGGRESSIVE */
   body, html {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     height: auto !important;
+    width: 100% !important;
   }
 
-  .kt-page, .kt-wrapper, .kt-content, .kt-container, #kt_content, #kt_wrapper {
+  /* Reset all potential containers */
+  #root, .kt-grid, .kt-grid__item, #kt_wrapper, #kt_content, .kt-content, .kt-container, #print-area {
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
@@ -121,20 +123,27 @@ code {
     width: 100% !important;
     max-width: 100% !important;
     min-height: 0 !important;
+    height: auto !important;
+    position: static !important;
+    transform: none !important;
   }
 
   /* Ensure the report card/statement fits */
   .report-card-container {
     margin: 0 !important;
-    padding: 1cm 1.5cm !important; 
+    padding: 1.0cm 1.5cm !important; 
     box-shadow: none !important;
     border: none !important;
     width: 100% !important;
-    min-height: 28cm !important; /* Slightly less than a full A4 to avoid overflow */
+    min-height: auto !important; /* Allow it to naturally height */
+    max-height: 28.5cm !important; /* Cap it to avoid overflow */
     page-break-after: always;
+    page-break-before: avoid;
     page-break-inside: avoid;
     display: flex !important;
     flex-direction: column !important;
+    position: static !important;
+    background: white !important;
   }
 
   .report-card-container:last-child {
