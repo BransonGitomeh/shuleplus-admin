@@ -4,6 +4,9 @@ import ReportCard from "./components/ReportCard";
 import ResultsGrid from "./components/ResultsGrid";
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
 import AddSubjectModal from "../learning/subjects/add";
+import AddClassModal from "../classes/add";
+import AddGradeModal from "../learning/grades/add";
+import AddTermModal from "./components/AddTermModal";
 import { StatCard, DistributionChart, TrendBarChart, AreaChart, RankingList } from "../../components/analytics/DashboardWidgets";
 
 class ResultsMatrix extends React.Component {
@@ -41,6 +44,9 @@ class ResultsMatrix extends React.Component {
     activeTab: 'grid', 
     
     showAddSubjectModal: false,
+    showAddTermModal: false,
+    showAddClassModal: false,
+    showAddGradeModal: false,
     showSelectSubjectModal: false,
     selectedGrade: localStorage.getItem('matrix_selectedGrade') || "",
   };
@@ -72,6 +78,7 @@ class ResultsMatrix extends React.Component {
     });
     this.unsubAssessmentRubrics = Data.assessmentRubrics.subscribe(({ assessmentRubrics }) => this.setState({ assessmentRubrics }));
     this.unsubLessonAttempts = Data.lessonAttempts.subscribe(({ lessonAttempts }) => this.setState({ lessonAttempts }));
+    this.unsubTeachers = Data.teachers?.subscribe(({ teachers }) => this.setState({ teachers }));
     this.unsubAttemptEvents = Data.attemptEvents.subscribe(({ attemptEvents }) => this.setState({ attemptEvents }));
     this.unsubSchools = Data.schools.subscribe(({ selectedSchool }) => {
         this.setState({ schoolInfo: selectedSchool });
@@ -552,23 +559,55 @@ class ResultsMatrix extends React.Component {
                 </ul>
 
                 <div className="card-toolbar d-flex align-items-center">
-                    <div className="dropdown dropdown-inline mr-2">
-                        <select className="form-control form-control-sm form-control-solid" value={selectedTerm} onChange={e => this.setState({ selectedTerm: e.target.value })}>
+                    <div className="dropdown dropdown-inline mr-2 d-flex align-items-center">
+                        <select className="form-control form-control-sm form-control-solid" value={selectedTerm} onChange={e => {
+                            this.setState({ selectedTerm: e.target.value });
+                            localStorage.setItem('matrix_selectedTerm', e.target.value);
+                        }}>
                             <option value="">Term...</option>
                             {terms?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
+                        <div className="ml-1 d-flex">
+                            <button className="btn btn-xs btn-icon btn-light-primary mr-1" onClick={() => window.location.hash = "#/terms"} title="Configure Terms">
+                                <i className="fa fa-cog font-size-xs"></i>
+                            </button>
+                            <button className="btn btn-xs btn-icon btn-light-success" onClick={() => this.setState({ showAddTermModal: true })} title="Add Term">
+                                <i className="fa fa-plus font-size-xs"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div className="dropdown dropdown-inline mr-2">
-                        <select className="form-control form-control-sm form-control-solid" value={selectedClass} onChange={e => this.setState({ selectedClass: e.target.value })}>
+                    
+                    <div className="dropdown dropdown-inline mr-2 d-flex align-items-center">
+                        <select className="form-control form-control-sm form-control-solid" value={selectedClass} onChange={e => this.handleClassChange(e.target.value)}>
                             <option value="">Class (Students)...</option>
                             {classes?.map(c => <option key={c.id} value={c.id}>{c.name} ({c.student_num || 0} Students)</option>)}
                         </select>
+                        <div className="ml-1 d-flex">
+                            <button className="btn btn-xs btn-icon btn-light-primary mr-1" onClick={() => window.location.hash = "#/classes"} title="Configure Classes">
+                                <i className="fa fa-cog font-size-xs"></i>
+                            </button>
+                            <button className="btn btn-xs btn-icon btn-light-success" onClick={() => this.setState({ showAddClassModal: true })} title="Add Class">
+                                <i className="fa fa-plus font-size-xs"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div className="dropdown dropdown-inline mr-2">
-                        <select className="form-control form-control-sm form-control-solid" value={selectedGrade} onChange={e => this.setState({ selectedGrade: e.target.value })}>
+
+                    <div className="dropdown dropdown-inline mr-2 d-flex align-items-center">
+                        <select className="form-control form-control-sm form-control-solid" value={selectedGrade} onChange={e => {
+                            this.setState({ selectedGrade: e.target.value });
+                            localStorage.setItem('matrix_selectedGrade', e.target.value);
+                        }}>
                             <option value="">Grade (Subjects)...</option>
                             {(this.state.grades || [])?.map(g => <option key={g.id} value={g.id}>{g.name} ({(g.subjects || []).length} Subjects)</option>)}
                         </select>
+                        <div className="ml-1 d-flex">
+                            <button className="btn btn-xs btn-icon btn-light-primary mr-1" onClick={() => window.location.hash = "#/learning"} title="Configure Grades">
+                                <i className="fa fa-cog font-size-xs"></i>
+                            </button>
+                            <button className="btn btn-xs btn-icon btn-light-success" onClick={() => this.setState({ showAddGradeModal: true })} title="Add Grade">
+                                <i className="fa fa-plus font-size-xs"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="d-flex align-items-center">
