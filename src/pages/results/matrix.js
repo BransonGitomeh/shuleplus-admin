@@ -3,6 +3,8 @@ import Data from "../../utils/data";
 import ReportCard from "./components/ReportCard";
 import ResultsGrid from "./components/ResultsGrid";
 import BulkReportSmsModal from "../../components/reports/BulkReportSmsModal";
+import AddSubjectModal from "../learning/subjects/add";
+import SelectSubjectModal from "../learning/subjects/SelectSubjectModal";
 import { StatCard, DistributionChart, TrendBarChart, AreaChart, RankingList } from "../../components/analytics/DashboardWidgets";
 
 class ResultsMatrix extends React.Component {
@@ -38,6 +40,9 @@ class ResultsMatrix extends React.Component {
     bulkSmsRecipients: [],
 
     activeTab: 'grid', 
+    
+    showAddSubjectModal: false,
+    showSelectSubjectModal: false,
   };
 
   componentDidMount() {
@@ -275,6 +280,29 @@ class ResultsMatrix extends React.Component {
       if (parentId && newPhone) await Data.parents.update({ id: parentId, phone: newPhone });
   };
 
+  handleSubjectSave = async (subjectData) => {
+      const { selectedClass, classes } = this.state;
+      const currentClass = classes.find(c => String(c.id) === String(selectedClass));
+      const gradeId = currentClass?.grade?.id || currentClass?.grade;
+      
+      if (!gradeId) {
+          if (window.toastr) window.toastr.error("Cannot add subject: No grade associated with this class.");
+          return;
+      }
+
+      await Data.subjects.create({ 
+          ...subjectData, 
+          grade: gradeId 
+      });
+      this.fetchAssessments();
+  };
+
+  detectGradeId = () => {
+    const { selectedClass, classes } = this.state;
+    const currentClass = classes.find(c => String(c.id) === String(selectedClass));
+    return currentClass?.grade?.id || currentClass?.grade;
+  };
+
   togglePrintView = () => this.setState(prev => ({ showPrintView: !prev.showPrintView, printingStudentId: null }));
 
   handlePrintSingle = (student) => this.setState({ printingStudentId: student.id, showPrintView: true });
@@ -501,6 +529,27 @@ class ResultsMatrix extends React.Component {
 
 
                     <div className="d-flex align-items-center">
+                        <div className="dropdown dropdown-inline mr-2">
+                            <button 
+                                className="btn btn-sm btn-light-success font-weight-bold dropdown-toggle" 
+                                type="button" 
+                                data-toggle="dropdown" 
+                                aria-haspopup="true" 
+                                aria-expanded="false"
+                                disabled={!selectedClass}
+                            >
+                                <i className="fa fa-plus"></i> Manage Subjects
+                            </button>
+                            <div className="dropdown-menu dropdown-menu-sm dropdown-menu-right">
+                                <a className="dropdown-item cursor-pointer" onClick={() => this.setState({ showAddSubjectModal: true })}>
+                                    <i className="fa fa-plus-circle mr-2 text-success"></i> Add New Subject
+                                </a>
+                                <a className="dropdown-item cursor-pointer" onClick={() => this.setState({ showSelectSubjectModal: true })}>
+                                    <i className="fa fa-list-check mr-2 text-primary"></i> Select Existing
+                                </a>
+                            </div>
+                        </div>
+
                         {Object.keys(edits).length > 0 && <button className={`btn btn-sm btn-primary font-weight-bold mr-2 ${saving ? 'spinner spinner-white spinner-right' : ''}`} onClick={this.saveAllChanges} disabled={saving}><i className="fa fa-save"></i> Save ({Object.keys(edits).length})</button>}
                         <button className="btn btn-sm btn-success font-weight-bold mr-2" onClick={this.togglePrintView} disabled={!selectedClass || !selectedTerm}><i className="fa fa-print"></i> Print</button>
                         <button className="btn btn-sm btn-light-primary font-weight-bold" onClick={this.initiateBulkResultsSms} disabled={!selectedClass || !selectedTerm}><i className="fa fa-sms"></i> SMS</button>
@@ -550,6 +599,23 @@ class ResultsMatrix extends React.Component {
                 </div>
             </div>
         )}
+
+        {this.state.showAddSubjectModal && (
+            <AddSubjectModal 
+                ref={ref => ref && !this.state.showAddSubjectModal_called && (this.state.showAddSubjectModal_called = true) && ref.show()}
+                show={this.state.showAddSubjectModal} 
+                onClose={() => this.setState({ showAddSubjectModal: false, showAddSubjectModal_called: false })} 
+                save={this.handleSubjectSave}
+                grade={this.detectGradeId()}
+            />
+        )}
+
+        <SelectSubjectModal 
+            show={this.state.showSelectSubjectModal}
+            onClose={() => this.setState({ showSelectSubjectModal: false })}
+            currentGradeId={this.detectGradeId()}
+            onSubjectsAdded={() => this.fetchAssessments()}
+        />
       </div>
     );
   }
