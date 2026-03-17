@@ -652,11 +652,33 @@ const ResultsGrid = ({ students, subjects, assessments, allAssessments, allTerms
                                                                             )}
                                                                         </div>
                                                                     )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </td>
+                                                                     
+                                                                     {/* Personalized Teacher Comment Input */}
+                                                                     <div className="mt-2 w-100">
+                                                                         <textarea
+                                                                             className="form-control form-control-sm text-dark-75 font-size-xs"
+                                                                             placeholder="Add personal comment..."
+                                                                             value={getComment(student.id, subj.id, type.id)}
+                                                                             onChange={(e) => onCommentChange(student.id, subj.id, type.id, e.target.value)}
+                                                                             onBlur={onBlur ? () => onBlur() : undefined}
+                                                                             style={{ 
+                                                                                 fontSize: '10px', 
+                                                                                 borderRadius: '6px', 
+                                                                                 minWidth: '110px', 
+                                                                                 minHeight: '35px',
+                                                                                 maxHeight: '80px',
+                                                                                 padding: '4px 6px',
+                                                                                 border: '1px solid #ebedf3',
+                                                                                 backgroundColor: '#fff',
+                                                                                 margin: '5px 0'
+                                                                             }}
+                                                                         />
+                                                                     </div>
+                                                                 </div>
+                                                             );
+                                                         })}
+                                                     </div>
+                                                 </td>
                                              );
                                         })}
                                         <td className="text-center align-middle" style={{ position: 'sticky', right: '120px', zIndex: 50, backgroundColor: isExpanded ? '#f1faff' : '#fff', borderLeft: '1px solid #ebedf3', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>

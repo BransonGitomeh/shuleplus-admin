@@ -43,14 +43,25 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
         const rubricComments = typeScores
             .filter(ts => ts.rubric?.teachersComment)
             .map(ts => ts.rubric.teachersComment);
-        // Deduplicate
-        const uniqueComments = [...new Set(rubricComments)];
+            
+        // Also collect personalized teacher comments for this subject in this term
+        const personalizedComments = assessments
+            .filter(a => 
+                (a.student === student.id || a.student?.id === student.id) &&
+                (a.subject === subject.id || a.subject?.id === subject.id) &&
+                (a.term === term.id || a.term?.id === term.id) &&
+                a.teachersComment
+            )
+            .map(a => a.teachersComment);
+
+        // Deduplicate and combine
+        const allComments = [...new Set([...personalizedComments, ...rubricComments])];
 
         return {
             subject,
             typeScores,
             totalPoints: subjectPoints,
-            teachersComment: uniqueComments.length > 0 ? uniqueComments.join(' ') : '-'
+            teachersComment: allComments.length > 0 ? allComments.join(' ') : '-'
         };
     });
 
@@ -121,8 +132,9 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                     </thead>
                     <tbody>
                         {subjectRows.map((row, idx) => (
-                            <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                                <td style={{ padding: '10px 18px', borderBottom: '1px solid #f3f4f6', fontWeight: 700, fontSize: '0.9rem', color: '#374151' }}>
+                            <React.Fragment key={idx}>
+                                <tr style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                                    <td style={{ padding: '10px 18px', borderBottom: '1px solid #f3f4f6', fontWeight: 700, fontSize: '0.9rem', color: '#374151' }}>
                                     {row.subject.name}
                                 </td>
                                 {row.typeScores.map((ts, tIdx) => (
@@ -141,8 +153,18 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                                     {row.totalPoints}
                                 </td>
                             </tr>
-                        ))}
-                    </tbody>
+                            {row.teachersComment && row.teachersComment !== '-' && (
+                                <tr key={`comment-${idx}`}>
+                                    <td colSpan={2 + (sortedAssessmentTypes?.length || 0)} style={{ padding: '4px 18px 10px 18px', borderBottom: '1px solid #f3f4f6', fontSize: '0.8rem', color: '#6b7280', fontStyle: 'italic' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                            <span style={{ fontWeight: 800, color: themeColor, whiteSpace: 'nowrap' }}>Comment:</span>
+                                            <span style={{ lineHeight: '1.4', margin: '0 5px' }}>{row.teachersComment}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </React.Fragment>
+                    ))}
                     <tfoot>
                         <tr style={{ backgroundColor: '#f3f4f6' }}>
                             <td style={{ padding: '14px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (sortedAssessmentTypes?.length || 0)}>
