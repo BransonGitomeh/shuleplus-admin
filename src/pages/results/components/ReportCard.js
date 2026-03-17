@@ -232,10 +232,10 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                 </div>
             </div>
 
-            {/* Signature Section - Pinned slightly above footer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '2cm', padding: '0 1cm' }}>
+            {/* Signature Section */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5cm', marginBottom: '1.0cm', padding: '0 1cm' }}>
                 <div style={{ width: '220px', textAlign: 'center' }}>
-                    <div style={{ height: '40px' }}></div> {/* Spacer for digital signature/stamp */}
+                    <div style={{ height: '40px' }}></div>
                     <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: '10px' }}>
                         <p style={{ margin: 0, fontWeight: 800, color: '#111827', fontSize: '0.85rem', textTransform: 'uppercase' }}>Class Teacher</p>
                         <p style={{ margin: '4px 0 0 0', fontSize: '0.65rem', color: '#9ca3af', fontWeight: 600 }}>Signature & Date</p>
@@ -250,8 +250,8 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                 </div>
             </div>
 
-            {/* Premium Pinned ShulePlus Footer */}
-            <div style={{ position: 'absolute', bottom: '1.0cm', left: '1.5cm', right: '1.5cm' }}>
+            {/* Premium ShulePlus Footer - Pushed to bottom via flex */}
+            <div style={{ marginTop: 'auto', paddingBottom: '0.5cm' }}>
                 <ReportFooter themeColor={themeColor} validationStatus="Authentic Record" />
             </div>
         </div>

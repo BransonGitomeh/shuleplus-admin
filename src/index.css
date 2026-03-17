@@ -126,11 +126,18 @@ code {
   /* Ensure the report card/statement fits */
   .report-card-container {
     margin: 0 !important;
-    padding: 1cm 1.5cm !important; /* Slightly more space for print */
+    padding: 1cm 1.5cm !important; 
     box-shadow: none !important;
     border: none !important;
     width: 100% !important;
-    min-height: 29.7cm !important;
+    min-height: 28cm !important; /* Slightly less than a full A4 to avoid overflow */
     page-break-after: always;
+    page-break-inside: avoid;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .report-card-container:last-child {
+    page-break-after: auto !important;
   }
 }

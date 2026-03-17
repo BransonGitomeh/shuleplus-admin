@@ -9,12 +9,11 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
         <div className="report-card-container" style={{ 
             padding: '1.0cm 1.5cm', 
             backgroundColor: 'white', 
-            minHeight: '29.7cm', 
+            minHeight: '28cm', 
             height: 'auto', 
             width: '21cm', 
             margin: '0 auto', 
             pageBreakAfter: 'always',
-            position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
             boxSizing: 'border-box',
@@ -163,8 +162,10 @@ const StatementCard = ({ group, school, validStudentsData, totalValidExpected, t
                 </div>
             </div>
 
-            {/* Premium Pinned ShulePlus Footer */}
-            <ReportFooter themeColor={themeColor} validationStatus="Authentic Financial Record" />
+            {/* Premium ShulePlus Footer - Pushed to bottom via flex */}
+            <div style={{ marginTop: 'auto', paddingBottom: '0.5cm' }}>
+                <ReportFooter themeColor={themeColor} validationStatus="Authentic Financial Record" />
+            </div>
         </div>
     );
 };
