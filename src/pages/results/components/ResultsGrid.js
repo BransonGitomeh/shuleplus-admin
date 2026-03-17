@@ -17,17 +17,36 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
         return (lessonAttempts || []).filter(l => l.userId === student.id || l.student === student.id || l.student?.id === student.id);
     }, [lessonAttempts, student.id]);
 
+    const multiTermBars = useMemo(() => {
+        const sortedTerms = [...(allTerms || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+        return subjects.map(subj => {
+            const termScores = sortedTerms.map(term => {
+                const a = studentAll.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.term === term.id || a.term?.id === term.id));
+                return {
+                    termId: term.id,
+                    termName: term.name,
+                    score: a ? (parseFloat(a.score) || 0) : null
+                };
+            });
+            // Primary score (current term) for the main bar
+            const currentA = currentAssessments.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.student === student.id || a.student?.id === student.id));
+            const currentScore = currentA ? (parseFloat(currentA.score) || 0) : 0;
+            
+            return { 
+                name: subj.name, 
+                currentScore,
+                termScores 
+            };
+        }).filter(b => b.currentScore > 0 || b.termScores.some(ts => ts.score !== null));
+    }, [subjects, allTerms, studentAll, currentAssessments, student.id]);
+
     // Revision Summary
     const revisionInsights = useMemo(() => {
         const completed = studentLessons.filter(l => l.status === 'COMPLETED');
         const avgScore = completed.length > 0 ? (completed.reduce((sum, l) => sum + (l.finalScore || 0), 0) / completed.length) : 0;
         
         // Current bars for relative strengths (calculated on the fly for insights)
-        const currentBars = subjects.map(subj => {
-            const a = currentAssessments.find(a => (a.subject === subj.id || a.subject?.id === subj.id) && (a.student === student.id || a.student?.id === student.id));
-            const score = a ? (parseFloat(a.score) || 0) : 0;
-            return { name: subj.name, score };
-        }).filter(b => b.score > 0);
+        const currentBars = multiTermBars.map(b => ({ name: b.name, score: b.currentScore })).filter(b => b.score > 0);
 
         const sortedScores = [...currentBars].sort((a,b) => b.score - a.score);
         const strengths = sortedScores.slice(0, 2).map(s => s.name);
@@ -41,7 +60,7 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
             weaknesses,
             currentBars
         };
-    }, [studentLessons, subjects, currentAssessments, student.id, rubrics]);
+    }, [studentLessons, multiTermBars]);
 
     // Cross-Term Trends (Line Chart Data)
     const trendData = useMemo(() => {
@@ -133,49 +152,91 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
                 {/* === LEFT PANEL === */}
                 <div className="col-lg-6 pr-lg-6">
 
-                    {/* Subject Performance Bar Chart */}
+                    {/* Subject Performance Analytics (Multi-Term) */}
                     <div className="card card-custom card-shadowless bg-white mb-4" style={{ borderRadius: '8px', border: '1px solid #ebedf3' }}>
                         <div className="card-body p-5">
                             <div className="d-flex align-items-center justify-content-between mb-4">
                                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                    Subject Performance (%)
+                                    Subject Performance Across Terms
                                 </div>
-                                <span className="label label-inline label-light-primary font-weight-bold font-size-xs">
-                                    Current Term
-                                </span>
+                                <div className="d-flex align-items-center" style={{ gap: '12px' }}>
+                                    <div className="d-flex align-items-center">
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: themeColor, marginRight: '4px' }}></div>
+                                        <span style={{ fontSize: '0.65rem', color: '#7e8299', fontWeight: 700 }}>Current</span>
+                                    </div>
+                                    <div className="d-flex align-items-center">
+                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#b5b5c3', marginRight: '4px' }}></div>
+                                        <span style={{ fontSize: '0.65rem', color: '#7e8299', fontWeight: 700 }}>Historical</span>
+                                    </div>
+                                </div>
                             </div>
-                            {revisionInsights.currentBars.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {revisionInsights.currentBars.map((bar, i) => {
-                                        const rubric = (rubrics || []).find(r => bar.score >= r.minScore && bar.score <= r.maxScore);
+                            {multiTermBars.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                    {multiTermBars.map((item, i) => {
+                                        const currentRubric = (rubrics || []).find(r => item.currentScore >= r.minScore && item.currentScore <= r.maxScore);
                                         const colorMap = { 'EE': '#10b981', 'ME': '#3699ff', 'AE': '#f6c23e', 'BE': '#e74c3c' };
-                                        const color = rubric ? (colorMap[rubric.label] || '#6c757d') : '#d1d5db';
+                                        const primaryColor = currentRubric ? (colorMap[currentRubric.label] || themeColor) : themeColor;
+                                        
                                         return (
                                             <div key={i}>
-                                                <div className="d-flex align-items-center justify-content-between mb-1">
-                                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3f4254', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {bar.name}
+                                                <div className="d-flex align-items-center justify-content-between mb-2">
+                                                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#3f4254' }}>
+                                                        {item.name}
                                                     </span>
                                                     <div className="d-flex align-items-center">
-                                                        {rubric && (
-                                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: color, marginRight: '8px' }}>
-                                                                {rubric.label}
+                                                        {currentRubric && (
+                                                            <span className="mr-2 px-2 py-0 border rounded" style={{ fontSize: '0.62rem', fontWeight: 900, color: primaryColor, borderColor: primaryColor, backgroundColor: `${primaryColor}10` }}>
+                                                                {currentRubric.label}
                                                             </span>
                                                         )}
-                                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3f4254' }}>
-                                                            {bar.score}
+                                                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#3f4254' }}>
+                                                            {Math.round(item.currentScore)}%
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div style={{ height: '8px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${bar.score}%`, height: '100%', background: color, borderRadius: '10px', transition: 'width 0.6s ease' }} />
+                                                
+                                                <div className="d-flex flex-column" style={{ gap: '6px' }}>
+                                                    {/* Main Bar (Current Term) */}
+                                                    <div style={{ height: '8px', background: '#f3f6f9', borderRadius: '10px', overflow: 'hidden' }}>
+                                                        <div style={{ width: `${item.currentScore}%`, height: '100%', background: primaryColor, borderRadius: '10px', transition: 'width 0.8s ease' }} />
+                                                    </div>
+                                                    
+                                                    {/* Term Comparison Spark Bars */}
+                                                    <div className="d-flex align-items-end" style={{ gap: '3px', height: '24px', padding: '0 2px' }}>
+                                                        {item.termScores.map((ts, idx) => {
+                                                            const hasData = ts.score !== null;
+                                                            const isCurrent = item.currentScore > 0 && Math.abs(ts.score - item.currentScore) < 0.1; // Simple heuristic if we don't have currentTermId here easily
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={idx} 
+                                                                    style={{ 
+                                                                        flex: 1, 
+                                                                        height: '100%', 
+                                                                        display: 'flex', 
+                                                                        flexDirection: 'column', 
+                                                                        justifyContent: 'flex-end',
+                                                                        opacity: hasData ? 1 : 0.3
+                                                                    }}
+                                                                    title={`${ts.termName}: ${hasData ? Math.round(ts.score) + '%' : 'No Data'}`}
+                                                                >
+                                                                    <div style={{ 
+                                                                        height: hasData ? `${ts.score}%` : '2px', 
+                                                                        background: isCurrent ? primaryColor : '#e1e3ea',
+                                                                        borderRadius: '1px',
+                                                                        transition: 'height 0.5s ease'
+                                                                    }} />
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
                             ) : (
-                                <div className="text-muted small p-4 text-center bg-light rounded">No scores recorded this term.</div>
+                                <div className="text-muted small p-4 text-center bg-light rounded">Insufficient subject data for multi-term comparison.</div>
                             )}
                         </div>
                     </div>
@@ -185,10 +246,10 @@ const DetailedPerformanceAnalytics = ({ student, subjects, currentAssessments, a
                         <div className="card-body p-5">
                             <div className="d-flex align-items-center justify-content-between mb-4">
                                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b5b5c3', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                    Progress Trend
+                                    Weighted Progress
                                 </div>
                                 <div className="d-flex align-items-center">
-                                    <span className="text-muted font-weight-bold font-size-xs mr-2">Prev:</span>
+                                    <span className="text-muted font-weight-bold font-size-xs mr-2">Previous:</span>
                                     <span className="text-dark-75 font-weight-boldest font-size-sm mr-4">{Math.round(trendData[trendData.length-2]?.avg || 0)}%</span>
                                     <span className="text-muted font-weight-bold font-size-xs mr-2">Current:</span>
                                     <span className="text-primary font-weight-boldest font-size-sm">{Math.round(trendData[trendData.length-1]?.avg || 0)}%</span>
