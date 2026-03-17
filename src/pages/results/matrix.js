@@ -79,19 +79,38 @@ class ResultsMatrix extends React.Component {
 
     const schoolInfo = Data.schools.getSelected();
     
+    let restoredGrade = localStorage.getItem('matrix_selectedGrade');
+    if (restoredGrade === 'null' || restoredGrade === 'undefined') restoredGrade = "";
+
     this.setState({ 
         schoolInfo,
         selectedClass: localStorage.getItem('matrix_selectedClass') || "",
-        selectedTerm: localStorage.getItem('matrix_selectedTerm') || ""
+        selectedTerm: localStorage.getItem('matrix_selectedTerm') || "",
+        selectedGrade: restoredGrade || ""
     });
 
     setTimeout(() => {
-        const { selectedClass, selectedTerm, classes, terms } = this.state;
+        const { selectedClass, selectedTerm, classes, terms, selectedGrade } = this.state;
         let updates = {};
         if (!selectedClass && classes?.length > 0) updates.selectedClass = classes[0].id;
         if (!selectedTerm && terms?.length > 0) updates.selectedTerm = terms[0].id;
 
-        if (Object.keys(updates).length > 0) this.setState(updates);
+        if (!selectedGrade) {
+            const classToUse = updates.selectedClass || selectedClass;
+            const currentClass = classes.find(c => String(c.id) === String(classToUse));
+            const gradeId = currentClass?.grade?.id || currentClass?.grade;
+            if (gradeId) updates.selectedGrade = gradeId;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            this.setState(updates, () => {
+                if (this.state.selectedClass && this.state.selectedTerm) {
+                    this.fetchAssessments();
+                }
+            });
+        } else if (selectedClass && selectedTerm) {
+            this.fetchAssessments();
+        }
         this.setState({ loading: false });
     }, 2000);
   }
@@ -458,8 +477,10 @@ class ResultsMatrix extends React.Component {
     const currentTerm = terms?.find(t => t.id === selectedTerm) || { name: 'Term' };
     
     const { selectedGrade } = this.state;
-    const filteredSubjectsList = subjects.filter(s => {
+    const filteredSubjectsList = (subjects || []).filter(s => {
+        if (!s) return false;
         const sGradeId = s.grade?.id || s.grade;
+        // If no grade selected, show all. If grade selected, must match.
         return !selectedGrade || String(sGradeId) === String(selectedGrade);
     });
     
