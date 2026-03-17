@@ -58,13 +58,13 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
 
     return (
         <div className="report-card-container" style={{ 
-            padding: '1.2cm 2.0cm', 
+            padding: '1.0cm 1.5cm', 
             backgroundColor: 'white', 
             minHeight: '29.7cm', // Full A4 Height
             height: 'auto', 
             width: '21cm', 
             margin: '2cm auto', // Margin for web visibility
-            pageBreakAfter: 'auto',
+            pageBreakAfter: 'always',
             position: 'relative',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             color: '#1f2937', 
@@ -82,9 +82,9 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                 gridTemplateColumns: 'repeat(4, 1fr)', 
                 gap: '15px', 
                 backgroundColor: '#ffffff', 
-                padding: '24px', 
+                padding: '20px', 
                 borderRadius: '16px', 
-                marginBottom: '1cm',
+                marginBottom: '0.8cm',
                 border: '1px solid #e5e7eb',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}>
@@ -107,41 +107,36 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             </div>
 
             {/* Premium Results Table */}
-            <div style={{ marginBottom: '1cm', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+            <div style={{ marginBottom: '0.8cm', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ backgroundColor: themeColor }}>
-                            <th style={{ padding: '14px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Learning Area / Subject</th>
+                            <th style={{ padding: '12px 18px', textAlign: 'left', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Learning Area / Subject</th>
                             {sortedAssessmentTypes?.map(type => (
-                                <th key={type.id} style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>{type.name}</th>
+                                <th key={type.id} style={{ padding: '12px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>{type.name}</th>
                             ))}
-                            <th style={{ padding: '14px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Subj. Points</th>
+                            <th style={{ padding: '12px 10px', textAlign: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Subj. Points</th>
                         </tr>
                     </thead>
                     <tbody>
                         {subjectRows.map((row, idx) => (
                             <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                                <td style={{ padding: '12px 18px', borderBottom: '1px solid #f3f4f6', fontWeight: 700, fontSize: '0.9rem', color: '#374151' }}>
+                                <td style={{ padding: '10px 18px', borderBottom: '1px solid #f3f4f6', fontWeight: 700, fontSize: '0.9rem', color: '#374151' }}>
                                     {row.subject.name}
                                 </td>
                                 {row.typeScores.map((ts, tIdx) => (
-                                    <td key={tIdx} style={{ padding: '12px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
+                                    <td key={tIdx} style={{ padding: '10px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                            <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
+                                            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>{ts.score !== null ? ts.score : '-'}</span>
                                             {ts.rubric && (
                                                 <div style={{ fontSize: '0.7rem', color: themeColor, fontWeight: 900, textTransform: 'uppercase', lineHeight: '1.2' }}>
                                                     {ts.rubric.label} {ts.rubric.points ? `(${ts.rubric.points} pts)` : ''}
                                                 </div>
                                             )}
-                                            {ts.rubric?.teachersComment && (
-                                                <div style={{ fontSize: '0.65rem', color: '#6b7280', fontWeight: 500, fontStyle: 'italic', maxWidth: '140px', marginTop: '2px', lineHeight: '1.2' }}>
-                                                    {ts.rubric.teachersComment}
-                                                </div>
-                                            )}
                                         </div>
                                     </td>
                                 ))}
-                                <td style={{ padding: '12px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center', fontWeight: 900, fontSize: '1.2rem', color: themeColor }}>
+                                <td style={{ padding: '10px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: themeColor }}>
                                     {row.totalPoints}
                                 </td>
                             </tr>
@@ -149,10 +144,10 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                     </tbody>
                     <tfoot>
                         <tr style={{ backgroundColor: '#f3f4f6' }}>
-                            <td style={{ padding: '16px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (sortedAssessmentTypes?.length || 0)}>
+                            <td style={{ padding: '14px 18px', fontWeight: 900, fontSize: '0.9rem', color: '#111827' }} colSpan={1 + (sortedAssessmentTypes?.length || 0)}>
                                 AGGREGATE SUMMARY
                             </td>
-                            <td style={{ padding: '16px 10px', textAlign: 'center', fontWeight: 900, fontSize: '1.4rem', color: themeColor }}>
+                            <td style={{ padding: '14px 10px', textAlign: 'center', fontWeight: 900, fontSize: '1.3rem', color: themeColor }}>
                                 {totalOverallPoints}
                             </td>
                         </tr>
@@ -161,29 +156,29 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             </div>
 
             {/* Performance Metrics & Trend Blocks */}
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '1.5cm' }}>
-                <div style={{ flex: 1, border: '2px solid #f3f4f6', padding: '20px', borderRadius: '16px', backgroundColor: '#ffffff' }}>
-                    <h5 style={{ margin: '0 0 15px 0', fontSize: '0.9rem', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '1.0cm' }}>
+                <div style={{ flex: 1, border: '2px solid #f3f4f6', padding: '15px', borderRadius: '16px', backgroundColor: '#ffffff' }}>
+                    <h5 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Performance Overview
                     </h5>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px dashed #f3f4f6' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 500 }}>Overall Points Earned:</span>
-                            <span style={{ fontWeight: 800, color: themeColor, fontSize: '1rem' }}>{totalOverallPoints}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px dashed #f3f4f6' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 500 }}>Overall Points Earned:</span>
+                            <span style={{ fontWeight: 800, color: themeColor, fontSize: '0.95rem' }}>{totalOverallPoints}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px dashed #f3f4f6' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 500 }}>Learning Areas Graded:</span>
-                            <span style={{ fontWeight: 800, color: '#111827', fontSize: '1rem' }}>{subjects.length}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px dashed #f3f4f6' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 500 }}>Learning Areas Graded:</span>
+                            <span style={{ fontWeight: 800, color: '#111827', fontSize: '0.95rem' }}>{subjects.length}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 500 }}>Learning Trend Status:</span>
-                            <span style={{ fontWeight: 800, color: '#10b981', fontSize: '0.9rem', textTransform: 'uppercase' }}>Active Progress</span>
+                            <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: 500 }}>Learning Trend Status:</span>
+                            <span style={{ fontWeight: 800, color: '#10b981', fontSize: '0.85rem', textTransform: 'uppercase' }}>Active Progress</span>
                         </div>
                     </div>
                 </div>
                 
-                <div style={{ flex: 1.5, border: '2px solid #f3f4f6', padding: '20px', borderRadius: '16px', backgroundColor: '#ffffff' }}>
-                    <h5 style={{ margin: '0 0 15px 0', fontSize: '0.9rem', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                <div style={{ flex: 1.5, border: '2px solid #f3f4f6', padding: '15px', borderRadius: '16px', backgroundColor: '#ffffff' }}>
+                    <h5 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Academic Progress Trend
                     </h5>
                     {(() => {
@@ -202,7 +197,7 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
                         const data = Object.values(historyMap).map(d => ({ name: d.name, value: d.count ? Math.round(d.total/d.count) : 0 }));
                         if (data.length === 0) data.push({ name: term?.name || 'Current', value: parseInt(totalOverallPoints) || 0 });
                         const width = 350, height = 110, padding = 25, maxVal = 100;
-                        if (data.length < 2) return <div style={{ fontSize: '0.85rem', color: '#9ca3af', textAlign: 'center', padding: '20px' }}>Historic trend data will appear here over time.</div>;
+                        if (data.length < 2) return <div style={{ fontSize: '0.85rem', color: '#9ca3af', textAlign: 'center', padding: '10px' }}>Historic trend data will appear here over time.</div>;
                         const points = data.map((d, i) => {
                             const x = padding + (i * ((width - 2 * padding) / (data.length - 1)));
                             const y = height - padding - (d.value / maxVal) * (height - 2 * padding);
@@ -238,51 +233,27 @@ const ReportCard = ({ student, term, assessments, subjects, rubrics, assessmentT
             </div>
 
             {/* Signature Section - Pinned slightly above footer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '2.5cm', padding: '0 1cm' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'auto', marginBottom: '2cm', padding: '0 1cm' }}>
                 <div style={{ width: '220px', textAlign: 'center' }}>
                     <div style={{ height: '40px' }}></div> {/* Spacer for digital signature/stamp */}
-                    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: '12px' }}>
-                        <p style={{ margin: 0, fontWeight: 800, color: '#111827', fontSize: '0.9rem', textTransform: 'uppercase' }}>Class Teacher</p>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '0.7rem', color: '#9ca3af', fontWeight: 600 }}>Signature & Date</p>
+                    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: '10px' }}>
+                        <p style={{ margin: 0, fontWeight: 800, color: '#111827', fontSize: '0.85rem', textTransform: 'uppercase' }}>Class Teacher</p>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.65rem', color: '#9ca3af', fontWeight: 600 }}>Signature & Date</p>
                     </div>
                 </div>
                 <div style={{ width: '220px', textAlign: 'center' }}>
                     <div style={{ height: '40px' }}></div>
-                    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: '12px' }}>
-                        <p style={{ margin: 0, fontWeight: 800, color: '#111827', fontSize: '0.9rem', textTransform: 'uppercase' }}>School Principal</p>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '0.7rem', color: '#9ca3af', fontWeight: 600 }}>Official Stamp & Date</p>
+                    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: '10px' }}>
+                        <p style={{ margin: 0, fontWeight: 800, color: '#111827', fontSize: '0.85rem', textTransform: 'uppercase' }}>Principal</p>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.65rem', color: '#9ca3af', fontWeight: 600 }}>Official Stamp & Date</p>
                     </div>
                 </div>
             </div>
 
             {/* Premium Pinned ShulePlus Footer */}
-            <div style={{ position: 'absolute', bottom: '1.2cm', left: '2.0cm', right: '2.0cm' }}>
+            <div style={{ position: 'absolute', bottom: '1.0cm', left: '1.5cm', right: '1.5cm' }}>
                 <ReportFooter themeColor={themeColor} validationStatus="Authentic Record" />
             </div>
-
-            <style>{`
-                @media print {
-                    @page {
-                        size: A4;
-                        margin: 0;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        background: white !important;
-                    }
-                    .report-card-container {
-                        margin: 0 !important;
-                        box-shadow: none !important;
-                        border: none !important;
-                        width: 100% !important;
-                        min-height: 29.7cm !important;
-                    }
-                    .navbar, .subheader, .d-print-none, .card-toolbar {
-                        display: none !important;
-                    }
-                }
-            `}</style>
         </div>
     );
 };

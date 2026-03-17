@@ -80,3 +80,57 @@ code {
   border-color: #6366f1 !important;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
 }
+
+/* --- Print Optimizations --- */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Hide all UI elements */
+  #kt_header, 
+  #kt_header_mobile, 
+  #kt_header_secondary, 
+  #kt_subheader, 
+  .kt-subheader, 
+  .kt-footer, 
+  .kt-aside, 
+  .d-print-none,
+  .navbar,
+  .subheader,
+  .card-toolbar {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  body, html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .kt-page, .kt-wrapper, .kt-content, .kt-container, #kt_content, #kt_wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    display: block !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  /* Ensure the report card/statement fits */
+  .report-card-container {
+    margin: 0 !important;
+    padding: 1cm 1.5cm !important; /* Slightly more space for print */
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    min-height: 29.7cm !important;
+    page-break-after: always;
+  }
+}
