@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useMemo, useEffect } from 'react';
+import Data from "../../../utils/data";
 
 /** 
  * DetailedPerformanceAnalytics
